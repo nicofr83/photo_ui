@@ -187,3 +187,21 @@ describe('the nature is carried by words, not only by colour', () => {
     expect(formatResolvedDate(null).label).toBe('sans date');
   });
 });
+
+describe('a lying server fails loudly rather than rendering something plausible', () => {
+  test('a month outside 1-12 refuses to render', () => {
+    const impossible = {
+      ...dateFrom(DateSource.ALBUM_MONTH, DatePrecision.MONTH),
+      start: '1999-99-01' as ResolvedDate['start'],
+    };
+    expect(() => formatResolvedDate(impossible)).toThrow(/malformed month/);
+  });
+
+  test('a precision outside the closed vocabulary refuses to render', () => {
+    const impossible = {
+      ...dateFrom(DateSource.ALBUM_MONTH),
+      precision: 'decade' as ResolvedDate['precision'],
+    };
+    expect(() => formatResolvedDate(impossible)).toThrow(/unmapped DatePrecision/);
+  });
+});

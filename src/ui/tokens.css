@@ -1,0 +1,10 @@
+/* Design tokens. The three date natures are a closed set: spec §7.1. */
+:root {
+  --date-reading: #1a7f4b;
+  --date-inference: #b7791f;
+  --date-decision: #6b46c1;
+  --date-absent: #6b7280;
+  --detail-fg: #6b7280;
+  /* Minimum touch target. Nothing interactive is smaller. */
+  --tap-target: 44px;
+}

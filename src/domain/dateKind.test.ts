@@ -79,3 +79,12 @@ describe('INVARIANT §7.1 — a disagreeing (source, kind) pair must fail loudly
     }
   });
 });
+
+describe('a source outside the closed vocabulary fails loudly', () => {
+  test('an upstream dateSource value is not silently accepted', () => {
+    // `folder-sequence` is a raw pipeline value, never a contract DateSource.
+    expect(() => expectedKindFor('folder-sequence' as DateSource)).toThrow(
+      /unmapped DateSource/,
+    );
+  });
+});

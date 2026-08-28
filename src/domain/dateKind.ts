@@ -23,6 +23,15 @@ export class KindDisagreementError extends Error {
 export function expectedKindFor(source: DateSource): DateKind {
   switch (source) {
     case DateSource.ANNOTATION:
+      return DateKind.DECISION;
+
+    // OPEN DIVERGENCE, raised with contrat-api and spec-frontend on 2026-08-28.
+    // The contract's enum glosses WEB_SPAN as "décision humaine"; the spec says
+    // twice (§4.2 rule C, §9.4) that these intervals are marked as HUMAN
+    // INFERENCES. The contract is normative until they reconcile, so `decision`
+    // stands here — but the spec's reading looks right: a web document carries
+    // no date at all, so a human range over it is a guess, and rendering a guess
+    // as a firm decision is the error §7.1 exists to prevent.
     case DateSource.WEB_SPAN:
       return DateKind.DECISION;
 

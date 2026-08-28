@@ -90,3 +90,10 @@ describe('widthDays — inclusive', () => {
     expect(widthDays(interval('2000-03-01', '2000-03-31'))).toBe(31);
   });
 });
+
+describe('a malformed interval fails loudly rather than measuring nonsense', () => {
+  test('widthDays rejects a bound that is not a civil day', () => {
+    const malformed = { start: 'octobre 1999', end: '1999-10-31' } as unknown as DayInterval;
+    expect(() => widthDays(malformed)).toThrow(/malformed interval/);
+  });
+});

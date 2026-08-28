@@ -1,0 +1,23 @@
+.date {
+  font-variant-numeric: tabular-nums;
+}
+.date[data-date-kind='reading'] {
+  color: var(--date-reading);
+  font-style: normal;
+}
+.date[data-date-kind='inference'] {
+  color: var(--date-inference);
+  font-style: italic;
+}
+.date[data-date-kind='decision'] {
+  color: var(--date-decision);
+  font-weight: 700;
+}
+.date[data-date-kind='absent'] {
+  color: var(--date-absent);
+  font-style: italic;
+}
+.detail {
+  color: var(--detail-fg);
+  font-size: 0.85em;
+}
