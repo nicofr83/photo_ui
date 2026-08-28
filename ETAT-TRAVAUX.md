@@ -150,11 +150,11 @@ comporte des erreurs. »** 40,2 % des dates du périmètre ne sont pas des mesur
 
 | Agent | Mandat | Joignable par `SendMessage` |
 |:---|:---|:---|
-| `spec-frontend` | Spécification fonctionnelle, vivante | oui |
-| `contrat-api` | Contrat d'API **et** spec backend — mandat terminé | oui |
-| `impl-frontend` | Plan **et** implémentation du frontend | oui |
-| `impl-backend` | Plan puis implémentation du backend — **lancé** | oui |
-| `spike-legendes` | Échantillon de légendes — c'est l'« agent non nommé » | oui |
+| `spec-frontend-2` | Spécification fonctionnelle, vivante | oui |
+| `contrat-api` | Contrat d'API **et** spec backend — **mandat terminé, non relancé** | non |
+| `impl-frontend-2` | Plan **et** implémentation du frontend | oui |
+| `impl-backend-2` | Plan puis implémentation du backend | oui |
+| `spike-legendes-2` | Échantillon de légendes | oui |
 | `inventaire-schemas`, `digest-specs`, `spike-dhash`, `skill-dossier-bd` | Mandats terminés, livrables commités | oui |
 
 `ListAgents` n'est pas disponible dans toutes les sessions : passer par la
@@ -174,3 +174,28 @@ session pilote pour un relais.
 **La clé API Anthropic de la machine est sans crédit.** Le spike des légendes
 s'en passe : un agent Claude Code voit les images qu'il ouvre. À savoir avant de
 planifier quoi que ce soit qui appelle l'API directement.
+
+---
+
+## La coupure du 2026-08-28, 19h00, et ce qu'elle a appris
+
+Les cinq agents sont morts en quelques secondes, en plein tour, sur
+`You've hit your monthly spend limit` — limite réinitialisée à 19h50.
+Aucun n'a pu finir sa phrase ni sauvegarder quoi que ce soit.
+
+**Ce qui a survécu :** tout ce qui était commité, plus le présent document.
+**Ce qui a été perdu :** les cinq contextes, entièrement.
+
+La reprise a été sans perte de travail — mais uniquement parce que l'état
+avait été écrit **avant** la coupure. Il n'existe aucun mécanisme de mise en
+attente : aucun agent ne détecte l'épuisement, l'appel échoue au milieu du
+tour, sans fin propre.
+
+**Règle qui en découle, pour tout agent de ce projet :** commiter tôt et
+souvent, `wip:` compris, jamais plus d'une étape de travail non commitée. Et
+écrire ses décisions dans les fichiers et les messages de commit, jamais
+seulement dans un rapport à la session pilote.
+
+**Les noms ont changé à la reprise** : les agents relancés portent un suffixe
+`-2`, les anciens noms restant attachés aux instances mortes. Écrire à
+l'ancien nom atteint un fantôme.
