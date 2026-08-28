@@ -33,15 +33,16 @@ export function expectedKindFor(source: DateSource): DateKind {
     case DateSource.LOG_ENTRY_DATE:
       return DateKind.READING;
 
+    // WEB_SPAN belongs here, not with the decision: a `web_span` range FILLS A
+    // VOID rather than arbitrating. None of the 569 web passages carries a
+    // date, so a hand-typed range over one is a conjecture. `source` already
+    // says a human typed it; `kind` says what it is worth. Contract §4.8,
+    // spec §5.7 / §9.4. The ~25 ranges Nicolas will enter therefore render
+    // amber italic with the approximation glyph, deliberately.
     case DateSource.LOGBOOK_BRACKET:
     case DateSource.ALBUM_MONTH:
     case DateSource.ALBUM_YEAR:
     case DateSource.PAGE_WINDOW:
-    // A `web_span` range FILLS A VOID rather than arbitrating: none of the 569
-    // web passages carries a date, so a hand-typed range over one is a
-    // conjecture. `source` already says a human typed it; `kind` says what it
-    // is worth. Contract §4.8, spec §5.7 / §9.4. The ~25 ranges Nicolas will
-    // enter therefore render amber italic with the approximation glyph.
     case DateSource.WEB_SPAN:
       return DateKind.INFERENCE;
 

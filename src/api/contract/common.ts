@@ -1,18 +1,36 @@
 import { z } from 'zod';
 
-import { expectedKindFor } from '../../domain/dateKind';
+import { expectedKindFor, expectedKindForPosition } from '../../domain/dateKind';
+import { isIsoDate } from '../../shared/date_interface';
 import {
   DateKind, DatePrecision, DateSource, MatchField, PositionSource,
 } from '../../shared/enums';
 
-export const IsoDaySchema = z
+/**
+ * A civil day — and a day the calendar actually has. Format alone is not
+ * enough: a month-end bound computed wrong produces `1999-02-30`, which looks
+ * like a date and is not one.
+ */
+export const IsoDateSchema = z
   .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, 'expected a civil day YYYY-MM-DD, with no time and no zone');
+  .refine(isIsoDate, 'expected a real civil day YYYY-MM-DD, with no time and no zone');
 
-/** A naive local timestamp. Never converted, never given a zone. */
+/** A real instant. Always zoned — an unzoned one would silently be read as local. */
+export const IsoTimestampSchema = z
+  .string()
+  .regex(
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/,
+    'expected an ISO-8601 instant carrying its zone',
+  );
+
+/**
+ * A naive local timestamp, deliberately unzoned: 76 % of upstream `captureDate`
+ * values carry no zone, and the file path on disk derives from the time as
+ * stored. Attaching a zone here would be an assertion nobody made.
+ */
 export const LocalDateTimeSchema = z
   .string()
-  .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/, 'expected YYYY-MM-DDTHH:MM[:SS]');
+  .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/, 'expected YYYY-MM-DDTHH:MM[:SS], unzoned');
 
 export const Sha256Schema = z.string().regex(/^[0-9a-f]{64}$/);
 export const CloudAssetIdSchema = z.string().regex(/^[0-9a-f]{32}$/);
@@ -24,8 +42,8 @@ export const CloudAssetIdSchema = z.string().regex(/^[0-9a-f]{32}$/);
  */
 export const ResolvedDateSchema = z
   .strictObject({
-    start: IsoDaySchema,
-    end: IsoDaySchema,
+    start: IsoDateSchema,
+    end: IsoDateSchema,
     precision: z.enum(DatePrecision),
     kind: z.enum(DateKind),
     source: z.enum(DateSource),
@@ -33,31 +51,76 @@ export const ResolvedDateSchema = z
   })
   .superRefine((date, ctx) => {
     // superRefine, not refine: Zod 4 ignores a function passed as refine's
-    // second argument, which silently collapsed this to "Invalid input" with no
-    // path — useless for the drift detection this exists for.
+    // second argument, which silently collapsed these to "Invalid input" with
+    // no path — useless for the drift detection this exists for.
     const expected = expectedKindFor(date.source);
     if (expected !== date.kind) {
       ctx.addIssue({
         code: 'custom',
         path: ['kind'],
-        message:
-          `"${date.source}" is a ${expected}, but the server called it a ${date.kind}`,
+        message: `"${date.source}" is a ${expected}, but the server called it a ${date.kind}`,
+      });
+    }
+
+    // Both bounds always travel, but an interval must be one.
+    if (date.end < date.start) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['end'],
+        message: `interval ends before it starts: ${date.start}..${date.end}`,
+      });
+    }
+
+    // Contract §2.2: the bracket belongs to the rank-3 proposal and is NULL
+    // everywhere else. A bracket on a reading would render a confidence that
+    // nothing supports.
+    if (date.bracketHours !== null && date.source !== DateSource.LOGBOOK_BRACKET) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['bracketHours'],
+        message: `only a logbook proposal carries a bracket, not "${date.source}"`,
       });
     }
   });
 
-export const ResolvedPositionSchema = z.strictObject({
-  lat: z.number(),
-  lon: z.number(),
-  kind: z.enum(DateKind),
-  source: z.enum(PositionSource),
-});
+/** A position, with its nature. Same rule as a date, same enforcement. */
+export const ResolvedPositionSchema = z
+  .strictObject({
+    lat: z.number().min(-90).max(90),
+    lon: z.number().min(-180).max(180),
+    kind: z.enum(DateKind),
+    source: z.enum(PositionSource),
+  })
+  .superRefine((position, ctx) => {
+    const expected = expectedKindForPosition(position.source);
+    if (expected !== position.kind) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['kind'],
+        message:
+          `"${position.source}" is a ${expected}, but the server called it a ${position.kind}`,
+      });
+    }
+  });
 
 export const DateArbitrationSchema = z.strictObject({
   exifDate: LocalDateTimeSchema,
   gapMonths: z.number().int(),
   outcome: z.enum(['accepted', 'rejected']),
 });
+
+/** What the user ASKS (a filter) or DECLARES (a task's period). Not an assertion. */
+export const CivilDayRangeSchema = z
+  .strictObject({ from: IsoDateSchema, to: IsoDateSchema })
+  .superRefine((range, ctx) => {
+    if (range.to < range.from) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['to'],
+        message: `range ends before it starts: ${range.from}..${range.to}`,
+      });
+    }
+  });
 
 export const FieldMatchSchema = z.strictObject({
   field: z.enum(MatchField),
