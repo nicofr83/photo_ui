@@ -151,6 +151,13 @@ intervalle. Un texte aussi : une entrée de journal couvre jusqu'à la suivante,
 un passage couvre sa page. On croise deux intervalles, et on affiche les deux
 largeurs.
 
+Une nuance qui compte : la date qu'un texte affirme et la fenêtre qu'il couvre
+sont deux choses différentes. Une entrée du 14 octobre 1999 affirme ce jour-là —
+c'est exact, c'est écrit sur la page. Qu'elle couvre ensuite jusqu'à la journée
+suivante renseignée, parfois trois mois plus tard, ne change rien à ce qu'elle
+affirme. Les deux sont stockés séparément, et seule la première s'affiche comme
+une date.
+
 Pas de plafond : même un rapprochement à quarante jours est proposé. La raison
 est que 40 % des dates de photo ne sont pas des mesures — un seuil calculé
 dessus écarterait autant de bons rapprochements que de mauvais, et le ferait en
@@ -489,7 +496,10 @@ s'envoie tel quel. Ré-exporter une BD inchangée réécrit un dossier identique
     "page_image": "pages/ma-vie-p007.jpg",
     "text": "…",                 // le texte effectif, corrigé si tu l'as corrigé
     "text_original": "…",        // la transcription d'origine, conservée
-    "date": { "from": "1999-09-23", "to": "1999-09-25", "kind": "reading" },
+    // ce que le texte affirme
+    "date": { "from": "1999-09-23", "to": "1999-09-23", "kind": "reading" },
+    // la fenêtre qu'il couvre — calculée, jamais affichée comme une date
+    "overlap": { "from": "1999-09-23", "to": "1999-09-25", "rule": "B" },
     "covers_images": ["05b9a4fa…"]   // un rapprochement, pas une légende
   }],
   "notes": [{

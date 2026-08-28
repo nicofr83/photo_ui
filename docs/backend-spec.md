@@ -594,6 +594,9 @@ CREATE TABLE pipeline.text_unit (
     CASE WHEN covers_start IS NULL THEN NULL
          ELSE daterange(covers_start, covers_end, '[]') END) STORED,
   covers_rule   text,                      -- 'logbook_entry' (A) | 'passage' (B) | 'web_span' (C)
+  -- Dénormalisé depuis page.span_source : le client en a besoin dans les
+  -- résultats de recouvrement et de recherche, où la page n'est pas chargée.
+  page_span_source text,                   -- 'passages' | 'entries' | 'carried' | NULL
 
   -- champs propres aux entrées de journal
   entry_time      text,                    -- 'HH:MM' tel qu'écrit — fuseau INCONNU
@@ -1110,10 +1113,19 @@ partagé.
 
 - **Règle B, passages.** `[dateFrom, dateFrom]` si daté, sinon la fenêtre de sa
   page `[startAt, endAt]` — et dans ce second cas `date_source = 'page_window'`,
-  donc `date_kind = 'inference'` : une fenêtre de page n'est pas une lecture, et
-  22 des 103 pages de « Ma vie » sont même `carried`, c'est-à-dire qu'elles
-  reprennent le jour de la page précédente. 828 passages sont datés en propre,
-  448 le sont par leur page.
+  donc `date_kind = 'inference'` : une fenêtre de page n'est pas une lecture.
+
+  *(Chiffres corrigés le 2026-08-28 par `spec-frontend`, qui a trouvé une
+  confusion entre deux requêtes dans sa propre spec.)* **1 290 des 1 859
+  passages sont plaçables (69,4 %)** : 828 par leur propre `dateFrom`, **462 par
+  la fenêtre de leur page** — dont **341** venant d'une page `entries` et
+  **121 d'une page `carried`**.
+
+  **Les 121 `carried` sont une inférence sur une inférence** : la page ne nomme
+  aucun jour et reprend celui de la précédente. Le schéma ne leur donne pas une
+  quatrième nature — `date_kind` reste `inference`, la spécification n'en connaît
+  que trois — mais **`page_span_source` voyage jusqu'au client** pour que
+  l'interface puisse les distinguer d'une fenêtre de page réellement datée.
 
 **Non matérialisé** — la **règle C**, site web. Aucun de ses 569 passages ne
 porte de date ; leur seul intervalle possible vient de `ref.web_span`, que

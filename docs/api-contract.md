@@ -10,6 +10,27 @@ Chaque endpoint est justifié par un écran de **« Les écrans »** ou par un b
 **Prose en français, identifiants en anglais** — convention des documents
 existants du projet.
 
+> ## État : **GELÉ** pour la forme des types
+>
+> §2 — les types partagés — et §3 — le modèle d'erreur — sont **stables**.
+> `impl-frontend` peut écrire son client typé contre eux.
+>
+> Les questions ouvertes qui restent (§11) portent toutes sur le **comportement
+> du serveur**, jamais sur la forme de ce qui passe sur le fil : idempotence de
+> l'export, largeurs de rendu, statut des liens de galerie. Aucune ne change une
+> interface de §2.
+>
+> Corollaire, et il engage : **tout champ ajouté après ce gel est un changement
+> de contrat annoncé**, jamais un ajout discret. Le client valide en
+> `strictObject` et lèvera — c'est voulu.
+>
+> **Un seul ajout depuis le gel**, annoncé à `impl-frontend` :
+> `TextUnit.pageSpanSource` (§2.6). Motif : la spécification exige que le
+> `spanSource` d'une fenêtre accompagne le résultat, et `carried` — une
+> inférence sur une inférence — doit se voir ; or il n'était disponible que sur
+> `TextPage`, que le client ne charge pas dans un résultat de recouvrement ou de
+> recherche. C'était un manque du contrat face à la spec, pas un enrichissement.
+
 ---
 
 ## 0. Comment lire ce document
@@ -74,6 +95,26 @@ violer.
    `cloudAssetId` (32 hex), celle d'un contenu et d'une vignette est `sha256`
    (64 hex), celle d'un texte est le **couple** `(kind, id)` — `TextRef` — et
    jamais l'identifiant seul : 456 identifiants sont ambigus (§2.6).
+
+**Casse des clés — tranché, une fois.**
+
+| Surface | Convention | Pourquoi |
+|:---|:---|:---|
+| **API JSON** | **`camelCase`** | C'est du TypeScript des deux côtés ; les mêmes `*_interface.ts` servent au client et au serveur, et une conversion aux frontières est un endroit où se glisse une faute pour aucun bénéfice. |
+| **Manifeste exporté** | **`snake_case`** | Figé par l'annexe C de la spécification. C'est le format qui **voyage** — il est lu par un LLM et par des humains, hors de ce système. |
+| **Colonnes PostgreSQL** | `snake_case` | Convention de la base. |
+
+La conversion n'existe donc **qu'à un seul endroit** : le sérialiseur du
+manifeste, dans `metier/export/`. Nulle part ailleurs. `docs/backend-spec.md`
+§12.3 en fait une propriété de la sérialisation canonique.
+
+**Compatibilité — un champ ajouté est un changement de contrat.**
+
+Le client valide chaque réponse en `zod.strictObject` : un champ non déclaré
+**lève** au lieu d'être ignoré. C'est délibéré — c'est le détecteur de dérive
+qui permet de développer contre des bouchons sans découvrir l'écart à
+l'intégration. Conséquence pour le serveur : **aucun ajout n'est gratuit**. Tout
+champ nouveau passe d'abord par ce document, et le client s'aligne ensuite.
 
 **Deux règles de transport, conséquences des schémas amont :**
 
@@ -602,6 +643,27 @@ export interface PhotoDetail extends PhotoListItem {
   readonly overlappingTextCount: number;
   /** La légende complète, avec ses mots-clés. NULL tant que la passe n'a pas couvert cette photo. */
   readonly caption: MachineCaption | null;
+
+  /**
+   * **Sans ce champ, la règle des trois échecs est intenable côté client.**
+   * Le `onerror` d'un `<img>` est opaque : il ne dit pas si le volume est
+   * démonté (global, bandeau, export bloqué), si le fichier de CETTE photo
+   * manque, ou si le format ne peut produire aucun pixel. Le client consulte ce
+   * bloc AVANT de pointer une image sur `renderUrl`.
+   */
+  readonly render: RenderAvailability;
+}
+
+export interface RenderAvailability {
+  readonly available: boolean;
+  /** NULL si `available`. Sinon la cause, et une seule. */
+  readonly unavailableReason:
+    | 'VOLUME_UNAVAILABLE'    // configuration, global
+    | 'SOURCE_FILE_MISSING'   // cette photo
+    | 'NOT_RENDERABLE'        // cette photo
+    | null;
+  /** Déjà en cache : le panneau affiche sans attendre `sips`. */
+  readonly cached: boolean;
 }
 
 export interface PhotoTag {
@@ -809,6 +871,18 @@ export interface TextUnit {
   readonly confidence: TranscriptionConfidence;
   /** NULL = date indéterminée. Affichée « indéterminée », jamais devinée. */
   readonly date: ResolvedDate | null;
+  /**
+   * D'où vient la fenêtre de la page, quand c'est elle qui date ce texte
+   * (`date.source === 'page_window'`). NULL sinon.
+   *
+   * **`carried` est une inférence sur une inférence** : la page ne nomme aucun
+   * jour et reprend celui de la précédente. 121 des 462 passages datés par leur
+   * page sont dans ce cas. La spécification n'admet que trois natures, donc
+   * `date.kind` reste `inference` — mais la nuance doit se voir, et elle ne peut
+   * pas se déduire d'une jointure côté client : dans un résultat de recouvrement
+   * ou de recherche, la page n'est pas chargée.
+   */
+  readonly pageSpanSource: PageSpanSource | null;
   readonly overlappingPhotoCount: number;
 
   /** Renseigné seulement par `GET /texts?q=…`. Offsets dans `text`, unités UTF-16. */
@@ -1048,6 +1122,16 @@ export interface TaskImagesMutationResult {
     readonly cloudAssetId: CloudAssetId;
     readonly reason: 'unknown_photo' | 'not_selected';
   }[];
+  /**
+   * ACCEPTÉ, avec réserve. Un avertissement n'est pas un rejet, et les deux se
+   * rendent différemment : une photo hors 1998-2004 entre dans la tâche (Q5,
+   * défaut (b) — une photo de 2005 peut légitimement conclure un récit), une
+   * photo orpheline y reste et se voit.
+   */
+  readonly warnings: readonly {
+    readonly cloudAssetId: CloudAssetId;
+    readonly code: 'out_of_period' | 'orphaned';
+  }[];
   readonly imageCount: number;
   readonly contentHash: string;
   readonly state: TaskState;
@@ -1280,6 +1364,25 @@ manifeste, lui, existe — c'est le format qui **voyage**, pas l'API.
 Le serveur écoute sur `127.0.0.1` et refuse toute origine non locale. Pas
 d'authentification.
 
+### 4.0 Quelle tranche débloque quoi
+
+Le découpage est celui d'`impl-frontend`. Il vaut aussi pour le backend : rien
+n'oblige à écrire T3 avant que T1 tourne.
+
+| Tranche | Ce qu'elle livre | Endpoints |
+|:---|:---|:---|
+| **T1** — une tâche, une grille, un dossier | le produit minimal : il écrit le dossier sur disque | `/system/status` · `/tasks` et `/tasks/:slug` (+ `PATCH`, `/opened`) · `/albums` · `/photos` · `/photos/:id` · `/images/*` · `/tasks/:slug/images` · `/tasks/:slug/export` · `/jobs*` |
+| **T2** — le texte | documents, pages, recouvrement, notes | `/documents` · `/pages` · `/pages/image` · `/texts` · `/photos/:id/texts` · `/photos?overlapsText…` · `/tasks/:slug/texts` · `/tasks/:slug/notes*` |
+| **T3** — chercher | facettes et plein texte | `/photos/facets` · `q` sur `/photos` et `/texts` · `/vocabularies/*` |
+| **T4** — écrire | correction et référentiels | `/corrections*` · `/ref/*` |
+| **T5** — la revue en entier | **presque aucun endpoint nouveau** | `/tasks/:slug/review` · `/tasks/:slug/duplicate` · `DELETE /tasks/:slug` |
+
+La chronologie et le bandeau de contrôle de T5 se calculent **côté client** à
+partir de la sélection déjà chargée. `GET /tasks/:slug/review` reste offert
+parce qu'il évite huit agrégations dupliquées dans le client, mais il n'est pas
+sur le chemin critique : si `impl-frontend` préfère tout dériver,
+**il peut être retiré sans que rien d'autre bouge.**
+
 ### 4.1 Système et vocabulaires
 
 | Méthode | Chemin | Écran / besoin | Réponse |
@@ -1333,7 +1436,6 @@ nom est un `UNKNOWN_PARAMETER`.
 | `GET` | `/pages?documentId=…` | `{ items: TextPage[] }` |
 | `GET` | `/pages/image?pageId=…` | **image/jpeg**, servie telle quelle |
 | `GET` | `/texts` | `ListEnvelope<TextUnit>` |
-| `GET` | `/texts/overlapping-photos?textKind=…&textId=…` | `ListEnvelope<PhotoWithOverlap>` + `OverlapSummary` |
 
 **Paramètres de `/texts`** : `documentId`, `pageId`, `kind`, `dateFrom`,
 `dateTo`, `q`, `overlapsPhoto` (`CloudAssetId`), `confidence`, `hasCorrection`,
@@ -1345,12 +1447,20 @@ l'écran navigue ensuite sans nouvel appel. **`kind` n'est pas facultatif quand
 on désigne un texte précis** — sur `logbook/p003`, les identifiants `001` à
 `005` désignent chacun deux textes différents.
 
-`GET /texts/overlapping-photos?textKind=…&textId=…` et
-`GET /photos?overlapsTextKind=…&overlapsTextId=…` retournent la même chose. Le
-premier existe parce que c'est ce que demande la relation inverse depuis l'écran
-texte, avec son `OverlapSummary` en tête ; **PROPOSITION** de ne garder que le
-second si `impl-frontend` n'a pas besoin des deux entrées (question ouverte
-n° 6).
+**Le recouvrement a exactement deux entrées, une par direction, et aucun
+doublon** *(tranché avec `impl-frontend`)* :
+
+| Question | Endpoint |
+|:---|:---|
+| « quels textes couvrent cette photo ? » | `GET /photos/:cloudAssetId/texts` |
+| « quelles photos ce texte couvre-t-il ? » | `GET /photos?overlapsTextKind=…&overlapsTextId=…` |
+
+`GET /texts/overlapping-photos` a été **supprimé** : il faisait doublon avec le
+second. Ce qui compte n'est pas l'endpoint en moins mais le fait que **le
+prédicat de recouvrement n'existe qu'une seule fois** dans le serveur.
+
+L'`OverlapSummary` voyage dans l'enveloppe de la réponse quand un paramètre de
+recouvrement est présent.
 
 ### 4.4 Corrections de transcription
 
@@ -1402,9 +1512,9 @@ Détail en §6.
 
 | Méthode | Chemin | Réponse |
 |:---|:---|:---|
-| `POST` | `/jobs/import` | 202 `Job` |
+| `POST` | `/jobs/import` | 202 `Job` — **non consommé par le frontend en V1**, cf. ci-dessous |
 | `POST` | `/jobs/prerender` | 202 `Job` |
-| `POST` | `/jobs/caption` | corps `{ scope: CaptionScope, force?: boolean }` → 202 `Job` |
+| `POST` | `/jobs/caption` | corps `{ scope: CaptionScope, force?: boolean }` → 202 `Job` — **différé**, cf. §4.9 |
 | `POST` | `/jobs/dating-export` | 202 `Job` · 403 `FEATURE_DISABLED` |
 | `GET` | `/jobs` | `{ items: Job[] }` (les 20 derniers) |
 | `GET` | `/jobs/:jobId` | `Job` |
@@ -1421,6 +1531,33 @@ rafraîchissement.
 manifeste.** L'export doit rester idempotent : rejouer le job sur une tâche
 inchangée réécrit un dossier identique. Le `jobId` et `job.createdAt` servent au
 suivi et ne sont écrits nulle part dans le dossier livré.
+
+**`POST /jobs/import` existe mais aucun écran ne l'appelle.** Nicolas lance
+l'import au terminal. L'endpoint reste parce que le mécanisme de job est de
+toute façon écrit pour l'export et le pré-rendu, et parce que `GET /jobs/:id`
+doit pouvoir rendre compte d'un import déclenché autrement — mais il est le
+premier candidat si le périmètre doit être allégé. Ce que le frontend consomme
+vraiment de l'import, c'est `GET /system/status` (§9).
+
+### 4.9 Le légendage : les champs sont là, la passe ne l'est pas
+
+**Décision de Nicolas : un échantillon d'abord.** Une passe sur 50 à 100 photos,
+qu'il lira avant de décider pour les 3 930. La passe complète n'est **pas**
+engagée et **aucune UI de légende n'est en V1**.
+
+Ce que le contrat garde malgré tout — `MachineCaption`, `hasCaption`,
+`captionExcerpt`, `PUT /photos/:id/caption`, `POST /jobs/caption` — parce que
+des `null` et un `hasCaption: false` ne coûtent rien au client, alors qu'ajouter
+ces champs plus tard coûterait une reprise de tous ses schémas (voir la règle de
+compatibilité, §1).
+
+**Conséquence normative, et elle compte :** `q` ne dépend **pas** de l'existence
+des légendes. Sans une seule légende en base, `q` cherche dans `albumPath`,
+`groupName`, le nom de fichier, le lieu, les personnes, les tags et l'OCR, et
+rend exactement ce qu'il doit rendre. La légende est un champ **de plus** dans
+la lecture généreuse, jamais une condition de son fonctionnement — et
+`matchedOn` dit lequel a répondu, ce qui rend la différence visible plutôt que
+supposée.
 
 Un seul job mutant à la fois. Un `POST /jobs/import` pendant un export répond
 409 `IMPORT_IN_PROGRESS` en nommant le job en cours.
@@ -1901,12 +2038,18 @@ question réelle pour le coût d'une chaîne.
 
 Chacune appelle un choix. **Le défaut indiqué est ce que j'écris en attendant.**
 
-**1 — Les facettes voyagent-elles avec la grille ou séparément ?**
-(a) `GET /photos/facets` séparé, débouncé indépendamment. (b) Un bloc `facets`
-optionnel dans la réponse de `GET /photos`, activé par `withFacets=true`.
-*Recommandation : (a).* La grille doit s'afficher immédiatement — les vignettes
-existent toutes — et le panneau de filtres peut arriver 50 ms plus tard. (b)
-couple la latence des deux. Question posée à `impl-frontend`.
+**1 — ~~Les facettes voyagent-elles avec la grille ?~~ TRANCHÉE**
+*(`impl-frontend`)* Séparées. Argument décisif, qui n'est pas celui de la
+latence : **les facettes ne dépendent ni du tri ni de l'offset**, alors que la
+grille se refetch sur les deux. Ce sont deux clés de cache différentes, donc
+deux requêtes — et le vocabulaire fait 2 593 tags, qu'on ne repaie pas à chaque
+défilement.
+
+**En revanche `total` et `excludedCount` restent dans `GET /photos`.** Ils
+décrivent *cette* réponse. Servis par un second appel, celui-ci pourrait échouer
+seul et laisser l'en-tête mentir — or « ce qui est écarté se compte et
+s'affiche » est un invariant, et un invariant ne peut pas dépendre d'une requête
+qui peut rater.
 
 **2 — L'idempotence de l'export inclut-elle `exported_at` ?**
 La spec dit « ré-exporter une tâche inchangée réécrit un dossier identique », et
@@ -1928,11 +2071,13 @@ ce champ part dans le manifeste et donc dans le contexte du LLM. **Et il est
 additif** : re-sélectionner par un autre chemin ajoute une raison, n'en remplace
 jamais une.
 
-**4 — Le compte des écartés doit-il être ventilé par axe ?**
-(a) Un compte global (écrit). (b) Un compte par jeton de filtre, pour dire lequel
-retirer.
-*Recommandation : (a) d'abord.* (b) coûte une requête par axe actif et se
-rajoute sans rien casser — `excludedCount` reste, `excludedByAxis` s'ajoute.
+**4 — ~~Le compte des écartés ventilé par axe ?~~ TRANCHÉE** *(`impl-frontend`)*
+Non. Un compte global. `impl-frontend` avait demandé un décompte
+*leave-one-out* par axe actif pour afficher le gain sur chaque jeton
+(« dates (+41) »), puis a retiré la demande : **retirer un jeton *est* le geste
+que la spec demande**, et l'aperçu du gain avant le clic est un confort, pas un
+invariant. Le code n'est pas écrit. L'ajout resterait additif si l'usage prouvait
+le contraire.
 
 **5 — ~~La note par photo hors tâche ?~~ TRANCHÉE** *(`spec-frontend`)*
 Par tâche. Sélection implicite, oui — refuser la note serait absurde — **mais
@@ -1945,14 +2090,12 @@ porté par une tâche. Pas de note globale sur une photo en V1 ; si le besoin
 apparaît (« celle-ci est floue », vrai dans toutes les tâches), c'est une table
 distincte, pas un élargissement de celle-ci.
 
-**6 — Faut-il les deux entrées du recouvrement, ou une seule ?**
-`GET /texts/overlapping-photos?textId=…` et `GET /photos?overlapsText=…`
-renvoient la même chose. (a) Garder les deux : la première porte
-l'`OverlapSummary` que demande la relation inverse. (b) N'en garder qu'une, et
-mettre `OverlapSummary` dans l'enveloppe de `/photos` quand `overlapsText` est
-présent.
-*Recommandation : (b).* Un endpoint de moins à écrire et à tester, pour la même
-information. Écrit en (a) tant qu'`impl-frontend` n'a pas répondu.
+**6 — ~~Les deux entrées du recouvrement, ou une seule ?~~ TRANCHÉE**
+*(`impl-frontend`)* Une seule par direction.
+`GET /texts/overlapping-photos` est **supprimé**. Les deux directions restent
+deux endpoints distincts — elles répondent à deux questions différentes — mais
+le doublon sur une seule direction ne servait personne. Ce qui compte n'est pas
+l'endpoint en moins : c'est que **le prédicat de §4.1 n'existe qu'une fois**.
 
 **7 — ~~Les endpoints `ref` sont-ils V1 ?~~ TRANCHÉE** *(`spec-frontend`)*
 Oui, avec écran : **§5.7 « Réglages » existe désormais dans la spec** et porte
@@ -1984,7 +2127,8 @@ les `kind: 'machine'` et saute les `human-edited`. (b) Il écrase tout, la
 production d'origine restant dans `machine_original`.
 *Recommandation : (a).* Une correction humaine est du travail humain, même règle
 que pour l'OCR. Re-légender ce qu'un humain a corrigé demande un geste distinct
-et nommé, pas un drapeau générique.
+et nommé, pas un drapeau générique. **Sans objet tant que la passe complète
+n'est pas engagée** (§4.9).
 
 **11 — L'appariement des galeries web produit-il des `texts[]` exportables ?**
 Le spike établit 209 liens légende ↔ photo, dont 108 sur 2003-2004 — la **seule**

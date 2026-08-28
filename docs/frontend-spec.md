@@ -156,9 +156,14 @@ Trois faits structurants :
 - **Après juin 2002 il n'y a plus de journal**, et c'est là que les photos sont
   les plus nombreuses : **2 041 photos sur 2003-2004 contre zéro ligne**.
 
-**1 276 des 1 859 passages (68,6 %) sont plaçables dans le temps** — 828 par
-leur propre `dateFrom`, 448 par la fenêtre de leur page. Les 569 du web ne le
-sont pas.
+**1 290 des 1 859 passages (69,4 %) sont plaçables dans le temps** — 828 par
+leur propre `dateFrom`, **462 seulement par la fenêtre de leur page** (341
+`entries`, 121 `carried`). Les 569 du web ne le sont pas.
+
+La distinction compte : un passage placé par la fenêtre de sa page n'affirme pas
+cette date, il l'hérite. Sa nature est donc `inference`, jamais `reading` — et
+les 121 `carried` sont une inférence sur une inférence, la page ne nommant aucun
+jour et reprenant celui de la précédente.
 
 Les **155 images de page existent toutes sur disque** *(vérifié)*, ≈ 810 × 1 250 px,
 49 Mo au total ; les **60 sources HTML aussi**.
@@ -290,11 +295,24 @@ recouvrement se calcule par la date, seul signal partagé.
 
 ### 4.1 Principes
 
+**La date qu'un texte affirme et la fenêtre qu'il couvre sont deux choses
+différentes, et ne doivent jamais être confondues.** Une entrée de journal du
+14 octobre 1999 *affirme* ce jour-là — c'est une lecture exacte, écrite le jour
+même. La règle A lui fait *couvrir* jusqu'à la veille de la journée suivante
+renseignée, ce qui peut aller jusqu'à 92 jours. Écrire cette extension dans la
+date du texte transformerait une lecture exacte en une affirmation de trois
+mois, exactement ce que §7.1 interdit.
+
+Un texte porte donc **deux intervalles distincts** : sa `date` — ce qu'il
+affirme, avec sa nature — et sa fenêtre de recouvrement, avec la règle qui l'a
+produite. La nature ne dérive que de la première. La seconde ne s'affiche jamais
+comme une date.
+
 **On croise deux intervalles, jamais un point.**
 
 ```
 photo   [Pd, Pf]   1 jour, 1 mois ou 1 an selon sa précision
-texte   [Td, Tf]   1 jour, une fenêtre de page, ou une fourchette
+texte   [Td, Tf]   LA FENÊTRE DE RECOUVREMENT, pas la date affirmée
 recouvre  ⟺  Pd ≤ Tf  ET  Td ≤ Pf
 ```
 
@@ -530,6 +548,12 @@ Aide à la saisie : l'écran montre **ce que les noms de fichiers de l'album
 racontent** quand ils portent un motif de date (Q9) et **la plage des
 `captureDate` écartés par l'arbitrage** — deux indices gratuits, présentés comme
 des indices, jamais pré-remplis dans les champs.
+
+**Après enregistrement, l'écran dit ce que la saisie a produit** : « cette plage
+vient de redater 243 photos ». Le backend recalcule la cascade de l'album dans
+la même transaction et renvoie le compte. Sans ce retour, on saisit une plage et
+rien ne bouge à l'écran avant un réimport — vingt-cinq saisies fastidieuses au
+lieu de vingt-cinq gestes qui montrent leur effet.
 
 **Plages des documents web (`ref.web_span`).** Les ~25 documents du périmètre
 sans aucune date (§4.2, règle C), avec un extrait de leur texte pour les
@@ -921,7 +945,7 @@ l'import** et stocké, jamais refait à la volée. Colonnes séparées :
 
 | Champ | Contenu |
 |:---|:---|
-| `resolved_from` | `human` · `exif_arbitrated` · `logbook_bracket` · `album_month` · `album_year` |
+| `resolved_from` | `annotation` · `exif_arbitrated` · `logbook_bracket` · `album_month` · `album_year` — **mêmes valeurs que `date.source` du manifeste**, aucune table de correspondance |
 | `resolved_start`, `resolved_end` | **les deux bornes, toujours**, même égales |
 | `resolved_precision` | `day` · `month` · `year` |
 | `resolved_kind` | `reading` · `inference` · `decision` |
@@ -1471,8 +1495,12 @@ cibles `album`.
     "text": "…",                    // le texte EFFECTIF, corrigé s'il l'a été
     "text_original": "…",           // la transcription d'origine, si corrigée
     "corrected": true,
-    "date": { "from": "1999-09-23", "to": "1999-09-25",
-              "kind": "reading", "source": "passage.dateFrom" },
+    // ce que le texte AFFIRME — ici un jour, lu sur la page
+    "date": { "from": "1999-09-23", "to": "1999-09-23",
+              "kind": "reading", "source": "passage_date" },
+    // la fenêtre qu'il COUVRE — calculée, toujours plus large, jamais une date
+    "overlap": { "from": "1999-09-23", "to": "1999-09-25",
+                 "rule": "B", "span_source": "passages" },
     "covers_images": ["05b9a4fac5df4dd28dcc1002d7ec0074"],
     "user_note": null
   }],
