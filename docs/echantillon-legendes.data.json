@@ -1,0 +1,8298 @@
+[
+ {
+  "num": "01",
+  "album": "1998-1999/1998-03-Lisbonne",
+  "file": "Lisboa Século XVII.jpg",
+  "date_cls": "d-lect",
+  "date_txt": "2014-01-13 (exif)",
+  "aesth": 54,
+  "dim": "1699×1160",
+  "tags": [
+   [
+    "art",
+    67
+   ],
+   [
+    "vector",
+    66
+   ],
+   [
+    "architecture",
+    66
+   ],
+   [
+    "background",
+    65
+   ],
+   [
+    "map",
+    65
+   ],
+   [
+    "illustration",
+    65
+   ],
+   [
+    "city",
+    65
+   ],
+   [
+    "ancient",
+    63
+   ],
+   [
+    "old",
+    63
+   ],
+   [
+    "drawing",
+    63
+   ],
+   [
+    "house",
+    61
+   ],
+   [
+    "building",
+    60
+   ],
+   [
+    "sketch",
+    60
+   ],
+   [
+    "stamp",
+    60
+   ],
+   [
+    "design",
+    59
+   ],
+   [
+    "food",
+    56
+   ],
+   [
+    "doodle",
+    56
+   ],
+   [
+    "asia",
+    56
+   ],
+   [
+    "antique",
+    56
+   ],
+   [
+    "vintage",
+    55
+   ],
+   [
+    "historical",
+    55
+   ],
+   [
+    "america",
+    55
+   ],
+   [
+    "italy",
+    54
+   ],
+   [
+    "postage",
+    54
+   ],
+   [
+    "paper",
+    54
+   ]
+  ],
+  "utags": [
+   "1998-03-Lisbonne",
+   "2 August 2022 21:25",
+   "all pics"
+  ],
+  "ens": "1998-1999",
+  "bucket": "documents-objets",
+  "date": "exif",
+  "low": "0",
+  "id": 9657,
+  "cloudAssetId": "3960a59dee7345bfb2e6b4b84d8cc4db",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/1998-1999/1998-03-Lisbonne/Lisboa Século XVII.jpg",
+  "albumPath": "1998-1999/1998-03-Lisbonne",
+  "sha256": "b238618e8a206d67398f9f6bbe9141f608ab16748b3b48e5cd19d8625ca8fb10",
+  "width": 1699,
+  "height": 1160,
+  "aesth_db": 54,
+  "dateSource": "capture-date",
+  "captureDate": "2014-01-13T17:51:43",
+  "y": 2014,
+  "m": 1,
+  "d": 13,
+  "exists": true
+ },
+ {
+  "num": "02",
+  "album": "1998-1999/1998-07 Famille Trotobas Lisbonne",
+  "file": "98-07 Famille Trotobas Lisbonne (2).jpg",
+  "date_cls": "d-hum",
+  "date_txt": "✓ 1998-08-23 — à la main",
+  "aesth": 45,
+  "dim": "1222×1727",
+  "tags": [
+   [
+    "street",
+    81
+   ],
+   [
+    "city",
+    74
+   ],
+   [
+    "road",
+    73
+   ],
+   [
+    "architecture",
+    71
+   ],
+   [
+    "building",
+    67
+   ],
+   [
+    "traffic",
+    66
+   ],
+   [
+    "buildings",
+    65
+   ],
+   [
+    "town",
+    64
+   ],
+   [
+    "house",
+    63
+   ],
+   [
+    "europe",
+    61
+   ],
+   [
+    "car",
+    60
+   ],
+   [
+    "urban",
+    59
+   ],
+   [
+    "travel",
+    58
+   ],
+   [
+    "old",
+    58
+   ],
+   [
+    "tram",
+    58
+   ],
+   [
+    "downtown",
+    58
+   ],
+   [
+    "cars",
+    57
+   ],
+   [
+    "river",
+    56
+   ],
+   [
+    "sign",
+    56
+   ],
+   [
+    "village",
+    56
+   ],
+   [
+    "view",
+    55
+   ],
+   [
+    "rail",
+    55
+   ],
+   [
+    "england",
+    55
+   ],
+   [
+    "transportation",
+    55
+   ],
+   [
+    "sky",
+    54
+   ]
+  ],
+  "utags": [
+   "architecture",
+   "city",
+   "road",
+   "street",
+   "1998-07 Famille Trotobas Lisbonne",
+   "2 August 2022 21:25",
+   "all pics"
+  ],
+  "ens": "1998-1999",
+  "bucket": "ville-escale",
+  "date": "humaine",
+  "low": "1",
+  "id": 27283,
+  "cloudAssetId": "a260907fe46b4171904f448b8799df3d",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/1998-1999/1998-07 Famille Trotobas Lisbonne/98-07 Famille Trotobas Lisbonne (2).jpg",
+  "albumPath": "1998-1999/1998-07 Famille Trotobas Lisbonne",
+  "sha256": "e173204450f8bc54ad227f441ec1c6575681d2d9ac32ca50cde3b5471958a2a9",
+  "width": 1222,
+  "height": 1727,
+  "aesth_db": 45,
+  "dateSource": "folder-month-assumed",
+  "captureDate": "2013-12-16T13:25:18",
+  "y": 1998,
+  "m": 7,
+  "d": 16,
+  "exists": true
+ },
+ {
+  "num": "03",
+  "album": "1998-1999/1998-10-Alicante Achat Funiculi-Funicula",
+  "file": "98-07 1ière visite Fun-Fun Alicante (3).jpg",
+  "date_cls": "d-lect",
+  "date_txt": "2013-12-14 (exif)",
+  "aesth": 57,
+  "dim": "1166×1773",
+  "tags": [
+   [
+    "interior",
+    82
+   ],
+   [
+    "kitchen",
+    80
+   ],
+   [
+    "home",
+    72
+   ],
+   [
+    "table",
+    70
+   ],
+   [
+    "design",
+    70
+   ],
+   [
+    "modern",
+    69
+   ],
+   [
+    "house",
+    69
+   ],
+   [
+    "furniture",
+    68
+   ],
+   [
+    "chair",
+    67
+   ],
+   [
+    "room",
+    67
+   ],
+   [
+    "bathroom",
+    65
+   ],
+   [
+    "sink",
+    64
+   ],
+   [
+    "contemporary",
+    64
+   ],
+   [
+    "indoors",
+    64
+   ],
+   [
+    "luxury",
+    63
+   ],
+   [
+    "architecture",
+    63
+   ],
+   [
+    "counter",
+    62
+   ],
+   [
+    "apartment",
+    62
+   ],
+   [
+    "bath",
+    61
+   ],
+   [
+    "brown",
+    60
+   ],
+   [
+    "office",
+    60
+   ],
+   [
+    "cabinets",
+    59
+   ],
+   [
+    "cabinet",
+    59
+   ],
+   [
+    "clean",
+    58
+   ],
+   [
+    "wood",
+    57
+   ]
+  ],
+  "utags": [
+   "design",
+   "home",
+   "interior",
+   "kitchen",
+   "table",
+   "1998-10-Alicante Achat Funiculi-Funicula",
+   "2 August 2022 21:25",
+   "all pics"
+  ],
+  "ens": "1998-1999",
+  "bucket": "interieur-vie",
+  "date": "exif",
+  "low": "0",
+  "id": 22127,
+  "cloudAssetId": "83badd23d7c24b40b29d1ac76be0c812",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/1998-1999/1998-10-Alicante Achat Funiculi-Funicula/98-07 1ière visite Fun-Fun Alicante (3).jpg",
+  "albumPath": "1998-1999/1998-10-Alicante Achat Funiculi-Funicula",
+  "sha256": "0c821f284d239c1e4384e0b0a4459acce9286ce149200a87806281ab2c6f274e",
+  "width": 1166,
+  "height": 1773,
+  "aesth_db": 57,
+  "dateSource": "capture-date",
+  "captureDate": "2013-12-14T18:52:28",
+  "y": 2013,
+  "m": 12,
+  "d": 14,
+  "exists": true
+ },
+ {
+  "num": "04",
+  "album": "1998-1999/1998-11-Funiculi-Funicula est a Lisboa",
+  "file": "2014-01-20_311.JPG",
+  "date_cls": "d-lect",
+  "date_txt": "2014-01-20 (exif)",
+  "aesth": 54,
+  "dim": "2556×1704",
+  "tags": [
+   [
+    "boat",
+    71
+   ],
+   [
+    "car",
+    63
+   ],
+   [
+    "construction",
+    61
+   ],
+   [
+    "old",
+    60
+   ],
+   [
+    "equipment",
+    60
+   ],
+   [
+    "water",
+    59
+   ],
+   [
+    "yacht",
+    59
+   ],
+   [
+    "machine",
+    58
+   ],
+   [
+    "industry",
+    58
+   ],
+   [
+    "vehicle",
+    57
+   ],
+   [
+    "metal",
+    56
+   ],
+   [
+    "sailing",
+    56
+   ],
+   [
+    "sea",
+    56
+   ],
+   [
+    "ship",
+    56
+   ],
+   [
+    "military",
+    55
+   ],
+   [
+    "accident",
+    55
+   ],
+   [
+    "hospital",
+    54
+   ],
+   [
+    "sailboat",
+    54
+   ],
+   [
+    "blue",
+    54
+   ],
+   [
+    "transportation",
+    54
+   ],
+   [
+    "harbor",
+    54
+   ],
+   [
+    "transport",
+    54
+   ],
+   [
+    "war",
+    53
+   ],
+   [
+    "travel",
+    53
+   ],
+   [
+    "steel",
+    53
+   ]
+  ],
+  "utags": [
+   "boat",
+   "1998-11-Funiculi-Funicula est a Lisboa",
+   "2 August 2022 21:25",
+   "all pics"
+  ],
+  "ens": "1998-1999",
+  "bucket": "mer-navigation",
+  "date": "exif",
+  "low": "0",
+  "id": 2960,
+  "cloudAssetId": "11ced6f0f8c649db847576c764bf1bc4",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/1998-1999/1998-11-Funiculi-Funicula est a Lisboa/2014-01-20_311.JPG",
+  "albumPath": "1998-1999/1998-11-Funiculi-Funicula est a Lisboa",
+  "sha256": "495bfc06583afe5cd8cc9455dcc1bc7fc9eb3264f278ba93ff86dc3f5108a6c4",
+  "width": 2556,
+  "height": 1704,
+  "aesth_db": 54,
+  "dateSource": "capture-date",
+  "captureDate": "2014-01-20T18:10:46",
+  "y": 2014,
+  "m": 1,
+  "d": 20,
+  "exists": true
+ },
+ {
+  "num": "05",
+  "album": "1998-1999/1999-01 Lisboa avec Catherine",
+  "file": "99-04 Catherine Christine Lisbonne (5).jpg",
+  "date_cls": "d-hum",
+  "date_txt": "✓ 1999-07-15 — à la main",
+  "aesth": 55,
+  "dim": "1768×1161",
+  "tags": [
+   [
+    "woman",
+    73
+   ],
+   [
+    "people",
+    68
+   ],
+   [
+    "girl",
+    68
+   ],
+   [
+    "female",
+    67
+   ],
+   [
+    "business",
+    67
+   ],
+   [
+    "man",
+    66
+   ],
+   [
+    "businesswoman",
+    65
+   ],
+   [
+    "couple",
+    64
+   ],
+   [
+    "caucasian",
+    63
+   ],
+   [
+    "women",
+    62
+   ],
+   [
+    "beautiful",
+    62
+   ],
+   [
+    "city",
+    62
+   ],
+   [
+    "young",
+    60
+   ],
+   [
+    "sitting",
+    58
+   ],
+   [
+    "person",
+    58
+   ],
+   [
+    "adult",
+    58
+   ],
+   [
+    "computer",
+    58
+   ],
+   [
+    "happy",
+    58
+   ],
+   [
+    "building",
+    57
+   ],
+   [
+    "office",
+    57
+   ],
+   [
+    "street",
+    56
+   ],
+   [
+    "beauty",
+    56
+   ],
+   [
+    "attractive",
+    56
+   ],
+   [
+    "love",
+    56
+   ],
+   [
+    "house",
+    55
+   ]
+  ],
+  "utags": [
+   "woman",
+   "1999-01 Lisboa avec Catherine",
+   "2 August 2022 21:25",
+   "all pics",
+   "Gigi",
+   "Mauricette"
+  ],
+  "ens": "1998-1999",
+  "bucket": "ville-escale",
+  "date": "humaine",
+  "low": "0",
+  "id": 29937,
+  "cloudAssetId": "b2848790e45d4ee8900c75888e7d5127",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/1998-1999/1999-01 Lisboa avec Catherine/99-04 Catherine Christine Lisbonne (5).jpg",
+  "albumPath": "1998-1999/1999-01 Lisboa avec Catherine",
+  "sha256": "cd0ae51326bd78bf1b639b9768b28ec05fab45cedd66520163f4ed8fd17751a6",
+  "width": 1768,
+  "height": 1161,
+  "aesth_db": 55,
+  "dateSource": "folder-month-assumed",
+  "captureDate": "2013-12-15T12:33:42",
+  "y": 1999,
+  "m": 1,
+  "d": 15,
+  "exists": true
+ },
+ {
+  "num": "06",
+  "album": "1998-1999/1999-03 Maldives",
+  "file": "99-03 Les Maldives (34).jpg",
+  "date_cls": "d-hum",
+  "date_txt": "✓ 1999-03-02 — à la main",
+  "aesth": 71,
+  "dim": "1777×1181",
+  "tags": [
+   [
+    "beach",
+    87
+   ],
+   [
+    "sea",
+    84
+   ],
+   [
+    "blue",
+    82
+   ],
+   [
+    "island",
+    79
+   ],
+   [
+    "ocean",
+    78
+   ],
+   [
+    "water",
+    75
+   ],
+   [
+    "sky",
+    74
+   ],
+   [
+    "tropical",
+    71
+   ],
+   [
+    "landscape",
+    70
+   ],
+   [
+    "nature",
+    70
+   ],
+   [
+    "tree",
+    69
+   ],
+   [
+    "horizon",
+    68
+   ],
+   [
+    "sand",
+    68
+   ],
+   [
+    "background",
+    66
+   ],
+   [
+    "paradise",
+    66
+   ],
+   [
+    "travel",
+    64
+   ],
+   [
+    "coast",
+    64
+   ],
+   [
+    "clouds",
+    63
+   ],
+   [
+    "lake",
+    62
+   ],
+   [
+    "holiday",
+    62
+   ],
+   [
+    "summer",
+    62
+   ],
+   [
+    "beauty",
+    61
+   ],
+   [
+    "palm",
+    61
+   ],
+   [
+    "maldives",
+    61
+   ],
+   [
+    "beautiful",
+    61
+   ]
+  ],
+  "utags": [
+   "beach",
+   "blue",
+   "island",
+   "landscape",
+   "nature",
+   "ocean",
+   "sea",
+   "sky",
+   "tropical",
+   "water",
+   "1999-03 Maldives",
+   "2 August 2022 21:25",
+   "all pics"
+  ],
+  "ens": "1998-1999",
+  "bucket": "mer-navigation",
+  "date": "humaine",
+  "low": "0",
+  "id": 25091,
+  "cloudAssetId": "951af8736d9e4278a69f867c881c5e34",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/1998-1999/1999-03 Maldives/99-03 Les Maldives (34).jpg",
+  "albumPath": "1998-1999/1999-03 Maldives",
+  "sha256": "dbe564b121c71a3eaff19759424d3206dccdf0fe4ef03a48816a1ad44ffab0fd",
+  "width": 1777,
+  "height": 1181,
+  "aesth_db": 71,
+  "dateSource": "folder-sequence",
+  "captureDate": "2013-12-15T13:42:30",
+  "y": 1999,
+  "m": 12,
+  "d": 15,
+  "exists": true
+ },
+ {
+  "num": "07",
+  "album": "1998-1999/1999-08 Lisboa Galicia Lisboa",
+  "file": "2014-01-20_219.JPG",
+  "date_cls": "d-hum",
+  "date_txt": "✓ 1999-08-20 — à la main",
+  "aesth": 59,
+  "dim": "2556×1704",
+  "tags": [
+   [
+    "construction",
+    67
+   ],
+   [
+    "boat",
+    67
+   ],
+   [
+    "building",
+    63
+   ],
+   [
+    "sea",
+    63
+   ],
+   [
+    "bridge",
+    59
+   ],
+   [
+    "industry",
+    59
+   ],
+   [
+    "water",
+    58
+   ],
+   [
+    "beach",
+    58
+   ],
+   [
+    "ship",
+    58
+   ],
+   [
+    "travel",
+    57
+   ],
+   [
+    "structure",
+    56
+   ],
+   [
+    "sky",
+    56
+   ],
+   [
+    "sailboat",
+    56
+   ],
+   [
+    "sailing",
+    56
+   ],
+   [
+    "vessel",
+    56
+   ],
+   [
+    "wood",
+    55
+   ],
+   [
+    "yacht",
+    55
+   ],
+   [
+    "site",
+    55
+   ],
+   [
+    "sail",
+    54
+   ],
+   [
+    "old",
+    54
+   ],
+   [
+    "blue",
+    54
+   ],
+   [
+    "power",
+    54
+   ],
+   [
+    "fire",
+    54
+   ],
+   [
+    "people",
+    53
+   ],
+   [
+    "outdoors",
+    53
+   ]
+  ],
+  "utags": [
+   "1999-08 Lisboa Galicia Lisboa",
+   "2 August 2022 21:25",
+   "all pics"
+  ],
+  "ens": "1998-1999",
+  "bucket": "mer-navigation",
+  "date": "humaine",
+  "low": "0",
+  "id": 10829,
+  "cloudAssetId": "406bb9f8b83246b49275af78b754ccf1",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/1998-1999/1999-08 Lisboa Galicia Lisboa/2014-01-20_219.JPG",
+  "albumPath": "1998-1999/1999-08 Lisboa Galicia Lisboa",
+  "sha256": "777a6be5192ef29e792d716610848ea08badd1868db3a92ee35065c704fcba81",
+  "width": 2556,
+  "height": 1704,
+  "aesth_db": 59,
+  "dateSource": "folder-month-assumed",
+  "captureDate": "2014-01-20T16:51:28",
+  "y": 1999,
+  "m": 8,
+  "d": 20,
+  "exists": true
+ },
+ {
+  "num": "08",
+  "album": "1998-1999/1999-10 Lisboa Madere",
+  "file": "99-09 jour du départ pour Traversée (3).jpg",
+  "date_cls": "d-hum",
+  "date_txt": "✓ 1999-08-26 — à la main",
+  "aesth": 75,
+  "dim": "1716×1181",
+  "tags": [
+   [
+    "boat",
+    86
+   ],
+   [
+    "sea",
+    83
+   ],
+   [
+    "yacht",
+    80
+   ],
+   [
+    "marina",
+    79
+   ],
+   [
+    "boats",
+    78
+   ],
+   [
+    "water",
+    77
+   ],
+   [
+    "harbor",
+    76
+   ],
+   [
+    "ship",
+    72
+   ],
+   [
+    "harbour",
+    70
+   ],
+   [
+    "blue",
+    70
+   ],
+   [
+    "sailing",
+    69
+   ],
+   [
+    "ocean",
+    67
+   ],
+   [
+    "sky",
+    67
+   ],
+   [
+    "sailboat",
+    66
+   ],
+   [
+    "pier",
+    66
+   ],
+   [
+    "coast",
+    66
+   ],
+   [
+    "yachts",
+    65
+   ],
+   [
+    "travel",
+    65
+   ],
+   [
+    "sail",
+    64
+   ],
+   [
+    "sunset",
+    64
+   ],
+   [
+    "port",
+    64
+   ],
+   [
+    "dock",
+    63
+   ],
+   [
+    "bay",
+    62
+   ],
+   [
+    "vessel",
+    60
+   ],
+   [
+    "berth",
+    59
+   ]
+  ],
+  "utags": [
+   "blue",
+   "boat",
+   "boats",
+   "harbor",
+   "harbour",
+   "marina",
+   "sea",
+   "ship",
+   "water",
+   "yacht",
+   "1999-10 Lisboa Madere",
+   "2 August 2022 21:25",
+   "all pics"
+  ],
+  "ens": "1998-1999",
+  "bucket": "port-mouillage",
+  "date": "humaine",
+  "low": "0",
+  "id": 23869,
+  "cloudAssetId": "8e270843ad61421fb844a09f1d4088a5",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/1998-1999/1999-10 Lisboa Madere/99-09 jour du départ pour Traversée (3).jpg",
+  "albumPath": "1998-1999/1999-10 Lisboa Madere",
+  "sha256": "b2b8dcdd01052d333ffb6e3b3c77e98e5339ef1633778c8720e96fed7eace65f",
+  "width": 1716,
+  "height": 1181,
+  "aesth_db": 75,
+  "dateSource": "folder-month-assumed",
+  "captureDate": "2013-12-15T12:41:41",
+  "y": 1999,
+  "m": 10,
+  "d": 15,
+  "exists": true
+ },
+ {
+  "num": "09",
+  "album": "1998-1999/1999-11 Mad CapVert",
+  "file": "02_0021.JPG",
+  "date_cls": "d-hum",
+  "date_txt": "✓ 1999-11-10 — à la main",
+  "aesth": 74,
+  "dim": "696×532",
+  "tags": [
+   [
+    "desert",
+    77
+   ],
+   [
+    "landscape",
+    76
+   ],
+   [
+    "mountain",
+    71
+   ],
+   [
+    "sky",
+    69
+   ],
+   [
+    "mountains",
+    67
+   ],
+   [
+    "beach",
+    66
+   ],
+   [
+    "travel",
+    66
+   ],
+   [
+    "sand",
+    64
+   ],
+   [
+    "clouds",
+    63
+   ],
+   [
+    "blue",
+    63
+   ],
+   [
+    "nature",
+    60
+   ],
+   [
+    "hill",
+    60
+   ],
+   [
+    "summer",
+    60
+   ],
+   [
+    "spain",
+    59
+   ],
+   [
+    "snow",
+    59
+   ],
+   [
+    "road",
+    57
+   ],
+   [
+    "rock",
+    56
+   ],
+   [
+    "river",
+    56
+   ],
+   [
+    "dune",
+    56
+   ],
+   [
+    "water",
+    55
+   ],
+   [
+    "cloud",
+    55
+   ],
+   [
+    "park",
+    55
+   ],
+   [
+    "mongolia",
+    55
+   ],
+   [
+    "national",
+    54
+   ],
+   [
+    "canary",
+    54
+   ]
+  ],
+  "utags": [
+   "desert",
+   "landscape",
+   "mountain",
+   "1999-11 Mad CapVert",
+   "2 August 2022 21:25",
+   "all pics"
+  ],
+  "ens": "1998-1999",
+  "bucket": "paysage-nature",
+  "date": "humaine",
+  "low": "0",
+  "id": 31232,
+  "cloudAssetId": "ba78985ee51f4c2c85ac062754cd5d44",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/1998-1999/1999-11 Mad CapVert/02_0021.JPG",
+  "albumPath": "1998-1999/1999-11 Mad CapVert",
+  "sha256": "48054896114a8abab950bb4b18bbcc732bcedf54d2f796644fbc4432c43f63fb",
+  "width": 696,
+  "height": 532,
+  "aesth_db": 74,
+  "dateSource": "folder-sequence",
+  "captureDate": null,
+  "y": 1999,
+  "m": null,
+  "d": null,
+  "exists": true
+ },
+ {
+  "num": "10",
+  "album": "1998-1999/1999-12 Capvert Guadeloupe",
+  "file": "99-12 peche (1).jpg",
+  "date_cls": "d-hum",
+  "date_txt": "✓ 1999-12-10 — à la main",
+  "aesth": 37,
+  "dim": "1131×1763",
+  "tags": [
+   [
+    "building",
+    70
+   ],
+   [
+    "architecture",
+    69
+   ],
+   [
+    "blue",
+    57
+   ],
+   [
+    "isolated",
+    57
+   ],
+   [
+    "old",
+    55
+   ],
+   [
+    "construction",
+    55
+   ],
+   [
+    "industry",
+    55
+   ],
+   [
+    "wood",
+    54
+   ],
+   [
+    "wooden",
+    54
+   ],
+   [
+    "landmark",
+    54
+   ],
+   [
+    "city",
+    54
+   ],
+   [
+    "religion",
+    54
+   ],
+   [
+    "interior",
+    54
+   ],
+   [
+    "tower",
+    54
+   ],
+   [
+    "column",
+    54
+   ],
+   [
+    "sky",
+    54
+   ],
+   [
+    "wall",
+    54
+   ],
+   [
+    "ancient",
+    53
+   ],
+   [
+    "art",
+    52
+   ],
+   [
+    "brick",
+    52
+   ],
+   [
+    "background",
+    52
+   ],
+   [
+    "mosque",
+    52
+   ],
+   [
+    "industrial",
+    52
+   ],
+   [
+    "kitchen",
+    52
+   ]
+  ],
+  "utags": [
+   "building",
+   "1999-12 Capvert Guadeloupe",
+   "2 August 2022 21:25",
+   "all pics"
+  ],
+  "ens": "1998-1999",
+  "bucket": "interieur-vie",
+  "date": "humaine",
+  "low": "1",
+  "id": 31096,
+  "cloudAssetId": "b9a5fee531d546eca703936051f5c411",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/1998-1999/1999-12 Capvert Guadeloupe/99-12 peche (1).jpg",
+  "albumPath": "1998-1999/1999-12 Capvert Guadeloupe",
+  "sha256": "164754306c2bfee4d1fe46cc297309ce160dedd90d7b852f795baf6621803090",
+  "width": 1131,
+  "height": 1763,
+  "aesth_db": 37,
+  "dateSource": "folder-sequence",
+  "captureDate": "2014-01-13T16:43:37",
+  "y": 1999,
+  "m": 1,
+  "d": 13,
+  "exists": true
+ },
+ {
+  "num": "11",
+  "album": "2000-2001/2000",
+  "file": "2014-01-20_232.JPG",
+  "date_cls": "d-prop",
+  "date_txt": "≈ 2000-1-20 (folder-year)",
+  "aesth": 65,
+  "dim": "2556×1704",
+  "tags": [
+   [
+    "boat",
+    90
+   ],
+   [
+    "sea",
+    84
+   ],
+   [
+    "water",
+    81
+   ],
+   [
+    "sailboat",
+    76
+   ],
+   [
+    "yacht",
+    76
+   ],
+   [
+    "sail",
+    74
+   ],
+   [
+    "sailing",
+    74
+   ],
+   [
+    "blue",
+    73
+   ],
+   [
+    "ship",
+    69
+   ],
+   [
+    "ocean",
+    68
+   ],
+   [
+    "bay",
+    66
+   ],
+   [
+    "boats",
+    66
+   ],
+   [
+    "harbor",
+    65
+   ],
+   [
+    "summer",
+    64
+   ],
+   [
+    "sky",
+    64
+   ],
+   [
+    "beach",
+    63
+   ],
+   [
+    "coast",
+    62
+   ],
+   [
+    "calm",
+    60
+   ],
+   [
+    "lake",
+    60
+   ],
+   [
+    "mast",
+    59
+   ],
+   [
+    "fishing",
+    59
+   ],
+   [
+    "marina",
+    58
+   ],
+   [
+    "harbour",
+    58
+   ],
+   [
+    "port",
+    57
+   ],
+   [
+    "nautical",
+    57
+   ]
+  ],
+  "utags": [],
+  "ens": "2000-2001",
+  "bucket": "port-mouillage",
+  "date": "album",
+  "low": "0",
+  "id": 21020,
+  "cloudAssetId": "7d78c9df18d14c699c9afa25df845c6e",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2000-2001/2000/2014-01-20_232.JPG",
+  "albumPath": "2000-2001/2000",
+  "sha256": "591c5a2176d4b41f8d1d641ef736996ecb34726fd2cc72909f4617064fe011cd",
+  "width": 2556,
+  "height": 1704,
+  "aesth_db": 65,
+  "dateSource": "folder-year",
+  "captureDate": "2014-01-20T16:58:19",
+  "y": 2000,
+  "m": 1,
+  "d": 20,
+  "exists": true
+ },
+ {
+  "num": "12",
+  "album": "2000-2001/2000-01-guadeloupe",
+  "file": "DV00076.jpg",
+  "date_cls": "d-prop",
+  "date_txt": "≈ sans date (none)",
+  "aesth": 74,
+  "dim": "696×532",
+  "tags": [
+   [
+    "sea",
+    81
+   ],
+   [
+    "bay",
+    75
+   ],
+   [
+    "boat",
+    74
+   ],
+   [
+    "coast",
+    73
+   ],
+   [
+    "landscape",
+    70
+   ],
+   [
+    "blue",
+    70
+   ],
+   [
+    "travel",
+    69
+   ],
+   [
+    "harbour",
+    69
+   ],
+   [
+    "harbor",
+    68
+   ],
+   [
+    "beach",
+    68
+   ],
+   [
+    "water",
+    66
+   ],
+   [
+    "port",
+    65
+   ],
+   [
+    "town",
+    65
+   ],
+   [
+    "mediterranean",
+    65
+   ],
+   [
+    "italy",
+    65
+   ],
+   [
+    "europe",
+    64
+   ],
+   [
+    "croatia",
+    63
+   ],
+   [
+    "ocean",
+    63
+   ],
+   [
+    "summer",
+    63
+   ],
+   [
+    "yacht",
+    63
+   ],
+   [
+    "island",
+    61
+   ],
+   [
+    "sky",
+    61
+   ],
+   [
+    "greece",
+    61
+   ],
+   [
+    "village",
+    61
+   ],
+   [
+    "holiday",
+    59
+   ]
+  ],
+  "utags": [
+   "bay",
+   "blue",
+   "boat",
+   "coast",
+   "landscape",
+   "sea",
+   "2 August 2022 21:25",
+   "2000-01-guadeloupe",
+   "all pics"
+  ],
+  "ens": "2000-2001",
+  "bucket": "port-mouillage",
+  "date": "album",
+  "low": "0",
+  "id": 21097,
+  "cloudAssetId": "7e0105a07b5b49468829cd3c9ed28fa9",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2000-2001/2000-01-guadeloupe/DV00076.jpg",
+  "albumPath": "2000-2001/2000-01-guadeloupe",
+  "sha256": "4b8c6b2e8ef865b39b78206e907a12ed1e16ebf053466b2f9c3b178545a9b837",
+  "width": 696,
+  "height": 532,
+  "aesth_db": 74,
+  "dateSource": "none",
+  "captureDate": null,
+  "y": null,
+  "m": null,
+  "d": null,
+  "exists": true
+ },
+ {
+  "num": "13",
+  "album": "2000-2001/2000-02-Saint Martin",
+  "file": "DV00025.jpg",
+  "date_cls": "d-lect",
+  "date_txt": "2017-11-14 (exif)",
+  "aesth": 58,
+  "dim": "696×532",
+  "tags": [
+   [
+    "boat",
+    86
+   ],
+   [
+    "water",
+    79
+   ],
+   [
+    "harbor",
+    79
+   ],
+   [
+    "yacht",
+    78
+   ],
+   [
+    "sea",
+    77
+   ],
+   [
+    "marina",
+    77
+   ],
+   [
+    "boats",
+    76
+   ],
+   [
+    "blue",
+    73
+   ],
+   [
+    "ship",
+    73
+   ],
+   [
+    "sky",
+    70
+   ],
+   [
+    "port",
+    69
+   ],
+   [
+    "sailing",
+    68
+   ],
+   [
+    "ocean",
+    68
+   ],
+   [
+    "sailboat",
+    67
+   ],
+   [
+    "travel",
+    67
+   ],
+   [
+    "bay",
+    67
+   ],
+   [
+    "vessel",
+    67
+   ],
+   [
+    "dock",
+    66
+   ],
+   [
+    "sail",
+    64
+   ],
+   [
+    "luxury",
+    63
+   ],
+   [
+    "yachts",
+    62
+   ],
+   [
+    "fishing",
+    62
+   ],
+   [
+    "harbour",
+    62
+   ],
+   [
+    "pier",
+    60
+   ]
+  ],
+  "utags": [
+   "blue",
+   "boat",
+   "boats",
+   "harbor",
+   "marina",
+   "sea",
+   "ship",
+   "sky",
+   "water",
+   "yacht",
+   "2 August 2022 21:25",
+   "2000-02-Saint Martin"
+  ],
+  "ens": "2000-2001",
+  "bucket": "port-mouillage",
+  "date": "exif",
+  "low": "0",
+  "id": 12197,
+  "cloudAssetId": "48ab61ff1eba4ec98e1d5f922fda7a40",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2000-2001/2000-02-Saint Martin/DV00025.jpg",
+  "albumPath": "2000-2001/2000-02-Saint Martin",
+  "sha256": "3a9db840a592c0d8a4fdd61e1bbf6a5d39b2216727d122a997060cf16329ab3f",
+  "width": 696,
+  "height": 532,
+  "aesth_db": 58,
+  "dateSource": "capture-date",
+  "captureDate": "2017-11-14T15:14:59",
+  "y": 2017,
+  "m": 11,
+  "d": 14,
+  "exists": true
+ },
+ {
+  "num": "14",
+  "album": "2000-2001/2000-05-saint Martin",
+  "file": "P4300004.JPG",
+  "date_cls": "d-prop",
+  "date_txt": "≈ sans date (none)",
+  "aesth": 53,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "people",
+    71
+   ],
+   [
+    "adult",
+    67
+   ],
+   [
+    "man",
+    66
+   ],
+   [
+    "woman",
+    64
+   ],
+   [
+    "group",
+    63
+   ],
+   [
+    "girl",
+    60
+   ],
+   [
+    "female",
+    60
+   ],
+   [
+    "women",
+    59
+   ],
+   [
+    "young",
+    58
+   ],
+   [
+    "workout",
+    57
+   ],
+   [
+    "team",
+    56
+   ],
+   [
+    "gym",
+    56
+   ],
+   [
+    "fitness",
+    56
+   ],
+   [
+    "city",
+    56
+   ],
+   [
+    "exercise",
+    56
+   ],
+   [
+    "men",
+    55
+   ],
+   [
+    "street",
+    54
+   ],
+   [
+    "caucasian",
+    54
+   ],
+   [
+    "beautiful",
+    54
+   ],
+   [
+    "airport",
+    54
+   ],
+   [
+    "couple",
+    54
+   ],
+   [
+    "sport",
+    54
+   ],
+   [
+    "business",
+    54
+   ],
+   [
+    "happy",
+    54
+   ],
+   [
+    "active",
+    53
+   ]
+  ],
+  "utags": [
+   "people",
+   "2 August 2022 21:25",
+   "2000-02-Saint Martin",
+   "2000-05-saint Martin",
+   "all pics",
+   "Gigi"
+  ],
+  "ens": "2000-2001",
+  "bucket": "ville-escale",
+  "date": "album",
+  "low": "0",
+  "id": 35917,
+  "cloudAssetId": "d632e6256e564ee7b2dd70ae60fc14d9",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2000-2001/2000-05-saint Martin/P4300004.JPG",
+  "albumPath": "2000-2001/2000-05-saint Martin",
+  "sha256": "ed466f3fa463324eb0e549adf4a274ad51ea80ba2cb4841445c6c5deb77b8d6b",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 53,
+  "dateSource": "none",
+  "captureDate": null,
+  "y": null,
+  "m": null,
+  "d": null,
+  "exists": true
+ },
+ {
+  "num": "15",
+  "album": "2000-2001/2000-06 BVI",
+  "file": "DV00109.jpg",
+  "date_cls": "d-hum",
+  "date_txt": "✓ 2000-06-10 — à la main",
+  "aesth": 55,
+  "dim": "696×532",
+  "tags": [
+   [
+    "water",
+    81
+   ],
+   [
+    "swimming",
+    79
+   ],
+   [
+    "sea",
+    77
+   ],
+   [
+    "swim",
+    73
+   ],
+   [
+    "ocean",
+    70
+   ],
+   [
+    "girl",
+    70
+   ],
+   [
+    "child",
+    69
+   ],
+   [
+    "pool",
+    69
+   ],
+   [
+    "summer",
+    68
+   ],
+   [
+    "blue",
+    68
+   ],
+   [
+    "fun",
+    67
+   ],
+   [
+    "diving",
+    67
+   ],
+   [
+    "beach",
+    66
+   ],
+   [
+    "sport",
+    64
+   ],
+   [
+    "snorkeling",
+    62
+   ],
+   [
+    "woman",
+    62
+   ],
+   [
+    "people",
+    61
+   ],
+   [
+    "snorkel",
+    60
+   ],
+   [
+    "vacation",
+    60
+   ],
+   [
+    "man",
+    60
+   ],
+   [
+    "female",
+    60
+   ],
+   [
+    "young",
+    59
+   ],
+   [
+    "children",
+    59
+   ],
+   [
+    "dive",
+    59
+   ],
+   [
+    "happy",
+    59
+   ]
+  ],
+  "utags": [
+   "girl",
+   "ocean",
+   "sea",
+   "swim",
+   "swimming",
+   "water",
+   "2 August 2022 21:25",
+   "2000-06 BVI"
+  ],
+  "ens": "2000-2001",
+  "bucket": "mer-navigation",
+  "date": "humaine",
+  "low": "0",
+  "id": 29036,
+  "cloudAssetId": "ace4b7c1b1f04bbba59679c4fddc731a",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2000-2001/2000-06 BVI/DV00109.jpg",
+  "albumPath": "2000-2001/2000-06 BVI",
+  "sha256": "14c95ad91a5f7e9f3f9d465c7797a635c1dd9cb1767496e5529bac06b4c8b099",
+  "width": 696,
+  "height": 532,
+  "aesth_db": 55,
+  "dateSource": "folder-month",
+  "captureDate": "2017-11-14T15:16:16",
+  "y": 2000,
+  "m": 6,
+  "d": 14,
+  "exists": true
+ },
+ {
+  "num": "16",
+  "album": "2000-2001/2000-06-2 Vierges Americaines",
+  "file": "DV00131.jpg",
+  "date_cls": "d-lect",
+  "date_txt": "2017-11-14 (exif)",
+  "aesth": 68,
+  "dim": "696×532",
+  "tags": [
+   [
+    "boy",
+    81
+   ],
+   [
+    "girl",
+    77
+   ],
+   [
+    "portrait",
+    75
+   ],
+   [
+    "smile",
+    73
+   ],
+   [
+    "woman",
+    73
+   ],
+   [
+    "face",
+    72
+   ],
+   [
+    "young",
+    71
+   ],
+   [
+    "female",
+    71
+   ],
+   [
+    "caucasian",
+    70
+   ],
+   [
+    "beautiful",
+    69
+   ],
+   [
+    "fun",
+    68
+   ],
+   [
+    "child",
+    68
+   ],
+   [
+    "happy",
+    68
+   ],
+   [
+    "teen",
+    67
+   ],
+   [
+    "cute",
+    66
+   ],
+   [
+    "person",
+    66
+   ],
+   [
+    "beauty",
+    65
+   ],
+   [
+    "attractive",
+    65
+   ],
+   [
+    "hair",
+    65
+   ],
+   [
+    "people",
+    64
+   ],
+   [
+    "women",
+    63
+   ],
+   [
+    "adult",
+    63
+   ],
+   [
+    "teenager",
+    62
+   ],
+   [
+    "outdoors",
+    62
+   ],
+   [
+    "smiling",
+    62
+   ]
+  ],
+  "utags": [
+   "h30",
+   "boy",
+   "caucasian",
+   "face",
+   "female",
+   "girl",
+   "portrait",
+   "smile",
+   "woman",
+   "young",
+   "2 August 2022 21:25",
+   "2000-06-2 Vierges Americaines",
+   "Hugo"
+  ],
+  "ens": "2000-2001",
+  "bucket": "gens",
+  "date": "exif",
+  "low": "0",
+  "id": 38432,
+  "cloudAssetId": "e56bd3880b4c47269029a93a48804252",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2000-2001/2000-06-2 Vierges Americaines/DV00131.jpg",
+  "albumPath": "2000-2001/2000-06-2 Vierges Americaines",
+  "sha256": "60e753c752522ed930fc32adfe64849500da2cf0279e9876b90069c08fa6a4c0",
+  "width": 696,
+  "height": 532,
+  "aesth_db": 68,
+  "dateSource": "capture-date",
+  "captureDate": "2017-11-14T15:16:20",
+  "y": 2017,
+  "m": 11,
+  "d": 14,
+  "exists": true
+ },
+ {
+  "num": "17",
+  "album": "2000-2001/2000-07 Guadeloupe",
+  "file": "P5210023.jpg",
+  "date_cls": "d-hum",
+  "date_txt": "✓ 2000-01-15 — à la main",
+  "aesth": 64,
+  "dim": "1200×1600",
+  "tags": [
+   [
+    "tree",
+    83
+   ],
+   [
+    "forest",
+    78
+   ],
+   [
+    "green",
+    78
+   ],
+   [
+    "nature",
+    75
+   ],
+   [
+    "trees",
+    67
+   ],
+   [
+    "tropical",
+    66
+   ],
+   [
+    "asia",
+    65
+   ],
+   [
+    "ancient",
+    65
+   ],
+   [
+    "old",
+    64
+   ],
+   [
+    "water",
+    63
+   ],
+   [
+    "jungle",
+    63
+   ],
+   [
+    "plant",
+    62
+   ],
+   [
+    "big",
+    59
+   ],
+   [
+    "background",
+    59
+   ],
+   [
+    "garden",
+    59
+   ],
+   [
+    "park",
+    59
+   ],
+   [
+    "banyan",
+    58
+   ],
+   [
+    "natural",
+    58
+   ],
+   [
+    "landscape",
+    58
+   ],
+   [
+    "foliage",
+    58
+   ],
+   [
+    "flora",
+    58
+   ],
+   [
+    "rainforest",
+    58
+   ],
+   [
+    "wood",
+    56
+   ],
+   [
+    "trunk",
+    56
+   ],
+   [
+    "cambodia",
+    56
+   ]
+  ],
+  "utags": [
+   "forest",
+   "green",
+   "nature",
+   "tree",
+   "2 August 2022 21:25",
+   "2000-07 Guadeloupe"
+  ],
+  "ens": "2000-2001",
+  "bucket": "paysage-nature",
+  "date": "humaine",
+  "low": "0",
+  "id": 15547,
+  "cloudAssetId": "5cecc4593a39433888baa6f2b833f05c",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2000-2001/2000-07 Guadeloupe/P5210023.jpg",
+  "albumPath": "2000-2001/2000-07 Guadeloupe",
+  "sha256": "faeb0acdef31a70697019be1053200c651bbc14c80e844063147f5e87e72da52",
+  "width": 1200,
+  "height": 1600,
+  "aesth_db": 64,
+  "dateSource": "folder-sequence",
+  "captureDate": "2017-11-14T15:18:06",
+  "y": 2000,
+  "m": 11,
+  "d": 14,
+  "exists": true
+ },
+ {
+  "num": "18",
+  "album": "2000-2001/2000-08-Saint Vincent",
+  "file": "2000 St Vincent Erwan-2.jpg",
+  "date_cls": "d-lect",
+  "date_txt": "2013-12-16 (exif)",
+  "aesth": 49,
+  "dim": "1151×1622",
+  "tags": [
+   [
+    "man",
+    81
+   ],
+   [
+    "male",
+    71
+   ],
+   [
+    "young",
+    63
+   ],
+   [
+    "adult",
+    63
+   ],
+   [
+    "worker",
+    63
+   ],
+   [
+    "woman",
+    61
+   ],
+   [
+    "boy",
+    61
+   ],
+   [
+    "work",
+    61
+   ],
+   [
+    "guy",
+    60
+   ],
+   [
+    "people",
+    59
+   ],
+   [
+    "caucasian",
+    59
+   ],
+   [
+    "home",
+    58
+   ],
+   [
+    "isolated",
+    58
+   ],
+   [
+    "paint",
+    58
+   ],
+   [
+    "handsome",
+    58
+   ],
+   [
+    "business",
+    57
+   ],
+   [
+    "construction",
+    56
+   ],
+   [
+    "fashion",
+    54
+   ],
+   [
+    "person",
+    54
+   ],
+   [
+    "female",
+    54
+   ],
+   [
+    "blue",
+    54
+   ],
+   [
+    "girl",
+    54
+   ],
+   [
+    "house",
+    54
+   ],
+   [
+    "sport",
+    54
+   ]
+  ],
+  "utags": [
+   "male",
+   "man",
+   "2 August 2022 21:25",
+   "2000-08-Saint Vincent",
+   "all pics"
+  ],
+  "ens": "2000-2001",
+  "bucket": "gens",
+  "date": "exif",
+  "low": "1",
+  "id": 30973,
+  "cloudAssetId": "b9021ea245a743dabfa26cf2a6645c67",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2000-2001/2000-08-Saint Vincent/2000 St Vincent Erwan-2.jpg",
+  "albumPath": "2000-2001/2000-08-Saint Vincent",
+  "sha256": "06b4b5335b319ec68355de22839552eee823fadc104dcaa3621a86aecb9e2108",
+  "width": 1151,
+  "height": 1622,
+  "aesth_db": 49,
+  "dateSource": "capture-date",
+  "captureDate": "2013-12-16T14:56:53",
+  "y": 2013,
+  "m": 12,
+  "d": 16,
+  "exists": true
+ },
+ {
+  "num": "19",
+  "album": "2000-2001/2000-09-Union-les Grenadines",
+  "file": "P1010010.jpg",
+  "date_cls": "d-lect",
+  "date_txt": "2017-11-14 (exif)",
+  "aesth": 50,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "man",
+    80
+   ],
+   [
+    "couple",
+    71
+   ],
+   [
+    "food",
+    69
+   ],
+   [
+    "woman",
+    67
+   ],
+   [
+    "people",
+    66
+   ],
+   [
+    "family",
+    64
+   ],
+   [
+    "caucasian",
+    63
+   ],
+   [
+    "female",
+    63
+   ],
+   [
+    "eating",
+    62
+   ],
+   [
+    "breakfast",
+    62
+   ],
+   [
+    "restaurant",
+    61
+   ],
+   [
+    "home",
+    61
+   ],
+   [
+    "adult",
+    61
+   ],
+   [
+    "male",
+    60
+   ],
+   [
+    "sitting",
+    60
+   ],
+   [
+    "cooking",
+    59
+   ],
+   [
+    "smiling",
+    59
+   ],
+   [
+    "happy",
+    59
+   ],
+   [
+    "women",
+    58
+   ],
+   [
+    "young",
+    58
+   ],
+   [
+    "barbecue",
+    58
+   ],
+   [
+    "attractive",
+    56
+   ],
+   [
+    "house",
+    56
+   ],
+   [
+    "healthy",
+    55
+   ],
+   [
+    "lifestyle",
+    55
+   ]
+  ],
+  "utags": [
+   "couple",
+   "man",
+   "2 August 2022 21:25",
+   "2000-09-Union-les Grenadines",
+   "Michel",
+   "Pierrot"
+  ],
+  "ens": "2000-2001",
+  "bucket": "interieur-vie",
+  "date": "exif",
+  "low": "0",
+  "id": 7744,
+  "cloudAssetId": "2de5c70ee4d14f279beafd456b7e8a8c",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2000-2001/2000-09-Union-les Grenadines/P1010010.jpg",
+  "albumPath": "2000-2001/2000-09-Union-les Grenadines",
+  "sha256": "bbadc7904e5954b1ac53dd1e1c29d04e6c038a5b7117526b5716e007a2b48b8f",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 50,
+  "dateSource": "capture-date",
+  "captureDate": "2017-11-14T15:20:38",
+  "y": 2017,
+  "m": 11,
+  "d": 14,
+  "exists": true
+ },
+ {
+  "num": "20",
+  "album": "2000-2001/2000-12-viree au Venezuela-3mois",
+  "file": "2000 Los Nevados (11).jpg",
+  "date_cls": "d-lect",
+  "date_txt": "2014-01-13 (exif)",
+  "aesth": 42,
+  "dim": "1747×1150",
+  "tags": [
+   [
+    "people",
+    75
+   ],
+   [
+    "street",
+    74
+   ],
+   [
+    "city",
+    71
+   ],
+   [
+    "urban",
+    65
+   ],
+   [
+    "town",
+    64
+   ],
+   [
+    "road",
+    64
+   ],
+   [
+    "woman",
+    63
+   ],
+   [
+    "travel",
+    62
+   ],
+   [
+    "architecture",
+    62
+   ],
+   [
+    "building",
+    61
+   ],
+   [
+    "man",
+    61
+   ],
+   [
+    "walking",
+    60
+   ],
+   [
+    "children",
+    59
+   ],
+   [
+    "old",
+    59
+   ],
+   [
+    "tourist",
+    57
+   ],
+   [
+    "house",
+    57
+   ],
+   [
+    "walk",
+    57
+   ],
+   [
+    "girl",
+    56
+   ],
+   [
+    "family",
+    56
+   ],
+   [
+    "france",
+    55
+   ],
+   [
+    "child",
+    55
+   ],
+   [
+    "square",
+    55
+   ],
+   [
+    "outdoor",
+    54
+   ],
+   [
+    "caucasian",
+    54
+   ],
+   [
+    "europe",
+    54
+   ]
+  ],
+  "utags": [
+   "city",
+   "people",
+   "street",
+   "2 August 2022 21:25",
+   "2000-12-viree au Venezuela-3mois",
+   "all pics"
+  ],
+  "ens": "2000-2001",
+  "bucket": "ville-escale",
+  "date": "exif",
+  "low": "1",
+  "id": 41414,
+  "cloudAssetId": "f70b95cf1a4648a7b94ffffeac615108",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2000-2001/2000-12-viree au Venezuela-3mois/2000 Los Nevados (11).jpg",
+  "albumPath": "2000-2001/2000-12-viree au Venezuela-3mois",
+  "sha256": "cd015206dfa23e729e7a2115bbdb0c418fc4dd4f30b11208c3434f44c342946f",
+  "width": 1747,
+  "height": 1150,
+  "aesth_db": 42,
+  "dateSource": "capture-date",
+  "captureDate": "2014-01-13T17:38:20",
+  "y": 2014,
+  "m": 1,
+  "d": 13,
+  "exists": true
+ },
+ {
+  "num": "21",
+  "album": "2000-2001/2001-05 testigos",
+  "file": "P1010023-2.jpg",
+  "date_cls": "d-hum",
+  "date_txt": "✓ 2001-05-10 — à la main",
+  "aesth": 53,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "woman",
+    74
+   ],
+   [
+    "man",
+    71
+   ],
+   [
+    "couple",
+    70
+   ],
+   [
+    "happy",
+    63
+   ],
+   [
+    "caucasian",
+    63
+   ],
+   [
+    "cafe",
+    63
+   ],
+   [
+    "drink",
+    63
+   ],
+   [
+    "girl",
+    61
+   ],
+   [
+    "adult",
+    61
+   ],
+   [
+    "women",
+    60
+   ],
+   [
+    "young",
+    60
+   ],
+   [
+    "female",
+    60
+   ],
+   [
+    "restaurant",
+    59
+   ],
+   [
+    "people",
+    59
+   ],
+   [
+    "beautiful",
+    59
+   ],
+   [
+    "bar",
+    59
+   ],
+   [
+    "drinking",
+    58
+   ],
+   [
+    "boy",
+    58
+   ],
+   [
+    "friends",
+    57
+   ],
+   [
+    "smiling",
+    57
+   ],
+   [
+    "talking",
+    56
+   ],
+   [
+    "food",
+    56
+   ],
+   [
+    "child",
+    56
+   ],
+   [
+    "alcohol",
+    56
+   ],
+   [
+    "coffee",
+    56
+   ]
+  ],
+  "utags": [
+   "couple",
+   "man",
+   "woman",
+   "2 August 2022 21:25",
+   "2001-05 testigos"
+  ],
+  "ens": "2000-2001",
+  "bucket": "interieur-vie",
+  "date": "humaine",
+  "low": "0",
+  "id": 18974,
+  "cloudAssetId": "719be5e004074e71bcc6703b504e66ee",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2000-2001/2001-05 testigos/P1010023-2.jpg",
+  "albumPath": "2000-2001/2001-05 testigos",
+  "sha256": "4df7247a2c69bc81168a0fd5909707cce26dce45ba6a60f493269ba4ec0e3114",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 53,
+  "dateSource": "folder-month",
+  "captureDate": "2017-11-14T15:32:30",
+  "y": 2001,
+  "m": 5,
+  "d": 14,
+  "exists": true
+ },
+ {
+  "num": "22",
+  "album": "2000-2001/2001-06 Venezuela",
+  "file": "2001-09 Laguna Grande-4.jpg",
+  "date_cls": "d-hum",
+  "date_txt": "✓ 2001-06-10 — à la main",
+  "aesth": 58,
+  "dim": "1141×1748",
+  "tags": [
+   [
+    "beach",
+    83
+   ],
+   [
+    "family",
+    73
+   ],
+   [
+    "man",
+    71
+   ],
+   [
+    "sea",
+    70
+   ],
+   [
+    "boy",
+    69
+   ],
+   [
+    "child",
+    69
+   ],
+   [
+    "couple",
+    69
+   ],
+   [
+    "people",
+    68
+   ],
+   [
+    "young",
+    67
+   ],
+   [
+    "adult",
+    66
+   ],
+   [
+    "summer",
+    66
+   ],
+   [
+    "woman",
+    66
+   ],
+   [
+    "ocean",
+    65
+   ],
+   [
+    "beautiful",
+    65
+   ],
+   [
+    "female",
+    63
+   ],
+   [
+    "caucasian",
+    63
+   ],
+   [
+    "male",
+    63
+   ],
+   [
+    "girl",
+    63
+   ],
+   [
+    "walk",
+    63
+   ],
+   [
+    "fun",
+    62
+   ],
+   [
+    "outdoor",
+    62
+   ],
+   [
+    "water",
+    62
+   ],
+   [
+    "happiness",
+    62
+   ],
+   [
+    "sand",
+    61
+   ],
+   [
+    "happy",
+    61
+   ]
+  ],
+  "utags": [
+   "beach",
+   "family",
+   "man",
+   "sea",
+   "2 August 2022 21:25",
+   "2001-06 Venezuela",
+   "all pics"
+  ],
+  "ens": "2000-2001",
+  "bucket": "mer-navigation",
+  "date": "humaine",
+  "low": "0",
+  "id": 30453,
+  "cloudAssetId": "b5bdffa7fbb94827a6d02f25a31b0bca",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2000-2001/2001-06 Venezuela/2001-09 Laguna Grande-4.jpg",
+  "albumPath": "2000-2001/2001-06 Venezuela",
+  "sha256": "d20bb451ada1c376ab4385622ef3bfdeca8da6967538be933c4aafee45a5365d",
+  "width": 1141,
+  "height": 1748,
+  "aesth_db": 58,
+  "dateSource": "folder-month",
+  "captureDate": "2014-01-13T15:33:29",
+  "y": 2001,
+  "m": 6,
+  "d": 13,
+  "exists": true
+ },
+ {
+  "num": "23",
+  "album": "2000-2001/2001-06 Venezuela 2",
+  "file": "p5370026.jpg",
+  "date_cls": "d-hum",
+  "date_txt": "✓ 2001-06-10 — à la main",
+  "aesth": 59,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "tree",
+    75
+   ],
+   [
+    "africa",
+    73
+   ],
+   [
+    "animal",
+    73
+   ],
+   [
+    "nature",
+    72
+   ],
+   [
+    "landscape",
+    71
+   ],
+   [
+    "wildlife",
+    67
+   ],
+   [
+    "bird",
+    67
+   ],
+   [
+    "desert",
+    62
+   ],
+   [
+    "wild",
+    60
+   ],
+   [
+    "field",
+    60
+   ],
+   [
+    "safari",
+    59
+   ],
+   [
+    "savannah",
+    59
+   ],
+   [
+    "trees",
+    58
+   ],
+   [
+    "countryside",
+    57
+   ],
+   [
+    "mammal",
+    56
+   ],
+   [
+    "sky",
+    56
+   ],
+   [
+    "giraffe",
+    55
+   ],
+   [
+    "rock",
+    54
+   ],
+   [
+    "dry",
+    54
+   ],
+   [
+    "water",
+    54
+   ],
+   [
+    "brown",
+    54
+   ],
+   [
+    "park",
+    54
+   ],
+   [
+    "natural",
+    53
+   ],
+   [
+    "grass",
+    53
+   ],
+   [
+    "animals",
+    53
+   ]
+  ],
+  "utags": [
+   "africa",
+   "animal",
+   "landscape",
+   "nature",
+   "tree",
+   "2 August 2022 21:25",
+   "2001-06 Venezuela 2"
+  ],
+  "ens": "2000-2001",
+  "bucket": "paysage-nature",
+  "date": "humaine",
+  "low": "0",
+  "id": 33782,
+  "cloudAssetId": "c99d7a05090948d4856583a50d153897",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2000-2001/2001-06 Venezuela 2/p5370026.jpg",
+  "albumPath": "2000-2001/2001-06 Venezuela 2",
+  "sha256": "fbade78943c2e21b83db015e57cb5fd5ddbec6652cb13b6575cc4dbfe308dd7c",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 59,
+  "dateSource": "folder-month",
+  "captureDate": "2017-11-14T15:34:52",
+  "y": 2001,
+  "m": 6,
+  "d": 14,
+  "exists": true
+ },
+ {
+  "num": "24",
+  "album": "2000-2001/2001-06 Venezuela 3",
+  "file": "P5310085-2.jpg",
+  "date_cls": "d-prop",
+  "date_txt": "≈ 2001-5-31 (folder-sequence)",
+  "aesth": 64,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "blue",
+    74
+   ],
+   [
+    "water",
+    71
+   ],
+   [
+    "sky",
+    68
+   ],
+   [
+    "nature",
+    66
+   ],
+   [
+    "sea",
+    66
+   ],
+   [
+    "landscape",
+    65
+   ],
+   [
+    "plane",
+    65
+   ],
+   [
+    "airplane",
+    64
+   ],
+   [
+    "flight",
+    64
+   ],
+   [
+    "boat",
+    64
+   ],
+   [
+    "view",
+    63
+   ],
+   [
+    "travel",
+    63
+   ],
+   [
+    "ocean",
+    61
+   ],
+   [
+    "wing",
+    60
+   ],
+   [
+    "background",
+    60
+   ],
+   [
+    "fly",
+    59
+   ],
+   [
+    "air",
+    59
+   ],
+   [
+    "beach",
+    59
+   ],
+   [
+    "ship",
+    59
+   ],
+   [
+    "aircraft",
+    58
+   ],
+   [
+    "lake",
+    58
+   ],
+   [
+    "flying",
+    58
+   ],
+   [
+    "vehicle",
+    57
+   ],
+   [
+    "cloud",
+    56
+   ],
+   [
+    "aerial",
+    56
+   ]
+  ],
+  "utags": [
+   "blue",
+   "water",
+   "2 August 2022 21:25",
+   "2001-06 Venezuela 3"
+  ],
+  "ens": "2000-2001",
+  "bucket": "mer-navigation",
+  "date": "album",
+  "low": "0",
+  "id": 19483,
+  "cloudAssetId": "74c92ff8b03944de9ebcf5df103af7eb",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2000-2001/2001-06 Venezuela 3/P5310085-2.jpg",
+  "albumPath": "2000-2001/2001-06 Venezuela 3",
+  "sha256": "4e4e138c5d58a6ba20a862f749dd6ce1af4c543cd5f60fc3c3ffef90faedfac7",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 64,
+  "dateSource": "folder-sequence",
+  "captureDate": "2001-05-31T09:47:29",
+  "y": 2001,
+  "m": 5,
+  "d": 31,
+  "exists": true
+ },
+ {
+  "num": "25",
+  "album": "2002/2002-01 Venezuela - Martinique",
+  "file": "p5320001.jpg",
+  "date_cls": "d-hum",
+  "date_txt": "✓ 2002-01-15 — à la main",
+  "aesth": 58,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "woman",
+    80
+   ],
+   [
+    "beauty",
+    76
+   ],
+   [
+    "beautiful",
+    74
+   ],
+   [
+    "adult",
+    70
+   ],
+   [
+    "female",
+    69
+   ],
+   [
+    "attractive",
+    69
+   ],
+   [
+    "girl",
+    69
+   ],
+   [
+    "women",
+    68
+   ],
+   [
+    "young",
+    67
+   ],
+   [
+    "bathroom",
+    67
+   ],
+   [
+    "caucasian",
+    65
+   ],
+   [
+    "mirror",
+    64
+   ],
+   [
+    "body",
+    62
+   ],
+   [
+    "hair",
+    62
+   ],
+   [
+    "face",
+    61
+   ],
+   [
+    "care",
+    61
+   ],
+   [
+    "bath",
+    61
+   ],
+   [
+    "fashion",
+    60
+   ],
+   [
+    "home",
+    60
+   ],
+   [
+    "shower",
+    59
+   ],
+   [
+    "healthy",
+    58
+   ],
+   [
+    "door",
+    57
+   ],
+   [
+    "happy",
+    57
+   ],
+   [
+    "indoors",
+    55
+   ],
+   [
+    "model",
+    55
+   ]
+  ],
+  "utags": [
+   "adult",
+   "beautiful",
+   "beauty",
+   "woman",
+   "2 August 2022 21:25",
+   "2002-01 Venezuela - Martinique",
+   "all pics",
+   "Hugo"
+  ],
+  "ens": "2002",
+  "bucket": "gens",
+  "date": "humaine",
+  "low": "0",
+  "id": 36022,
+  "cloudAssetId": "d6d257479bf7427590af62ba790eb78d",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2002/2002-01 Venezuela - Martinique/p5320001.jpg",
+  "albumPath": "2002/2002-01 Venezuela - Martinique",
+  "sha256": "cb8fab4e438acb3b66fb3f8782ea16256f04e333abe243d15bcb489266b091e3",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 58,
+  "dateSource": "folder-month-assumed",
+  "captureDate": null,
+  "y": 2002,
+  "m": 1,
+  "d": null,
+  "exists": true
+ },
+ {
+  "num": "26",
+  "album": "2002/2002-02-Guadeloupe - Saint Martin",
+  "file": "IMG_0094.JPG",
+  "date_cls": "d-lect",
+  "date_txt": "2002-02-22 (exif)",
+  "aesth": 52,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "man",
+    78
+   ],
+   [
+    "senior",
+    76
+   ],
+   [
+    "portrait",
+    74
+   ],
+   [
+    "face",
+    73
+   ],
+   [
+    "adult",
+    73
+   ],
+   [
+    "caucasian",
+    69
+   ],
+   [
+    "woman",
+    69
+   ],
+   [
+    "elderly",
+    68
+   ],
+   [
+    "old",
+    65
+   ],
+   [
+    "aged",
+    65
+   ],
+   [
+    "people",
+    64
+   ],
+   [
+    "male",
+    63
+   ],
+   [
+    "female",
+    62
+   ],
+   [
+    "grandmother",
+    62
+   ],
+   [
+    "aging",
+    62
+   ],
+   [
+    "closeup",
+    61
+   ],
+   [
+    "happy",
+    61
+   ],
+   [
+    "mature",
+    59
+   ],
+   [
+    "beard",
+    59
+   ],
+   [
+    "happiness",
+    59
+   ],
+   [
+    "smiling",
+    59
+   ],
+   [
+    "age",
+    58
+   ],
+   [
+    "alone",
+    58
+   ],
+   [
+    "gray",
+    58
+   ],
+   [
+    "beauty",
+    57
+   ]
+  ],
+  "utags": [
+   "adult",
+   "face",
+   "man",
+   "portrait",
+   "senior",
+   "2 August 2022 21:25",
+   "2002-02-Guadeloupe - Saint Martin",
+   "all pics",
+   "Michel Berube"
+  ],
+  "ens": "2002",
+  "bucket": "gens",
+  "date": "exif",
+  "low": "0",
+  "id": 1560,
+  "cloudAssetId": "09368c845ecb46618d8bfca2c2371634",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2002/2002-02-Guadeloupe - Saint Martin/IMG_0094.JPG",
+  "albumPath": "2002/2002-02-Guadeloupe - Saint Martin",
+  "sha256": "f8a4bb35cb90748e63c582f5d1030a93f92b6eda94ae338f4e434ab2f41a56b2",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 52,
+  "dateSource": "capture-date",
+  "captureDate": "2002-02-22T16:36:02",
+  "y": 2002,
+  "m": 2,
+  "d": 22,
+  "exists": true
+ },
+ {
+  "num": "27",
+  "album": "2002/2002-03-BVI",
+  "file": "P2080079.JPG",
+  "date_cls": "d-lect",
+  "date_txt": "2001-02-08 (exif)",
+  "aesth": 46,
+  "dim": "1200×1600",
+  "tags": [
+   [
+    "woman",
+    76
+   ],
+   [
+    "sea",
+    74
+   ],
+   [
+    "boat",
+    73
+   ],
+   [
+    "female",
+    72
+   ],
+   [
+    "girl",
+    72
+   ],
+   [
+    "yacht",
+    69
+   ],
+   [
+    "young",
+    68
+   ],
+   [
+    "man",
+    67
+   ],
+   [
+    "summer",
+    66
+   ],
+   [
+    "sailing",
+    65
+   ],
+   [
+    "water",
+    65
+   ],
+   [
+    "beautiful",
+    64
+   ],
+   [
+    "travel",
+    64
+   ],
+   [
+    "blue",
+    63
+   ],
+   [
+    "caucasian",
+    63
+   ],
+   [
+    "adult",
+    63
+   ],
+   [
+    "beauty",
+    62
+   ],
+   [
+    "ship",
+    62
+   ],
+   [
+    "attractive",
+    61
+   ],
+   [
+    "ocean",
+    61
+   ],
+   [
+    "fun",
+    60
+   ],
+   [
+    "boy",
+    60
+   ],
+   [
+    "sailboat",
+    59
+   ],
+   [
+    "leisure",
+    59
+   ],
+   [
+    "beach",
+    59
+   ]
+  ],
+  "utags": [
+   "boat",
+   "female",
+   "girl",
+   "sea",
+   "woman",
+   "2 August 2022 21:25",
+   "2002-03-BVI",
+   "all pics"
+  ],
+  "ens": "2002",
+  "bucket": "mer-navigation",
+  "date": "exif",
+  "low": "1",
+  "id": 27008,
+  "cloudAssetId": "a0c0390b31f34f51bc390095950bf3c2",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2002/2002-03-BVI/P2080079.JPG",
+  "albumPath": "2002/2002-03-BVI",
+  "sha256": "c94a56603434bcb833532982e45b52299410e15d0f6e3eb459374d484406c705",
+  "width": 1200,
+  "height": 1600,
+  "aesth_db": 46,
+  "dateSource": "capture-date",
+  "captureDate": "2001-02-08T10:08:08",
+  "y": 2001,
+  "m": 2,
+  "d": 8,
+  "exists": true
+ },
+ {
+  "num": "28",
+  "album": "2002/2002-05-BVI - Turk and Caicos",
+  "file": "P2210006.JPG",
+  "date_cls": "d-lect",
+  "date_txt": "2001-02-21 (exif)",
+  "aesth": 56,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "water",
+    84
+   ],
+   [
+    "sea",
+    82
+   ],
+   [
+    "ocean",
+    78
+   ],
+   [
+    "blue",
+    74
+   ],
+   [
+    "dolphin",
+    68
+   ],
+   [
+    "nature",
+    68
+   ],
+   [
+    "animal",
+    68
+   ],
+   [
+    "swimming",
+    68
+   ],
+   [
+    "beach",
+    67
+   ],
+   [
+    "swim",
+    65
+   ],
+   [
+    "mammal",
+    64
+   ],
+   [
+    "whale",
+    62
+   ],
+   [
+    "fish",
+    61
+   ],
+   [
+    "sport",
+    61
+   ],
+   [
+    "aquatic",
+    59
+   ],
+   [
+    "diving",
+    59
+   ],
+   [
+    "waves",
+    59
+   ],
+   [
+    "dolphins",
+    58
+   ],
+   [
+    "vacation",
+    58
+   ],
+   [
+    "wave",
+    58
+   ],
+   [
+    "summer",
+    58
+   ],
+   [
+    "wildlife",
+    58
+   ],
+   [
+    "underwater",
+    57
+   ],
+   [
+    "fin",
+    57
+   ],
+   [
+    "pool",
+    56
+   ]
+  ],
+  "utags": [
+   "blue",
+   "ocean",
+   "sea",
+   "water",
+   "2 August 2022 21:25",
+   "2002-05-BVI - Turk and Caicos",
+   "all pics"
+  ],
+  "ens": "2002",
+  "bucket": "mer-navigation",
+  "date": "exif",
+  "low": "0",
+  "id": 16262,
+  "cloudAssetId": "61357579d56c4d9e8c5fc38b63f2d2dd",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2002/2002-05-BVI - Turk and Caicos/P2210006.JPG",
+  "albumPath": "2002/2002-05-BVI - Turk and Caicos",
+  "sha256": "6516530914729a48d8eb53bf29095930581d10ad3cec136674275a6c4dc53e72",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 56,
+  "dateSource": "capture-date",
+  "captureDate": "2001-02-21T12:33:51",
+  "y": 2001,
+  "m": 2,
+  "d": 21,
+  "exists": true
+ },
+ {
+  "num": "29",
+  "album": "2002/2002-06 Bahamas",
+  "file": "P4110016.JPG",
+  "date_cls": "d-prop",
+  "date_txt": "≈ 2002-4-11 (folder-sequence)",
+  "aesth": 59,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "beach",
+    88
+   ],
+   [
+    "couple",
+    78
+   ],
+   [
+    "sea",
+    75
+   ],
+   [
+    "man",
+    72
+   ],
+   [
+    "child",
+    69
+   ],
+   [
+    "people",
+    68
+   ],
+   [
+    "family",
+    68
+   ],
+   [
+    "happy",
+    68
+   ],
+   [
+    "boy",
+    67
+   ],
+   [
+    "ocean",
+    67
+   ],
+   [
+    "love",
+    67
+   ],
+   [
+    "woman",
+    67
+   ],
+   [
+    "caucasian",
+    66
+   ],
+   [
+    "sand",
+    65
+   ],
+   [
+    "vacation",
+    65
+   ],
+   [
+    "girl",
+    65
+   ],
+   [
+    "water",
+    65
+   ],
+   [
+    "adult",
+    64
+   ],
+   [
+    "happiness",
+    63
+   ],
+   [
+    "father",
+    63
+   ],
+   [
+    "fun",
+    62
+   ],
+   [
+    "summer",
+    62
+   ],
+   [
+    "kid",
+    61
+   ],
+   [
+    "coast",
+    61
+   ],
+   [
+    "men",
+    60
+   ]
+  ],
+  "utags": [
+   "beach",
+   "couple",
+   "man",
+   "sea",
+   "2 August 2022 21:25",
+   "2002-06 Bahamas",
+   "all pics",
+   "Hugo"
+  ],
+  "ens": "2002",
+  "bucket": "mer-navigation",
+  "date": "album",
+  "low": "0",
+  "id": 7902,
+  "cloudAssetId": "2ed87c9a5f564283bc9f105508b727e6",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2002/2002-06 Bahamas/P4110016.JPG",
+  "albumPath": "2002/2002-06 Bahamas",
+  "sha256": "ee44863643e24385dc528120d043cd786fca9bf7664faeef20530aa65d77de40",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 59,
+  "dateSource": "folder-sequence",
+  "captureDate": "2002-04-11T13:18:11",
+  "y": 2002,
+  "m": 4,
+  "d": 11,
+  "exists": true
+ },
+ {
+  "num": "30",
+  "album": "2002/2002-06-Exumas avec Ghislaine",
+  "file": "P4230097.JPG",
+  "date_cls": "d-lect",
+  "date_txt": "2002-04-23 (exif)",
+  "aesth": 47,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "car",
+    71
+   ],
+   [
+    "boat",
+    66
+   ],
+   [
+    "water",
+    61
+   ],
+   [
+    "blue",
+    59
+   ],
+   [
+    "vehicle",
+    58
+   ],
+   [
+    "outdoors",
+    58
+   ],
+   [
+    "automobile",
+    58
+   ],
+   [
+    "sea",
+    57
+   ],
+   [
+    "travel",
+    57
+   ],
+   [
+    "people",
+    56
+   ],
+   [
+    "transportation",
+    54
+   ],
+   [
+    "auto",
+    54
+   ],
+   [
+    "beach",
+    54
+   ],
+   [
+    "equipment",
+    54
+   ],
+   [
+    "woman",
+    54
+   ],
+   [
+    "snow",
+    54
+   ],
+   [
+    "gasoline",
+    53
+   ],
+   [
+    "wash",
+    52
+   ],
+   [
+    "winter",
+    52
+   ],
+   [
+    "cold",
+    52
+   ],
+   [
+    "adult",
+    52
+   ],
+   [
+    "industry",
+    51
+   ],
+   [
+    "truck",
+    51
+   ],
+   [
+    "road",
+    51
+   ],
+   [
+    "transport",
+    51
+   ]
+  ],
+  "utags": [
+   "car",
+   "2 August 2022 21:25",
+   "2002-06-Exumas avec Ghislaine",
+   "all pics"
+  ],
+  "ens": "2002",
+  "bucket": "mer-navigation",
+  "date": "exif",
+  "low": "1",
+  "id": 18967,
+  "cloudAssetId": "718f2b1e358a4cf486721f5ca3d2a385",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2002/2002-06-Exumas avec Ghislaine/P4230097.JPG",
+  "albumPath": "2002/2002-06-Exumas avec Ghislaine",
+  "sha256": "2b8bd357f4daa207febce1f27089e6a67d49274a9b07cbc495371c074d8b57a9",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 47,
+  "dateSource": "capture-date",
+  "captureDate": "2002-04-23T16:26:41",
+  "y": 2002,
+  "m": 4,
+  "d": 23,
+  "exists": true
+ },
+ {
+  "num": "31",
+  "album": "2002/2002-07-For Lauderdale 1- arrivee",
+  "file": "p4200020.JPG",
+  "date_cls": "d-prop",
+  "date_txt": "≈ sans date (none)",
+  "aesth": 43,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "computer",
+    90
+   ],
+   [
+    "laptop",
+    88
+   ],
+   [
+    "technology",
+    80
+   ],
+   [
+    "business",
+    78
+   ],
+   [
+    "notebook",
+    74
+   ],
+   [
+    "pc",
+    73
+   ],
+   [
+    "screen",
+    72
+   ],
+   [
+    "internet",
+    71
+   ],
+   [
+    "monitor",
+    70
+   ],
+   [
+    "background",
+    70
+   ],
+   [
+    "isolated",
+    70
+   ],
+   [
+    "communication",
+    70
+   ],
+   [
+    "display",
+    70
+   ],
+   [
+    "keyboard",
+    66
+   ],
+   [
+    "concept",
+    65
+   ],
+   [
+    "mobile",
+    65
+   ],
+   [
+    "design",
+    63
+   ],
+   [
+    "blue",
+    62
+   ],
+   [
+    "data",
+    61
+   ],
+   [
+    "tablet",
+    61
+   ],
+   [
+    "network",
+    60
+   ],
+   [
+    "digital",
+    60
+   ],
+   [
+    "black",
+    60
+   ],
+   [
+    "3d",
+    59
+   ]
+  ],
+  "utags": [
+   "background",
+   "business",
+   "communication",
+   "computer",
+   "display",
+   "internet",
+   "isolated",
+   "laptop",
+   "monitor",
+   "notebook",
+   "pc",
+   "screen",
+   "technology",
+   "2 August 2022 21:25",
+   "2002-07-For Lauderdale 1- arrivee",
+   "all pics"
+  ],
+  "ens": "2002",
+  "bucket": "documents-objets",
+  "date": "album",
+  "low": "1",
+  "id": 34165,
+  "cloudAssetId": "cc01d0d8ad11437c95dee1173f36d57c",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2002/2002-07-For Lauderdale 1- arrivee/p4200020.JPG",
+  "albumPath": "2002/2002-07-For Lauderdale 1- arrivee",
+  "sha256": "dba1afd9fc2f7f945df2e5785b46c7d42cef634512c4761192248deca392a2f0",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 43,
+  "dateSource": "none",
+  "captureDate": null,
+  "y": null,
+  "m": null,
+  "d": null,
+  "exists": true
+ },
+ {
+  "num": "32",
+  "album": "2002/2002-07-For Lauderdale 2",
+  "file": "p6230022.JPG",
+  "date_cls": "d-prop",
+  "date_txt": "≈ sans date (none)",
+  "aesth": 48,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "interior",
+    84
+   ],
+   [
+    "kitchen",
+    78
+   ],
+   [
+    "home",
+    73
+   ],
+   [
+    "furniture",
+    72
+   ],
+   [
+    "wood",
+    70
+   ],
+   [
+    "wooden",
+    70
+   ],
+   [
+    "modern",
+    69
+   ],
+   [
+    "house",
+    68
+   ],
+   [
+    "room",
+    68
+   ],
+   [
+    "design",
+    68
+   ],
+   [
+    "apartment",
+    64
+   ],
+   [
+    "architecture",
+    63
+   ],
+   [
+    "cabinets",
+    60
+   ],
+   [
+    "drawer",
+    60
+   ],
+   [
+    "bathroom",
+    59
+   ],
+   [
+    "door",
+    59
+   ],
+   [
+    "light",
+    59
+   ],
+   [
+    "empty",
+    58
+   ],
+   [
+    "office",
+    58
+   ],
+   [
+    "floor",
+    58
+   ],
+   [
+    "luxury",
+    58
+   ],
+   [
+    "table",
+    58
+   ],
+   [
+    "clean",
+    57
+   ],
+   [
+    "bedroom",
+    57
+   ],
+   [
+    "cooking",
+    56
+   ]
+  ],
+  "utags": [
+   "furniture",
+   "home",
+   "interior",
+   "kitchen",
+   "wood",
+   "wooden",
+   "2 August 2022 21:25",
+   "2002-07-For Lauderdale 2",
+   "all pics"
+  ],
+  "ens": "2002",
+  "bucket": "interieur-vie",
+  "date": "album",
+  "low": "1",
+  "id": 8458,
+  "cloudAssetId": "321d69b7327d45469ddc8fe135d5ff59",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2002/2002-07-For Lauderdale 2/p6230022.JPG",
+  "albumPath": "2002/2002-07-For Lauderdale 2",
+  "sha256": "ed4890bca072e205ed1ce3a458927f34614284eafa5eb58d63c58e08e68730fc",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 48,
+  "dateSource": "none",
+  "captureDate": null,
+  "y": null,
+  "m": null,
+  "d": null,
+  "exists": true
+ },
+ {
+  "num": "33",
+  "album": "2002/2002-08 voyage en france et Portugal",
+  "file": "p6250072.JPG",
+  "date_cls": "d-hum",
+  "date_txt": "✓ 2002-10-09 — à la main",
+  "aesth": 49,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "couple",
+    71
+   ],
+   [
+    "people",
+    70
+   ],
+   [
+    "family",
+    70
+   ],
+   [
+    "child",
+    69
+   ],
+   [
+    "adult",
+    68
+   ],
+   [
+    "home",
+    68
+   ],
+   [
+    "young",
+    67
+   ],
+   [
+    "boy",
+    67
+   ],
+   [
+    "caucasian",
+    67
+   ],
+   [
+    "girl",
+    64
+   ],
+   [
+    "female",
+    63
+   ],
+   [
+    "man",
+    63
+   ],
+   [
+    "woman",
+    62
+   ],
+   [
+    "father",
+    62
+   ],
+   [
+    "happy",
+    59
+   ],
+   [
+    "childhood",
+    59
+   ],
+   [
+    "sitting",
+    58
+   ],
+   [
+    "happiness",
+    58
+   ],
+   [
+    "children",
+    58
+   ],
+   [
+    "love",
+    58
+   ],
+   [
+    "son",
+    58
+   ],
+   [
+    "doctor",
+    57
+   ],
+   [
+    "care",
+    56
+   ],
+   [
+    "smiling",
+    56
+   ],
+   [
+    "holding",
+    55
+   ]
+  ],
+  "utags": [
+   "couple",
+   "family",
+   "people",
+   "2 August 2022 21:25",
+   "2002-08 voyage en france et Portugal",
+   "all pics",
+   "Anne Sophie Cuvillier"
+  ],
+  "ens": "2002",
+  "bucket": "gens",
+  "date": "humaine",
+  "low": "1",
+  "id": 380,
+  "cloudAssetId": "024e1c1da9f44373b41736f88880ab96",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2002/2002-08 voyage en france et Portugal/p6250072.JPG",
+  "albumPath": "2002/2002-08 voyage en france et Portugal",
+  "sha256": "e06faf8d7652adbccdc126b6f3d8d78c5e64c5ac6d106828cf2bd0bad2d0d4cf",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 49,
+  "dateSource": "folder-sequence",
+  "captureDate": null,
+  "y": 2002,
+  "m": null,
+  "d": null,
+  "exists": true
+ },
+ {
+  "num": "34",
+  "album": "2002/2002-09-Fort Lauderdale - Anapolis sur Groyabada",
+  "file": "DSCN5009.JPG",
+  "date_cls": "d-lect",
+  "date_txt": "2002-07-05 (exif)",
+  "aesth": 73,
+  "dim": "1024×768",
+  "tags": [
+   [
+    "water",
+    84
+   ],
+   [
+    "lake",
+    83
+   ],
+   [
+    "landscape",
+    79
+   ],
+   [
+    "nature",
+    79
+   ],
+   [
+    "river",
+    79
+   ],
+   [
+    "tree",
+    76
+   ],
+   [
+    "forest",
+    75
+   ],
+   [
+    "green",
+    72
+   ],
+   [
+    "trees",
+    70
+   ],
+   [
+    "sky",
+    70
+   ],
+   [
+    "blue",
+    70
+   ],
+   [
+    "summer",
+    69
+   ],
+   [
+    "clouds",
+    67
+   ],
+   [
+    "park",
+    66
+   ],
+   [
+    "reflection",
+    66
+   ],
+   [
+    "pond",
+    63
+   ],
+   [
+    "beautiful",
+    62
+   ],
+   [
+    "beauty",
+    60
+   ],
+   [
+    "background",
+    59
+   ],
+   [
+    "island",
+    58
+   ],
+   [
+    "bridge",
+    57
+   ],
+   [
+    "countryside",
+    57
+   ],
+   [
+    "grass",
+    56
+   ],
+   [
+    "scenery",
+    56
+   ],
+   [
+    "cloud",
+    56
+   ]
+  ],
+  "utags": [
+   "blue",
+   "forest",
+   "green",
+   "lake",
+   "landscape",
+   "nature",
+   "river",
+   "sky",
+   "tree",
+   "trees",
+   "water",
+   "2 August 2022 21:25",
+   "2002-09-Fort Lauderdale - Anapolis sur Groyabada",
+   "all pics"
+  ],
+  "ens": "2002",
+  "bucket": "paysage-nature",
+  "date": "exif",
+  "low": "0",
+  "id": 41123,
+  "cloudAssetId": "f569ac4667e14e3e8ed34f27a1f6ff8a",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2002/2002-09-Fort Lauderdale - Anapolis sur Groyabada/DSCN5009.JPG",
+  "albumPath": "2002/2002-09-Fort Lauderdale - Anapolis sur Groyabada",
+  "sha256": "ebff17153002c9ddbdb2c745e8054801caef8c20d5a307b0f583cfb617b1417d",
+  "width": 1024,
+  "height": 768,
+  "aesth_db": 73,
+  "dateSource": "capture-date",
+  "captureDate": "2002-07-05T19:28:56",
+  "y": 2002,
+  "m": 7,
+  "d": 5,
+  "exists": true
+ },
+ {
+  "num": "35",
+  "album": "2002/2002-10-Fort Lauderdale",
+  "file": "DSCN0004.jpg",
+  "date_cls": "d-prop",
+  "date_txt": "≈ sans date (none)",
+  "aesth": 43,
+  "dim": "796×1183",
+  "tags": [
+   [
+    "man",
+    78
+   ],
+   [
+    "couple",
+    74
+   ],
+   [
+    "people",
+    71
+   ],
+   [
+    "male",
+    68
+   ],
+   [
+    "woman",
+    67
+   ],
+   [
+    "caucasian",
+    66
+   ],
+   [
+    "adult",
+    65
+   ],
+   [
+    "happy",
+    65
+   ],
+   [
+    "young",
+    62
+   ],
+   [
+    "men",
+    59
+   ],
+   [
+    "friends",
+    58
+   ],
+   [
+    "boy",
+    58
+   ],
+   [
+    "smiling",
+    58
+   ],
+   [
+    "casual",
+    56
+   ],
+   [
+    "love",
+    56
+   ],
+   [
+    "holding",
+    56
+   ],
+   [
+    "outdoors",
+    56
+   ],
+   [
+    "portrait",
+    56
+   ],
+   [
+    "two",
+    55
+   ],
+   [
+    "children",
+    55
+   ],
+   [
+    "smile",
+    55
+   ],
+   [
+    "fun",
+    54
+   ],
+   [
+    "group",
+    54
+   ],
+   [
+    "girl",
+    54
+   ],
+   [
+    "friendship",
+    54
+   ]
+  ],
+  "utags": [
+   "couple",
+   "man",
+   "people",
+   "2 August 2022 21:25",
+   "2002-10-Fort Lauderdale ",
+   "all pics",
+   "Michel Berube",
+   "Nicolas"
+  ],
+  "ens": "2002",
+  "bucket": "gens",
+  "date": "album",
+  "low": "1",
+  "id": 42293,
+  "cloudAssetId": "fc4b999d7fb84683b0d8e099375f4303",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2002/2002-10-Fort Lauderdale/DSCN0004.jpg",
+  "albumPath": "2002/2002-10-Fort Lauderdale ",
+  "sha256": "b83dfcdc9d94d2611a984b11a0abaf8b9f09c502d06de9ae9332153ab4513ab1",
+  "width": 796,
+  "height": 1183,
+  "aesth_db": 43,
+  "dateSource": "none",
+  "captureDate": null,
+  "y": null,
+  "m": null,
+  "d": null,
+  "exists": true
+ },
+ {
+  "num": "36",
+  "album": "2002/2002-12-Fort Lauderdale",
+  "file": "DSCN0241.JPG",
+  "date_cls": "d-prop",
+  "date_txt": "≈ sans date (none)",
+  "aesth": 54,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "man",
+    75
+   ],
+   [
+    "woman",
+    73
+   ],
+   [
+    "young",
+    69
+   ],
+   [
+    "couple",
+    67
+   ],
+   [
+    "caucasian",
+    66
+   ],
+   [
+    "male",
+    66
+   ],
+   [
+    "sick",
+    63
+   ],
+   [
+    "adult",
+    63
+   ],
+   [
+    "drink",
+    63
+   ],
+   [
+    "beautiful",
+    63
+   ],
+   [
+    "face",
+    62
+   ],
+   [
+    "people",
+    62
+   ],
+   [
+    "casual",
+    62
+   ],
+   [
+    "bed",
+    61
+   ],
+   [
+    "female",
+    61
+   ],
+   [
+    "girl",
+    61
+   ],
+   [
+    "drinking",
+    60
+   ],
+   [
+    "love",
+    60
+   ],
+   [
+    "cold",
+    59
+   ],
+   [
+    "champagne",
+    59
+   ],
+   [
+    "attractive",
+    58
+   ],
+   [
+    "ill",
+    58
+   ],
+   [
+    "health",
+    57
+   ],
+   [
+    "men",
+    57
+   ],
+   [
+    "happy",
+    56
+   ]
+  ],
+  "utags": [
+   "man",
+   "woman",
+   "2 August 2022 21:25",
+   "2002-12-Fort Lauderdale ",
+   "all pics",
+   "Gigi"
+  ],
+  "ens": "2002",
+  "bucket": "gens",
+  "date": "album",
+  "low": "0",
+  "id": 32412,
+  "cloudAssetId": "c175ddcdaa36414f9f8b5c9a8c53d689",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2002/2002-12-Fort Lauderdale/DSCN0241.JPG",
+  "albumPath": "2002/2002-12-Fort Lauderdale ",
+  "sha256": "2e0570280d2f684327ad20c26dfa9e0b314b90ae4d53b908e4d4831ffbd4abfe",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 54,
+  "dateSource": "none",
+  "captureDate": null,
+  "y": null,
+  "m": null,
+  "d": null,
+  "exists": true
+ },
+ {
+  "num": "37",
+  "album": "2002/2002-38Dec02",
+  "file": "DSCN0469-2.JPG",
+  "date_cls": "d-prop",
+  "date_txt": "≈ 2002-12-25 (folder-sequence)",
+  "aesth": 57,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "woman",
+    82
+   ],
+   [
+    "senior",
+    81
+   ],
+   [
+    "portrait",
+    80
+   ],
+   [
+    "old",
+    77
+   ],
+   [
+    "elderly",
+    74
+   ],
+   [
+    "adult",
+    74
+   ],
+   [
+    "female",
+    74
+   ],
+   [
+    "man",
+    73
+   ],
+   [
+    "grandmother",
+    71
+   ],
+   [
+    "face",
+    70
+   ],
+   [
+    "mature",
+    69
+   ],
+   [
+    "aged",
+    69
+   ],
+   [
+    "caucasian",
+    69
+   ],
+   [
+    "smile",
+    68
+   ],
+   [
+    "lady",
+    66
+   ],
+   [
+    "happy",
+    66
+   ],
+   [
+    "age",
+    65
+   ],
+   [
+    "smiling",
+    62
+   ],
+   [
+    "expression",
+    61
+   ],
+   [
+    "people",
+    60
+   ],
+   [
+    "male",
+    60
+   ],
+   [
+    "attractive",
+    59
+   ],
+   [
+    "pensioner",
+    58
+   ],
+   [
+    "person",
+    57
+   ]
+  ],
+  "utags": [
+   "adult",
+   "elderly",
+   "face",
+   "female",
+   "grandmother",
+   "man",
+   "old",
+   "portrait",
+   "senior",
+   "woman",
+   "2 August 2022 21:25",
+   "2002-38Dec02",
+   "all pics"
+  ],
+  "ens": "2002",
+  "bucket": "gens",
+  "date": "album",
+  "low": "0",
+  "id": 40784,
+  "cloudAssetId": "f3936ed84acc4bbcb09be59260bfbdd5",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2002/2002-38Dec02/DSCN0469-2.JPG",
+  "albumPath": "2002/2002-38Dec02",
+  "sha256": "ed05c7bbbebc29266e3baaa66bf6142227448d654be28f2682fa8015fd0130f5",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 57,
+  "dateSource": "folder-sequence",
+  "captureDate": "2002-12-25T19:25:55",
+  "y": 2002,
+  "m": 12,
+  "d": 25,
+  "exists": true
+ },
+ {
+  "num": "38",
+  "album": "2003/2003-02-Cap Canaveral",
+  "file": "DSCN0837.JPG",
+  "date_cls": "d-lect",
+  "date_txt": "2003-02-22 (exif)",
+  "aesth": 55,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "industry",
+    69
+   ],
+   [
+    "steel",
+    68
+   ],
+   [
+    "metal",
+    67
+   ],
+   [
+    "engine",
+    66
+   ],
+   [
+    "equipment",
+    66
+   ],
+   [
+    "machine",
+    64
+   ],
+   [
+    "factory",
+    63
+   ],
+   [
+    "industrial",
+    59
+   ],
+   [
+    "technology",
+    59
+   ],
+   [
+    "engineering",
+    57
+   ],
+   [
+    "machinery",
+    57
+   ],
+   [
+    "old",
+    56
+   ],
+   [
+    "pipe",
+    56
+   ],
+   [
+    "valve",
+    56
+   ],
+   [
+    "motor",
+    56
+   ],
+   [
+    "aircraft",
+    56
+   ],
+   [
+    "power",
+    55
+   ],
+   [
+    "iron",
+    54
+   ],
+   [
+    "part",
+    54
+   ],
+   [
+    "large",
+    54
+   ],
+   [
+    "metallic",
+    54
+   ],
+   [
+    "background",
+    54
+   ],
+   [
+    "production",
+    54
+   ],
+   [
+    "aviation",
+    54
+   ],
+   [
+    "pressure",
+    54
+   ]
+  ],
+  "utags": [
+   "2 August 2022 21:25",
+   "2003-02-Cap Canaveral",
+   "all pics"
+  ],
+  "ens": "2003",
+  "bucket": "autre",
+  "date": "exif",
+  "low": "0",
+  "id": 35912,
+  "cloudAssetId": "d62e797b0079499fa7c0b605faa39fa7",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2003/2003-02-Cap Canaveral/DSCN0837.JPG",
+  "albumPath": "2003/2003-02-Cap Canaveral",
+  "sha256": "54e38b92053f7eb8e5a5e787ea711b5f83f72407d9b6fd8d7bdd445f4dc579ee",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 55,
+  "dateSource": "capture-date",
+  "captureDate": "2003-02-22T12:03:41",
+  "y": 2003,
+  "m": 2,
+  "d": 22,
+  "exists": true
+ },
+ {
+  "num": "39",
+  "album": "2003/2003-03-everglades",
+  "file": "p6290079.JPG",
+  "date_cls": "d-prop",
+  "date_txt": "≈ sans date (none)",
+  "aesth": 61,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "couple",
+    77
+   ],
+   [
+    "child",
+    73
+   ],
+   [
+    "family",
+    72
+   ],
+   [
+    "woman",
+    71
+   ],
+   [
+    "young",
+    70
+   ],
+   [
+    "man",
+    70
+   ],
+   [
+    "girl",
+    67
+   ],
+   [
+    "people",
+    66
+   ],
+   [
+    "boy",
+    66
+   ],
+   [
+    "love",
+    66
+   ],
+   [
+    "happy",
+    66
+   ],
+   [
+    "fun",
+    65
+   ],
+   [
+    "happiness",
+    63
+   ],
+   [
+    "baby",
+    63
+   ],
+   [
+    "smiling",
+    62
+   ],
+   [
+    "father",
+    62
+   ],
+   [
+    "park",
+    62
+   ],
+   [
+    "adult",
+    61
+   ],
+   [
+    "female",
+    61
+   ],
+   [
+    "daughter",
+    61
+   ],
+   [
+    "nature",
+    61
+   ],
+   [
+    "childhood",
+    61
+   ],
+   [
+    "kid",
+    59
+   ],
+   [
+    "children",
+    59
+   ],
+   [
+    "caucasian",
+    59
+   ]
+  ],
+  "utags": [
+   "child",
+   "couple",
+   "family",
+   "man",
+   "woman",
+   "young",
+   "2 August 2022 21:25",
+   "2003-03-everglades",
+   "all pics",
+   "Gigi"
+  ],
+  "ens": "2003",
+  "bucket": "gens",
+  "date": "album",
+  "low": "0",
+  "id": 37660,
+  "cloudAssetId": "e0cd82eee3c044a8a4c63efb069c2c12",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2003/2003-03-everglades/p6290079.JPG",
+  "albumPath": "2003/2003-03-everglades",
+  "sha256": "9fddd83e2f08d99dc002468fd48d9fcef2e114cc031dd6be62d1bd0e128324e3",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 61,
+  "dateSource": "none",
+  "captureDate": null,
+  "y": null,
+  "m": null,
+  "d": null,
+  "exists": true
+ },
+ {
+  "num": "40",
+  "album": "2003/2003-04 Keys Diogene",
+  "file": "DSCN1155.JPG",
+  "date_cls": "d-prop",
+  "date_txt": "≈ 2003-4-14 (folder-month)",
+  "aesth": 60,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "boat",
+    88
+   ],
+   [
+    "sea",
+    83
+   ],
+   [
+    "water",
+    76
+   ],
+   [
+    "boats",
+    76
+   ],
+   [
+    "fishing",
+    74
+   ],
+   [
+    "blue",
+    71
+   ],
+   [
+    "river",
+    69
+   ],
+   [
+    "ocean",
+    68
+   ],
+   [
+    "harbor",
+    67
+   ],
+   [
+    "ship",
+    66
+   ],
+   [
+    "travel",
+    65
+   ],
+   [
+    "port",
+    63
+   ],
+   [
+    "beach",
+    63
+   ],
+   [
+    "dock",
+    62
+   ],
+   [
+    "sky",
+    61
+   ],
+   [
+    "pier",
+    60
+   ],
+   [
+    "nautical",
+    59
+   ],
+   [
+    "shore",
+    59
+   ],
+   [
+    "yacht",
+    59
+   ],
+   [
+    "coast",
+    59
+   ],
+   [
+    "sailing",
+    58
+   ],
+   [
+    "harbour",
+    58
+   ],
+   [
+    "bay",
+    58
+   ],
+   [
+    "fish",
+    56
+   ],
+   [
+    "marina",
+    56
+   ]
+  ],
+  "utags": [
+   "blue",
+   "boat",
+   "boats",
+   "fishing",
+   "sea",
+   "water",
+   "2 August 2022 21:25",
+   "2003-04 Keys Diogene",
+   "all pics"
+  ],
+  "ens": "2003",
+  "bucket": "port-mouillage",
+  "date": "album",
+  "low": "0",
+  "id": 24691,
+  "cloudAssetId": "92eb918735154df19aef2b84acf5894c",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2003/2003-04 Keys Diogene/DSCN1155.JPG",
+  "albumPath": "2003/2003-04 Keys Diogene",
+  "sha256": "49de1086844a66bd310d094a521d00367fa8e80e045135a9e28dac3d18e891c8",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 60,
+  "dateSource": "folder-month",
+  "captureDate": "2003-04-14T17:05:05",
+  "y": 2003,
+  "m": 4,
+  "d": 14,
+  "exists": true
+ },
+ {
+  "num": "41",
+  "album": "2003/2003-05 Keys Stephane",
+  "file": "06770001.JPG",
+  "date_cls": "d-hum",
+  "date_txt": "✓ 2003-05-10 — à la main",
+  "aesth": 59,
+  "dim": "1536×1024",
+  "tags": [
+   [
+    "city",
+    83
+   ],
+   [
+    "skyline",
+    82
+   ],
+   [
+    "cityscape",
+    74
+   ],
+   [
+    "water",
+    74
+   ],
+   [
+    "architecture",
+    71
+   ],
+   [
+    "blue",
+    69
+   ],
+   [
+    "building",
+    68
+   ],
+   [
+    "sky",
+    67
+   ],
+   [
+    "lake",
+    65
+   ],
+   [
+    "bay",
+    65
+   ],
+   [
+    "urban",
+    65
+   ],
+   [
+    "river",
+    65
+   ],
+   [
+    "chicago",
+    65
+   ],
+   [
+    "buildings",
+    63
+   ],
+   [
+    "skyscraper",
+    63
+   ],
+   [
+    "downtown",
+    63
+   ],
+   [
+    "dubai",
+    62
+   ],
+   [
+    "america",
+    62
+   ],
+   [
+    "beach",
+    61
+   ],
+   [
+    "skyscrapers",
+    61
+   ],
+   [
+    "view",
+    60
+   ],
+   [
+    "panorama",
+    60
+   ],
+   [
+    "tower",
+    60
+   ],
+   [
+    "usa",
+    59
+   ],
+   [
+    "coast",
+    59
+   ]
+  ],
+  "utags": [
+   "architecture",
+   "city",
+   "cityscape",
+   "skyline",
+   "water",
+   "2 August 2022 21:25",
+   "2003-05 Keys Stephane",
+   "all pics"
+  ],
+  "ens": "2003",
+  "bucket": "ville-escale",
+  "date": "humaine",
+  "low": "0",
+  "id": 8601,
+  "cloudAssetId": "330a19499a4e4b71956fa8889af7ecb7",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2003/2003-05 Keys Stephane/06770001.JPG",
+  "albumPath": "2003/2003-05 Keys Stephane",
+  "sha256": "81e1ba097b5e7685bb2998cd6fcf77f57a2991c258c2aa9623f3224cd2927f97",
+  "width": 1536,
+  "height": 1024,
+  "aesth_db": 59,
+  "dateSource": "folder-month-assumed",
+  "captureDate": null,
+  "y": 2003,
+  "m": 5,
+  "d": null,
+  "exists": true
+ },
+ {
+  "num": "42",
+  "album": "2003/2003-05-Orlando",
+  "file": "p6270145.JPG",
+  "date_cls": "d-prop",
+  "date_txt": "≈ sans date (none)",
+  "aesth": 57,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "meat",
+    83
+   ],
+   [
+    "food",
+    83
+   ],
+   [
+    "barbecue",
+    81
+   ],
+   [
+    "grill",
+    78
+   ],
+   [
+    "cooking",
+    74
+   ],
+   [
+    "kebab",
+    71
+   ],
+   [
+    "bbq",
+    69
+   ],
+   [
+    "fire",
+    67
+   ],
+   [
+    "grilled",
+    65
+   ],
+   [
+    "meal",
+    65
+   ],
+   [
+    "coal",
+    64
+   ],
+   [
+    "beef",
+    64
+   ],
+   [
+    "dinner",
+    64
+   ],
+   [
+    "hot",
+    63
+   ],
+   [
+    "chicken",
+    63
+   ],
+   [
+    "pork",
+    63
+   ],
+   [
+    "roast",
+    61
+   ],
+   [
+    "skewer",
+    61
+   ],
+   [
+    "cook",
+    61
+   ],
+   [
+    "roasted",
+    60
+   ],
+   [
+    "shashlik",
+    60
+   ],
+   [
+    "steak",
+    58
+   ],
+   [
+    "fresh",
+    58
+   ],
+   [
+    "picnic",
+    57
+   ],
+   [
+    "smoke",
+    56
+   ]
+  ],
+  "utags": [
+   "barbecue",
+   "cooking",
+   "food",
+   "grill",
+   "kebab",
+   "meat",
+   "2 August 2022 21:25",
+   "2003-05-Orlando",
+   "all pics"
+  ],
+  "ens": "2003",
+  "bucket": "interieur-vie",
+  "date": "album",
+  "low": "0",
+  "id": 26248,
+  "cloudAssetId": "9c364b7a932640f5bd7a65e4ece2ba6a",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2003/2003-05-Orlando/p6270145.JPG",
+  "albumPath": "2003/2003-05-Orlando",
+  "sha256": "15682e3f17eb6d8b9a5d740f8d42da253b9a162b61fb9560501d089166c7c19b",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 57,
+  "dateSource": "none",
+  "captureDate": null,
+  "y": null,
+  "m": null,
+  "d": null,
+  "exists": true
+ },
+ {
+  "num": "43",
+  "album": "2003/2003-07- Lisbonne - Rognonas",
+  "file": "DSCN1513.JPG",
+  "date_cls": "d-lect",
+  "date_txt": "2003-07-07 (exif)",
+  "aesth": 49,
+  "dim": "1280×960",
+  "tags": [
+   [
+    "man",
+    74
+   ],
+   [
+    "male",
+    72
+   ],
+   [
+    "young",
+    70
+   ],
+   [
+    "woman",
+    70
+   ],
+   [
+    "boy",
+    69
+   ],
+   [
+    "people",
+    66
+   ],
+   [
+    "park",
+    64
+   ],
+   [
+    "smiling",
+    64
+   ],
+   [
+    "portrait",
+    63
+   ],
+   [
+    "female",
+    63
+   ],
+   [
+    "caucasian",
+    63
+   ],
+   [
+    "adult",
+    63
+   ],
+   [
+    "happy",
+    63
+   ],
+   [
+    "person",
+    62
+   ],
+   [
+    "men",
+    62
+   ],
+   [
+    "cute",
+    60
+   ],
+   [
+    "outdoors",
+    60
+   ],
+   [
+    "smile",
+    59
+   ],
+   [
+    "girl",
+    59
+   ],
+   [
+    "fashion",
+    59
+   ],
+   [
+    "beauty",
+    58
+   ],
+   [
+    "casual",
+    58
+   ],
+   [
+    "child",
+    58
+   ],
+   [
+    "attractive",
+    56
+   ]
+  ],
+  "utags": [
+   "male",
+   "man",
+   "woman",
+   "young",
+   "2 August 2022 21:25",
+   "2003-07- Lisbonne - Rognonas",
+   "all pics",
+   "Gigi"
+  ],
+  "ens": "2003",
+  "bucket": "gens",
+  "date": "exif",
+  "low": "1",
+  "id": 17000,
+  "cloudAssetId": "6590dd158b25495e82f034d4418948a3",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2003/2003-07- Lisbonne - Rognonas/DSCN1513.JPG",
+  "albumPath": "2003/2003-07- Lisbonne - Rognonas",
+  "sha256": "3792b81509f6c107efda84a0980b49baf41ebedc3ce248569739f59263ffea7f",
+  "width": 1280,
+  "height": 960,
+  "aesth_db": 49,
+  "dateSource": "capture-date",
+  "captureDate": "2003-07-07T17:22:30",
+  "y": 2003,
+  "m": 7,
+  "d": 7,
+  "exists": true
+ },
+ {
+  "num": "44",
+  "album": "2003/2003-07-Transat Diogene",
+  "file": "DSCN1567.JPG",
+  "date_cls": "d-lect",
+  "date_txt": "2003-07-30 (exif)",
+  "aesth": 55,
+  "dim": "1280×960",
+  "tags": [
+   [
+    "ship",
+    93
+   ],
+   [
+    "sea",
+    85
+   ],
+   [
+    "cargo",
+    83
+   ],
+   [
+    "boat",
+    82
+   ],
+   [
+    "shipping",
+    77
+   ],
+   [
+    "water",
+    75
+   ],
+   [
+    "ocean",
+    74
+   ],
+   [
+    "tanker",
+    73
+   ],
+   [
+    "transport",
+    73
+   ],
+   [
+    "transportation",
+    73
+   ],
+   [
+    "vessel",
+    70
+   ],
+   [
+    "blue",
+    67
+   ],
+   [
+    "container",
+    65
+   ],
+   [
+    "freight",
+    65
+   ],
+   [
+    "oil",
+    64
+   ],
+   [
+    "business",
+    64
+   ],
+   [
+    "industrial",
+    63
+   ],
+   [
+    "carrier",
+    63
+   ],
+   [
+    "port",
+    62
+   ],
+   [
+    "industry",
+    62
+   ],
+   [
+    "harbor",
+    61
+   ],
+   [
+    "sky",
+    61
+   ],
+   [
+    "nautical",
+    58
+   ],
+   [
+    "export",
+    58
+   ],
+   [
+    "freighter",
+    57
+   ]
+  ],
+  "utags": [
+   "boat",
+   "cargo",
+   "ocean",
+   "sea",
+   "ship",
+   "shipping",
+   "tanker",
+   "transport",
+   "transportation",
+   "vessel",
+   "water",
+   "2 August 2022 21:25",
+   "2003-07-Transat Diogene",
+   "all pics"
+  ],
+  "ens": "2003",
+  "bucket": "port-mouillage",
+  "date": "exif",
+  "low": "0",
+  "id": 1353,
+  "cloudAssetId": "082cbb3f471a418283da602e55ef81c3",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2003/2003-07-Transat Diogene/DSCN1567.JPG",
+  "albumPath": "2003/2003-07-Transat Diogene",
+  "sha256": "986ef131227992ac6b4a6a4246bcfa6c8b472ffa4bafd058808fb502059ff748",
+  "width": 1280,
+  "height": 960,
+  "aesth_db": 55,
+  "dateSource": "capture-date",
+  "captureDate": "2003-07-30T19:36:05",
+  "y": 2003,
+  "m": 7,
+  "d": 30,
+  "exists": true
+ },
+ {
+  "num": "45",
+  "album": "2003/2003-10-Sorel",
+  "file": "DSCN3030.JPG",
+  "date_cls": "d-lect",
+  "date_txt": "2003-10-09 (exif)",
+  "aesth": 57,
+  "dim": "1280×960",
+  "tags": [
+   [
+    "sky",
+    85
+   ],
+   [
+    "bird",
+    81
+   ],
+   [
+    "birds",
+    79
+   ],
+   [
+    "flying",
+    76
+   ],
+   [
+    "blue",
+    75
+   ],
+   [
+    "nature",
+    72
+   ],
+   [
+    "fly",
+    72
+   ],
+   [
+    "flock",
+    71
+   ],
+   [
+    "animal",
+    69
+   ],
+   [
+    "background",
+    65
+   ],
+   [
+    "flight",
+    65
+   ],
+   [
+    "geese",
+    64
+   ],
+   [
+    "group",
+    62
+   ],
+   [
+    "cloud",
+    62
+   ],
+   [
+    "goose",
+    59
+   ],
+   [
+    "black",
+    59
+   ],
+   [
+    "animals",
+    58
+   ],
+   [
+    "migration",
+    58
+   ],
+   [
+    "freedom",
+    57
+   ],
+   [
+    "clouds",
+    57
+   ],
+   [
+    "wings",
+    56
+   ],
+   [
+    "water",
+    56
+   ],
+   [
+    "wildlife",
+    56
+   ],
+   [
+    "ducks",
+    56
+   ]
+  ],
+  "utags": [
+   "bird",
+   "birds",
+   "blue",
+   "flock",
+   "fly",
+   "flying",
+   "nature",
+   "sky",
+   "2 August 2022 21:25",
+   "2003-10-Sorel",
+   "all pics"
+  ],
+  "ens": "2003",
+  "bucket": "paysage-nature",
+  "date": "exif",
+  "low": "0",
+  "id": 12751,
+  "cloudAssetId": "4bf96d98251e458ca124ae789028fb0d",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2003/2003-10-Sorel/DSCN3030.JPG",
+  "albumPath": "2003/2003-10-Sorel",
+  "sha256": "e0dc9fdff26af9340c9451710d1e5538a7dbf54701818a5a151d353866cf1f29",
+  "width": 1280,
+  "height": 960,
+  "aesth_db": 57,
+  "dateSource": "capture-date",
+  "captureDate": "2003-10-09T15:48:44",
+  "y": 2003,
+  "m": 10,
+  "d": 9,
+  "exists": true
+ },
+ {
+  "num": "46",
+  "album": "2003/2003-10-Sorel 2 - Laurentides",
+  "file": "DSCN3251.JPG",
+  "date_cls": "d-lect",
+  "date_txt": "2003-10-14 (exif)",
+  "aesth": 57,
+  "dim": "1280×960",
+  "tags": [
+   [
+    "street",
+    85
+   ],
+   [
+    "city",
+    81
+   ],
+   [
+    "architecture",
+    71
+   ],
+   [
+    "house",
+    68
+   ],
+   [
+    "building",
+    67
+   ],
+   [
+    "europe",
+    63
+   ],
+   [
+    "urban",
+    62
+   ],
+   [
+    "road",
+    62
+   ],
+   [
+    "travel",
+    62
+   ],
+   [
+    "people",
+    60
+   ],
+   [
+    "town",
+    60
+   ],
+   [
+    "london",
+    60
+   ],
+   [
+    "tourism",
+    59
+   ],
+   [
+    "culture",
+    57
+   ],
+   [
+    "england",
+    57
+   ],
+   [
+    "home",
+    57
+   ],
+   [
+    "traffic",
+    57
+   ],
+   [
+    "uk",
+    56
+   ],
+   [
+    "old",
+    56
+   ],
+   [
+    "car",
+    56
+   ],
+   [
+    "view",
+    55
+   ],
+   [
+    "houses",
+    55
+   ],
+   [
+    "germany",
+    55
+   ],
+   [
+    "sky",
+    55
+   ],
+   [
+    "residential",
+    54
+   ]
+  ],
+  "utags": [
+   "architecture",
+   "city",
+   "street",
+   "2 August 2022 21:25",
+   "2003-10-Sorel 2 - Laurentides",
+   "all pics"
+  ],
+  "ens": "2003",
+  "bucket": "ville-escale",
+  "date": "exif",
+  "low": "0",
+  "id": 26773,
+  "cloudAssetId": "9f4d926ad12844cbb33b2542abcaf866",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2003/2003-10-Sorel 2 - Laurentides/DSCN3251.JPG",
+  "albumPath": "2003/2003-10-Sorel 2 - Laurentides",
+  "sha256": "a9f3f11ba547acf11be313d17ad06b7dce644eb09f903883e6813e8dfce37909",
+  "width": 1280,
+  "height": 960,
+  "aesth_db": 57,
+  "dateSource": "capture-date",
+  "captureDate": "2003-10-14T17:28:15",
+  "y": 2003,
+  "m": 10,
+  "d": 14,
+  "exists": true
+ },
+ {
+  "num": "47",
+  "album": "2003/2003-10-Sorel 3-Forges de Sorel",
+  "file": "IMG_1291.JPG",
+  "date_cls": "d-lect",
+  "date_txt": "2003-10-20 (exif)",
+  "aesth": 42,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "car",
+    74
+   ],
+   [
+    "man",
+    69
+   ],
+   [
+    "business",
+    65
+   ],
+   [
+    "woman",
+    65
+   ],
+   [
+    "people",
+    63
+   ],
+   [
+    "airport",
+    62
+   ],
+   [
+    "travel",
+    60
+   ],
+   [
+    "young",
+    59
+   ],
+   [
+    "vehicle",
+    59
+   ],
+   [
+    "transportation",
+    59
+   ],
+   [
+    "transport",
+    58
+   ],
+   [
+    "girl",
+    58
+   ],
+   [
+    "couple",
+    58
+   ],
+   [
+    "caucasian",
+    57
+   ],
+   [
+    "person",
+    56
+   ],
+   [
+    "adult",
+    56
+   ],
+   [
+    "sea",
+    56
+   ],
+   [
+    "road",
+    56
+   ],
+   [
+    "street",
+    55
+   ],
+   [
+    "auto",
+    55
+   ],
+   [
+    "automobile",
+    55
+   ],
+   [
+    "repair",
+    54
+   ],
+   [
+    "female",
+    54
+   ],
+   [
+    "blue",
+    54
+   ],
+   [
+    "men",
+    54
+   ]
+  ],
+  "utags": [
+   "car",
+   "2 August 2022 21:25",
+   "2003-10-Sorel 3-Forges de Sorel",
+   "all pics",
+   "Hugo"
+  ],
+  "ens": "2003",
+  "bucket": "gens",
+  "date": "exif",
+  "low": "1",
+  "id": 38236,
+  "cloudAssetId": "e42fb6d59dde43dfb720a792a546273e",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2003/2003-10-Sorel 3-Forges de Sorel/IMG_1291.JPG",
+  "albumPath": "2003/2003-10-Sorel 3-Forges de Sorel",
+  "sha256": "feafcdf3d89fe1eb90ee89417dc3fd33a002e84801a6a7a4a5fcdabb098e2df4",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 42,
+  "dateSource": "capture-date",
+  "captureDate": "2003-10-20T15:44:50",
+  "y": 2003,
+  "m": 10,
+  "d": 20,
+  "exists": true
+ },
+ {
+  "num": "48",
+  "album": "2003/2003-11-Abacos - Floride",
+  "file": "IMG_1467.JPG",
+  "date_cls": "d-lect",
+  "date_txt": "2003-11-20 (exif)",
+  "aesth": 39,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "sign",
+    67
+   ],
+   [
+    "text",
+    64
+   ],
+   [
+    "business",
+    63
+   ],
+   [
+    "paper",
+    63
+   ],
+   [
+    "book",
+    62
+   ],
+   [
+    "dictionary",
+    61
+   ],
+   [
+    "concept",
+    60
+   ],
+   [
+    "page",
+    59
+   ],
+   [
+    "black",
+    59
+   ],
+   [
+    "word",
+    58
+   ],
+   [
+    "background",
+    58
+   ],
+   [
+    "education",
+    56
+   ],
+   [
+    "definition",
+    56
+   ],
+   [
+    "words",
+    54
+   ],
+   [
+    "symbol",
+    54
+   ],
+   [
+    "money",
+    54
+   ],
+   [
+    "school",
+    54
+   ],
+   [
+    "board",
+    54
+   ],
+   [
+    "information",
+    54
+   ],
+   [
+    "display",
+    53
+   ],
+   [
+    "success",
+    53
+   ],
+   [
+    "credit card",
+    52
+   ],
+   [
+    "isolated",
+    52
+   ],
+   [
+    "document",
+    52
+   ]
+  ],
+  "utags": [
+   "2 August 2022 21:25",
+   "2003-11-Abacos - Floride",
+   "all pics"
+  ],
+  "ens": "2003",
+  "bucket": "documents-objets",
+  "date": "exif",
+  "low": "1",
+  "id": 992,
+  "cloudAssetId": "05f18a47427d486799330f10d650eb2e",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2003/2003-11-Abacos - Floride/IMG_1467.JPG",
+  "albumPath": "2003/2003-11-Abacos - Floride",
+  "sha256": "f28063392825cf2060f8fea83d02bad37630eb09603209a17025eb5ab9653b66",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 39,
+  "dateSource": "capture-date",
+  "captureDate": "2003-11-20T10:34:34",
+  "y": 2003,
+  "m": 11,
+  "d": 20,
+  "exists": true
+ },
+ {
+  "num": "49",
+  "album": "2003/2003-11-Beaufort - Les Abacos",
+  "file": "DSCN3916.png",
+  "date_cls": "d-prop",
+  "date_txt": "≈ sans date (none)",
+  "aesth": 80,
+  "dim": "978×1019",
+  "tags": [
+   [
+    "boat",
+    88
+   ],
+   [
+    "sea",
+    88
+   ],
+   [
+    "yacht",
+    83
+   ],
+   [
+    "sail",
+    81
+   ],
+   [
+    "sailing",
+    80
+   ],
+   [
+    "water",
+    79
+   ],
+   [
+    "sailboat",
+    78
+   ],
+   [
+    "ocean",
+    74
+   ],
+   [
+    "blue",
+    71
+   ],
+   [
+    "summer",
+    69
+   ],
+   [
+    "ship",
+    69
+   ],
+   [
+    "travel",
+    69
+   ],
+   [
+    "sky",
+    67
+   ],
+   [
+    "catamaran",
+    65
+   ],
+   [
+    "wind",
+    63
+   ],
+   [
+    "nautical",
+    63
+   ],
+   [
+    "adventure",
+    63
+   ],
+   [
+    "boating",
+    63
+   ],
+   [
+    "sport",
+    62
+   ],
+   [
+    "vacation",
+    61
+   ],
+   [
+    "vessel",
+    61
+   ],
+   [
+    "sun",
+    60
+   ],
+   [
+    "recreation",
+    59
+   ],
+   [
+    "island",
+    59
+   ],
+   [
+    "cruise",
+    58
+   ]
+  ],
+  "utags": [
+   "blue",
+   "boat",
+   "ocean",
+   "sail",
+   "sailboat",
+   "sailing",
+   "sea",
+   "water",
+   "yacht",
+   "2 August 2022 21:25",
+   "2003-11-Abacos - Floride",
+   "2003-11-Beaufort - Les Abacos",
+   "all pics"
+  ],
+  "ens": "2003",
+  "bucket": "mer-navigation",
+  "date": "album",
+  "low": "0",
+  "id": 2778,
+  "cloudAssetId": "10ac21701dec474cb73b62915380b67e",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2003/2003-11-Beaufort - Les Abacos/DSCN3916.png",
+  "albumPath": "2003/2003-11-Beaufort - Les Abacos",
+  "sha256": "9accda41a65098c8ba581872bff8725edd1a094efed9f4a68528e4267f7171d3",
+  "width": 978,
+  "height": 1019,
+  "aesth_db": 80,
+  "dateSource": "none",
+  "captureDate": null,
+  "y": null,
+  "m": null,
+  "d": null,
+  "exists": true
+ },
+ {
+  "num": "50",
+  "album": "2004/2004-01- Fort Lauderdale - Belize",
+  "file": "Nav vers le Bélize-015.JPG",
+  "date_cls": "d-lect",
+  "date_txt": "2004-01-24 (exif)",
+  "aesth": 57,
+  "dim": "2592×1944",
+  "tags": [
+   [
+    "boat",
+    79
+   ],
+   [
+    "sea",
+    75
+   ],
+   [
+    "sailing",
+    73
+   ],
+   [
+    "yacht",
+    73
+   ],
+   [
+    "sailboat",
+    69
+   ],
+   [
+    "man",
+    69
+   ],
+   [
+    "sail",
+    68
+   ],
+   [
+    "ocean",
+    66
+   ],
+   [
+    "girl",
+    66
+   ],
+   [
+    "woman",
+    66
+   ],
+   [
+    "sailor",
+    65
+   ],
+   [
+    "travel",
+    65
+   ],
+   [
+    "water",
+    65
+   ],
+   [
+    "blue",
+    64
+   ],
+   [
+    "adult",
+    63
+   ],
+   [
+    "couple",
+    63
+   ],
+   [
+    "fishing",
+    63
+   ],
+   [
+    "summer",
+    63
+   ],
+   [
+    "leisure",
+    61
+   ],
+   [
+    "fun",
+    60
+   ],
+   [
+    "people",
+    59
+   ],
+   [
+    "vacation",
+    59
+   ],
+   [
+    "caucasian",
+    59
+   ],
+   [
+    "adventure",
+    59
+   ],
+   [
+    "happy",
+    58
+   ]
+  ],
+  "utags": [
+   "boat",
+   "sailing",
+   "sea",
+   "yacht",
+   "2 August 2022 21:25",
+   "2004-01- Fort Lauderdale - Belize",
+   "all pics"
+  ],
+  "ens": "2004",
+  "bucket": "mer-navigation",
+  "date": "exif",
+  "low": "0",
+  "id": 23115,
+  "cloudAssetId": "8974cab80d894668b091b803656f471b",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2004/2004-01- Fort Lauderdale - Belize/Nav vers le Bélize-015.JPG",
+  "albumPath": "2004/2004-01- Fort Lauderdale - Belize",
+  "sha256": "b667221df7af0750b6ff4595ef128bba6e0e5708b0f4f6e951802064af14a298",
+  "width": 2592,
+  "height": 1944,
+  "aesth_db": 57,
+  "dateSource": "capture-date",
+  "captureDate": "2004-01-24T23:31:02",
+  "y": 2004,
+  "m": 1,
+  "d": 24,
+  "exists": true
+ },
+ {
+  "num": "51",
+  "album": "2004/2004-02-Belize",
+  "file": "DSCN8476.JPG",
+  "date_cls": "d-lect",
+  "date_txt": "2004-02-16 (exif)",
+  "aesth": 46,
+  "dim": "1536×2048",
+  "tags": [
+   [
+    "man",
+    74
+   ],
+   [
+    "yacht",
+    70
+   ],
+   [
+    "sea",
+    69
+   ],
+   [
+    "boat",
+    69
+   ],
+   [
+    "travel",
+    66
+   ],
+   [
+    "woman",
+    64
+   ],
+   [
+    "adult",
+    64
+   ],
+   [
+    "car",
+    64
+   ],
+   [
+    "business",
+    63
+   ],
+   [
+    "sailing",
+    62
+   ],
+   [
+    "caucasian",
+    62
+   ],
+   [
+    "sail",
+    61
+   ],
+   [
+    "couple",
+    60
+   ],
+   [
+    "girl",
+    60
+   ],
+   [
+    "young",
+    59
+   ],
+   [
+    "ocean",
+    59
+   ],
+   [
+    "people",
+    58
+   ],
+   [
+    "transportation",
+    58
+   ],
+   [
+    "blue",
+    58
+   ],
+   [
+    "boy",
+    57
+   ],
+   [
+    "female",
+    57
+   ],
+   [
+    "auto",
+    57
+   ],
+   [
+    "sailboat",
+    57
+   ],
+   [
+    "captain",
+    56
+   ],
+   [
+    "summer",
+    56
+   ]
+  ],
+  "utags": [
+   "man",
+   "yacht",
+   "2 August 2022 21:25",
+   "2004-02-Belize",
+   "all pics"
+  ],
+  "ens": "2004",
+  "bucket": "mer-navigation",
+  "date": "exif",
+  "low": "1",
+  "id": 13210,
+  "cloudAssetId": "4ec7f82bf82b4a8a8e12383fe2675508",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2004/2004-02-Belize/DSCN8476.JPG",
+  "albumPath": "2004/2004-02-Belize",
+  "sha256": "e7ed2b1ef35cf6a66eda7141713fa9b62140dad1417914480b3bb1873846c06c",
+  "width": 1536,
+  "height": 2048,
+  "aesth_db": 46,
+  "dateSource": "capture-date",
+  "captureDate": "2004-02-16T13:36:45",
+  "y": 2004,
+  "m": 2,
+  "d": 16,
+  "exists": true
+ },
+ {
+  "num": "52",
+  "album": "2004/2004-03- visite de Tikal",
+  "file": "DSCN4482.JPG",
+  "date_cls": "d-lect",
+  "date_txt": "2004-02-20 (exif)",
+  "aesth": 64,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "landscape",
+    73
+   ],
+   [
+    "ancient",
+    72
+   ],
+   [
+    "old",
+    69
+   ],
+   [
+    "stone",
+    68
+   ],
+   [
+    "castle",
+    66
+   ],
+   [
+    "rock",
+    65
+   ],
+   [
+    "architecture",
+    65
+   ],
+   [
+    "ruins",
+    65
+   ],
+   [
+    "travel",
+    64
+   ],
+   [
+    "arizona",
+    64
+   ],
+   [
+    "desert",
+    64
+   ],
+   [
+    "sky",
+    63
+   ],
+   [
+    "tower",
+    63
+   ],
+   [
+    "building",
+    62
+   ],
+   [
+    "utah",
+    60
+   ],
+   [
+    "nature",
+    60
+   ],
+   [
+    "usa",
+    60
+   ],
+   [
+    "tourism",
+    60
+   ],
+   [
+    "grass",
+    59
+   ],
+   [
+    "ruin",
+    59
+   ],
+   [
+    "medieval",
+    59
+   ],
+   [
+    "church",
+    59
+   ],
+   [
+    "wall",
+    59
+   ],
+   [
+    "history",
+    58
+   ],
+   [
+    "outdoors",
+    58
+   ]
+  ],
+  "utags": [
+   "ancient",
+   "landscape",
+   "2 August 2022 21:25",
+   "2004-03- visite de Tikal",
+   "all pics"
+  ],
+  "ens": "2004",
+  "bucket": "ville-escale",
+  "date": "exif",
+  "low": "0",
+  "id": 30579,
+  "cloudAssetId": "b68e1c52fffd4649b3601751222d3b4e",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2004/2004-03- visite de Tikal/DSCN4482.JPG",
+  "albumPath": "2004/2004-03- visite de Tikal",
+  "sha256": "67ec8244527cca1a92d2feaf5a1898a4681f2350dd9e5f0b09c7ea8a65c9acda",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 64,
+  "dateSource": "capture-date",
+  "captureDate": "2004-02-20T07:35:30",
+  "y": 2004,
+  "m": 2,
+  "d": 20,
+  "exists": true
+ },
+ {
+  "num": "53",
+  "album": "2004/2004-04-Belize - Isla Mujeres",
+  "file": "DSCN4740.JPG",
+  "date_cls": "d-lect",
+  "date_txt": "2004-03-03 (exif)",
+  "aesth": 68,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "sea",
+    88
+   ],
+   [
+    "boat",
+    87
+   ],
+   [
+    "sailing",
+    84
+   ],
+   [
+    "sailboat",
+    83
+   ],
+   [
+    "sail",
+    82
+   ],
+   [
+    "yacht",
+    82
+   ],
+   [
+    "water",
+    74
+   ],
+   [
+    "blue",
+    74
+   ],
+   [
+    "ocean",
+    74
+   ],
+   [
+    "ship",
+    71
+   ],
+   [
+    "summer",
+    71
+   ],
+   [
+    "nautical",
+    68
+   ],
+   [
+    "sky",
+    67
+   ],
+   [
+    "yachting",
+    64
+   ],
+   [
+    "boating",
+    64
+   ],
+   [
+    "travel",
+    63
+   ],
+   [
+    "leisure",
+    63
+   ],
+   [
+    "wind",
+    61
+   ],
+   [
+    "sails",
+    61
+   ],
+   [
+    "sport",
+    60
+   ],
+   [
+    "horizon",
+    59
+   ],
+   [
+    "mediterranean",
+    59
+   ],
+   [
+    "luxury",
+    59
+   ],
+   [
+    "holiday",
+    59
+   ],
+   [
+    "vessel",
+    59
+   ]
+  ],
+  "utags": [
+   "blue",
+   "boat",
+   "ocean",
+   "sail",
+   "sailboat",
+   "sailing",
+   "sea",
+   "ship",
+   "summer",
+   "water",
+   "yacht",
+   "2 August 2022 21:25",
+   "2004-04-Belize - Isla Mujeres",
+   "all pics"
+  ],
+  "ens": "2004",
+  "bucket": "mer-navigation",
+  "date": "exif",
+  "low": "0",
+  "id": 33913,
+  "cloudAssetId": "ca5bbccec92e44d6be9ce868e2f5f915",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2004/2004-04-Belize - Isla Mujeres/DSCN4740.JPG",
+  "albumPath": "2004/2004-04-Belize - Isla Mujeres",
+  "sha256": "3938e3cf201caaa275a8804d64a273236a95affa7e3dabd44d52e6bffea50515",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 68,
+  "dateSource": "capture-date",
+  "captureDate": "2004-03-03T12:29:30",
+  "y": 2004,
+  "m": 3,
+  "d": 3,
+  "exists": true
+ },
+ {
+  "num": "54",
+  "album": "2004/2004-04-Isla Mujeres",
+  "file": "Puerto Aventuras-09.JPG",
+  "date_cls": "d-lect",
+  "date_txt": "2004-03-17 (exif)",
+  "aesth": 46,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "water",
+    75
+   ],
+   [
+    "nature",
+    69
+   ],
+   [
+    "sea",
+    69
+   ],
+   [
+    "underwater",
+    69
+   ],
+   [
+    "animal",
+    67
+   ],
+   [
+    "fish",
+    65
+   ],
+   [
+    "ocean",
+    65
+   ],
+   [
+    "rock",
+    60
+   ],
+   [
+    "blue",
+    60
+   ],
+   [
+    "stone",
+    58
+   ],
+   [
+    "dead",
+    58
+   ],
+   [
+    "river",
+    58
+   ],
+   [
+    "turtle",
+    58
+   ],
+   [
+    "reptile",
+    58
+   ],
+   [
+    "tree",
+    56
+   ],
+   [
+    "life",
+    56
+   ],
+   [
+    "lake",
+    56
+   ],
+   [
+    "coral",
+    56
+   ],
+   [
+    "beach",
+    56
+   ],
+   [
+    "marine",
+    56
+   ],
+   [
+    "aquarium",
+    54
+   ],
+   [
+    "dark",
+    54
+   ],
+   [
+    "skull",
+    53
+   ],
+   [
+    "reef",
+    53
+   ]
+  ],
+  "utags": [
+   "water",
+   "2 August 2022 21:25",
+   "2004-04-Isla Mujeres",
+   "all pics"
+  ],
+  "ens": "2004",
+  "bucket": "mer-navigation",
+  "date": "exif",
+  "low": "1",
+  "id": 37433,
+  "cloudAssetId": "df691d0d65184d7db8a671fa9906c891",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2004/2004-04-Isla Mujeres/Puerto Aventuras-09.JPG",
+  "albumPath": "2004/2004-04-Isla Mujeres",
+  "sha256": "51225cdd0112b3517c0a146dc4239c6799999800ec9ea89fc89483ca58489e59",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 46,
+  "dateSource": "capture-date",
+  "captureDate": "2004-03-17T17:31:48",
+  "y": 2004,
+  "m": 3,
+  "d": 17,
+  "exists": true
+ },
+ {
+  "num": "55",
+  "album": "2004/2004-05-visite de Tulum",
+  "file": "DSC00619.JPG",
+  "date_cls": "d-lect",
+  "date_txt": "2004-03-09 (exif)",
+  "aesth": 73,
+  "dim": "2048×1536",
+  "tags": [
+   [
+    "temple",
+    78
+   ],
+   [
+    "ancient",
+    77
+   ],
+   [
+    "pyramid",
+    74
+   ],
+   [
+    "architecture",
+    72
+   ],
+   [
+    "stone",
+    71
+   ],
+   [
+    "mexico",
+    71
+   ],
+   [
+    "old",
+    69
+   ],
+   [
+    "ruins",
+    69
+   ],
+   [
+    "travel",
+    69
+   ],
+   [
+    "ruin",
+    67
+   ],
+   [
+    "chichen itza",
+    66
+   ],
+   [
+    "religion",
+    66
+   ],
+   [
+    "history",
+    66
+   ],
+   [
+    "asia",
+    65
+   ],
+   [
+    "mayan",
+    65
+   ],
+   [
+    "cambodia",
+    65
+   ],
+   [
+    "maya",
+    64
+   ],
+   [
+    "angkor",
+    64
+   ],
+   [
+    "building",
+    63
+   ],
+   [
+    "sky",
+    62
+   ],
+   [
+    "monument",
+    61
+   ],
+   [
+    "culture",
+    61
+   ],
+   [
+    "rock",
+    60
+   ],
+   [
+    "wat",
+    60
+   ],
+   [
+    "yucatan",
+    59
+   ]
+  ],
+  "utags": [
+   "ancient",
+   "architecture",
+   "mexico",
+   "pyramid",
+   "stone",
+   "temple",
+   "2 August 2022 21:25",
+   "2004-05-visite de Tulum",
+   "all pics"
+  ],
+  "ens": "2004",
+  "bucket": "ville-escale",
+  "date": "exif",
+  "low": "0",
+  "id": 13432,
+  "cloudAssetId": "500acd5b1cfb4ed6991354a7091b395f",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2004/2004-05-visite de Tulum/DSC00619.JPG",
+  "albumPath": "2004/2004-05-visite de Tulum",
+  "sha256": "4144e83e446f525a781c56836498fa4c52ddeaadadb8e4eea9c5cee0439a5a19",
+  "width": 2048,
+  "height": 1536,
+  "aesth_db": 73,
+  "dateSource": "capture-date",
+  "captureDate": "2004-03-09T22:36:36",
+  "y": 2004,
+  "m": 3,
+  "d": 9,
+  "exists": true
+ },
+ {
+  "num": "56",
+  "album": "2004/2004-06-visite de Chichen Itza",
+  "file": "ChichenItza-176.JPG",
+  "date_cls": "d-lect",
+  "date_txt": "2004-03-24 (exif)",
+  "aesth": 56,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "forest",
+    91
+   ],
+   [
+    "tree",
+    82
+   ],
+   [
+    "green",
+    79
+   ],
+   [
+    "nature",
+    78
+   ],
+   [
+    "wood",
+    75
+   ],
+   [
+    "woods",
+    73
+   ],
+   [
+    "trees",
+    67
+   ],
+   [
+    "woodland",
+    66
+   ],
+   [
+    "path",
+    65
+   ],
+   [
+    "leaves",
+    65
+   ],
+   [
+    "park",
+    65
+   ],
+   [
+    "spring",
+    64
+   ],
+   [
+    "natural",
+    64
+   ],
+   [
+    "leaf",
+    63
+   ],
+   [
+    "wild",
+    63
+   ],
+   [
+    "landscape",
+    63
+   ],
+   [
+    "moss",
+    62
+   ],
+   [
+    "summer",
+    61
+   ],
+   [
+    "grass",
+    59
+   ],
+   [
+    "foliage",
+    58
+   ],
+   [
+    "water",
+    58
+   ],
+   [
+    "trail",
+    58
+   ],
+   [
+    "rainforest",
+    58
+   ],
+   [
+    "jungle",
+    58
+   ],
+   [
+    "fern",
+    57
+   ]
+  ],
+  "utags": [
+   "forest",
+   "green",
+   "nature",
+   "tree",
+   "wood",
+   "woods",
+   "2 August 2022 21:25",
+   "2004-06-visite de Chichen Itza",
+   "all pics"
+  ],
+  "ens": "2004",
+  "bucket": "paysage-nature",
+  "date": "exif",
+  "low": "0",
+  "id": 24389,
+  "cloudAssetId": "913615f1857b4196a8c35fa7ce80090b",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2004/2004-06-visite de Chichen Itza/ChichenItza-176.JPG",
+  "albumPath": "2004/2004-06-visite de Chichen Itza",
+  "sha256": "7042abe8bd66d39e78d3c1827f449667843d995857642a5700a5eb6e41da6f69",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 56,
+  "dateSource": "capture-date",
+  "captureDate": "2004-03-24T10:56:02",
+  "y": 2004,
+  "m": 3,
+  "d": 24,
+  "exists": true
+ },
+ {
+  "num": "57",
+  "album": "2004/2004-07-Faro",
+  "file": "DSCN0015-3.JPG",
+  "date_cls": "d-lect",
+  "date_txt": "2004-05-19 (exif)",
+  "aesth": 61,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "old",
+    80
+   ],
+   [
+    "architecture",
+    79
+   ],
+   [
+    "street",
+    76
+   ],
+   [
+    "building",
+    74
+   ],
+   [
+    "ancient",
+    70
+   ],
+   [
+    "town",
+    70
+   ],
+   [
+    "house",
+    70
+   ],
+   [
+    "stone",
+    70
+   ],
+   [
+    "city",
+    69
+   ],
+   [
+    "italy",
+    64
+   ],
+   [
+    "village",
+    64
+   ],
+   [
+    "alley",
+    64
+   ],
+   [
+    "road",
+    63
+   ],
+   [
+    "historic",
+    60
+   ],
+   [
+    "wall",
+    60
+   ],
+   [
+    "medieval",
+    59
+   ],
+   [
+    "europe",
+    59
+   ],
+   [
+    "spain",
+    58
+   ],
+   [
+    "bricks",
+    58
+   ],
+   [
+    "narrow",
+    58
+   ],
+   [
+    "brick",
+    57
+   ],
+   [
+    "urban",
+    57
+   ],
+   [
+    "historical",
+    57
+   ],
+   [
+    "travel",
+    56
+   ],
+   [
+    "buildings",
+    56
+   ]
+  ],
+  "utags": [
+   "ancient",
+   "architecture",
+   "building",
+   "house",
+   "old",
+   "stone",
+   "street",
+   "town",
+   "2 August 2022 21:25",
+   "2004-07-Faro",
+   "all pics"
+  ],
+  "ens": "2004",
+  "bucket": "ville-escale",
+  "date": "exif",
+  "low": "0",
+  "id": 2050,
+  "cloudAssetId": "0c2c4c2aba4d4c74b654a07cd3fa3cfa",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2004/2004-07-Faro/DSCN0015-3.JPG",
+  "albumPath": "2004/2004-07-Faro",
+  "sha256": "5cc7e441c5841dac04c63202214ded7c3edc2b7c57d551f8cb9e915b5f659b6c",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 61,
+  "dateSource": "capture-date",
+  "captureDate": "2004-05-19T02:59:14",
+  "y": 2004,
+  "m": 5,
+  "d": 19,
+  "exists": true
+ },
+ {
+  "num": "58",
+  "album": "2004/2004-08-Nans et visite Gerard",
+  "file": "DSCN0080.JPG",
+  "date_cls": "d-lect",
+  "date_txt": "2004-09-09 (exif)",
+  "aesth": 57,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "agriculture",
+    86
+   ],
+   [
+    "tractor",
+    86
+   ],
+   [
+    "field",
+    86
+   ],
+   [
+    "farm",
+    83
+   ],
+   [
+    "rural",
+    70
+   ],
+   [
+    "agricultural",
+    70
+   ],
+   [
+    "landscape",
+    68
+   ],
+   [
+    "country",
+    67
+   ],
+   [
+    "farming",
+    66
+   ],
+   [
+    "farmer",
+    66
+   ],
+   [
+    "plow",
+    65
+   ],
+   [
+    "machinery",
+    65
+   ],
+   [
+    "equipment",
+    65
+   ],
+   [
+    "green",
+    65
+   ],
+   [
+    "crop",
+    64
+   ],
+   [
+    "vehicle",
+    64
+   ],
+   [
+    "countryside",
+    64
+   ],
+   [
+    "machine",
+    63
+   ],
+   [
+    "land",
+    63
+   ],
+   [
+    "nature",
+    62
+   ],
+   [
+    "blue",
+    62
+   ],
+   [
+    "autumn",
+    61
+   ],
+   [
+    "sky",
+    61
+   ],
+   [
+    "summer",
+    60
+   ],
+   [
+    "cultivation",
+    60
+   ]
+  ],
+  "utags": [
+   "agricultural",
+   "agriculture",
+   "farm",
+   "field",
+   "rural",
+   "tractor",
+   "2 August 2022 21:25",
+   "2004-08-Nans et visite Gerard",
+   "all pics"
+  ],
+  "ens": "2004",
+  "bucket": "paysage-nature",
+  "date": "exif",
+  "low": "0",
+  "id": 3643,
+  "cloudAssetId": "15a4638cd31449ada75a2f20891d3ebf",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2004/2004-08-Nans et visite Gerard/DSCN0080.JPG",
+  "albumPath": "2004/2004-08-Nans et visite Gerard",
+  "sha256": "fe0cfb3001f2ccae5fcd492943d3054bd47bf12cb19e8b0172b81e331515f4f4",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 57,
+  "dateSource": "capture-date",
+  "captureDate": "2004-09-09T15:57:27",
+  "y": 2004,
+  "m": 9,
+  "d": 9,
+  "exists": true
+ },
+ {
+  "num": "59",
+  "album": "2004/2004-09-maroc avec Hugo",
+  "file": "DSCN0498-2.JPG",
+  "date_cls": "d-lect",
+  "date_txt": "2004-10-11 (exif)",
+  "aesth": 47,
+  "dim": "1600×1200",
+  "tags": [
+   [
+    "beach",
+    89
+   ],
+   [
+    "sand",
+    84
+   ],
+   [
+    "sea",
+    84
+   ],
+   [
+    "landscape",
+    78
+   ],
+   [
+    "ocean",
+    76
+   ],
+   [
+    "sky",
+    76
+   ],
+   [
+    "nature",
+    73
+   ],
+   [
+    "sunset",
+    71
+   ],
+   [
+    "coast",
+    71
+   ],
+   [
+    "water",
+    69
+   ],
+   [
+    "horizon",
+    67
+   ],
+   [
+    "blue",
+    66
+   ],
+   [
+    "background",
+    65
+   ],
+   [
+    "summer",
+    64
+   ],
+   [
+    "desert",
+    63
+   ],
+   [
+    "clouds",
+    63
+   ],
+   [
+    "seaside",
+    61
+   ],
+   [
+    "shore",
+    60
+   ],
+   [
+    "waves",
+    59
+   ],
+   [
+    "coastline",
+    58
+   ],
+   [
+    "dry",
+    57
+   ],
+   [
+    "seashore",
+    57
+   ],
+   [
+    "sun",
+    57
+   ],
+   [
+    "cloud",
+    57
+   ],
+   [
+    "empty",
+    56
+   ]
+  ],
+  "utags": [
+   "beach",
+   "coast",
+   "landscape",
+   "nature",
+   "ocean",
+   "sand",
+   "sea",
+   "sky",
+   "sunset",
+   "2 August 2022 21:25",
+   "2004-09-maroc avec Hugo",
+   "all pics"
+  ],
+  "ens": "2004",
+  "bucket": "mer-navigation",
+  "date": "exif",
+  "low": "1",
+  "id": 41780,
+  "cloudAssetId": "f945dbe090c942e6b57d07a3dd224f03",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2004/2004-09-maroc avec Hugo/DSCN0498-2.JPG",
+  "albumPath": "2004/2004-09-maroc avec Hugo",
+  "sha256": "a6283386e1034e8ff3384278d1050e124cd7f8140f9921eddf7fdae8dd02b633",
+  "width": 1600,
+  "height": 1200,
+  "aesth_db": 47,
+  "dateSource": "capture-date",
+  "captureDate": "2004-10-11T16:24:04",
+  "y": 2004,
+  "m": 10,
+  "d": 11,
+  "exists": true
+ },
+ {
+  "num": "60",
+  "album": "2004/2004-10-Monaco-Val d'Isere",
+  "file": "DSCN4871.JPG",
+  "date_cls": "d-lect",
+  "date_txt": "2004-08-09 (exif)",
+  "aesth": 56,
+  "dim": "2560×1704",
+  "tags": [
+   [
+    "mountain",
+    81
+   ],
+   [
+    "mountains",
+    79
+   ],
+   [
+    "landscape",
+    77
+   ],
+   [
+    "nature",
+    76
+   ],
+   [
+    "forest",
+    75
+   ],
+   [
+    "sky",
+    74
+   ],
+   [
+    "blue",
+    73
+   ],
+   [
+    "green",
+    70
+   ],
+   [
+    "hill",
+    68
+   ],
+   [
+    "grass",
+    68
+   ],
+   [
+    "tree",
+    67
+   ],
+   [
+    "cloud",
+    66
+   ],
+   [
+    "clouds",
+    65
+   ],
+   [
+    "trees",
+    65
+   ],
+   [
+    "summer",
+    64
+   ],
+   [
+    "view",
+    63
+   ],
+   [
+    "alpine",
+    63
+   ],
+   [
+    "range",
+    62
+   ],
+   [
+    "background",
+    61
+   ],
+   [
+    "beautiful",
+    61
+   ],
+   [
+    "hills",
+    60
+   ],
+   [
+    "autumn",
+    58
+   ],
+   [
+    "outdoor",
+    58
+   ],
+   [
+    "fall",
+    58
+   ],
+   [
+    "hike",
+    57
+   ]
+  ],
+  "utags": [
+   "blue",
+   "forest",
+   "green",
+   "landscape",
+   "mountain",
+   "mountains",
+   "nature",
+   "sky",
+   "2 August 2022 21:25",
+   "2004-10-Monaco-Val d'Isere",
+   "all pics"
+  ],
+  "ens": "2004",
+  "bucket": "paysage-nature",
+  "date": "exif",
+  "low": "0",
+  "id": 41380,
+  "cloudAssetId": "f6d9bf6259794249b0cf478d64a83ef2",
+  "path": "/Volumes/OWC Envoy Ultra/Pictures/lightroom/originals/2004/2004-10-Monaco-Val d'Isere/DSCN4871.JPG",
+  "albumPath": "2004/2004-10-Monaco-Val d'Isere",
+  "sha256": "b74378eaac62149e6f90e7fa22061a35da5abc7df814282bb91a3574d84d02e4",
+  "width": 2560,
+  "height": 1704,
+  "aesth_db": 56,
+  "dateSource": "capture-date",
+  "captureDate": "2004-08-09T13:50:22",
+  "y": 2004,
+  "m": 8,
+  "d": 9,
+  "exists": true
+ }
+]
