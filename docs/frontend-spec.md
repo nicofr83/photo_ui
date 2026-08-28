@@ -219,10 +219,10 @@ de 421 photos**, le meilleur rapport effort/gain du projet.
 
 | Rang | Échelon | Produit | Nature | Photos |
 |---:|:---|:---|:---|---:|
-| 0 | `ref.album_span` | l'intervalle de l'album, dont les rangs 2/4/5 se servent | décision | 1 saisie |
+| 0 | `ref.album_span` | l'intervalle de l'album, dont les rangs 2/4/5 se servent | *(pas une date)* — saisie humaine, mais les dates qu'elle produit restent des **inférences** | 1 saisie |
 | 1 | **Décision humaine** — annotation de datation | jour | **décision** | **728** |
 | 2 | **EXIF arbitré** — dans l'intervalle de l'album élargi de 6 mois | jour | **lecture validée par arbitrage** | **2 424** |
-| 3 | **Lieu ↔ journal** — proposition du gazetteer croisé au journal (§3.5) | jour + position, avec fourchette et preuves | proposition | 37 avec preuve |
+| 3 | **Lieu ↔ journal** — proposition du gazetteer croisé au journal (§3.5) | jour + position, avec fourchette et preuves | **inférence** | 37 avec preuve |
 | 4 | **Album, EXIF écarté** — hors fenêtre : l'EXIF est une date de scan | l'intervalle de l'album | inférence | **970** |
 | 5 | **Album, pas d'EXIF** | idem | inférence | **375** |
 | 6 | **Album à année seule** | année | inférence | **161** |
@@ -788,14 +788,25 @@ muette.
 
 | Nature | Origine | Rendu |
 |:---|:---|:---|
-| **Lecture** | EXIF, `passages.dateFrom`, `log_entries.date` | vert, romain — `1999-09-30 (exif)` |
-| **Proposition** | passe de datation, fenêtre de page, intervalle d'album | ambre, italique, `≈` — `≈ 1999-09-30 (± 96 h)` |
-| **Décision humaine** | annotation, correction saisie ici | violet, gras, `✓` — `✓ 1999-09-28 — à la main` |
+| **Lecture** (`reading`) | EXIF, `passages.dateFrom`, `log_entries.date` | vert, romain — `1999-09-30 (exif)` |
+| **Inférence** (`inference`) | passe de datation, fenêtre de page, intervalle d'album, `ref.web_span` | ambre, italique, `≈` — `≈ 1999-09-30 (± 96 h)` |
+| **Décision humaine** (`decision`) | annotation de datation, et elle seule | violet, gras, `✓` — `✓ 1999-09-28 — à la main` |
 
 Elle tient **structurellement**, pas seulement visuellement : colonnes
 distinctes en base, `date_kind` dérivé jamais saisi, champs séparés dans l'API,
 trois traitements visuels, et **`kind` dans le manifeste exporté** — la règle
 survit à la sortie du système.
+
+**Ce qui range une date dans la colonne « décision » n'est pas *qui* a agi, mais
+*ce que le geste établit*.** Une annotation de datation **tranche** : quelqu'un a
+ouvert la photo, vu l'EXIF affiché, et tapé autre chose — le geste arbitre entre
+deux sources qui se contredisent. Une plage de `ref.album_span` ou de
+`ref.web_span` **comble un vide** : le nom d'album ne nomme qu'un début, aucun
+des 569 passages du site ne porte de date. C'est une conjecture, faite par un
+humain, sur une source qui ne dit rien — donc une **inférence**, rendue ambre et
+`≈`, quelle que soit la main qui l'a saisie. Rien n'est perdu au passage :
+`kind` dit ce que la date vaut, `source` dit d'où elle vient, et les deux
+voyagent séparément. C'est précisément à ça que servent deux champs.
 
 **Elle porte aussi sur les textes.** Trois natures y coexistent : texte d'époque
 (sa `confidence`, sa page, sa date), texte humain d'aujourd'hui (note,
@@ -1489,7 +1500,7 @@ cibles `album`.
     "date": { "start": "1999-10-14", "end": "1999-10-14", "precision": "day",
               "kind": "decision", "source": "annotation", "bracket_hours": null },
     "position": { "lat": 32.98, "lon": -16.39, "kind": "inference",
-                  "source": "logbook-interpolated" },
+                  "source": "logbook_interpolated" },
 
     "people": ["Hugo", "Gigi"],
     "place": { "city": null, "country": null },
@@ -1500,24 +1511,51 @@ cibles `album`.
                  "kind": "machine", "model": "claude-haiku-4-5",
                  "created_at": "…" },
 
-    "selected_because": ["date-range", "album"]
+    "selected_because": ["date_range", "album"]
   }],
   "texts": [{
-    "id": "ma-vie/p007/002",
-    "kind": "passage",              // passage | log_entry
-    "document": "ma-vie",           // ma-vie | logbook | web/1999/Transat
-    "page": "ma-vie/p007",
-    "page_image": "pages/ma-vie-p007.jpg",
+    // (1) UNE ENTRÉE DE JOURNAL, règle A — le seul cas où la date affirmée et la
+    //     fenêtre couverte divergent vraiment.
+    "id": "logbook/p021/004",
+    "kind": "log_entry",            // passage | log_entry
+    "document": "logbook",          // ma-vie | logbook | web/1999/Transat
+    "page": "logbook/p021",
+    "page_image": "pages/logbook-p021.jpg",
     "text": "…",                    // le texte EFFECTIF, corrigé s'il l'a été
     "text_original": "…",           // la transcription d'origine, si corrigée
     "corrected": true,
-    // ce que le texte AFFIRME — ici un jour, lu sur la page
-    "date": { "from": "1999-09-23", "to": "1999-09-23",
-              "kind": "reading", "source": "passage_date" },
-    // la fenêtre qu'il COUVRE — calculée, toujours plus large, jamais une date
-    "overlap": { "from": "1999-09-23", "to": "1999-09-25",
-                 "rule": "B", "span_source": "passages" },
+    // ce que le texte AFFIRME — ce jour-là, écrit sur la page le jour même
+    "date": { "from": "1999-10-14", "to": "1999-10-14",
+              "kind": "reading", "source": "log_entry_date" },
+    // la fenêtre qu'il COUVRE — jusqu'à la veille de la journée suivante
+    // renseignée. Calculée, jamais plus étroite, JAMAIS affichée comme une date.
+    "overlap": { "from": "1999-10-14", "to": "1999-10-16",
+                 "rule": "logbook_entry", "span_source": null },
     "covers_images": ["05b9a4fac5df4dd28dcc1002d7ec0074"],
+    "user_note": null
+  }, {
+    // (2) UN PASSAGE NON DATÉ, règle B — placé par la fenêtre de sa page, donc
+    //     `inference` et jamais `reading` : il n'affirme pas cette date, il
+    //     l'hérite. `span_source: "carried"` dit que la page ne nomme aucun jour
+    //     et reprend celui de la précédente — une inférence sur une inférence,
+    //     et ça doit se voir. Sous la règle B, `date` et `overlap` coïncident
+    //     toujours : daté, le passage couvre son seul jour ; non daté, il couvre
+    //     la fenêtre qui le date.
+    "id": "ma-vie/p007/002",
+    "kind": "passage",
+    "document": "ma-vie",
+    "page": "ma-vie/p007",
+    "page_image": "pages/ma-vie-p007.jpg",
+    "text": "…",
+    "text_original": "…",
+    "corrected": false,
+    "date": { "from": "1999-10-20", "to": "1999-10-22",
+              "kind": "inference", "source": "page_window" },
+    "overlap": { "from": "1999-10-20", "to": "1999-10-22",
+                 "rule": "passage", "span_source": "carried" },
+    // vide : la photo est du 14 octobre, hors de [10-20, 10-22]. `covers_images`
+    // n'énumère que les images que le prédicat de §4.1 retient réellement.
+    "covers_images": [],
     "user_note": null
   }],
   "notes": [{
@@ -1528,3 +1566,17 @@ cibles `album`.
   }]
 }
 ```
+
+**Les valeurs du manifeste sont celles du contrat, à la lettre près.** Aucune
+table de correspondance entre l'API, la base et le fichier livré : `date.source`,
+`position.source`, `overlap.rule`, `span_source` et `selected_because` prennent
+les valeurs des énumérations fermées du contrat (§2.1), en `snake_case`. En
+particulier `logbook_interpolated` et non `logbook-interpolated` — le pipeline
+amont écrit des tirets, `photo_ui` normalise en tirets bas à l'import et ne les
+reproduit nulle part. Les **clés** du manifeste sont en `snake_case` là où
+l'API est en `camelCase` : c'est la seule différence, et elle est mécanique.
+
+**Le manifeste ne se relit pas seulement pour sa forme, mais pour sa
+cohérence.** Chaque `covers_images` doit satisfaire le prédicat de §4.1 contre
+la `date` de l'image citée, et chaque `overlap` doit être ce que sa règle
+produit — un exemple qui triche est recopié tel quel.
