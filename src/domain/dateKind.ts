@@ -1,4 +1,4 @@
-import { DateKind, DateSource } from '../shared/enums';
+import { DateKind, DateSource, PositionSource } from '../shared/enums';
 
 /**
  * Thrown when the server sends a (source, kind) pair that contradicts the
@@ -8,7 +8,7 @@ import { DateKind, DateSource } from '../shared/enums';
  */
 export class KindDisagreementError extends Error {
   constructor(
-    readonly source: DateSource,
+    readonly source: DateSource | PositionSource,
     readonly received: DateKind,
     readonly expected: DateKind,
   ) {
@@ -56,6 +56,37 @@ export function expectedKindFor(source: DateSource): DateKind {
 
 export function assertKindConsistent(source: DateSource, received: DateKind): void {
   const expected = expectedKindFor(source);
+  if (received !== expected) {
+    throw new KindDisagreementError(source, received, expected);
+  }
+}
+
+/**
+ * The same table for positions. The contract states it in comments only
+ * (§2.1: `EXIF // reading`, `LOGBOOK_INTERPOLATED // inference`); spec §7.1
+ * makes it binding, because a position interpolated from the logbook is a
+ * proposal and a GPS fix is a measurement.
+ */
+export function expectedKindForPosition(source: PositionSource): DateKind {
+  switch (source) {
+    case PositionSource.EXIF:
+      return DateKind.READING;
+
+    case PositionSource.LOGBOOK_INTERPOLATED:
+      return DateKind.INFERENCE;
+
+    default: {
+      const unreachable: never = source;
+      throw new Error(`unmapped PositionSource: ${String(unreachable)}`);
+    }
+  }
+}
+
+export function assertPositionKindConsistent(
+  source: PositionSource,
+  received: DateKind,
+): void {
+  const expected = expectedKindForPosition(source);
   if (received !== expected) {
     throw new KindDisagreementError(source, received, expected);
   }
