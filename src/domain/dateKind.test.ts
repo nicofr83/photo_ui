@@ -23,7 +23,7 @@ const CANONICAL: ReadonlyArray<readonly [DateSource, DateKind]> = [
   [DateSource.PASSAGE_DATE_FROM, DateKind.READING],
   [DateSource.LOG_ENTRY_DATE, DateKind.READING],
   [DateSource.PAGE_WINDOW, DateKind.INFERENCE],
-  [DateSource.WEB_SPAN, DateKind.DECISION],
+  [DateSource.WEB_SPAN, DateKind.INFERENCE],
 ];
 
 describe('expectedKindFor', () => {

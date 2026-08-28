@@ -58,10 +58,16 @@ survivre à une coupure :
    suite si un fichier de `src/ui/` ou `src/screens/` formate une date lui-même.
    C'est la traduction mécanique de la règle capitale : ne pas la contourner,
    la corriger.
-3. **Divergence `web_span`** — le contrat le mappe en `decision`, la spec dit
-   deux fois « inférence humaine » (l. 560 et §9.4). La valeur du contrat est
-   appliquée, commentée et datée dans `src/domain/dateKind.ts`, et un test
-   l'assère. Basculer coûte une ligne de code et une ligne de test.
+3. **`web_span` est une `inference`** — divergence close le 2026-08-28 dans le
+   sens de la spec, les trois documents disent maintenant la même chose.
+   Le critère retenu, et il vaut pour toute source future : ce qui sépare
+   `decision` d'`inference` n'est pas *qui* a agi mais **ce que le geste
+   établit**. Une annotation de datation **arbitre** — quelqu'un a vu l'EXIF
+   affiché et a tapé autre chose. Une plage de `ref.web_span` **comble un
+   vide** : aucun des 569 passages du site ne porte de date. `source` dit qu'un
+   humain a saisi, `kind` dit ce que ça vaut. **`annotation` est la seule source
+   `decision`.** Conséquence de rendu voulue : les ~25 plages web saisies à la
+   main s'affichent ambre italique `≈`, pas violet gras `✓`.
 4. **`server/` est à la racine, pas sous `src/`** — accord avec `impl-backend`.
    La raison est mécanique : le `tsconfig.json` et la couverture du frontend
    portent sur `src/**`, du code serveur là-dedans casserait son `typecheck` et

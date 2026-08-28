@@ -22,17 +22,10 @@ export class KindDisagreementError extends Error {
 /** The canonical source → nature table. Spec §7.1, contract §2.1. */
 export function expectedKindFor(source: DateSource): DateKind {
   switch (source) {
+    // The ONLY decision source. What separates `decision` from `inference` is
+    // not WHO acted but WHAT THE GESTURE ESTABLISHES: a dating annotation
+    // ARBITRATES — someone saw the EXIF on screen and typed something else.
     case DateSource.ANNOTATION:
-      return DateKind.DECISION;
-
-    // OPEN DIVERGENCE, raised with contrat-api and spec-frontend on 2026-08-28.
-    // The contract's enum glosses WEB_SPAN as "décision humaine"; the spec says
-    // twice (§4.2 rule C, §9.4) that these intervals are marked as HUMAN
-    // INFERENCES. The contract is normative until they reconcile, so `decision`
-    // stands here — but the spec's reading looks right: a web document carries
-    // no date at all, so a human range over it is a guess, and rendering a guess
-    // as a firm decision is the error §7.1 exists to prevent.
-    case DateSource.WEB_SPAN:
       return DateKind.DECISION;
 
     case DateSource.EXIF_ARBITRATED:
@@ -44,6 +37,12 @@ export function expectedKindFor(source: DateSource): DateKind {
     case DateSource.ALBUM_MONTH:
     case DateSource.ALBUM_YEAR:
     case DateSource.PAGE_WINDOW:
+    // A `web_span` range FILLS A VOID rather than arbitrating: none of the 569
+    // web passages carries a date, so a hand-typed range over one is a
+    // conjecture. `source` already says a human typed it; `kind` says what it
+    // is worth. Contract §4.8, spec §5.7 / §9.4. The ~25 ranges Nicolas will
+    // enter therefore render amber italic with the approximation glyph.
+    case DateSource.WEB_SPAN:
       return DateKind.INFERENCE;
 
     default: {
