@@ -104,3 +104,73 @@ qui se déclenche pendant que les crédits sont épuisés échoue ; une tâche q
 déclenche quand ils reviennent ferait tourner du travail de spécification
 **sans personne pour le relire**, et ce travail-là se juge. La reprise reste un
 geste de Nicolas.
+
+---
+
+## Les décisions de Nicolas, dans l'ordre où il les a prises
+
+*Ajouté par la session pilote. Ce fil n'existait que dans son contexte de
+conversation : aucun document ne le portait. Chaque ligne est une décision
+tranchée par Nicolas lui-même, pas une inférence d'agent.*
+
+| Décision | Ce qu'il a choisi | Pourquoi ça compte |
+|:---|:---|:---|
+| Topologie | Backend sur son Mac pour le développement, déplaçable en fin de projet | Impose : aucun chemin en dur, tout par variables d'environnement |
+| Périmètre fonctionnel | Navigateur complet **et** revue de datation, d'un bloc — puis **pivot complet** vers l'atelier de composition de BD | La spec antérieure au pivot est morte ; seule la règle des trois dates en a survécu |
+| Store | Postgres local plutôt que SQLite en lecture seule | Le pipeline reconstruit tout à zéro : une correction écrite dans ses bases meurt à la passe suivante |
+| Retour vers `adobe_mcp` | Export explicite, à la main, jamais automatique, derrière un drapeau désactivé | Il a vu deux écrivains sur `annotations.jsonl` à la même minute |
+| Stack | React + Vite + TypeScript strict | Web d'abord, iOS et macOS différés via Capacitor — le différé ne coûte rien si le web est fait correctement |
+| Périmètre de travail | Les **82 albums** (3 930 photos), pas `photos.year` (3 558) | La hiérarchie qu'il a rangée à la main fait foi ; `photos.year` se trompe 745 fois |
+| Plafond de fourchette | **Aucun** | Les dates étant faillibles, un plafond calculé dessus écarterait autant de vrai que de bruit |
+| Galeries web ↔ photothèque | Investiguer avant de coder l'écran texte | Spike fait : exploitable, 108 liens sur 2003-2004 |
+| Légendage VLM | **Un échantillon d'abord**, 50-100 photos, avant d'engager les 3 930 | Ni la spec ni le contrat ne peuvent trancher par le raisonnement si les légendes valent quelque chose |
+| Reprise automatique | **Refusée** — pas de tâche planifiée | De la spécification qui tourne sans relecteur ne vaut rien |
+
+### La règle des dates, telle qu'il l'a énoncée
+
+Elle est le mécanisme central et elle vient de lui, mot pour mot :
+
+> Quand il y a une date de capture dans l'EXIF qui ne diffère pas de plus de
+> 6 mois avec la date dans le dernier niveau de hiérarchie, c'est cette date qui
+> est bonne. Sinon prendre la date du dernier niveau de la hiérarchie, ou celle
+> modifiée dans l'UI de la pipeline. Si besoin et si possible faire un
+> rapprochement du lieu avec le contenu du journal de bord / « Ma vie », leurs
+> dates sont exactes. Sinon on garde la date modifiée par l'UI du pipeline, ou
+> année/mois du dernier niveau de la hiérarchie.
+
+Et sa mise en garde, qui gouverne tout le reste : **« sur les photos récentes le
+datage est correct, mais sur les anciennes il a été fait à la main, et des fois
+comporte des erreurs. »** 40,2 % des dates du périmètre ne sont pas des mesures.
+
+---
+
+## Les agents, nommément
+
+*Complète le tableau plus haut, qui en désignait deux comme « non nommés ».*
+
+| Agent | Mandat | Joignable par `SendMessage` |
+|:---|:---|:---|
+| `spec-frontend` | Spécification fonctionnelle, vivante | oui |
+| `contrat-api` | Contrat d'API **et** spec backend — mandat terminé | oui |
+| `impl-frontend` | Plan **et** implémentation du frontend | oui |
+| `impl-backend` | Plan puis implémentation du backend — **lancé** | oui |
+| `spike-legendes` | Échantillon de légendes — c'est l'« agent non nommé » | oui |
+| `inventaire-schemas`, `digest-specs`, `spike-dhash`, `skill-dossier-bd` | Mandats terminés, livrables commités | oui |
+
+`ListAgents` n'est pas disponible dans toutes les sessions : passer par la
+session pilote pour un relais.
+
+---
+
+## Deux choses acquises hors dépôt
+
+- **La base `photo_ui` existe** : `localhost:5432`, conteneur Docker
+  `timescaledb`, utilisateur `nico`, collation ICU `fr-FR`, extensions
+  `postgis` 3.5.3, `pg_trgm`, `unaccent` installées. Vide de schéma applicatif.
+- **Le skill `bd_dossier` est actif globalement** : symlink créé par Nicolas
+  depuis `~/.claude/skills/bd_dossier` vers `photo_ui/skills/bd_dossier`. Le
+  modifier est un changement du dépôt.
+
+**La clé API Anthropic de la machine est sans crédit.** Le spike des légendes
+s'en passe : un agent Claude Code voit les images qu'il ouvre. À savoir avant de
+planifier quoi que ce soit qui appelle l'API directement.
