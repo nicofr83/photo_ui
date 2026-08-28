@@ -7,6 +7,10 @@ export default defineConfig({
   plugins: [react()],
   test: {
     globals: true,
+    // The backend listens on the loopback, so the client always builds an
+    // absolute URL. Node's fetch refuses a relative one, which is what makes
+    // this explicit rather than accidental.
+    env: { VITE_API_BASE_URL: 'http://127.0.0.1:3000' },
     projects: [
       {
         extends: true,
