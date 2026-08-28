@@ -583,7 +583,7 @@ CREATE TABLE pipeline.text_unit (
       WHEN 'passage_date_from' THEN 'reading'
       WHEN 'log_entry_date'    THEN 'reading'
       WHEN 'page_window'       THEN 'inference'
-      WHEN 'web_span'          THEN 'decision'
+      WHEN 'web_span'          THEN 'inference'   -- humaine, mais conjecturale : voir contrat §4.8
       ELSE NULL
     END) STORED,
 

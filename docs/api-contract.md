@@ -169,7 +169,7 @@ export const DateSource = {
   PASSAGE_DATE_FROM: 'passage_date_from', // passages.dateFrom · reading
   LOG_ENTRY_DATE: 'log_entry_date',       // log_entries.date  · reading
   PAGE_WINDOW: 'page_window',             // pages.startAt/endAt · voir spanSource
-  WEB_SPAN: 'web_span',                   // ref.web_span · decision humaine
+  WEB_SPAN: 'web_span',                   // ref.web_span · INFERENCE, humaine mais conjecturale
 } as const;
 export type DateSource = (typeof DateSource)[keyof typeof DateSource];
 
@@ -1639,9 +1639,27 @@ C'est le seul recalcul partiel autorisé de la cascade. Il est synchrone : le
 plus gros album fait 286 photos. Il donne à l'utilisateur le retour immédiat qui
 rend les 25 saisies motivantes — « cette plage vient de redater 243 photos ».
 
-Les intervalles de `ref.web_span` sont marqués **`kind: 'decision'`,
-`source: 'web_span'`** partout où ils servent : ce sont des inférences humaines
-grossières, et elles ne doivent jamais se lire comme une date d'époque.
+**Les intervalles de `ref.web_span` sont marqués `kind: 'inference'`,
+`source: 'web_span'`** partout où ils servent.
+
+`inference` et non `decision`, et la distinction n'est pas cosmétique — elle
+décide du rendu : `decision` s'affiche violet, gras, préfixé `✓` ; `inference`
+s'affiche ambre, italique, préfixé `≈`.
+
+Ce qui sépare les deux n'est pas *qui* a agi mais *ce que le geste établit*.
+Une annotation de datation **tranche** : quelqu'un a ouvert la photo, vu l'EXIF
+affiché, et tapé autre chose — le geste arbitre entre deux sources qui se
+contredisent. Une plage de `ref.web_span` **comble un vide** : aucun des 569
+passages du site ne porte de date, et le seul indice est le chemin du document.
+C'est une conjecture, faite par un humain, sur un document qui ne dit rien.
+
+La rendre comme une décision ferme serait exactement le glissement que la règle
+capitale existe pour empêcher — et le même que celui contre lequel la règle C
+met en garde : inventer des dates au site serait l'erreur à ne pas commettre.
+
+**Rien n'est perdu** : `source: 'web_span'` dit déjà que c'est un humain qui a
+saisi. `kind` dit ce que ça vaut, `source` dit d'où ça vient. Les deux faits
+voyagent séparément, ce qui est précisément la raison d'être de ces deux champs.
 
 ---
 

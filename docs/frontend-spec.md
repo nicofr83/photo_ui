@@ -184,8 +184,10 @@ recouvrement (§4) en dépendent.
 Vérifiable dans les chemins : **les 82 dossiers du disque sont exactement les 82
 albums** *(mesuré)*, et le préfixe `aaaa-mm` que le pipeline analyse est **le nom
 qu'une personne a tapé sur un dossier des années après la prise de vue**.
-**Après cascade, 40 % des dates du périmètre ne sont toujours pas des mesures**
-(annexe A.1), et c'est ce qui gouverne §4.
+**Après cascade, seules 2 332 photos sur 3 930 (59 %) portent une date lue par
+la machine et validée par un arbitrage.** Les 1 598 autres se partagent en 870
+inférences tirées d'un nom d'album et 728 décisions humaines — dont Nicolas dit
+lui-même qu'elles « comportent parfois des erreurs ». C'est ce qui gouverne §4.
 
 ### 3.2 Ce que donne le nom d'album
 
@@ -321,8 +323,9 @@ leur somme croissante. Elles ne disent pas la même chose : la largeur du côté
 texte dit ce que la page couvre, celle du côté image dit ce qu'on ignore.
 
 **Aucun plafond de largeur.** Tout recouvrement est proposé, y compris les 436
-à plus d'un mois. La raison : 40 % des dates de photo ne sont pas des mesures
-(§3.1), donc un seuil calculé dessus masquerait des recouvrements corrects
+à plus d'un mois. La raison : **1 598 photos sur 3 930 (41 %) ne portent pas
+une date mesurée** — 870 sont des inférences d'album, 728 des décisions humaines
+faillibles (§3.1). Un seuil calculé dessus masquerait des recouvrements corrects
 autant que du bruit, et le ferait en silence. C'est à l'humain de trancher, avec
 l'information sous les yeux.
 
@@ -1398,6 +1401,12 @@ s'abstenir.
 **728** portent une date, **30** portent `value: {}` et la note
 `"photo were moved to another place in the hierarchy"`.
 
+**Ces 30 sont exactement les 30 `no-place-in-name` de `dating.db`**
+*(intersection mesurée : 30 sur 30)*. La note est donc la réponse humaine à ce
+doute précis, pas une annotation orpheline. Une photo « déplacée ailleurs dans
+la hiérarchie » reste sans date : ce sont les seules du périmètre dont le doute
+a été vu et laissé ouvert.
+
 `dating.db` : **521 propositions, toutes `manual`** ; **30 doutes, tous
 `no-place-in-name`**. **Aucune proposition machine ne subsiste.**
 
@@ -1435,6 +1444,13 @@ cibles `album`.
 - **`photos.year`/`month` ne sont pas autoritaires sur 1998-2004** : le préfixe
   d'album gagne sur l'EXIF dans le pipeline, et ces préfixes n'ont jamais été
   réconciliés avec les documents.
+- **`albums.year` est pire encore, et il faut l'ignorer.** Le build le remplit
+  après coup par un vote sur l'année **modale** des photos de l'album : une
+  majorité de dates de scan emporte le vote. **19 des 82 albums du périmètre
+  portent une année fausse** *(mesuré)* — `1998-02-Maison rose Algès` vaut 2013,
+  `2000-12-viree au Venezuela-3mois` vaut 2017, `2003-05-Orlando` vaut 2008, et
+  `2003-03-everglades` vaut NULL. Ne jamais lire `albums.year` : l'année vient
+  du préfixe du nom, et l'intervalle de `ref.album_span`.
 - **`captureDate` a six formats** dans une seule colonne, dont 76 % sans aucun
   fuseau. Un cast naïf en `timestamptz` décale silencieusement 32 070 photos.
 - **Les mots-clés `kind='user'` ne sont pas ce qu'une personne a écrit** :
