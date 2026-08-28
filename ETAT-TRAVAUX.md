@@ -34,17 +34,38 @@ c'est qu'elle soit sans perte et sans re-décision.
 | Spécification backend | `contrat-api` | **terminée** | **commité** — `docs/backend-spec.md` |
 | Spécification frontend | `spec-frontend` | vivante, amendée en continu | **commité** — `docs/frontend-spec.md` |
 | Plan frontend | `impl-frontend` | établi | **commité** — `docs/superpowers/plans/2026-08-28-frontend.md` |
-| Implémentation frontend T1 | `impl-frontend` | **en vol** | ⚠️ **4 fichiers non suivis sous `src/ui/`** |
+| Implémentation frontend T1 | `impl-frontend` | **en vol** — socle, domaine de la date, rendu | **tout commité** (`08e71e5`) — rien en vol |
 | Échantillon de légendes | *(agent non nommé)* | en cours | `docs/echantillon-legendes.html` est commité |
 | Plan d'implémentation backend | *(agent à lancer)* | **pas commencé** | — |
 
 Dernier commit : `c107907 feat: the resolved-date domain and the capital rule`,
 2026-08-28 18:56, branche `test_dev`.
 
-**Le seul travail réellement à risque** est `src/ui/` : `tokens.css`,
-`date/ResolvedDate.tsx`, `date/ResolvedDate.module.css`,
-`date/ResolvedDate.test.tsx`. Ils appartiennent à `impl-frontend`, qui seul sait
-s'ils sont dans un état commitable.
+**Rien n'est à risque côté frontend.** Les fichiers de `src/ui/` qui étaient
+listés ici comme non suivis sont commités depuis `08e71e5` — l'instantané
+précédent datait de `c107907`. `impl-frontend` n'a aucun travail hors de git.
+
+**Décisions frontend qui ne vivent nulle part ailleurs**, écrites ici pour
+survivre à une coupure :
+
+1. **TypeScript 6.0.3, pas 7.0.2** — aucune version de typescript-eslint ne
+   supporte TS 7 (`latest` et `canary` plafonnent à `typescript <6.1.0`). Garder
+   `strictTypeChecked` compte plus que le compilateur le plus neuf : c'est lui
+   qui fait respecter la règle « pas de `any` ». Ne pas « moderniser » ce
+   choix sans vérifier d'abord le peer range du linter.
+2. **`ResolvedDateView` est le seul composant autorisé à transformer une date en
+   texte** (§7.1). `src/ui/date/noBareDateRendering.test.ts` fait échouer la
+   suite si un fichier de `src/ui/` ou `src/screens/` formate une date lui-même.
+   C'est la traduction mécanique de la règle capitale : ne pas la contourner,
+   la corriger.
+3. **Divergence `web_span`** — le contrat le mappe en `decision`, la spec dit
+   deux fois « inférence humaine » (l. 560 et §9.4). La valeur du contrat est
+   appliquée, commentée et datée dans `src/domain/dateKind.ts`, et un test
+   l'assère. Basculer coûte une ligne de code et une ligne de test.
+4. **`server/` est à la racine, pas sous `src/`** — accord avec `impl-backend`.
+   La raison est mécanique : le `tsconfig.json` et la couverture du frontend
+   portent sur `src/**`, du code serveur là-dedans casserait son `typecheck` et
+   son seuil de couverture à chaque écriture en cours.
 
 ---
 
@@ -91,9 +112,13 @@ porte un défaut appliqué en attendant :
 - **Légendage VLM** — décision de Nicolas : échantillon de 50 à 100 photos
   d'abord. Les champs restent dans le contrat, la passe complète n'est pas
   engagée, aucune UI n'est en V1.
-- **Un point en attente de réponse** : `GET /tasks/:slug/review` reste dans le
-  contrat, mais `impl-frontend` calcule la chronologie côté client. S'il dérive
-  tout, l'endpoint se retire sans que rien d'autre bouge.
+- **`GET /tasks/:slug/review` : tranché, il reste.** `impl-frontend` s'était
+  trompé en annonçant tout dériver côté client. La chronologie est du rendu et
+  reste au frontend ; les **comptes** du bandeau restent au serveur, parce que
+  « N images qu'aucun texte ne recouvre » applique le prédicat de recouvrement.
+  Le calculer côté client créerait une seconde implémentation du recouvrement,
+  qui finirait par contredire `GET /photos?overlapsText…` — un chiffre qui
+  contredit le reste de l'application est pire qu'un endpoint de plus.
 
 ---
 
