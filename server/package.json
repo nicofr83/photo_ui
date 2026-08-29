@@ -3,15 +3,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/runtime/main.ts",
-    "start": "tsx src/runtime/main.ts",
+    "dev": "tsx --env-file-if-exists=.env watch src/runtime/main.ts",
+    "start": "tsx --env-file-if-exists=.env src/runtime/main.ts",
     "test": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
     "test:all": "vitest run",
     "test:coverage": "vitest run --project unit --coverage",
     "typecheck": "tsc --noEmit",
-    "db:migrate": "tsx src/db/migrate_cli.ts",
-    "db:import": "tsx src/import/import_cli.ts"
+    "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate_cli.ts",
+    "db:import": "tsx --env-file-if-exists=.env src/import/import_cli.ts"
   },
   "dependencies": {
     "fastify": "^5.2.1",

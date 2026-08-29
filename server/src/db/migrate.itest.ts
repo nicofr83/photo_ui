@@ -8,17 +8,24 @@ import { createLog, LogLevel } from '../log/log.ts';
 import { runMigrations } from './migrate.ts';
 import { createPool } from './pool.ts';
 
+/**
+ * Table de suivi PROPRE à ces tests. `public.schema_migration` est l'état
+ * partagé de toute la suite d'intégration : la vider ici ferait rejouer le
+ * schéma entier sous les pieds des autres fichiers de test.
+ */
+const TRACKING = 'public.schema_migration_runner_test';
+
 const pool = createPool(process.env.DATABASE_URL_TEST!);
 const log = createLog(LogLevel.ERROR);
 
 afterAll(async () => {
-  await pool.query('DROP TABLE IF EXISTS public.schema_migration');
+  await pool.query(`DROP TABLE IF EXISTS ${TRACKING}`);
   await pool.query('DROP TABLE IF EXISTS public.m_one, public.m_two');
   await pool.end();
 });
 
 beforeEach(async () => {
-  await pool.query('DROP TABLE IF EXISTS public.schema_migration');
+  await pool.query(`DROP TABLE IF EXISTS ${TRACKING}`);
   await pool.query('DROP TABLE IF EXISTS public.m_one, public.m_two');
 });
 
@@ -37,7 +44,7 @@ test('applies files in lexicographic order, not in directory order', async () =>
     '001_create.sql': 'CREATE TABLE public.m_one (id int);',
   });
 
-  const applied = await runMigrations(pool, log, dir);
+  const applied = await runMigrations(pool, log, dir, TRACKING);
 
   expect(applied).toEqual(['001_create', '002_add_column']);
   const { rows } = await pool.query(
@@ -49,20 +56,20 @@ test('applies files in lexicographic order, not in directory order', async () =>
 test('never replays what is already applied — that is the whole job', async () => {
   const dir = await migrationsDir({ '001_create.sql': 'CREATE TABLE public.m_one (id int);' });
 
-  expect(await runMigrations(pool, log, dir)).toEqual(['001_create']);
+  expect(await runMigrations(pool, log, dir, TRACKING)).toEqual(['001_create']);
   // Rejouer un CREATE TABLE lèverait ; ne rien faire est la preuve.
-  expect(await runMigrations(pool, log, dir)).toEqual([]);
+  expect(await runMigrations(pool, log, dir, TRACKING)).toEqual([]);
 });
 
 test('applies only what is NEW when a migration is added later', async () => {
   const first = await migrationsDir({ '001_create.sql': 'CREATE TABLE public.m_one (id int);' });
-  await runMigrations(pool, log, first);
+  await runMigrations(pool, log, first, TRACKING);
 
   const second = await migrationsDir({
     '001_create.sql': 'CREATE TABLE public.m_one (id int);',
     '002_second.sql': 'CREATE TABLE public.m_two (id int);',
   });
-  expect(await runMigrations(pool, log, second)).toEqual(['002_second']);
+  expect(await runMigrations(pool, log, second, TRACKING)).toEqual(['002_second']);
 });
 
 test('a failing migration leaves NOTHING behind — it is one transaction', async () => {
@@ -71,10 +78,10 @@ test('a failing migration leaves NOTHING behind — it is one transaction', asyn
     '002_broken.sql': 'CREATE TABLE public.m_two (id int); SELECT une_fonction_qui_nexiste_pas();',
   });
 
-  await expect(runMigrations(pool, log, dir)).rejects.toThrow();
+  await expect(runMigrations(pool, log, dir, TRACKING)).rejects.toThrow();
 
   const { rows: applied } = await pool.query(
-    'SELECT version FROM public.schema_migration ORDER BY version');
+    `SELECT version FROM ${TRACKING} ORDER BY version`);
   expect(applied.map((r) => r.version)).toEqual(['001_create']);
 
   // m_two ne doit pas exister : sa migration a échoué APRÈS l'avoir créée.
@@ -89,5 +96,5 @@ test('ignores files that are not .sql', async () => {
     'README.md': 'ceci n\'est pas une migration',
   });
 
-  expect(await runMigrations(pool, log, dir)).toEqual(['001_create']);
+  expect(await runMigrations(pool, log, dir, TRACKING)).toEqual(['001_create']);
 });
