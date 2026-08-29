@@ -186,6 +186,42 @@ describe('GET /photos/:cloudAssetId/texts', () => {
   });
 });
 
+describe('GET /photos/facets', () => {
+  test('accepts the same allowlist as GET /photos — an unknown parameter is a named 400', async () => {
+    app = await bootstrap(await completeEnv());
+    const response = await app.server.inject({ method: 'GET', url: '/photos/facets?albumPaht=x' });
+    expect(response.statusCode).toBe(400);
+    expect(response.json<{ error: { code: string } }>().error.code).toBe('UNKNOWN_PARAMETER');
+  });
+
+  test('an empty database returns a well-formed empty facets object, never a 500', async () => {
+    app = await bootstrap(await completeEnv());
+    const response = await app.server.inject({ method: 'GET', url: '/photos/facets?scope=all' });
+    expect(response.statusCode).toBe(200);
+    const body = response.json<{ albums: unknown[]; positionedCount: number }>();
+    expect(body.albums).toEqual([]);
+    expect(body.positionedCount).toBe(0);
+  });
+
+  test('recalculates against the SAME filter as GET /photos, through the full HTTP path', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.photo (cloud_asset_id, sha256, relative_path, file_name, format, raw_date_source, city)
+                         VALUES ($1, $2, 'x/p.jpg', 'p.jpg', 'jpg', 'none', 'Sorel')`, ['a'.repeat(32), 'b'.repeat(64)]);
+      await setup.query(`INSERT INTO pipeline.photo (cloud_asset_id, sha256, relative_path, file_name, format, raw_date_source, city)
+                         VALUES ($1, $2, 'x/p2.jpg', 'p2.jpg', 'jpg', 'none', 'Belmopan')`, ['c'.repeat(32), 'd'.repeat(64)]);
+
+      const response = await app.server.inject({ method: 'GET', url: '/photos/facets?scope=all&city=Sorel' });
+      expect(response.statusCode).toBe(200);
+      const body = response.json<{ cities: { value: string; count: number }[] }>();
+      expect(body.cities).toEqual([{ value: 'Sorel', count: 1 }]);
+    } finally {
+      await setup.query('DELETE FROM pipeline.photo');
+    }
+  });
+});
+
 describe('GET /albums', () => {
   test('serves the in-perimeter albums through the full HTTP path', async () => {
     const setup = testPool();

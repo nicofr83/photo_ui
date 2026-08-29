@@ -159,3 +159,24 @@ export interface Album {
   readonly suspectedRange: boolean;
   readonly hints: AlbumSpanHints;
 }
+
+export interface FacetBucket {
+  readonly value: string;
+  readonly count: number;
+  /** Vrai pour les tags au-delà de 500 photos. L'UI ne les met pas en avant. */
+  readonly tooBroad?: boolean;
+}
+
+/** Comptes CONTEXTUELS : recalculés contre le filtre courant (contrat §5.4). */
+export interface PhotoFacets {
+  readonly albums: readonly FacetBucket[];
+  readonly tags: readonly FacetBucket[];
+  readonly people: readonly FacetBucket[];
+  readonly countries: readonly FacetBucket[];
+  readonly cities: readonly FacetBucket[];
+  readonly years: readonly FacetBucket[];
+  /** Photos du résultat courant qui portent une position. 0 ⇒ l'axe lieu est désactivé, avec sa raison. */
+  readonly positionedCount: number;
+  readonly withOcrCount: number;
+  readonly datedToDayCount: number;
+}

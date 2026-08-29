@@ -2,7 +2,8 @@ import { DateKind, DatePrecision, DateSource, PositionSource } from '@shared/enu
 import type { PoolClient } from '../db/pool.ts';
 import type { AppliedFilter, UnmatchedFilterValue } from '../contract/filter_interface.ts';
 import type {
-  DatingDoubt, DatingProposal, DoubtCandidate, PhotoDetail, PhotoExif, PhotoListItem, PhotoTag,
+  DatingDoubt, DatingProposal, DoubtCandidate, FacetBucket, PhotoDetail, PhotoExif, PhotoFacets, PhotoListItem,
+  PhotoTag,
 } from '../contract/photo_interface.ts';
 import { cleanSearchQuery } from '../metier/search/clean_query.ts';
 import { mapPhotoRow, type PhotoRow } from '../metier/photos/map_photo_row.ts';
@@ -310,6 +311,93 @@ export async function listPhotos(client: PoolClient, filters: PhotoFilters): Pro
     items: rows.map((row) => mapPhotoRow(row)),
     total, populationTotal,
     filters: { applied, unmatchedValues },
+  };
+}
+
+/** Un tag au-delà de ce compte est marqué `tooBroad` — mesuré : 42 tags réels le dépassent. */
+const TAG_TOO_BROAD_THRESHOLD = 500;
+
+async function bucketQuery(
+  client: PoolClient, sql: string, values: unknown[],
+): Promise<readonly FacetBucket[]> {
+  const { rows } = await client.query<{ value: string; count: number }>(sql, values);
+  return rows.map((row) => ({ value: row.value, count: row.count }));
+}
+
+/**
+ * `GET /photos/facets` accepte EXACTEMENT les mêmes paramètres que
+ * `GET /photos` (contrat §5.4) — même `buildPhotoFilter`, jamais une seconde
+ * lecture des filtres qui pourrait diverger.
+ */
+export async function listFacets(client: PoolClient, filters: PhotoFilters): Promise<PhotoFacets> {
+  const { qb } = await buildPhotoFilter(client, filters);
+  const { whereClause, values } = qb;
+  const FROM = `FROM pipeline.photo p LEFT JOIN ref.country_alias ca ON ca.raw = p.country_raw`;
+
+  const albums = await bucketQuery(client, `
+    SELECT pa.album_path AS value, count(DISTINCT p.cloud_asset_id)::int AS count
+      ${FROM} JOIN pipeline.photo_album pa ON pa.cloud_asset_id = p.cloud_asset_id
+      ${whereClause}
+     GROUP BY pa.album_path
+     ORDER BY count DESC`, values);
+
+  const rawTags = await bucketQuery(client, `
+    SELECT pt.tag_name AS value, count(DISTINCT p.cloud_asset_id)::int AS count
+      ${FROM} JOIN pipeline.photo_tag pt ON pt.cloud_asset_id = p.cloud_asset_id
+      ${whereClause}
+     GROUP BY pt.tag_name
+     ORDER BY count ASC`, values);
+  // Sélectivité décroissante = compte croissant (déjà l'ordre de la requête) —
+  // les tags au-delà du seuil sont marqués, jamais mis en avant.
+  const tags = rawTags.map((bucket) => (
+    bucket.count > TAG_TOO_BROAD_THRESHOLD ? { ...bucket, tooBroad: true } : bucket
+  ));
+
+  const people = await bucketQuery(client, `
+    SELECT pp.person_name AS value, count(DISTINCT p.cloud_asset_id)::int AS count
+      ${FROM} JOIN pipeline.photo_person pp ON pp.cloud_asset_id = p.cloud_asset_id
+      ${whereClause}
+     GROUP BY pp.person_name
+     ORDER BY count DESC`, values);
+
+  const and = (condition: string): string => (whereClause === '' ? `WHERE ${condition}` : `${whereClause} AND ${condition}`);
+
+  const countries = await bucketQuery(client, `
+    SELECT coalesce(ca.normalized, p.country_raw) AS value, count(DISTINCT p.cloud_asset_id)::int AS count
+      ${FROM}
+      ${and('coalesce(ca.normalized, p.country_raw) IS NOT NULL')}
+     GROUP BY coalesce(ca.normalized, p.country_raw)
+     ORDER BY count DESC`, values);
+
+  const cities = await bucketQuery(client, `
+    SELECT p.city AS value, count(DISTINCT p.cloud_asset_id)::int AS count
+      ${FROM}
+      ${and('p.city IS NOT NULL')}
+     GROUP BY p.city
+     ORDER BY count DESC`, values);
+
+  const years = await bucketQuery(client, `
+    SELECT extract(year FROM p.resolved_start)::int::text AS value, count(DISTINCT p.cloud_asset_id)::int AS count
+      ${FROM}
+      ${and('p.resolved_start IS NOT NULL')}
+     GROUP BY extract(year FROM p.resolved_start)
+     ORDER BY count DESC`, values);
+
+  const { rows: countRows } = await client.query<{
+    positioned_count: number; with_ocr_count: number; dated_to_day_count: number;
+  }>(`
+    SELECT count(*) FILTER (WHERE p.position IS NOT NULL)::int AS positioned_count,
+           count(*) FILTER (WHERE p.ocr_text IS NOT NULL)::int AS with_ocr_count,
+           count(*) FILTER (WHERE p.resolved_precision = 'day')::int AS dated_to_day_count
+      ${FROM}
+      ${whereClause}`, values);
+  const counts = countRows[0];
+
+  return {
+    albums, tags, people, countries, cities, years,
+    positionedCount: counts?.positioned_count ?? 0,
+    withOcrCount: counts?.with_ocr_count ?? 0,
+    datedToDayCount: counts?.dated_to_day_count ?? 0,
   };
 }
 
