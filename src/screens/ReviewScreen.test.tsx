@@ -54,7 +54,7 @@ describe('spec §5.6/Q6 — the manifest order is reorderable', () => {
     });
 
     setup();
-    const list = await screen.findByRole('list');
+    const list = await screen.findByRole('list', { name: /images de la tâche/i });
     const firstRow = within(list).getAllByRole('listitem')[0];
     if (firstRow === undefined) throw new Error('expected at least one row');
     await user.click(within(firstRow).getByRole('button', { name: /descendre/i }));

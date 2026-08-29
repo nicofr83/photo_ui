@@ -2,7 +2,7 @@ import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { z } from 'zod';
 
-import { ApiError, ContractError, apiGet, apiPost, apiPut } from './client';
+import { ApiError, ContractError, apiDelete, apiGet, apiPatch, apiPost, apiPut } from './client';
 
 const server = setupServer();
 beforeAll(() => { server.listen({ onUnhandledRequest: 'error' }); });
@@ -39,6 +39,35 @@ describe('a conforming response', () => {
     await expect(apiPut('/corrections', { text: 'nœuds' }, Schema)).resolves.toEqual({
       total: 5,
     });
+  });
+
+  test('a PATCH sends its body and parses the reply', async () => {
+    server.use(
+      http.patch('*/tasks/x/notes/note_1', async ({ request }) => {
+        const body = (await request.json()) as { title: string };
+        return HttpResponse.json({ total: body.title.length });
+      }),
+    );
+    await expect(apiPatch('/tasks/x/notes/note_1', { title: 'Rappel' }, Schema)).resolves.toEqual({
+      total: 6,
+    });
+  });
+
+  test('a DELETE resolves on 204, with nothing to parse', async () => {
+    server.use(http.delete('*/tasks/x/notes/note_1', () => new HttpResponse(null, { status: 204 })));
+    await expect(apiDelete('/tasks/x/notes/note_1')).resolves.toBeUndefined();
+  });
+
+  test('a DELETE still throws ApiError on refusal', async () => {
+    server.use(
+      http.delete('*/tasks/x/notes/note_1', () =>
+        HttpResponse.json(
+          { error: { code: 'NOT_FOUND', message: 'Note introuvable.', details: { resource: 'note', id: 'note_1' } } },
+          { status: 404 },
+        ),
+      ),
+    );
+    await expect(apiDelete('/tasks/x/notes/note_1')).rejects.toBeInstanceOf(ApiError);
   });
 });
 

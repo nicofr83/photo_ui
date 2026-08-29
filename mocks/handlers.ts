@@ -16,7 +16,7 @@ import {
   CorrectionStatus, DatePrecision, DateSource, ErrorCode, OverlapRule, PhotoSort,
   SelectionReason, TaskState,
 } from '../src/shared/enums';
-import type { TaskDetail } from '../src/api/contract/task';
+import { TaskNoteCreateInputSchema, type TaskDetail } from '../src/api/contract/task';
 import type { Job } from '../src/api/contract/job';
 
 import { store } from './store';
@@ -287,7 +287,7 @@ export const handlers = [
   http.get('*/tasks', () =>
     HttpResponse.json({
       items: [...store.tasks.values()]
-        .map(({ images: _images, brief: _brief, ...summary }) => summary)
+        .map(({ images: _images, brief: _brief, notes: _notes, ...summary }) => summary)
         // The most recently opened first. Spec §5.1.
         .sort((a, b) => (b.lastOpenedAt ?? '').localeCompare(a.lastOpenedAt ?? '')),
     }),
@@ -333,6 +333,7 @@ export const handlers = [
       exportedAt: null, exportDirectory: null,
       contentHash: `hash-${body.slug}`, exportedContentHash: null,
       images: [],
+      notes: [],
     };
     store.tasks.set(body.slug, created);
     return HttpResponse.json(created, { status: 201 });
@@ -389,6 +390,60 @@ export const handlers = [
     return HttpResponse.json({
       added, removed, merged, rejected, warnings: [], imageCount: task.images.length,
     });
+  }),
+
+  // Spec §5.5: free notes, per task. `attachedTo` empty on both sides is the
+  // common "note générale" case, never refused.
+  http.post('*/tasks/:slug/notes', async ({ params, request }) => {
+    const task = store.tasks.get(String(params['slug']));
+    if (task === undefined) {
+      return error(404, ErrorCode.NOT_FOUND, 'Tâche introuvable.', {
+        resource: 'task', id: String(params['slug']),
+      });
+    }
+    // Validated, not just cast: `attachedTo.texts[].kind` is a closed
+    // vocabulary, and a loose cast here would let the mock accept what the
+    // real server would refuse.
+    const body = TaskNoteCreateInputSchema.parse(await request.json());
+
+    const note = {
+      id: `note_${Math.random().toString(36).slice(2, 10)}`,
+      title: body.title,
+      text: body.text,
+      createdAt: NOW,
+      updatedAt: NOW,
+      attachedTo: body.attachedTo,
+    };
+    task.notes.push(note);
+    task.noteCount = task.notes.length;
+    return HttpResponse.json(note, { status: 201 });
+  }),
+
+  http.patch('*/tasks/:slug/notes/:noteId', async ({ params, request }) => {
+    const task = store.tasks.get(String(params['slug']));
+    const note = task?.notes.find((n) => n.id === String(params['noteId']));
+    if (task === undefined || note === undefined) {
+      return error(404, ErrorCode.NOT_FOUND, 'Note introuvable.', {
+        resource: 'note', id: String(params['noteId']),
+      });
+    }
+    const body = (await request.json()) as { title?: string; text?: string };
+    if (body.title !== undefined) note.title = body.title;
+    if (body.text !== undefined) note.text = body.text;
+    note.updatedAt = NOW;
+    return HttpResponse.json(note);
+  }),
+
+  http.delete('*/tasks/:slug/notes/:noteId', ({ params }) => {
+    const task = store.tasks.get(String(params['slug']));
+    if (task === undefined) {
+      return error(404, ErrorCode.NOT_FOUND, 'Tâche introuvable.', {
+        resource: 'task', id: String(params['slug']),
+      });
+    }
+    task.notes = task.notes.filter((n) => n.id !== String(params['noteId']));
+    task.noteCount = task.notes.length;
+    return new HttpResponse(null, { status: 204 });
   }),
 
   http.get('*/photos', ({ request }) => {

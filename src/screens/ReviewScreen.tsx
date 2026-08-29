@@ -5,6 +5,7 @@ import { apiGet } from '../api/client';
 import { TaskDetailSchema } from '../api/contract/task';
 import { useExport } from '../api/hooks/useExport';
 import { useSelection } from '../api/hooks/useSelection';
+import { NotesPanel } from '../ui/notes/NotesPanel';
 import { ErrorBanner } from '../ui/primitives/ErrorBanner';
 import { TaskNav } from '../ui/primitives/TaskNav';
 import styles from '../ui/review/ReviewList.module.css';
@@ -47,7 +48,7 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
         Ordre chronologique par défaut — c’est celui que le LLM lira.
       </p>
 
-      <ul className={styles['list']}>
+      <ul className={styles['list']} aria-label="Images de la tâche">
         {selection.images.map((image, index) => (
           <li
             className={styles['row']}
@@ -126,6 +127,8 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
           ) : null}
         </div>
       ) : null}
+
+      <NotesPanel slug={slug} />
     </section>
   );
 }

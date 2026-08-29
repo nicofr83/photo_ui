@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { SelectionReason, TaskState } from '../../shared/enums';
 
 import { CivilDayRangeSchema, CloudAssetIdSchema, IsoTimestampSchema } from './common';
+import { TextRefSchema } from './text';
 
 export const TaskSummarySchema = z.strictObject({
   slug: z.string(),
@@ -39,9 +40,44 @@ export const TaskImageSelectionSchema = z.strictObject({
 });
 export type TaskImageSelection = z.infer<typeof TaskImageSelectionSchema>;
 
+/**
+ * Spec §5.5: a free note, per task. `attachedTo` empty on both sides is a
+ * GENERAL note — a common case, never an error state ("celle-ci est floue",
+ * true of the whole task, not one photo or passage).
+ */
+export const TaskNoteSchema = z.strictObject({
+  id: z.string(),
+  title: z.string(),
+  text: z.string(),
+  createdAt: IsoTimestampSchema,
+  updatedAt: IsoTimestampSchema,
+  attachedTo: z.strictObject({
+    images: z.array(CloudAssetIdSchema),
+    texts: z.array(TextRefSchema),
+  }),
+});
+export type TaskNote = z.infer<typeof TaskNoteSchema>;
+
+export const TaskNoteCreateInputSchema = z.strictObject({
+  title: z.string(),
+  text: z.string(),
+  attachedTo: z.strictObject({
+    images: z.array(CloudAssetIdSchema),
+    texts: z.array(TextRefSchema),
+  }),
+});
+export type TaskNoteCreateInput = z.infer<typeof TaskNoteCreateInputSchema>;
+
+export const TaskNotePatchInputSchema = z.strictObject({
+  title: z.string().optional(),
+  text: z.string().optional(),
+});
+export type TaskNotePatchInput = z.infer<typeof TaskNotePatchInputSchema>;
+
 export const TaskDetailSchema = TaskSummarySchema.extend({
   brief: z.string(),
   images: z.array(TaskImageSelectionSchema),
+  notes: z.array(TaskNoteSchema),
 });
 export type TaskDetail = z.infer<typeof TaskDetailSchema>;
 

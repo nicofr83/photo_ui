@@ -97,3 +97,13 @@ export function apiPost<T>(path: string, body: unknown, schema: z.ZodType<T>): P
 export function apiPut<T>(path: string, body: unknown, schema: z.ZodType<T>): Promise<T> {
   return request(path, schema, { method: 'PUT', body: JSON.stringify(body) });
 }
+
+export function apiPatch<T>(path: string, body: unknown, schema: z.ZodType<T>): Promise<T> {
+  return request(path, schema, { method: 'PATCH', body: JSON.stringify(body) });
+}
+
+/** No body expected back: a 204 has none, so there is nothing to validate. */
+export async function apiDelete(path: string): Promise<void> {
+  const response = await fetch(`${baseUrl()}${path}`, { method: 'DELETE' });
+  if (!response.ok) throw await toApiError(path, response);
+}
