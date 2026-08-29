@@ -191,6 +191,33 @@ function mapTextRow(row: TextRow): TextUnit {
   };
 }
 
+/**
+ * Le même SELECT partout où une ligne `TextUnit` complète est nécessaire —
+ * `listTexts` et le lookup unitaire des corrections — pour que les deux ne
+ * divergent jamais sur ce qu'un `TextUnit` porte.
+ */
+const TEXT_UNIT_SELECT = `
+    SELECT t.kind, t.id, t.document_id, t.page_id, t.ordinal, t.body,
+           tc.corrected_text, tc.original_at_correction, tc.corrected_at,
+           t.confidence, t.date_source, t.date_start, t.date_end, t.date_kind, t.page_span_source,
+           (SELECT count(*)::int FROM pipeline.photo p
+             WHERE ${overlapPredicate('p')}) AS overlapping_photo_count,
+           t.entry_time, ST_Y(t.entry_position::geometry) AS entry_lat, ST_X(t.entry_position::geometry) AS entry_lon,
+           t.raw_position, t.place_name, t.heading, t.wind, t.baro, t.engine_hours,
+           t.fix_confidence, t.remark_confidence
+      FROM pipeline.text_unit t
+      JOIN pipeline.document d ON d.id = t.document_id
+      LEFT JOIN app.text_correction tc ON tc.text_kind = t.kind AND tc.text_id = t.id
+      LEFT JOIN app.text_search ts ON ts.kind = t.kind AND ts.id = t.id
+      ${WEB_SPAN_JOIN}`;
+
+async function getTextUnit(client: PoolClient, ref: { readonly kind: string; readonly id: string }): Promise<TextUnit | null> {
+  const { rows } = await client.query<TextRow>(
+    `${TEXT_UNIT_SELECT} WHERE t.kind = $1 AND t.id = $2`, [ref.kind, ref.id]);
+  const row = rows[0];
+  return row === undefined ? null : mapTextRow(row);
+}
+
 export async function listTexts(client: PoolClient, filters: TextFilters): Promise<ListTextsResult> {
   const conditions: string[] = [];
   const values: unknown[] = [];
@@ -246,19 +273,7 @@ export async function listTexts(client: PoolClient, filters: TextFilters): Promi
   const offsetClause = filters.offset !== undefined ? ` OFFSET ${param(filters.offset)}` : '';
 
   const { rows } = await client.query<TextRow>(`
-    SELECT t.kind, t.id, t.document_id, t.page_id, t.ordinal, t.body,
-           tc.corrected_text, tc.original_at_correction, tc.corrected_at,
-           t.confidence, t.date_source, t.date_start, t.date_end, t.date_kind, t.page_span_source,
-           (SELECT count(*)::int FROM pipeline.photo p
-             WHERE ${overlapPredicate('p')}) AS overlapping_photo_count,
-           t.entry_time, ST_Y(t.entry_position::geometry) AS entry_lat, ST_X(t.entry_position::geometry) AS entry_lon,
-           t.raw_position, t.place_name, t.heading, t.wind, t.baro, t.engine_hours,
-           t.fix_confidence, t.remark_confidence
-      FROM pipeline.text_unit t
-      JOIN pipeline.document d ON d.id = t.document_id
-      LEFT JOIN app.text_correction tc ON tc.text_kind = t.kind AND tc.text_id = t.id
-      LEFT JOIN app.text_search ts ON ts.kind = t.kind AND ts.id = t.id
-      ${WEB_SPAN_JOIN}
+    ${TEXT_UNIT_SELECT}
      ${whereClause}
      ORDER BY ${sortSql}
      ${limitClause}${offsetClause}`, values);
@@ -345,4 +360,89 @@ export async function listOverlappingTexts(client: PoolClient, cloudAssetId: str
   };
 
   return { items, summary };
+}
+
+/** `app.text_search` doit refléter le texte EFFECTIF (§8.2) : rafraîchie à chaque écriture d'une correction. */
+async function refreshTextSearch(client: PoolClient): Promise<void> {
+  // Jamais `CONCURRENTLY` : impossible dans une transaction explicite —
+  // repli sur un `REFRESH` simple, un verrou exclusif de quelques
+  // millisecondes sur 2 871 lignes, le même choix que l'import (§8.2).
+  await client.query(`REFRESH MATERIALIZED VIEW app.text_search`);
+}
+
+export interface TextCorrectionInput {
+  readonly ref: { readonly kind: string; readonly id: string };
+  readonly text: string;
+}
+
+/**
+ * `original_at_correction` est le TÉMOIN — pas la valeur corrigée, l'amont
+ * TEL QU'IL ÉTAIT au moment de corriger (contrat §4.4) : c'est lui, et lui
+ * seul, qui permet de détecter une dérive plus tard. `null` : la cible
+ * n'existe pas dans `pipeline` — rien à corriger.
+ */
+export async function putCorrection(client: PoolClient, input: TextCorrectionInput): Promise<TextUnit | null> {
+  const { rows } = await client.query<{ body: string }>(
+    `SELECT body FROM pipeline.text_unit WHERE kind = $1 AND id = $2`, [input.ref.kind, input.ref.id]);
+  const current = rows[0];
+  if (current === undefined) return null;
+
+  await client.query(
+    `INSERT INTO app.text_correction (text_kind, text_id, corrected_text, original_at_correction, corrected_at)
+     VALUES ($1, $2, $3, $4, now())
+     ON CONFLICT (text_kind, text_id) DO UPDATE
+       SET corrected_text = EXCLUDED.corrected_text,
+           original_at_correction = EXCLUDED.original_at_correction,
+           corrected_at = now()`,
+    [input.ref.kind, input.ref.id, input.text, current.body],
+  );
+  await refreshTextSearch(client);
+  return await getTextUnit(client, input.ref);
+}
+
+/** `null` : la cible n'existe pas dans `pipeline` — rien à rendre, même si la correction, elle, existait encore. */
+export async function revertCorrection(
+  client: PoolClient, ref: { readonly kind: string; readonly id: string },
+): Promise<TextUnit | null> {
+  await client.query(`DELETE FROM app.text_correction WHERE text_kind = $1 AND text_id = $2`, [ref.kind, ref.id]);
+  await refreshTextSearch(client);
+  return await getTextUnit(client, ref);
+}
+
+interface CorrectionRow {
+  text_kind: string;
+  text_id: string;
+  corrected_text: string;
+  original_at_correction: string;
+  corrected_at: string;
+  current_body: string | null;
+}
+
+function correctionStatus(row: CorrectionRow): 'applied' | 'needs_review' | 'orphaned' {
+  if (row.current_body === null) return 'orphaned';
+  return row.current_body === row.original_at_correction ? 'applied' : 'needs_review';
+}
+
+/**
+ * Globale, jamais par tâche (contrat §4.4). `status` absent : tout, quel
+ * qu'il soit — les trois états conservent la correction, jamais appliquée
+ * en silence ni supprimée.
+ */
+export async function listCorrections(
+  client: PoolClient, status?: 'applied' | 'needs_review' | 'orphaned',
+): Promise<readonly TextCorrection[]> {
+  const { rows } = await client.query<CorrectionRow>(`
+    SELECT c.text_kind, c.text_id, c.corrected_text, c.original_at_correction, c.corrected_at, t.body AS current_body
+      FROM app.text_correction c
+      LEFT JOIN pipeline.text_unit t ON t.kind = c.text_kind AND t.id = c.text_id
+     ORDER BY c.corrected_at DESC`);
+
+  const corrections = rows.map((row): TextCorrection => ({
+    ref: { kind: row.text_kind, id: row.text_id },
+    text: row.corrected_text,
+    originalAtCorrection: row.original_at_correction,
+    correctedAt: row.corrected_at,
+    status: correctionStatus(row),
+  }));
+  return status === undefined ? corrections : corrections.filter((c) => c.status === status);
 }
