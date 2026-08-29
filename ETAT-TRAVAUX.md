@@ -558,9 +558,9 @@ Deux vrais défauts d'intégration trouvés en pilotant l'app réelle (jamais vi
 
 Tour des écrans réels (`images`, `textes`, `revue`, `réglages`, `tâches`) : quatre propres, zéro bannière d'erreur, zéro console. `revue` affiche les huit compteurs réels correctement après le correctif ci-dessus.
 
-**Un écart confirmé, pas corrigé — pour `back`** : `textes` lève 63 bannières « le champ items.0.galleryCaption ne respecte pas le contrat ». Deux causes, mêmes que l'écart déjà connu (contrat §11 Q11, jamais écrit côté serveur, en attente de l'intégration front) :
-- `GET /texts?kind=web_caption` → 400 `INVALID_PARAMETER`, `accepted: ["passage","log_entry"]` — `web_caption` absent de la liste serveur.
-- `galleryCaption` absent de chaque item de `/texts` (devrait être `null` pour tout ce qui n'est pas `web_caption`, jamais un champ manquant).
+**Un écart confirmé, pas corrigé — pour `back`, plus sévère que prévu** : `textes` lève 63 bannières « le champ items.0.galleryCaption ne respecte pas le contrat » — et ça touche les TROIS sections (Journal de bord, Ma vie, Site web), pas seulement le registre `web_caption`. Vérifié en direct : `galleryCaption` est absent de CHAQUE item réel de `/texts`, y compris les `passage`/`log_entry` ordinaires — pas seulement non renseigné pour `web_caption`. Comme `TextUnitSchema.galleryCaption` est requis (nullable, mais présent), l'écran Textes réel est actuellement bloqué EN ENTIER, pas juste sur les légendes de galerie. Deux causes, mêmes que l'écart déjà connu (contrat §11 Q11, jamais écrit côté serveur, en attente de l'intégration front) :
+- `galleryCaption` à ajouter à CHAQUE item de `/texts` — `null` pour tout ce qui n'est pas `web_caption`, jamais un champ manquant. C'est ce qui débloque déjà les deux premières sections.
+- `GET /texts?kind=web_caption` → 400 `INVALID_PARAMETER`, `accepted: ["passage","log_entry"]` — `web_caption` absent de la liste serveur. Débloque la troisième section.
 Forme déjà conçue et prête à implémenter telle quelle : `src/api/contract/text.ts:134-142` (`GalleryCaptionFieldsSchema` : `sha256, page, imagePath, distance, margin, verified`) et `:173` (`galleryCaption: GalleryCaptionFieldsSchema.nullable()` sur `TextUnitSchema`). `TextKind.WEB_CAPTION = 'web_caption'` déjà côté front (`src/shared/enums.ts:80`).
 
 DETAIL : commits `cdddcc2`, `7e2138a`, `2f42296`. `playwright` reste installé en local (`npm install --no-save`, jamais dans `package.json`) faute de `chromium-cli` sur ce poste — script de pilotage en scratchpad, rien dans le dépôt.
