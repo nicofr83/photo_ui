@@ -2,13 +2,59 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 import { apiGet } from '../api/client';
+import type { TaskReview, TaskReviewWarnings } from '../api/contract/review';
 import { TaskDetailSchema } from '../api/contract/task';
 import { useExport } from '../api/hooks/useExport';
 import { useSelection } from '../api/hooks/useSelection';
+import { useTaskReview } from '../api/hooks/useTaskReview';
+import { overlaps } from '../domain/interval';
 import { NotesPanel } from '../ui/notes/NotesPanel';
 import { ErrorBanner } from '../ui/primitives/ErrorBanner';
 import { TaskNav } from '../ui/primitives/TaskNav';
+import { Chronology } from '../ui/review/Chronology';
+import { ControlBanner } from '../ui/review/ControlBanner';
 import styles from '../ui/review/ReviewList.module.css';
+
+/**
+ * Spec §5.6: most of the eight counters can be turned into "which entries
+ * match" using data this same call already returned — no second
+ * implementation of the recouvrement predicate. `imagesWithoutText` needs
+ * the WHOLE corpus (not just this task's own texts) to know for certain, and
+ * `orphanedImages`/`orphanedTexts` name selections this payload does not
+ * even include (the orphaned photo or text is gone, by definition) — those
+ * three stay explanation-only in ControlBanner rather than highlighting
+ * nothing and looking broken.
+ */
+function highlightIdsFor(key: keyof TaskReviewWarnings | null, review: TaskReview): Set<string> | null {
+  if (key === null) return null;
+  const period = review.task.period;
+
+  switch (key) {
+    case 'undatedImages':
+      return new Set(review.images.filter((i) => i.date === null).map((i) => i.cloudAssetId));
+    case 'inferredDateImages':
+      return new Set(
+        review.images.filter((i) => i.date?.kind === 'inference').map((i) => i.cloudAssetId),
+      );
+    case 'imagesOutOfPeriod':
+      return new Set(
+        review.images
+          .filter((i) => period !== null && i.date !== null
+            && !overlaps(i.date, { start: period.from, end: period.to }))
+          .map((i) => i.cloudAssetId),
+      );
+    case 'uncertainTexts':
+      return new Set(
+        review.texts.filter((t) => t.confidence === 'uncertain')
+          .map((t) => `${t.ref.kind}:${t.ref.id}`),
+      );
+    default:
+      // imagesWithoutText, orphanedImages, orphanedTexts, textsWiderThan30Days:
+      // this payload cannot answer them precisely — ControlBanner's
+      // explanation text carries the meaning instead of a wrong highlight.
+      return null;
+  }
+}
 
 const SKIP_REASONS: Record<string, string> = {
   source_file_missing: 'fichier introuvable',
@@ -23,17 +69,30 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
   });
   const selection = useSelection(slug);
   const exportTask = useExport(slug);
+  const review = useTaskReview(slug);
   const [brief, setBrief] = useState('');
+  const [activeWarning, setActiveWarning] = useState<keyof TaskReviewWarnings | null>(null);
 
   if (task.error !== null) return <ErrorBanner error={task.error} />;
   if (task.isPending) return <p role="status">Chargement de la tâche…</p>;
 
   const report = exportTask.data?.report ?? null;
+  const highlightIds = review.data === undefined ? null : highlightIdsFor(activeWarning, review.data);
 
   return (
     <section className={styles['screen']}>
       <TaskNav slug={slug} />
       <h1>Revue — {task.data.title}</h1>
+
+      {/* Spec §5.6: non-blocking — every count is informational, none
+          refuses the export below. */}
+      {review.error !== null ? <ErrorBanner error={review.error} /> : null}
+      {review.data === undefined ? null : (
+        <>
+          <ControlBanner warnings={review.data.warnings} onActiveChange={setActiveWarning} />
+          <Chronology timeline={review.data.timeline} highlightIds={highlightIds} />
+        </>
+      )}
 
       <label className={styles['brief']}>
         Consigne pour le LLM

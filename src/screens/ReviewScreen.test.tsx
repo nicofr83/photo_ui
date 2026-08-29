@@ -116,6 +116,20 @@ describe('§5.6 — exporting', () => {
   });
 });
 
+describe('spec §5.6 — the control banner and the chronology', () => {
+  test('the banner and its eight counters render', async () => {
+    setup();
+    expect(await screen.findByRole('list', { name: /bandeau de contrôle/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { pressed: false }).length).toBeGreaterThanOrEqual(8);
+  });
+
+  test('the chronology places the one dated seed image', async () => {
+    setup();
+    expect(await screen.findByTestId('chronology-e8bc80b75e254b7db2e1454222416813'))
+      .toBeInTheDocument();
+  });
+});
+
 describe('§5.6 — the brief travels with the task', () => {
   test('the brief is editable', async () => {
     const user = userEvent.setup();

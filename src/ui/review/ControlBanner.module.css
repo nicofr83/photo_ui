@@ -1,0 +1,17 @@
+.banner { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0; margin: 0; list-style: none; }
+.counter {
+  min-height: var(--tap-target);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 0.6rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  background: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.counter[aria-pressed="true"] { border-color: #1f2937; background: #f3f4f6; font-weight: 600; }
+.counterZero { opacity: 0.45; }
+.count { font-weight: 700; }
+.explanation { margin: 0.5rem 0 0; padding: 0.5rem; background: #f9fafb; color: #374151; font-size: 0.85rem; }

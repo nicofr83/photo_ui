@@ -1,0 +1,15 @@
+.axis { position: relative; height: 3rem; border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; }
+.entry {
+  position: absolute;
+  top: 0.5rem;
+  height: 0.75rem;
+  border-radius: 2px;
+  min-width: 3px;
+}
+.entry[data-kind="image"] { top: 0.5rem; }
+.entry[data-kind="text"] { top: 1.75rem; }
+.entry[data-date-kind="reading"] { background: var(--date-reading); }
+.entry[data-date-kind="inference"] { background: var(--date-inference); }
+.entry[data-date-kind="decision"] { background: var(--date-decision); }
+.dimmed { opacity: 0.2; }
+.empty { margin: 0; color: #6b7280; font-style: italic; }
