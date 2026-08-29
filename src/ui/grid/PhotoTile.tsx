@@ -10,9 +10,16 @@ export interface PhotoTileProps {
   readonly selected: boolean;
   /** `shift` carries the range intent; the caller owns what a range means. */
   readonly onToggle: (cloudAssetId: string, shift: boolean) => void;
+  /** Omitted where the tile is not openable, as in the review list. */
+  readonly onOpen?: (cloudAssetId: string) => void;
 }
 
-export function PhotoTile({ photo, selected, onToggle }: PhotoTileProps): React.JSX.Element {
+export function PhotoTile({
+  photo,
+  selected,
+  onToggle,
+  onOpen,
+}: PhotoTileProps): React.JSX.Element {
   const [thumbFailed, setThumbFailed] = useState(false);
   const heldElsewhere = photo.inTaskSlugs.length > 0;
 
@@ -61,9 +68,19 @@ export function PhotoTile({ photo, selected, onToggle }: PhotoTileProps): React.
 
       <figcaption className={styles['caption']}>
         <ResolvedDateView date={photo.date} />
-        <span className={styles['fileName']} title={photo.fileName}>
-          {photo.fileName}
-        </span>
+        {onOpen === undefined ? (
+          <span className={styles['fileName']} title={photo.fileName}>
+            {photo.fileName}
+          </span>
+        ) : (
+          <button
+            className={styles['open']}
+            type="button"
+            onClick={() => { onOpen(photo.cloudAssetId); }}
+          >
+            Détail de {photo.fileName}
+          </button>
+        )}
       </figcaption>
     </figure>
   );

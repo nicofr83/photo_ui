@@ -11,6 +11,7 @@ interface Props {
   readonly onToggle: (cloudAssetId: string, shift: boolean) => void;
   /** Receives every id of the FILTER, not of the visible page. Spec §5.2. */
   readonly onSelectAll: (cloudAssetIds: string[]) => void;
+  readonly onOpen?: (cloudAssetId: string) => void;
 }
 
 export function PhotoGrid({
@@ -18,6 +19,7 @@ export function PhotoGrid({
   selected,
   onToggle,
   onSelectAll,
+  onOpen,
 }: Props): React.JSX.Element {
   const { data, error, isPending } = usePhotos(params);
 
@@ -47,6 +49,7 @@ export function PhotoGrid({
               photo={photo}
               selected={selected.has(photo.cloudAssetId)}
               onToggle={onToggle}
+              {...(onOpen === undefined ? {} : { onOpen })}
             />
           </li>
         ))}

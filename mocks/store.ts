@@ -7,6 +7,7 @@ import { INVARIANT_PHOTOS } from '../fixtures/invariants/photos';
 import type { PhotoListItem } from '../src/api/contract/photo';
 import type { TaskDetail } from '../src/api/contract/task';
 import { TaskState } from '../src/shared/enums';
+import type { Job } from '../src/api/contract/job';
 
 export interface Store {
   photos: PhotoListItem[];
@@ -15,6 +16,9 @@ export interface Store {
   importId: string;
   /** Set by a test to make TASKS_ROOT unreachable. Spec §5.1. */
   tasksRootAvailable: boolean;
+  /** Set by a test to make the export find an existing directory. Spec §5.6. */
+  exportDirectoryExists: boolean;
+  jobs: Map<string, Job>;
 }
 
 const NOW = '2026-08-29T10:00:00.000Z' as TaskDetail['createdAt'];
@@ -43,6 +47,8 @@ function seed(): Store {
     tasks: new Map([['1999-transat', seedTask()]]),
     importId: 'import_mock',
     tasksRootAvailable: true,
+    exportDirectoryExists: false,
+    jobs: new Map(),
   };
 }
 

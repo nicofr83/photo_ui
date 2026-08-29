@@ -12,6 +12,7 @@ import type { PhotoListItem } from '../src/api/contract/photo';
 import { isIsoDate } from '../src/shared/date_interface';
 import { DateSource, ErrorCode, PhotoSort, SelectionReason, TaskState } from '../src/shared/enums';
 import type { TaskDetail } from '../src/api/contract/task';
+import type { Job } from '../src/api/contract/job';
 
 import { store } from './store';
 import { INVARIANT_ALBUMS } from '../fixtures/invariants/albums';
@@ -39,6 +40,60 @@ const NOW = '2026-08-29T10:00:00.000Z' as TaskDetail['createdAt'];
 export const handlers = [
   // Contract §4.2: the 82 albums fit in one response.
   http.get('*/albums', () => HttpResponse.json({ items: INVARIANT_ALBUMS })),
+
+  http.post('*/tasks/:slug/export', async ({ params, request }) => {
+    const slug = String(params['slug']);
+    const task = store.tasks.get(slug);
+    if (task === undefined) {
+      return error(404, ErrorCode.NOT_FOUND, 'Tâche introuvable.', { resource: 'task', id: slug });
+    }
+    const body = (await request.json()) as { overwrite: boolean };
+
+    // Never overwrite in silence: name the directory and let the user choose.
+    if (store.exportDirectoryExists && !body.overwrite) {
+      return error(409, ErrorCode.TARGET_DIRECTORY_EXISTS, 'Le dossier existe déjà.', {
+        directory: `/tasks/${slug}`,
+      });
+    }
+
+    // One image will not render. The export continues without it, and the
+    // report names it with its cause.
+    const unrenderable = task.images.filter((i) =>
+      store.photos.some((p) => p.cloudAssetId === i.cloudAssetId && p.fileName === 'sans-vignette.jpg'),
+    );
+
+    const job: Job = {
+      jobId: `job_${slug}`,
+      type: 'export',
+      state: 'succeeded',
+      done: task.images.length,
+      total: task.images.length,
+      startedAt: NOW,
+      endedAt: NOW,
+      report: {
+        directory: `/tasks/${slug}`,
+        written: task.images.length - unrenderable.length,
+        skipped: unrenderable.map((i) => ({
+          cloudAssetId: i.cloudAssetId,
+          fileName: 'sans-vignette.jpg',
+          reason: 'source_file_missing',
+        })),
+        partial: false,
+      },
+    };
+    store.jobs.set(job.jobId, job);
+    return HttpResponse.json(job, { status: 202 });
+  }),
+
+  http.get('*/jobs/:jobId', ({ params }) => {
+    const job = store.jobs.get(String(params['jobId']));
+    if (job === undefined) {
+      return error(404, ErrorCode.NOT_FOUND, 'Opération introuvable.', {
+        resource: 'job', id: String(params['jobId']),
+      });
+    }
+    return HttpResponse.json(job);
+  }),
 
   http.get('*/photos/:cloudAssetId', ({ params }) => {
     const photo = store.photos.find((p) => p.cloudAssetId === String(params['cloudAssetId']));

@@ -1,0 +1,3 @@
+.layout { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+@media (min-width: 64rem) { .layout { grid-template-columns: 18rem 1fr; } }
+.aside { align-self: start; }

@@ -70,3 +70,17 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.open {
+  min-height: var(--tap-target);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #374151;
+  cursor: pointer;
+  font-size: 0.75rem;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
