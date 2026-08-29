@@ -428,3 +428,15 @@ DONE: `GET /documents`, `GET /pages?documentId=`, `GET /pages/image?pageId=`, `G
 DETAIL: commit `acc1ba2`. Écart avec mon hypothèse initiale, sans conséquence : je pensais `logbook` ne portait que des entrées de journal — en réalité il porte aussi 492 passages (réflexions manuscrites séparées des lignes réglées). Le code ne supposait rien de tel, donc rien à corriger.
 
 ASK: aucun — je continue sur la tâche 21 (le recouvrement dans les deux sens, `OverlapInfo` complet et `GET /photos/:cloudAssetId/texts`).
+
+---
+
+## Avancement — impl-backend, tâche 21 (2026-08-29)
+
+RE: tâche 21 — le recouvrement dans les deux sens, terminée
+DONE: `computeOverlapInfo` (pur, `metier/overlap/overlap_info.ts`, couverture 100%) — `photoSpanDays`/`textSpanDays`/`totalSpanDays`/`distanceToCentreDays`, aucun plafond de largeur. `GET /photos/:cloudAssetId/texts` : même prédicat que la tâche 20 (`overlap_sql.ts`), tri par défaut = somme des largeurs croissante, photo inconnue → 404, photo sans date résolue → résultat VIDE (jamais une erreur — rien à comparer n'est pas une faute). 15 tests neufs, vérifié contre données réelles (une vraie photo d'août 2000 contre un vrai passage du journal : 30 + 0 = 30 jours, distance 5, exact).
+DETAIL: commit `406ca35`. **Vrai bug trouvé en écrivant le test de la tâche 21 elle-même** (« rule C apparaît seulement une fois `ref.web_span` est saisi ») : `covers_start`/`covers_end`/`covers_rule` de `pipeline.text_unit` sont figés à l'IMPORT — un passage web sans plage saisie à ce moment-là restait NULL pour toujours, même après une saisie ultérieure dans `ref.web_span` (référentiel humain, jamais touché par l'import, éditable à tout moment). Corrigé dans `overlap_sql.ts` (déjà committé séparément, `f8c6853`) : une fenêtre EFFECTIVE calculée en base par `COALESCE` avec une jointure live sur `ref.web_span`, partout où le recouvrement se calcule — les deux sens en profitent.
+
+**Décision documentée, non retouchée** : `GET /photos?sort=overlap` dégénère au tri par date même quand `overlapsTextKind`/`overlapsTextId` sont actifs (commentaire déjà posé tâche 13 : « pas de recouvrement matérialisé »). Je ne l'ai pas changé — aucun test de la tâche 21 ne porte sur ce sens, et le retravailler demanderait de recalculer un `OverlapInfo` par ligne dans `listPhotos`. Signalé ici au cas où Nicolas le veuille plus tard.
+
+ASK: aucun — je continue sur la tâche 22 (notes et sélection de textes, `POST /tasks/:slug/texts` et `POST /tasks/:slug/notes`).
