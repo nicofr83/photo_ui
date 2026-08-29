@@ -452,3 +452,15 @@ DETAIL: commits `75f315b`..`95eee0a`. `note_<ulid>` utilise le paquet `ulid` dé
 **Tranche T2 (le texte) est maintenant complète : tâches 20 à 22.**
 
 ASK: aucun — je continue sur la Tranche T3 (chercher), tâche 23 : `q`, les offsets et les facettes.
+
+---
+
+## Avancement — impl-backend, tâche 23 (2026-08-29/30) — Tranche T3 complète
+
+RE: tâche 23 — `q`, offsets, facettes, terminée. Tranche T3 (chercher) complète.
+DONE : `highlight.ts` (pur, offsets UTF-16 — comparaison PAR POINT DE CODE, jamais un index de chaîne brut, sans quoi un emoji hors PMB décale tout ce qui suit). `q`/`sort=relevance`/`highlights` câblés sur `GET /texts`, réutilisant `app.text_search` (vue déjà matérialisée par une session antérieure) et le même `cleanSearchQuery`/`plainto_tsquery` que `GET /photos?q=` — même règle « du bruit pur rend zéro, jamais toute la bibliothèque ». `GET /photos/facets` : `buildPhotoFilter` extrait de `listPhotos` (refactor à froid, 109 tests existants inchangés) et réutilisé tel quel, pour que « accepte EXACTEMENT les mêmes paramètres » soit structurel. Tags triés par compte croissant (sélectivité décroissante), `tooBroad` au-delà de 500 ; les autres axes par compte décroissant ; `countries`/`cities`/`years` excluent `NULL`, jamais un panier « inconnu ». 44 tests neufs, vérifié contre le corpus réel (90 albums, 2729 tags dont 44 `tooBroad` — proche des 42 cités par le plan, écart probablement dû au périmètre ou à l'état du corpus au moment de cette mesure-là ; `q=belize` → 5 vrais passages avec surlignage correct sur « Bélize » accentué). 568 tests serveur, tsc/eslint propres.
+DETAIL : commits `7fe52cf`..`32a68ba`. **Vrai bug trouvé en testant `q` contre le corpus réel** : `app.text_search` est une vue MATÉRIALISÉE, peuplée `WITH DATA` À LA MIGRATION — donc AVANT que le premier import ne remplisse `pipeline.text_unit`. Rien ne l'a jamais rafraîchie depuis : 0 ligne contre 2871 textes réels. Corrigé dans `import_service.ts` (`REFRESH MATERIALIZED VIEW` simple, jamais `CONCURRENTLY` — impossible dans une transaction explicite, exactement le repli que le plan anticipait lui-même pour la tâche 24) ; base réelle rafraîchie une fois à la main pour corriger l'état actuel, les imports suivants la maintiennent seuls.
+
+**Tranche T3 (chercher) est maintenant complète : tâche 23.**
+
+ASK: aucun — je continue sur la Tranche T4 (écrire), tâche 24 : les corrections de transcription.
