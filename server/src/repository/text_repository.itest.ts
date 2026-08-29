@@ -5,7 +5,10 @@ import { afterAll, beforeAll, expect, test } from 'vitest';
 import { runMigrations } from '../db/migrate.ts';
 import { createLog, LogLevel } from '../log/log.ts';
 import { closeTestPool, testPool, withRollback } from '../../test/helpers/db.ts';
-import { getPageImageRelpath, listDocuments, listOverlappingTexts, listPages, listTexts } from './text_repository.ts';
+import {
+  deleteWebSpan, getPageImageRelpath, listDocuments, listOverlappingTexts, listPages, listTexts, listWebDocuments,
+  putWebSpan,
+} from './text_repository.ts';
 
 const MIGRATIONS = fileURLToPath(new URL('../../db/migrations', import.meta.url));
 
@@ -384,5 +387,44 @@ test('search finds the CORRECTED text, not the upstream transcription alone', as
 
     expect((await listTexts(client, { q: 'xylophone' })).total).toBe(1);
     expect((await listTexts(client, { q: 'depart' })).total).toBe(0);
+  });
+});
+
+test('listWebDocuments carries an excerpt from the first passage (corrected text if corrected)', async () => {
+  await withRollback(async (client) => {
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                        VALUES ('web/1999/Transat', 'html', 'La transat', false)`);
+    await client.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+                        VALUES ('passage', 'web/1999/Transat/001', 'web/1999/Transat', 1, 'texte amont', 'transcribed')`);
+    await client.query(`INSERT INTO app.text_correction (text_kind, text_id, corrected_text, original_at_correction)
+                        VALUES ('passage', 'web/1999/Transat/001', 'texte corrigé', 'texte amont')`);
+
+    const docs = await listWebDocuments(client);
+    const doc = docs.find((d) => d.documentId === 'web/1999/Transat');
+    expect(doc?.excerpt).toBe('texte corrigé');
+    expect(doc?.pathHint).toBe('web/1999/Transat');
+    expect(doc?.span).toBeNull();
+  });
+});
+
+test('putWebSpan/deleteWebSpan round-trip, null for a non-html or unknown document', async () => {
+  await withRollback(async (client) => {
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                        VALUES ('web/1999/Transat', 'html', 'La transat', false),
+                               ('logbook', 'handwritten', 'Journal', true)`);
+
+    expect(await putWebSpan(client, { documentId: 'nowhere', dateFrom: '1999-01-01', dateTo: '1999-01-31', note: null })).toBeNull();
+    expect(await putWebSpan(client, { documentId: 'logbook', dateFrom: '1999-01-01', dateTo: '1999-01-31', note: null })).toBeNull();
+
+    const put = await putWebSpan(client, {
+      documentId: 'web/1999/Transat', dateFrom: '1999-09-01', dateTo: '1999-11-30', note: 'saisi',
+    });
+    expect(put?.span).toEqual({
+      start: '1999-09-01', end: '1999-11-30', precision: 'day', kind: 'inference', source: 'web_span',
+      bracketHours: null,
+    });
+
+    const deleted = await deleteWebSpan(client, 'web/1999/Transat');
+    expect(deleted?.span).toBeNull();
   });
 });

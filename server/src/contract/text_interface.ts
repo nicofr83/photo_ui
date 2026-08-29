@@ -89,3 +89,14 @@ export interface TextUnit {
 export interface TextWithOverlap extends TextUnit {
   readonly overlap: OverlapInfo;
 }
+
+export interface WebDocumentRow {
+  readonly documentId: string;
+  readonly title: string;
+  readonly passageCount: number;
+  /** Un extrait pour reconnaître le document — aucun de ses passages n'est daté. */
+  readonly excerpt: string;
+  readonly span: ResolvedDate | null;
+  /** Le chemin du document est le seul indice de date. Présenté comme tel. */
+  readonly pathHint: string;
+}

@@ -180,3 +180,19 @@ export interface PhotoFacets {
   readonly withOcrCount: number;
   readonly datedToDayCount: number;
 }
+
+export type AlbumSpanWarning =
+  | { readonly code: 'outside_prefix_year'; readonly prefixYear: number }
+  | { readonly code: 'overlaps_album'; readonly albumPath: string };
+
+export interface AlbumSpanUpdateResult {
+  readonly album: Album;
+  /** La cascade est recalculée pour cet album SEULEMENT, dans la transaction. */
+  readonly recomputed: {
+    readonly photosAffected: number;
+    readonly datesChanged: number;
+    readonly precisionChanged: number;
+  };
+  /** Accepté malgré tout. Un avertissement n'est pas un refus. */
+  readonly warnings: readonly AlbumSpanWarning[];
+}

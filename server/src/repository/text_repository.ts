@@ -1,7 +1,7 @@
 import type { DateSource } from '@shared/enums';
 import type { PoolClient } from '../db/pool.ts';
 import type {
-  LogEntryFields, OverlapSummary, TextCorrection, TextDocument, TextPage, TextUnit, TextWithOverlap,
+  LogEntryFields, OverlapSummary, TextCorrection, TextDocument, TextPage, TextUnit, TextWithOverlap, WebDocumentRow,
 } from '../contract/text_interface.ts';
 import { computeOverlapInfo, spanDays } from '../metier/overlap/overlap_info.ts';
 import {
@@ -39,17 +39,24 @@ function mapDocumentRow(row: DocumentRow): TextDocument {
   };
 }
 
-/** 62 documents (contrat §4.3) — assez petit pour un aller-retour sans filtre. */
-export async function listDocuments(client: PoolClient): Promise<readonly TextDocument[]> {
-  const { rows } = await client.query<DocumentRow>(`
+const DOCUMENT_SELECT = `
     SELECT d.id, d.kind, d.title, d.page_count, d.has_pages,
            (SELECT count(*)::int FROM pipeline.text_unit t
              WHERE t.document_id = d.id AND t.kind = 'passage') AS passage_count,
            ws.date_from, ws.date_to
       FROM pipeline.document d
-      LEFT JOIN ref.web_span ws ON ws.document_id = d.id
-     ORDER BY d.id`);
+      LEFT JOIN ref.web_span ws ON ws.document_id = d.id`;
+
+/** 62 documents (contrat §4.3) — assez petit pour un aller-retour sans filtre. */
+export async function listDocuments(client: PoolClient): Promise<readonly TextDocument[]> {
+  const { rows } = await client.query<DocumentRow>(`${DOCUMENT_SELECT} ORDER BY d.id`);
   return rows.map(mapDocumentRow);
+}
+
+export async function getTextDocument(client: PoolClient, documentId: string): Promise<TextDocument | null> {
+  const { rows } = await client.query<DocumentRow>(`${DOCUMENT_SELECT} WHERE d.id = $1`, [documentId]);
+  const row = rows[0];
+  return row === undefined ? null : mapDocumentRow(row);
 }
 
 interface PageRow {
@@ -445,4 +452,77 @@ export async function listCorrections(
     status: correctionStatus(row),
   }));
   return status === undefined ? corrections : corrections.filter((c) => c.status === status);
+}
+
+const WEB_DOCUMENT_EXCERPT_LENGTH = 200;
+
+/**
+ * « Un extrait pour reconnaître le document — aucun de ses passages n'est
+ * daté » (contrat §4.8) : le premier passage par ordinal, texte EFFECTIF
+ * (corrigé s'il l'a été) — jamais la transcription seule si une correction
+ * existe. `pathHint` est l'id du document lui-même : c'est le seul indice.
+ */
+export async function listWebDocuments(client: PoolClient): Promise<readonly WebDocumentRow[]> {
+  const { rows } = await client.query<{
+    id: string; title: string; passage_count: number; excerpt: string | null;
+    date_from: string | null; date_to: string | null;
+  }>(`
+    SELECT d.id, d.title,
+           (SELECT count(*)::int FROM pipeline.text_unit t
+             WHERE t.document_id = d.id AND t.kind = 'passage') AS passage_count,
+           (SELECT coalesce(tc.corrected_text, t.body) FROM pipeline.text_unit t
+              LEFT JOIN app.text_correction tc ON tc.text_kind = t.kind AND tc.text_id = t.id
+             WHERE t.document_id = d.id AND t.kind = 'passage'
+             ORDER BY t.ordinal LIMIT 1) AS excerpt,
+           ws.date_from, ws.date_to
+      FROM pipeline.document d
+      LEFT JOIN ref.web_span ws ON ws.document_id = d.id
+     WHERE d.kind = 'html'
+     ORDER BY d.id`);
+
+  return rows.map((row): WebDocumentRow => ({
+    documentId: row.id,
+    title: row.title,
+    passageCount: row.passage_count,
+    excerpt: (row.excerpt ?? '').slice(0, WEB_DOCUMENT_EXCERPT_LENGTH),
+    span: row.date_from === null || row.date_to === null ? null : {
+      start: row.date_from, end: row.date_to, precision: 'day', kind: 'inference', source: 'web_span',
+      bracketHours: null,
+    },
+    pathHint: row.id,
+  }));
+}
+
+async function isWebDocument(client: PoolClient, documentId: string): Promise<boolean> {
+  const { rows } = await client.query<{ n: number }>(
+    `SELECT count(*)::int AS n FROM pipeline.document WHERE id = $1 AND kind = 'html'`, [documentId]);
+  return (rows[0]?.n ?? 0) > 0;
+}
+
+export interface WebSpanInput {
+  readonly documentId: string;
+  readonly dateFrom: string;
+  readonly dateTo: string;
+  readonly note: string | null;
+}
+
+/** `null` : le document n'existe pas, ou n'est pas `html` — `ref.web_span` ne sert que la règle C. */
+export async function putWebSpan(client: PoolClient, input: WebSpanInput): Promise<TextDocument | null> {
+  if (!await isWebDocument(client, input.documentId)) return null;
+
+  await client.query(
+    `INSERT INTO ref.web_span (document_id, date_from, date_to, note, updated_at)
+     VALUES ($1, $2, $3, $4, now())
+     ON CONFLICT (document_id) DO UPDATE
+       SET date_from = EXCLUDED.date_from, date_to = EXCLUDED.date_to, note = EXCLUDED.note, updated_at = now()`,
+    [input.documentId, input.dateFrom, input.dateTo, input.note],
+  );
+  return await getTextDocument(client, input.documentId);
+}
+
+export async function deleteWebSpan(client: PoolClient, documentId: string): Promise<TextDocument | null> {
+  if (!await isWebDocument(client, documentId)) return null;
+
+  await client.query(`DELETE FROM ref.web_span WHERE document_id = $1`, [documentId]);
+  return await getTextDocument(client, documentId);
 }
