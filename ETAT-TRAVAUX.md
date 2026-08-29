@@ -272,3 +272,16 @@ ASK: aucun.
 Non fait, volontairement : compte des écartés ventilé par axe (déjà tranché non, §11 Q4) — le global existant (`SelectionHeader`, T1) couvre les nouveaux axes sans travail supplémentaire. Pas de debounce sur la recherche plein texte. `tagMinConfidence` accepté par le contrat mais aucun contrôle UI (ETAT-TRAVAUX : « le filtrage par confiance ne marche pas — ne pas retenter »).
 
 Reste ouvert pour T4/T5 : `ref.album_span` (25 albums), `ref.web_span`, chronologie de revue, bandeau à 5 compteurs, gestion complète des tâches (dupliquer/supprimer).
+
+---
+
+## Avancement — impl-frontend, T4 (2026-08-29)
+
+RE: écrire, T4 terminé
+DONE: écran « Réglages » (`/reglages`, contrat §4.8) — `PUT`/`DELETE /ref/album-span` (25 albums, avertissements accepted-non-refusés `outside_prefix_year`/`overlaps_album`, hints jamais pré-remplis, « Effacer » retourne au présumé dérivé du préfixe — jamais juste le flag inversé sur la plage saisie), `/ref/web-documents` + `PUT`/`DELETE /ref/web-span` (rendu `kind: inference` systématiquement, vérifié par la règle capitale au parse). La correction de transcription (l'autre volet de T4) était déjà livrée en T2. 532 tests verts, tsc/lint propres, couverture domaine 100%.
+DETAIL: commits `563ac74`..`d0973c9`. `store.albums`/`store.documents` rejoignent le store mutable (même migration que `store.texts` pour les corrections). `client.ts` : `apiDeleteWithBody` (un DELETE qui porte un corps ET en reçoit un — différent du DELETE 204 des notes).
+ASK: aucun.
+
+Non fait, volontairement : `ref.country-aliases` (pas dans le mandat T4 reçu ni dans le contrat cité par team-lead).
+
+Reste pour T5 : chronologie de revue (`GET /tasks/:slug/review`), bandeau de contrôle, dupliquer/supprimer une tâche, bannière volume démonté.
