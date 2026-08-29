@@ -99,7 +99,21 @@ const SORT_SQL: Record<NonNullable<PhotoFilters['sort']>, string> = {
   overlap: 'p.resolved_start ASC NULLS LAST, p.cloud_asset_id',
 };
 
-export async function listPhotos(client: PoolClient, filters: PhotoFilters): Promise<ListPhotosResult> {
+export interface PhotoFilterBuild {
+  readonly qb: QueryBuilder;
+  readonly populationTotal: number;
+  readonly applied: readonly AppliedFilter[];
+  readonly unmatchedValues: readonly UnmatchedFilterValue[];
+  readonly matchExprsByRow: readonly { readonly field: string; readonly expr: string }[];
+}
+
+/**
+ * TOUT l'allowlist de `GET /photos`, extrait pour être partagé avec
+ * `GET /photos/facets` (contrat §5.4 : « accepte EXACTEMENT les mêmes
+ * paramètres ») — un seul endroit qui décide ce qu'un filtre veut dire,
+ * jamais une seconde implémentation qui pourrait diverger.
+ */
+async function buildPhotoFilter(client: PoolClient, filters: PhotoFilters): Promise<PhotoFilterBuild> {
   const applied: AppliedFilter[] = [];
   const unmatchedValues: UnmatchedFilterValue[] = [];
 
@@ -250,6 +264,12 @@ export async function listPhotos(client: PoolClient, filters: PhotoFilters): Pro
     applied.push({ parameter: 'overlapsTextKind', values: [filters.overlapsTextKind], broadened: false });
     applied.push({ parameter: 'overlapsTextId', values: [filters.overlapsTextId], broadened: false });
   }
+
+  return { qb, populationTotal, applied, unmatchedValues, matchExprsByRow };
+}
+
+export async function listPhotos(client: PoolClient, filters: PhotoFilters): Promise<ListPhotosResult> {
+  const { qb, populationTotal, applied, unmatchedValues, matchExprsByRow } = await buildPhotoFilter(client, filters);
 
   const matchedOnSelect = matchExprsByRow.length === 0 ? `'[]'::jsonb` : `(
     SELECT coalesce(jsonb_agg(jsonb_build_object('field', m.field, 'value', m.value)), '[]'::jsonb)
