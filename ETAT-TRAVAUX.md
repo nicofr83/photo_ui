@@ -237,3 +237,33 @@ conflit n'en est résulté, mais c'était de la chance autant que de la rapidit�
 **Les noms d'origine sont les bons** — ceux du tableau ci-dessus. Ne pas
 recréer d'agent portant un mandat déjà tenu sans avoir vérifié `ListAgents`
 d'abord : une limite de dépense suspend les agents, elle ne les tue pas.
+
+---
+
+## Décisions closes par Nicolas — ne pas rouvrir
+
+### `ref.web_span` est une **inférence**, pas une décision *(2026-08-29)*
+
+Une plage saisie à la main sur un document du site web, qui ne porte aucune
+date, se rend en **ambre italique avec le glyphe `≈`**.
+
+**Tranché par Nicolas lui-même**, après trois allers-retours entre agents dans
+deux sens opposés. C'est son geste que la règle classe : il a lu les deux
+raisonnements et retenu celui-ci.
+
+Le raisonnement retenu : **ce qui distingue une décision d'une inférence n'est
+pas qui a agi mais ce que le geste établit.** Corriger la date d'une photo est
+un *arbitrage* — quelqu'un a vu l'EXIF à l'écran et a tapé autre chose. Poser
+une plage sur un document sans date *comble un vide* : c'est une conjecture.
+Le champ `source` dit déjà qu'un humain l'a tapée ; `kind` dit ce qu'elle vaut.
+
+`annotation` est donc la **seule** source de nature `decision`.
+
+État d'application au moment où c'est écrit :
+- `src/domain/dateKind.ts` — **conforme** (commit `be819a2`)
+- `docs/api-contract.md` — **à corriger**, il mappe encore `web_span` en `decision`
+- `docs/frontend-spec.md` §9.4 — **à corriger**, un agent l'avait retourné en
+  `decision` juste avant la décision de Nicolas
+
+Tout agent qui trouve un désaccord sur ce point corrige le document, il ne
+rouvre pas la question.
