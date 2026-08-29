@@ -81,7 +81,30 @@ survivre à une coupure :
    humain a saisi, `kind` dit ce que ça vaut. **`annotation` est la seule source
    `decision`.** Conséquence de rendu voulue : les ~25 plages web saisies à la
    main s'affichent ambre italique `≈`, pas violet gras `✓`.
-4. **`server/` est à la racine, pas sous `src/`** — accord avec `impl-backend`.
+4. **Les tags de lieu mentent — règle pour la facette de T3, à ne pas oublier.**
+   901 photos du périmètre portent un tag IA qui nomme un pays faux : `italy`
+   frappe 18 photos de Tikal et 16 de Chichen Itza, `egypt` 30 du Maroc. Le
+   classifieur voit des ruines de pierre et sort un nom de pays. Trois règles
+   (spec, commit `af2a65b`) : **jamais dans l'axe lieu** — le lieu vient du nom
+   d'album et du journal ; **hors du vocabulaire proposé** — offrir
+   « italy (141) » dans une liste triée par sélectivité fait croire qu'il existe
+   141 photos d'Italie ; **mais cherchables**, et alors **marqués comme
+   supposition de machine**. Ne pas proposer n'est pas exclure : §7.3 porte sur
+   les résultats, pas sur ce qu'on met en avant.
+   **Le filtrage par confiance ne marche pas** — tags de lieu à 60 de moyenne,
+   descriptifs à 69, les deux au-dessus du plancher de 48. Ne pas retenter.
+   **Ne jamais coder une liste de tags de lieu côté client** : le prédicat vient
+   du backend, table `ref.tag_kind`, corrigeable à la main.
+
+5. **§7.1 s'étend à tout ce qu'une machine dit d'une image.** Après les dates et
+   les textes, la troisième extension : une machine **lit** ce qui est écrit
+   dans l'image — une enseigne, une date sur un écran de navigation — et c'est
+   une lecture, vérifiable ; elle **déduit** à partir de l'apparence — un lieu,
+   une époque, une identité — et c'est une conjecture, souvent fausse. Rien dans
+   sa sortie ne les sépare : `ruins` est une lecture d'apparence honnête,
+   `italy` une déduction fausse. C'est à l'interface de les séparer.
+
+6. **`server/` est à la racine, pas sous `src/`** — accord avec `impl-backend`.
    La raison est mécanique : le `tsconfig.json` et la couverture du frontend
    portent sur `src/**`, du code serveur là-dedans casserait son `typecheck` et
    son seuil de couverture à chaque écriture en cours.
