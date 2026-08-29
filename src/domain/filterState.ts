@@ -17,6 +17,18 @@ export interface FilterState {
   readonly sort: PhotoSort;
   /** Spec §6.1: OFF by default. Doubt includes. */
   readonly reliableDatesOnly: boolean;
+
+  /** Contract §4.2, T3's search axes — all OPEN except the three booleans. */
+  readonly tags: readonly string[];
+  readonly people: readonly string[];
+  readonly countries: readonly string[];
+  readonly cities: readonly string[];
+  readonly hasPosition: boolean;
+  readonly hasOcr: boolean;
+  readonly hasCaption: boolean;
+  /** Full text. `null` and `''` are the same thing: neither is sent. */
+  readonly q: string | null;
+
   /**
    * The "which photos does this text cover?" axis (contract §4.2). Set by
    * TextsScreen's "show photos" action, never by the filter panel — but it
@@ -33,6 +45,14 @@ export const EMPTY_FILTERS: FilterState = {
   scope: PhotoScope.HIERARCHY,
   sort: PhotoSort.DATE_ASC,
   reliableDatesOnly: false,
+  tags: [],
+  people: [],
+  countries: [],
+  cities: [],
+  hasPosition: false,
+  hasOcr: false,
+  hasCaption: false,
+  q: null,
   overlapsText: null,
 };
 
@@ -58,6 +78,15 @@ export function toSearchParams(state: FilterState): URLSearchParams {
   if (state.scope !== PhotoScope.HIERARCHY) params.set('scope', state.scope);
   if (state.sort !== PhotoSort.DATE_ASC) params.set('sort', state.sort);
   if (state.reliableDatesOnly) params.set('reliableDatesOnly', 'true');
+
+  for (const tag of state.tags) params.append('tag', tag);
+  for (const person of state.people) params.append('person', person);
+  for (const country of state.countries) params.append('country', country);
+  for (const city of state.cities) params.append('city', city);
+  if (state.hasPosition) params.set('hasPosition', 'true');
+  if (state.hasOcr) params.set('hasOcr', 'true');
+  if (state.hasCaption) params.set('hasCaption', 'true');
+  if (state.q !== null && state.q !== '') params.set('q', state.q);
 
   // Contract §4.2: "les deux ensemble ou aucun" — the state never holds one
   // without the other, so there is nothing to guard here.
@@ -92,6 +121,14 @@ export function fromSearchParams(params: URLSearchParams): FilterState {
     scope: isMember(PhotoScope, scope) ? scope : PhotoScope.HIERARCHY,
     sort: isMember(PhotoSort, sort) ? sort : PhotoSort.DATE_ASC,
     reliableDatesOnly: params.get('reliableDatesOnly') === 'true',
+    tags: params.getAll('tag'),
+    people: params.getAll('person'),
+    countries: params.getAll('country'),
+    cities: params.getAll('city'),
+    hasPosition: params.get('hasPosition') === 'true',
+    hasOcr: params.get('hasOcr') === 'true',
+    hasCaption: params.get('hasCaption') === 'true',
+    q: params.get('q'),
     overlapsText,
   };
 }
@@ -104,7 +141,8 @@ function isMember<T extends Record<string, string>>(
 }
 
 export type FilterAxis =
-  | 'dates' | 'albumPath' | 'scope' | 'reliableDatesOnly' | 'overlapsText';
+  | 'dates' | 'albumPath' | 'scope' | 'reliableDatesOnly' | 'overlapsText'
+  | 'tag' | 'person' | 'country' | 'city' | 'hasPosition' | 'hasOcr' | 'hasCaption' | 'q';
 
 /** A label a person can read, without knowing the wire vocabulary. */
 const TEXT_KIND_LABEL: Record<TextKind, string> = {
@@ -152,6 +190,55 @@ export function activeFilterTokens(state: FilterState): FilterToken[] {
       axis: 'reliableDatesOnly',
       label: 'dates fiables seulement',
       remove: (s) => ({ ...s, reliableDatesOnly: false }),
+    });
+  }
+
+  for (const tag of state.tags) {
+    tokens.push({
+      axis: 'tag', label: tag,
+      remove: (s) => ({ ...s, tags: s.tags.filter((t) => t !== tag) }),
+    });
+  }
+  for (const person of state.people) {
+    tokens.push({
+      axis: 'person', label: person,
+      remove: (s) => ({ ...s, people: s.people.filter((p) => p !== person) }),
+    });
+  }
+  for (const country of state.countries) {
+    tokens.push({
+      axis: 'country', label: country,
+      remove: (s) => ({ ...s, countries: s.countries.filter((c) => c !== country) }),
+    });
+  }
+  for (const city of state.cities) {
+    tokens.push({
+      axis: 'city', label: city,
+      remove: (s) => ({ ...s, cities: s.cities.filter((c) => c !== city) }),
+    });
+  }
+  if (state.hasPosition) {
+    tokens.push({
+      axis: 'hasPosition', label: 'avec position',
+      remove: (s) => ({ ...s, hasPosition: false }),
+    });
+  }
+  if (state.hasOcr) {
+    tokens.push({
+      axis: 'hasOcr', label: 'avec texte détecté',
+      remove: (s) => ({ ...s, hasOcr: false }),
+    });
+  }
+  if (state.hasCaption) {
+    tokens.push({
+      axis: 'hasCaption', label: 'avec légende',
+      remove: (s) => ({ ...s, hasCaption: false }),
+    });
+  }
+  if (state.q !== null && state.q !== '') {
+    tokens.push({
+      axis: 'q', label: `« ${state.q} »`,
+      remove: (s) => ({ ...s, q: null }),
     });
   }
 

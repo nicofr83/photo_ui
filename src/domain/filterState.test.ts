@@ -38,12 +38,56 @@ describe('the filter state round-trips through the URL without loss', () => {
 
   test('a full state survives', () => {
     const state: FilterState = {
+      ...EMPTY_FILTERS,
       dateFrom: '1999-01-01', dateTo: '1999-12-31',
       albumPaths: ['1998-1999/1999-10 Lisboa Madere'],
       scope: PhotoScope.ALL, sort: PhotoSort.DATE_DESC, reliableDatesOnly: true,
       overlapsText: { kind: TextKind.PASSAGE, id: 'logbook/p003/001' },
     };
     expect(roundTrip(state)).toEqual(state);
+  });
+});
+
+describe('T3 — the search axes: tags, people, place, OCR/caption, full text', () => {
+  test('every new axis round-trips through the URL', () => {
+    const state: FilterState = {
+      ...EMPTY_FILTERS,
+      tags: ['bateau', 'famille'],
+      people: ['Hugo'],
+      countries: ['Portugal'],
+      cities: ['Marigot'],
+      hasPosition: true,
+      hasOcr: true,
+      hasCaption: true,
+      q: 'tempête',
+    };
+    expect(roundTrip(state)).toEqual(state);
+  });
+
+  test('an empty full-text search is not sent at all — distinct from an intentional q=""', () => {
+    expect(toSearchParams({ ...EMPTY_FILTERS, q: '' }).has('q')).toBe(false);
+  });
+
+  test('the OCR and caption toggles are off, and unwritten, by default', () => {
+    expect(EMPTY_FILTERS.hasOcr).toBe(false);
+    expect(EMPTY_FILTERS.hasCaption).toBe(false);
+    expect(toSearchParams(EMPTY_FILTERS).has('hasOcr')).toBe(false);
+    expect(toSearchParams(EMPTY_FILTERS).has('hasCaption')).toBe(false);
+  });
+
+  test('every emitted parameter for the new axes is in the contract allowlist', () => {
+    const params = toSearchParams({
+      ...EMPTY_FILTERS,
+      tags: ['a'], people: ['b'], countries: ['c'], cities: ['d'],
+      hasPosition: true, hasOcr: true, hasCaption: true, q: 'x',
+    });
+    const accepted = new Set([
+      'scope', 'dateFrom', 'dateTo', 'reliableDatesOnly', 'albumPath', 'tag',
+      'tagMinConfidence', 'person', 'country', 'city', 'hasPosition', 'hasOcr',
+      'hasCaption', 'q', 'overlapsTextKind', 'overlapsTextId', 'inTask', 'notInTask',
+      'sort', 'limit', 'offset',
+    ]);
+    for (const key of params.keys()) expect(accepted).toContain(key);
   });
 });
 
@@ -93,6 +137,7 @@ describe('INVARIANT §9.6.1 — only names the contract accepts are ever emitted
 
   test('every emitted parameter is in the contract allowlist', () => {
     const params = toSearchParams({
+      ...EMPTY_FILTERS,
       dateFrom: '1999-01-01', dateTo: '1999-12-31',
       albumPaths: ['a', 'b'], scope: PhotoScope.ALL,
       sort: PhotoSort.ALBUM, reliableDatesOnly: true,
@@ -185,6 +230,27 @@ describe('every axis produces a token that removes exactly itself', () => {
     const state = { ...EMPTY_FILTERS, reliableDatesOnly: true };
     const [token] = activeFilterTokens(state);
     expect(token?.remove(state)).toEqual(EMPTY_FILTERS);
+  });
+
+  test('T3 axes each produce a removable token', () => {
+    const state: FilterState = {
+      ...EMPTY_FILTERS,
+      tags: ['bateau'], people: ['Hugo'], countries: ['Portugal'], cities: ['Marigot'],
+      hasPosition: true, hasOcr: true, hasCaption: true, q: 'tempête',
+    };
+    const tokens = activeFilterTokens(state);
+    expect(tokens.map((t) => t.axis).sort()).toEqual(
+      ['q', 'tag', 'person', 'country', 'city', 'hasPosition', 'hasOcr', 'hasCaption'].sort(),
+    );
+    for (const token of tokens) {
+      expect(token.remove(state)).not.toEqual(state);
+    }
+  });
+
+  test('removing one tag among several clears only that one', () => {
+    const state = { ...EMPTY_FILTERS, tags: ['a', 'b'] };
+    const token = activeFilterTokens(state).find((t) => t.label === 'a');
+    expect(token?.remove(state)).toEqual({ ...EMPTY_FILTERS, tags: ['b'] });
   });
 
   test('the overlap token names the kind of text, and clears on removal', () => {

@@ -197,3 +197,32 @@ export const PhotoDetailSchema = PhotoListItemSchema.extend({
   render: RenderAvailabilitySchema,
 });
 export type PhotoDetail = z.infer<typeof PhotoDetailSchema>;
+
+/**
+ * Contextual counts, recomputed against the CURRENT filter — spec §5.4.
+ * `tags` is sorted by selectivity descending (fewest photos first); the
+ * vocabulary never carries the 901 place-lying tags (`italy` on Tikal,
+ * `egypt` on Morocco — spec, `ETAT-TRAVAUX.md` §"tags de lieu mentent"), a
+ * server-side exclusion this schema does not need to know the reason for.
+ */
+export const FacetBucketSchema = z.strictObject({
+  value: z.string(),
+  count: z.number().int(),
+  /** True for the 42 tags over 500 photos. Never hidden — only de-emphasised. */
+  tooBroad: z.boolean().optional(),
+});
+export type FacetBucket = z.infer<typeof FacetBucketSchema>;
+
+export const PhotoFacetsSchema = z.strictObject({
+  albums: z.array(FacetBucketSchema),
+  tags: z.array(FacetBucketSchema),
+  people: z.array(FacetBucketSchema),
+  countries: z.array(FacetBucketSchema),
+  cities: z.array(FacetBucketSchema),
+  years: z.array(FacetBucketSchema),
+  /** 0 ⇒ the place axis is disabled, with its reason. */
+  positionedCount: z.number().int(),
+  withOcrCount: z.number().int(),
+  datedToDayCount: z.number().int(),
+});
+export type PhotoFacets = z.infer<typeof PhotoFacetsSchema>;
