@@ -148,3 +148,6 @@ public/thumbs/
 
 # macOS
 .DS_Store
+
+# Cache de rendus du spike légendes (reconstruit par docs/legendes/build.py)
+docs/legendes/.rendus/
