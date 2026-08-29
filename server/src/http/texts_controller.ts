@@ -30,13 +30,14 @@ const TEXTS_PARAM_SPEC: ParamSpec = {
     values: [TranscriptionConfidence.TRANSCRIBED, TranscriptionConfidence.REVIEWED, TranscriptionConfidence.UNCERTAIN],
   },
   hasCorrection: { kind: 'boolean' },
+  q: { kind: 'open' },
   limit: { kind: 'integer' },
   offset: { kind: 'integer' },
-  sort: { kind: 'closed', values: ['page', 'date'], fallback: 'page' },
+  sort: { kind: 'closed', values: ['page', 'date', 'relevance'], fallback: 'page' },
 };
 
 const TEXT_FILTER_KEYS = [
-  'documentId', 'pageId', 'kind', 'dateFrom', 'dateTo', 'overlapsPhoto', 'confidence', 'hasCorrection',
+  'documentId', 'pageId', 'kind', 'dateFrom', 'dateTo', 'overlapsPhoto', 'confidence', 'hasCorrection', 'q',
   'limit', 'offset', 'sort',
 ] as const;
 

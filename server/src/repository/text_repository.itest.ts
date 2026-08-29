@@ -325,3 +325,64 @@ test('RULE C reaches the reverse direction too — a web passage overlaps once r
     expect(result?.items[0]?.overlap.rule).toBe('web_span');
   });
 });
+
+test('q searches the EFFECTIVE text (corrected if corrected) via app.text_search, refreshed at import (§8.2)', async () => {
+  await withRollback(async (client) => {
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                        VALUES ('logbook', 'handwritten', 'Journal', true)`);
+    await client.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+                        VALUES ('log_entry', 'logbook/p001/001', 'logbook', 1, 'un mot introuvable ailleurs: xylophone', 'transcribed')`);
+    // La vue matérialisée doit être rafraîchie pour voir les données de CETTE
+    // transaction — exactement ce que fait `runImportInto` en réel.
+    await client.query(`REFRESH MATERIALIZED VIEW app.text_search`);
+
+    const { items, total } = await listTexts(client, { q: 'xylophone' });
+    expect(total).toBe(1);
+    expect(items[0]?.ref.id).toBe('logbook/p001/001');
+  });
+});
+
+test('a pure-noise q matches ZERO, never the whole library', async () => {
+  await withRollback(async (client) => {
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                        VALUES ('logbook', 'handwritten', 'Journal', true)`);
+    await client.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+                        VALUES ('log_entry', 'logbook/p001/001', 'logbook', 1, 'x', 'transcribed')`);
+    await client.query(`REFRESH MATERIALIZED VIEW app.text_search`);
+
+    expect((await listTexts(client, { q: '!!! &&& ***' })).total).toBe(0);
+  });
+});
+
+test('highlights carries UTF-16 offsets into the EFFECTIVE text, only when q is present', async () => {
+  await withRollback(async (client) => {
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                        VALUES ('logbook', 'handwritten', 'Journal', true)`);
+    await client.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+                        VALUES ('log_entry', 'logbook/p001/001', 'logbook', 1, 'Un mouillage a Belize', 'transcribed')`);
+    await client.query(`REFRESH MATERIALIZED VIEW app.text_search`);
+
+    const withQuery = await listTexts(client, { q: 'belize' });
+    const range = withQuery.items[0]?.highlights[0];
+    expect(range).toBeDefined();
+    expect('Un mouillage a Belize'.slice(range?.start ?? 0, (range?.start ?? 0) + (range?.length ?? 0))).toBe('Belize');
+
+    const withoutQuery = await listTexts(client, {});
+    expect(withoutQuery.items[0]?.highlights).toEqual([]);
+  });
+});
+
+test('search finds the CORRECTED text, not the upstream transcription alone', async () => {
+  await withRollback(async (client) => {
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                        VALUES ('logbook', 'handwritten', 'Journal', true)`);
+    await client.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+                        VALUES ('log_entry', 'logbook/p001/001', 'logbook', 1, 'Depart a cinq heures', 'transcribed')`);
+    await client.query(`INSERT INTO app.text_correction (text_kind, text_id, corrected_text, original_at_correction)
+                        VALUES ('log_entry', 'logbook/p001/001', 'un mot introuvable ailleurs: xylophone', 'Depart a cinq heures')`);
+    await client.query(`REFRESH MATERIALIZED VIEW app.text_search`);
+
+    expect((await listTexts(client, { q: 'xylophone' })).total).toBe(1);
+    expect((await listTexts(client, { q: 'depart' })).total).toBe(0);
+  });
+});

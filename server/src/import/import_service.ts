@@ -336,6 +336,14 @@ export async function runImportInto(client: PoolClient, sources: ImportSources):
                         logEntries: report.logEntries, annotationsRead: report.annotationsRead }),
        JSON.stringify(report.cascade)]);
 
+    // `app.text_search` a sa propre définition, indépendante de `pipeline` (§8.2) :
+    // un `TRUNCATE`/re-remplissage de `pipeline.text_unit` la laisse périmée tant
+    // que rien ne la rafraîchit. Jamais `CONCURRENTLY` ici : impossible dans une
+    // transaction explicite — replié sur un `REFRESH` simple, un verrou exclusif
+    // de quelques millisecondes sur 2 871 lignes, acceptable dans l'import qui
+    // tient déjà toute la base verrouillée le temps de son unique transaction.
+    await client.query(`REFRESH MATERIALIZED VIEW app.text_search`);
+
     return report;
   } finally {
     indexDb.close();

@@ -8,6 +8,8 @@ import {
   EFFECTIVE_COVERS_END, EFFECTIVE_COVERS_RANGE, EFFECTIVE_COVERS_RULE, EFFECTIVE_COVERS_START, overlapPredicate,
   WEB_SPAN_JOIN,
 } from '../metier/overlap/overlap_sql.ts';
+import { cleanSearchQuery } from '../metier/search/clean_query.ts';
+import { highlight } from '../metier/search/highlight.ts';
 
 interface DocumentRow {
   id: string;
@@ -106,9 +108,10 @@ export interface TextFilters {
   readonly overlapsPhoto?: string;
   readonly confidence?: string;
   readonly hasCorrection?: boolean;
+  readonly q?: string;
   readonly limit?: number;
   readonly offset?: number;
-  readonly sort?: 'page' | 'date';
+  readonly sort?: 'page' | 'date' | 'relevance';
 }
 
 export interface ListTextsResult {
@@ -213,13 +216,28 @@ export async function listTexts(client: PoolClient, filters: TextFilters): Promi
       + `AND ${overlapPredicate('p')})`);
   }
 
+  // `app.text_search` porte le texte EFFECTIF (corrigé s'il l'a été) — la
+  // même vue que la recherche doit refléter (tâche 24 la rafraîchit à
+  // l'écriture d'une correction). Repli à ZÉRO sur du bruit pur, jamais
+  // toute la bibliothèque — même règle que `GET /photos?q=`.
+  let cleanedQuery: string | null = null;
+  if (filters.q !== undefined && filters.q.trim() !== '') {
+    cleanedQuery = cleanSearchQuery(filters.q);
+    if (cleanedQuery === null) conditions.push('false');
+    else conditions.push(`ts.tsv @@ plainto_tsquery('public.fr_unaccent', ${param(cleanedQuery)})`);
+  }
+
   const whereClause = conditions.length === 0 ? '' : `WHERE ${conditions.join(' AND ')}`;
-  const sortSql = filters.sort === 'date' ? 't.date_start ASC NULLS LAST, t.id' : 'd.id, t.page_id, t.ordinal';
+  const sortSql = filters.sort === 'date' ? 't.date_start ASC NULLS LAST, t.id'
+    : filters.sort === 'relevance' && cleanedQuery !== null
+      ? `ts_rank(ts.tsv, plainto_tsquery('public.fr_unaccent', ${param(cleanedQuery)})) DESC`
+      : 'd.id, t.page_id, t.ordinal';
 
   const { rows: totalRows } = await client.query<{ n: number }>(
     `SELECT count(*)::int AS n
        FROM pipeline.text_unit t
        JOIN pipeline.document d ON d.id = t.document_id
+       LEFT JOIN app.text_search ts ON ts.kind = t.kind AND ts.id = t.id
        ${WEB_SPAN_JOIN}
       ${whereClause}`, values);
   const total = totalRows[0]?.n ?? 0;
@@ -239,12 +257,22 @@ export async function listTexts(client: PoolClient, filters: TextFilters): Promi
       FROM pipeline.text_unit t
       JOIN pipeline.document d ON d.id = t.document_id
       LEFT JOIN app.text_correction tc ON tc.text_kind = t.kind AND tc.text_id = t.id
+      LEFT JOIN app.text_search ts ON ts.kind = t.kind AND ts.id = t.id
       ${WEB_SPAN_JOIN}
      ${whereClause}
      ORDER BY ${sortSql}
      ${limitClause}${offsetClause}`, values);
 
-  return { items: rows.map(mapTextRow), total };
+  // `highlights` : « renseigné SEULEMENT par GET /texts?q=… » (contrat) —
+  // vide sans recherche, jamais calculé pour rien.
+  const terms = cleanedQuery === null ? [] : cleanedQuery.split(/\s+/).filter((t) => t !== '');
+  return {
+    items: rows.map((row) => {
+      const unit = mapTextRow(row);
+      return terms.length === 0 ? unit : { ...unit, highlights: highlight(unit.text, terms) };
+    }),
+    total,
+  };
 }
 
 export interface OverlappingTextsResult {
