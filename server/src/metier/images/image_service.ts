@@ -55,14 +55,17 @@ async function writeCacheAtomic(safeFs: SafeFs, targetPath: string, data: Buffer
 /**
  * `THUMBS_ROOT` est un artefact PRÉ-GÉNÉRÉ par le pipeline amont, en lecture
  * seule — servir une vignette n'écrit jamais rien, contrairement à `getRender`.
+ *
+ * Seulement DEUX échecs possibles ici (contrat §6.1) : le format n'entre pas
+ * en jeu — la vignette est déjà un JPEG plat, ou elle n'existe pas.
  */
-export async function getThumb(
-  deps: ImageServiceDeps, sha256: string, photo: ImageSource,
-): Promise<ImageResult> {
+export async function getThumb(deps: ImageServiceDeps, sha256: string): Promise<ImageResult> {
   const rootMounted = await pathExists(deps.thumbsRoot);
   const filePath = path.join(deps.thumbsRoot, thumbPath(sha256));
   const fileExists = rootMounted && await pathExists(filePath);
-  const failure = classifyRenderFailure({ rootMounted, fileExists, format: photo.format });
+  const failure: RenderFailure | null = !rootMounted ? 'VOLUME_UNAVAILABLE'
+    : !fileExists ? 'SOURCE_FILE_MISSING'
+    : null;
   if (failure !== null) return { failure, buffer: null };
   return { failure: null, buffer: await readFile(filePath) };
 }

@@ -42,29 +42,20 @@ async function realThumbSha(): Promise<string> {
 
 test('getThumb serves a real, pre-generated thumbnail by its sha256 filename', async () => {
   const sha = await realThumbSha();
-  const result = await getThumb(deps, sha, { relativePath: 'ignored', format: 'jpg' });
+  const result = await getThumb(deps, sha);
   expect(result.failure).toBeNull();
   expect(result.buffer?.subarray(0, 3)).toEqual(Buffer.from([0xff, 0xd8, 0xff]));
 });
 
 test('getThumb — THUMBS_ROOT unmounted is VOLUME_UNAVAILABLE, never SOURCE_FILE_MISSING', async () => {
-  const result = await getThumb(
-    { ...deps, thumbsRoot: path.join(base, 'nowhere-mounted') },
-    A_SHA, { relativePath: 'ignored', format: 'jpg' },
-  );
+  const result = await getThumb({ ...deps, thumbsRoot: path.join(base, 'nowhere-mounted') }, A_SHA);
   expect(result.failure).toBe('VOLUME_UNAVAILABLE');
   expect(result.buffer).toBeNull();
 });
 
-test('getThumb — root mounted but the sha has no thumbnail is SOURCE_FILE_MISSING', async () => {
-  const result = await getThumb(deps, A_SHA, { relativePath: 'ignored', format: 'jpg' });
+test('getThumb — root mounted but the sha has no thumbnail is SOURCE_FILE_MISSING — only TWO failures exist here (contrat §6.1), the format never enters into it', async () => {
+  const result = await getThumb(deps, A_SHA);
   expect(result.failure).toBe('SOURCE_FILE_MISSING');
-});
-
-test('getThumb — a video format is NOT_RENDERABLE even when the thumbnail file exists', async () => {
-  const sha = await realThumbSha();
-  const result = await getThumb(deps, sha, { relativePath: 'ignored', format: 'mov' });
-  expect(result.failure).toBe('NOT_RENDERABLE');
 });
 
 test('getRender — ORIGINALS_ROOT unmounted is VOLUME_UNAVAILABLE', async () => {

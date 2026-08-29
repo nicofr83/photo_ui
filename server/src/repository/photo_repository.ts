@@ -445,3 +445,24 @@ export async function getPhotoDetail(client: PoolClient, cloudAssetId: string): 
     render: { available: true, unavailableReason: null, cached: false },
   };
 }
+
+export interface PhotoBySha {
+  readonly cloudAssetId: string;
+  readonly relativePath: string;
+  readonly format: string;
+}
+
+/**
+ * `GET /images/:sha256/...` ne connaît que le contenu, pas la photo — plusieurs
+ * lignes peuvent partager un `sha256` (import dupliqué) ; n'importe laquelle
+ * rend les mêmes octets, donc la première suffit.
+ */
+export async function findPhotoBySha256(client: PoolClient, sha256: string): Promise<PhotoBySha | null> {
+  const { rows } = await client.query<{ cloud_asset_id: string; relative_path: string; format: string }>(
+    `SELECT cloud_asset_id, relative_path, format FROM pipeline.photo WHERE sha256 = $1 LIMIT 1`,
+    [sha256],
+  );
+  const row = rows[0];
+  if (row === undefined) return null;
+  return { cloudAssetId: row.cloud_asset_id, relativePath: row.relative_path, format: row.format };
+}
