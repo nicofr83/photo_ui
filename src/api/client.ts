@@ -107,3 +107,13 @@ export async function apiDelete(path: string): Promise<void> {
   const response = await fetch(`${baseUrl()}${path}`, { method: 'DELETE' });
   if (!response.ok) throw await toApiError(path, response);
 }
+
+/**
+ * A DELETE that carries a body and gets one back — contract §4.8:
+ * `DELETE /ref/album-span` takes `{ albumPath }` and answers with the
+ * album back at its presumed span, not a 204. Distinct from `apiDelete`
+ * on purpose, same reasoning as the other verbs here.
+ */
+export function apiDeleteWithBody<T>(path: string, body: unknown, schema: z.ZodType<T>): Promise<T> {
+  return request(path, schema, { method: 'DELETE', body: JSON.stringify(body) });
+}

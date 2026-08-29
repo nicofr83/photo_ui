@@ -2,7 +2,9 @@ import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { z } from 'zod';
 
-import { ApiError, ContractError, apiDelete, apiGet, apiPatch, apiPost, apiPut } from './client';
+import {
+  ApiError, ContractError, apiDelete, apiDeleteWithBody, apiGet, apiPatch, apiPost, apiPut,
+} from './client';
 
 const server = setupServer();
 beforeAll(() => { server.listen({ onUnhandledRequest: 'error' }); });
@@ -56,6 +58,17 @@ describe('a conforming response', () => {
   test('a DELETE resolves on 204, with nothing to parse', async () => {
     server.use(http.delete('*/tasks/x/notes/note_1', () => new HttpResponse(null, { status: 204 })));
     await expect(apiDelete('/tasks/x/notes/note_1')).resolves.toBeUndefined();
+  });
+
+  test('a DELETE with a body sends it and parses the reply — contract §4.8', async () => {
+    server.use(
+      http.delete('*/ref/album-span', async ({ request }) => {
+        const body = (await request.json()) as { albumPath: string };
+        return HttpResponse.json({ total: body.albumPath.length });
+      }),
+    );
+    await expect(apiDeleteWithBody('/ref/album-span', { albumPath: 'abcde' }, Schema))
+      .resolves.toEqual({ total: 5 });
   });
 
   test('a DELETE still throws ApiError on refusal', async () => {

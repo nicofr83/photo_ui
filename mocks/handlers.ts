@@ -7,16 +7,22 @@
  */
 import { http, HttpResponse } from 'msw';
 
+import { firstDayOfMonth, lastDayOfMonth } from '../src/domain/monthRange';
 import { centreDistanceDays, overlaps, widthDays, type DayInterval } from '../src/domain/interval';
 import type { OverlapInfo, OverlapSummary, PhotoWithOverlap } from '../src/api/contract/overlap';
 import type { FacetBucket, PhotoFacets, PhotoListItem } from '../src/api/contract/photo';
+import {
+  AlbumSpanDeleteInputSchema, AlbumSpanPutInputSchema, WebSpanDeleteInputSchema,
+  WebSpanPutInputSchema, type AlbumSpanUpdateResult, type AlbumSpanWarning, type WebDocumentRow,
+} from '../src/api/contract/ref';
 import type { TextUnit } from '../src/api/contract/text';
 import { isIsoDate } from '../src/shared/date_interface';
 import {
-  CorrectionStatus, DatePrecision, DateSource, ErrorCode, MatchField, OverlapRule, PhotoSort,
-  SelectionReason, TaskState,
+  CorrectionStatus, DateKind, DatePrecision, DateSource, ErrorCode, MatchField, OverlapRule,
+  PhotoSort, SelectionReason, TaskState,
 } from '../src/shared/enums';
 import { TaskNoteCreateInputSchema, type TaskDetail } from '../src/api/contract/task';
+import type { Album } from '../src/api/contract/album';
 import type { Job } from '../src/api/contract/job';
 
 import { store } from './store';
@@ -108,6 +114,45 @@ interface UnmatchedValue {
   parameter: string;
   value: string;
   nearest: string[];
+}
+
+/**
+ * What `DELETE /ref/album-span` reverts TO — the prefix-derived interval,
+ * never the entered one with a flag flipped. Whole month when the prefix
+ * names one, whole year otherwise; unchanged (still presumed) if the album
+ * has no prefix year at all, since there is nothing to derive it from.
+ */
+function presumedSpanFor(album: Album): Album['span'] {
+  if (album.prefixYear === null) return { ...album.span, presumed: true, note: null };
+  if (album.prefixMonth === null) {
+    return {
+      from: `${String(album.prefixYear)}-01-01`, to: `${String(album.prefixYear)}-12-31`,
+      presumed: true, note: null,
+    } as Album['span'];
+  }
+  const month = `${String(album.prefixYear)}-${String(album.prefixMonth).padStart(2, '0')}`;
+  return {
+    from: firstDayOfMonth(month), to: lastDayOfMonth(month), presumed: true, note: null,
+  } as Album['span'];
+}
+
+/** Contract §4.8: the ONE recompute rule that refuses. */
+function albumSpanWarnings(album: Album, dateFrom: string, dateTo: string): AlbumSpanWarning[] {
+  const warnings: AlbumSpanWarning[] = [];
+  if (album.prefixYear !== null) {
+    const yearStart = `${String(album.prefixYear)}-01-01`;
+    const yearEnd = `${String(album.prefixYear)}-12-31`;
+    if (!(dateFrom <= yearEnd && yearStart <= dateTo)) {
+      warnings.push({ code: 'outside_prefix_year', prefixYear: album.prefixYear });
+    }
+  }
+  const overlapping = store.albums.find(
+    (a) => a.path !== album.path && a.span.from <= dateTo && dateFrom <= a.span.to,
+  );
+  if (overlapping !== undefined) {
+    warnings.push({ code: 'overlaps_album', albumPath: overlapping.path });
+  }
+  return warnings;
 }
 
 function textIncludes(haystack: string | null, needle: string): boolean {
@@ -242,6 +287,108 @@ export const handlers = [
   http.get('*/albums', () => HttpResponse.json({ items: store.albums })),
 
   http.get('*/documents', () => HttpResponse.json({ items: store.documents })),
+
+  // Contract §4.8, écran « Réglages » — the referentials only a person can
+  // fill. PUT/DELETE declared before nothing here needs shadow-avoidance:
+  // neither /photos nor /texts owns a "ref" prefix.
+  http.put('*/ref/album-span', async ({ request }) => {
+    const body = AlbumSpanPutInputSchema.parse(await request.json());
+    if (body.dateTo < body.dateFrom) {
+      return error(400, ErrorCode.INVALID_PARAMETER, 'La date de fin précède la date de début.', {
+        parameter: 'dateTo', received: body.dateTo, accepted: null,
+      });
+    }
+    const album = store.albums.find((a) => a.path === body.albumPath);
+    if (album === undefined) {
+      return error(404, ErrorCode.NOT_FOUND, 'Album introuvable.', {
+        resource: 'album', id: body.albumPath,
+      });
+    }
+
+    const warnings = albumSpanWarnings(album, body.dateFrom, body.dateTo);
+    album.span = { from: body.dateFrom, to: body.dateTo, presumed: false, note: body.note };
+
+    const result: AlbumSpanUpdateResult = {
+      album,
+      recomputed: {
+        photosAffected: album.photoCount, datesChanged: album.photoCount, precisionChanged: 0,
+      },
+      warnings,
+    };
+    return HttpResponse.json(result);
+  }),
+
+  http.delete('*/ref/album-span', async ({ request }) => {
+    const body = AlbumSpanDeleteInputSchema.parse(await request.json());
+    const album = store.albums.find((a) => a.path === body.albumPath);
+    if (album === undefined) {
+      return error(404, ErrorCode.NOT_FOUND, 'Album introuvable.', {
+        resource: 'album', id: body.albumPath,
+      });
+    }
+
+    album.span = presumedSpanFor(album);
+    const result: AlbumSpanUpdateResult = {
+      album,
+      recomputed: {
+        photosAffected: album.photoCount, datesChanged: album.photoCount, precisionChanged: 0,
+      },
+      warnings: [],
+    };
+    return HttpResponse.json(result);
+  }),
+
+  http.get('*/ref/web-documents', () => {
+    const items: WebDocumentRow[] = store.documents
+      .filter((d) => d.kind === 'html')
+      .map((d) => {
+        const firstPassage = store.texts.find((t) => t.documentId === d.id);
+        return {
+          documentId: d.id,
+          title: d.title,
+          passageCount: d.passageCount,
+          excerpt: firstPassage === undefined ? d.title : firstPassage.text.slice(0, 120),
+          span: d.span,
+          pathHint: d.id,
+        };
+      });
+    return HttpResponse.json({ items });
+  }),
+
+  http.put('*/ref/web-span', async ({ request }) => {
+    const body = WebSpanPutInputSchema.parse(await request.json());
+    if (body.dateTo < body.dateFrom) {
+      return error(400, ErrorCode.INVALID_PARAMETER, 'La date de fin précède la date de début.', {
+        parameter: 'dateTo', received: body.dateTo, accepted: null,
+      });
+    }
+    const doc = store.documents.find((d) => d.id === body.documentId);
+    if (doc === undefined) {
+      return error(404, ErrorCode.NOT_FOUND, 'Document introuvable.', {
+        resource: 'document', id: body.documentId,
+      });
+    }
+    // Contract §4.8: a web_span is always an INFERENCE — it fills a void,
+    // never arbitrates. The capital rule (ResolvedDateSchema) would refuse
+    // this response if it were marked `decision` instead.
+    doc.span = {
+      start: body.dateFrom, end: body.dateTo, precision: DatePrecision.DAY,
+      kind: DateKind.INFERENCE, source: DateSource.WEB_SPAN, bracketHours: null,
+    };
+    return HttpResponse.json(doc);
+  }),
+
+  http.delete('*/ref/web-span', async ({ request }) => {
+    const body = WebSpanDeleteInputSchema.parse(await request.json());
+    const doc = store.documents.find((d) => d.id === body.documentId);
+    if (doc === undefined) {
+      return error(404, ErrorCode.NOT_FOUND, 'Document introuvable.', {
+        resource: 'document', id: body.documentId,
+      });
+    }
+    doc.span = null;
+    return HttpResponse.json(doc);
+  }),
 
   http.get('*/pages', ({ request }) => {
     const documentId = new URL(request.url).searchParams.get('documentId');

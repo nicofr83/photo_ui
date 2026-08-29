@@ -1,8 +1,11 @@
 import { setupServer } from 'msw/node';
 
-import { apiGet, ApiError } from '../src/api/client';
+import { apiDeleteWithBody, apiGet, apiPut, ApiError } from '../src/api/client';
 import { PhotoOverlapEnvelopeSchema, TextOverlapEnvelopeSchema } from '../src/api/contract/overlap';
 import { ListEnvelopeSchema, PhotoFacetsSchema, PhotoListItemSchema } from '../src/api/contract/photo';
+import { AlbumSpanUpdateResultSchema, WebDocumentListSchema } from '../src/api/contract/ref';
+import { TextDocumentSchema } from '../src/api/contract/text';
+import { parseIsoDate } from '../src/shared/date_interface';
 
 import { handlers } from './handlers';
 import { resetStore } from './store';
@@ -18,6 +21,21 @@ const photosWithOverlap = (query = '') => apiGet(`/photos${query}`, PhotoOverlap
 const overlappingTexts = (cloudAssetId: string) =>
   apiGet(`/photos/${cloudAssetId}/texts`, TextOverlapEnvelopeSchema);
 const facets = (query = '') => apiGet(`/photos/facets${query}`, PhotoFacetsSchema);
+const putAlbumSpan = (input: {
+  albumPath: string; dateFrom: string; dateTo: string; note: string | null;
+}) =>
+  apiPut('/ref/album-span', {
+    ...input, dateFrom: parseIsoDate(input.dateFrom), dateTo: parseIsoDate(input.dateTo),
+  }, AlbumSpanUpdateResultSchema);
+const deleteAlbumSpan = (albumPath: string) =>
+  apiDeleteWithBody('/ref/album-span', { albumPath }, AlbumSpanUpdateResultSchema);
+const webDocuments = () => apiGet('/ref/web-documents', WebDocumentListSchema);
+const putWebSpan = (input: {
+  documentId: string; dateFrom: string; dateTo: string; note: string | null;
+}) =>
+  apiPut('/ref/web-span', {
+    ...input, dateFrom: parseIsoDate(input.dateFrom), dateTo: parseIsoDate(input.dateTo),
+  }, TextDocumentSchema);
 
 describe('the envelope obeys the contract', () => {
   test('an unfiltered call returns the whole hierarchy scope', async () => {
@@ -264,5 +282,82 @@ describe('T3 — /photos/facets, contextual counts against the current filter', 
   test('positionedCount is 0 when nothing in the filter has a position', async () => {
     const page = await facets('?albumPath=1998-1999%2F1999-10 Lisboa Madere');
     expect(page.positionedCount).toBe(0);
+  });
+});
+
+describe('contract §4.8 — PUT/DELETE /ref/album-span, the highest-yield screen', () => {
+  const ALBUM = '1998-1999/1999-10 Lisboa Madere';
+
+  test('a valid span is saved, presumed flips to false', async () => {
+    const result = await putAlbumSpan({
+      albumPath: ALBUM, dateFrom: '1999-10-05', dateTo: '1999-10-20', note: 'Corrigé',
+    });
+    expect(result.album.span).toMatchObject({
+      from: '1999-10-05', to: '1999-10-20', presumed: false, note: 'Corrigé',
+    });
+    expect(result.recomputed.photosAffected).toBe(result.album.photoCount);
+    expect(result.warnings).toEqual([]);
+  });
+
+  test('dateTo before dateFrom is a 400, never silently swapped', async () => {
+    const thrown = (await putAlbumSpan({
+      albumPath: ALBUM, dateFrom: '1999-10-20', dateTo: '1999-10-05', note: null,
+    }).catch((e: unknown) => e)) as ApiError;
+    expect(thrown).toBeInstanceOf(ApiError);
+    expect(thrown.code).toBe('INVALID_PARAMETER');
+  });
+
+  test('an unknown album is a 404', async () => {
+    const thrown = (await putAlbumSpan({
+      albumPath: 'nope/nope', dateFrom: '1999-01-01', dateTo: '1999-01-31', note: null,
+    }).catch((e: unknown) => e)) as ApiError;
+    expect(thrown.status).toBe(404);
+  });
+
+  test('a span outside the prefix year is ACCEPTED, with a warning', async () => {
+    const result = await putAlbumSpan({
+      albumPath: ALBUM, dateFrom: '1995-01-01', dateTo: '1995-01-31', note: null,
+    });
+    expect(result.warnings).toEqual([{ code: 'outside_prefix_year', prefixYear: 1999 }]);
+  });
+
+  test('a span overlapping another album is ACCEPTED, with a warning naming it', async () => {
+    // Starts the day after "Maison rose Algès" ends (1999-06-30), so this
+    // overlaps ONLY the 2000 Venezuela album.
+    const result = await putAlbumSpan({
+      albumPath: ALBUM, dateFrom: '1999-07-01', dateTo: '2000-06-30', note: null,
+    });
+    expect(result.warnings).toContainEqual({ code: 'overlaps_album', albumPath: '2000-2001/2000' });
+  });
+
+  test('DELETE reverts to the prefix-derived span, never the entered one with a flag flipped', async () => {
+    await putAlbumSpan({ albumPath: ALBUM, dateFrom: '1999-10-05', dateTo: '1999-10-20', note: 'x' });
+    const result = await deleteAlbumSpan(ALBUM);
+    expect(result.album.span).toEqual({
+      from: '1999-10-01', to: '1999-10-31', presumed: true, note: null,
+    });
+  });
+});
+
+describe('contract §4.8 — /ref/web-documents and PUT/DELETE /ref/web-span', () => {
+  test('web documents are listed with their path as the date hint', async () => {
+    const page = await webDocuments();
+    const doc = page.items.find((d) => d.documentId === 'web/2003/2003_gal_1');
+    expect(doc).toBeDefined();
+    expect(doc?.pathHint).toBe('web/2003/2003_gal_1');
+  });
+
+  test('a saved web_span is an INFERENCE, never a decision — the capital rule', async () => {
+    const doc = await putWebSpan({
+      documentId: 'web/2003/2003_gal_1', dateFrom: '2003-01-01', dateTo: '2003-12-31', note: 'Nicolas',
+    });
+    expect(doc.span).toMatchObject({ kind: 'inference', source: 'web_span' });
+  });
+
+  test('an unknown document is a 404', async () => {
+    const thrown = (await putWebSpan({
+      documentId: 'nope', dateFrom: '2003-01-01', dateTo: '2003-12-31', note: null,
+    }).catch((e: unknown) => e)) as ApiError;
+    expect(thrown.status).toBe(404);
   });
 });
