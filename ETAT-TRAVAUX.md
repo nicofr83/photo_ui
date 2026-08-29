@@ -464,3 +464,15 @@ DETAIL : commits `7fe52cf`..`32a68ba`. **Vrai bug trouvé en testant `q` contre 
 **Tranche T3 (chercher) est maintenant complète : tâche 23.**
 
 ASK: aucun — je continue sur la Tranche T4 (écrire), tâche 24 : les corrections de transcription.
+
+---
+
+## Avancement — impl-backend, tâche 24 (2026-08-30) — Tranche T4 complète
+
+RE: tâche 24 — corrections de transcription, terminée. Tranche T4 (écrire) complète.
+DONE : `PUT /corrections`, `POST /corrections/revert`, `GET /corrections?status=`. `original_at_correction` est le TÉMOIN — l'amont TEL QU'IL ÉTAIT à l'instant de corriger, jamais la correction précédente sur une re-correction (vérifié explicitement). `status` calculé par comparaison au corps AMONT actuel : `applied`/`needs_review`/`orphaned` — `orphaned` exige un `LEFT JOIN` DEPUIS `app.text_correction`, jamais depuis `listTexts` qui ne peut pas voir une cible disparue. Correction vide ou blanche → 422 `EMPTY_CORRECTION` avant la base. `app.text_search` rafraîchie à chaque écriture (`REFRESH` simple, même repli que la tâche 23). INVARIANT 4 vérifié : corriger un passage ne touche jamais l'entrée de journal du même id. 24 tests neufs, cycle complet vérifié en réel (`PUT` sur `logbook/p003/001`, recherche `écluse` → 5 résultats immédiatement, `GET /corrections` la liste `applied`, `revert` restaure l'amont exact, `app.text_correction` revient à 0 ligne). 583 tests serveur, tsc/eslint propres.
+DETAIL : commits `d3c6eb6`..`23dbea8`. `TEXT_UNIT_SELECT` extrait de `listTexts` pour un lookup unitaire (`getTextUnit`) partagé — jamais une seconde forme de `TextUnit` qui pourrait diverger.
+
+**Tranche T4 (écrire) est maintenant complète : tâche 24.**
+
+ASK: aucun — je continue sur la tâche 25 (référentiels et recalcul partiel — `PUT`/`DELETE /ref/album-span`, `/ref/web-span`).
