@@ -1,8 +1,9 @@
 import { z } from 'zod';
 
 import {
-  CloudAssetIdSchema, DateArbitrationSchema, FieldMatchSchema, LocalDateTimeSchema,
-  ResolvedDateSchema, ResolvedPositionSchema, Sha256Schema, TextRangeSchema,
+  CloudAssetIdSchema, DateArbitrationSchema, FieldMatchSchema, IsoDateSchema,
+  LocalDateTimeSchema, ResolvedDateSchema, ResolvedPositionSchema, Sha256Schema,
+  TextRangeSchema,
 } from './common';
 
 /** Each field nullable independently: a city with no country exists, and vice versa. */
@@ -95,3 +96,77 @@ export function ListEnvelopeSchema<T extends z.ZodType>(item: T) {
     importId: z.string(),
   });
 }
+
+/**
+ * Whether the 1400 px render can be produced, and if not, WHY.
+ *
+ * An <img> onerror is opaque, so the JSON has to carry the reason: spec §5.2
+ * requires the volume being absent (global, a configuration problem) to be
+ * distinguished from this one file being missing, and from a format that
+ * produces no pixels at all. Contract amendment, detail only.
+ */
+export const RenderAvailabilitySchema = z.strictObject({
+  available: z.boolean(),
+  unavailableReason: z
+    .enum(['volume_unavailable', 'source_file_missing', 'not_renderable'])
+    .nullable(),
+  cached: z.boolean(),
+});
+
+export const PhotoTagSchema = z.strictObject({
+  name: z.string(),
+  /** NULL for a `user` keyword. NULL never excludes a tag. Spec §6.3. */
+  confidence: z.number().nullable(),
+});
+
+export const PhotoExifSchema = z.strictObject({
+  cameraMake: z.string().nullable(),
+  cameraModel: z.string().nullable(),
+  lens: z.string().nullable(),
+  iso: z.number().int().nullable(),
+  aperture: z.number().nullable(),
+  /** The upstream string, "1/35". Not a number. */
+  shutter: z.string().nullable(),
+  focalLength: z.number().nullable(),
+  altitude: z.number().nullable(),
+});
+
+/** Rank 3 of the cascade. The bracket and the evidence travel with it. */
+export const DatingProposalSchema = z.strictObject({
+  date: ResolvedDateSchema,
+  position: ResolvedPositionSchema.nullable(),
+  /** log_entries ids: one click opens the logbook page. */
+  evidenceEntryIds: z.array(z.string()),
+});
+
+/** Why there is no proposal. A missing row says nothing without its reason. */
+export const DatingDoubtSchema = z.strictObject({
+  /** OPEN vocabulary — data, not an enum. It has already changed once. */
+  reason: z.string(),
+  label: z.string().nullable(),
+  albumPath: z.string(),
+  candidates: z.array(
+    z.strictObject({
+      place: z.string(),
+      range: z.strictObject({ from: IsoDateSchema, to: IsoDateSchema }),
+      fixes: z.number().int(),
+    }),
+  ),
+});
+
+export const PhotoDetailSchema = PhotoListItemSchema.extend({
+  /** Album membership is multiple: 2 to 4 albums per photo. */
+  albumPaths: z.array(z.string()),
+  tags: z.array(PhotoTagSchema),
+  exif: PhotoExifSchema,
+  /** Text PRINTED IN the image, not a caption. */
+  ocrText: z.string().nullable(),
+  fileSize: z.number().int().nullable(),
+  relativePath: z.string(),
+  /** FIRST-LEVEL fields, never folded into the date. Spec §9.2. */
+  proposal: DatingProposalSchema.nullable(),
+  doubt: DatingDoubtSchema.nullable(),
+  overlappingTextCount: z.number().int(),
+  render: RenderAvailabilitySchema,
+});
+export type PhotoDetail = z.infer<typeof PhotoDetailSchema>;

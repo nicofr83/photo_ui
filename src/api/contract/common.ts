@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { expectedKindFor, expectedKindForPosition } from '../../domain/dateKind';
-import { isIsoDate } from '../../shared/date_interface';
+import { isIsoDate, isIsoTimestamp, isLocalDateTime } from '../../shared/date_interface';
 import {
   DateKind, DatePrecision, DateSource, MatchField, PositionSource,
 } from '../../shared/enums';
@@ -18,10 +18,7 @@ export const IsoDateSchema = z
 /** A real instant. Always zoned — an unzoned one would silently be read as local. */
 export const IsoTimestampSchema = z
   .string()
-  .regex(
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/,
-    'expected an ISO-8601 instant carrying its zone',
-  );
+  .refine(isIsoTimestamp, 'expected an ISO-8601 instant carrying its zone');
 
 /**
  * A naive local timestamp, deliberately unzoned: 76 % of upstream `captureDate`
@@ -30,7 +27,7 @@ export const IsoTimestampSchema = z
  */
 export const LocalDateTimeSchema = z
   .string()
-  .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/, 'expected YYYY-MM-DDTHH:MM[:SS], unzoned');
+  .refine(isLocalDateTime, 'expected YYYY-MM-DDTHH:MM[:SS], unzoned');
 
 export const Sha256Schema = z.string().regex(/^[0-9a-f]{64}$/);
 export const CloudAssetIdSchema = z.string().regex(/^[0-9a-f]{32}$/);

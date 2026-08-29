@@ -10,7 +10,7 @@
  * contract, so a fixture cannot drift from the schema without failing the build.
  */
 import type { PhotoListItem } from '../../src/api/contract/photo';
-import { parseIsoDate } from '../../src/shared/date_interface';
+import { parseIsoDate, parseLocalDateTime } from '../../src/shared/date_interface';
 import { DateKind, DatePrecision, DateSource, MatchField, PositionSource } from '../../src/shared/enums';
 
 /** A sha256 with no file behind it: the grey-tile path of §5.2. */
@@ -45,7 +45,9 @@ function photo(seed: Seed): PhotoListItem {
     date: seed.date,
     arbitration: seed.arbitration ?? null,
     rawDateSource: seed.rawDateSource,
-    captureDateLocal: seed.captureLocal ?? null,
+    captureDateLocal: seed.captureLocal === undefined || seed.captureLocal === null
+      ? null
+      : parseLocalDateTime(seed.captureLocal),
     captureOffsetMin: null,
     captureDateRaw: null,
     position: seed.position ?? null,
@@ -88,7 +90,7 @@ export const INVARIANT_PHOTOS: readonly PhotoListItem[] = [
     file: 'PICT0042.jpg',
     album: '1998-1999/1999-10 Lisboa Madere', group: 'Lisboa Madere',
     date: day('1999-10-14', DateSource.EXIF_ARBITRATED, DateKind.READING),
-    arbitration: { exifDate: '1999-10-14T15:02:00', gapMonths: 0, outcome: 'accepted' },
+    arbitration: { exifDate: parseLocalDateTime('1999-10-14T15:02:00'), gapMonths: 0, outcome: 'accepted' },
     rawDateSource: 'capture-date', captureLocal: '1999-10-14T15:02:00',
     people: ['Hugo'], aesthetics: 62,
     place: { ...NO_PLACE, country: 'Portugal', countryRaw: 'Portugal' },
@@ -99,7 +101,7 @@ export const INVARIANT_PHOTOS: readonly PhotoListItem[] = [
     file: 'PICT0107.jpg',
     album: '2002/2002-04-Ghislaine est a Saint Martin', group: 'Saint Martin',
     date: day('2002-04-18', DateSource.EXIF_ARBITRATED, DateKind.READING),
-    arbitration: { exifDate: '2002-04-18T09:11:00', gapMonths: 2, outcome: 'accepted' },
+    arbitration: { exifDate: parseLocalDateTime('2002-04-18T09:11:00'), gapMonths: 2, outcome: 'accepted' },
     rawDateSource: 'capture-date', captureLocal: '2002-04-18T09:11:00',
     people: ['Ghislaine'], aesthetics: 71,
     position: { lat: 18.07, lon: -63.05, kind: DateKind.READING, source: PositionSource.EXIF },
@@ -173,7 +175,7 @@ export const INVARIANT_PHOTOS: readonly PhotoListItem[] = [
     album: '1998-1999/1998-02-Maison rose Algès', group: 'Maison rose Algès',
     date: month('1998-02-01', '1998-02-28'),
     // Scanned in 2013: 190 months from the album. The EXIF is a scanner clock.
-    arbitration: { exifDate: '2013-12-04T11:47:00', gapMonths: 190, outcome: 'rejected' },
+    arbitration: { exifDate: parseLocalDateTime('2013-12-04T11:47:00'), gapMonths: 190, outcome: 'rejected' },
     rawDateSource: 'capture-date', captureLocal: '2013-12-04T11:47:00', aesthetics: 29,
   }),
 
@@ -207,7 +209,7 @@ export const INVARIANT_PHOTOS: readonly PhotoListItem[] = [
     file: 'DSCN2201.jpg',
     album: '2004/2004-03- visite de Tikal', group: 'visite de Tikal',
     date: day('2004-03-11', DateSource.EXIF_ARBITRATED, DateKind.READING),
-    arbitration: { exifDate: '2004-03-11T08:30:00', gapMonths: 0, outcome: 'accepted' },
+    arbitration: { exifDate: parseLocalDateTime('2004-03-11T08:30:00'), gapMonths: 0, outcome: 'accepted' },
     rawDateSource: 'capture-date', captureLocal: '2004-03-11T08:30:00',
     aesthetics: 78, people: ['Hugo', 'Nicolas'],
     caption: { text: 'Des ruines mayas émergent de la forêt.', highlights: [{ start: 4, length: 6 }] },

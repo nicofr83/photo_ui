@@ -97,3 +97,32 @@ export function parseIsoDate(raw: string): IsoDate {
   }
   return raw as IsoDate;
 }
+
+const ISO_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
+const LOCAL_DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/;
+
+/** A real instant, always zoned. An unzoned one would silently be read as local. */
+export function isIsoTimestamp(raw: string): raw is IsoTimestamp {
+  return ISO_TIMESTAMP.test(raw);
+}
+
+/** A naive local timestamp, deliberately unzoned. */
+export function isLocalDateTime(raw: string): raw is LocalDateTime {
+  return LOCAL_DATE_TIME.test(raw);
+}
+
+/** Throws on anything that is not a naive local timestamp. */
+export function parseLocalDateTime(raw: string): LocalDateTime {
+  if (!isLocalDateTime(raw)) {
+    throw new Error(`"${raw}" is not an unzoned local timestamp YYYY-MM-DDTHH:MM[:SS]`);
+  }
+  return raw;
+}
+
+/** Throws on anything that is not a zoned ISO-8601 instant. */
+export function parseIsoTimestamp(raw: string): IsoTimestamp {
+  if (!isIsoTimestamp(raw)) {
+    throw new Error(`"${raw}" is not an ISO-8601 instant carrying its zone`);
+  }
+  return raw;
+}

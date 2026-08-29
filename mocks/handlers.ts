@@ -10,7 +10,7 @@ import { http, HttpResponse } from 'msw';
 import { overlaps } from '../src/domain/interval';
 import type { PhotoListItem } from '../src/api/contract/photo';
 import { isIsoDate } from '../src/shared/date_interface';
-import { ErrorCode, PhotoSort, SelectionReason, TaskState } from '../src/shared/enums';
+import { DateSource, ErrorCode, PhotoSort, SelectionReason, TaskState } from '../src/shared/enums';
 import type { TaskDetail } from '../src/api/contract/task';
 
 import { store } from './store';
@@ -39,6 +39,16 @@ const NOW = '2026-08-29T10:00:00.000Z' as TaskDetail['createdAt'];
 export const handlers = [
   // Contract §4.2: the 82 albums fit in one response.
   http.get('*/albums', () => HttpResponse.json({ items: INVARIANT_ALBUMS })),
+
+  http.get('*/photos/:cloudAssetId', ({ params }) => {
+    const photo = store.photos.find((p) => p.cloudAssetId === String(params['cloudAssetId']));
+    if (photo === undefined) {
+      return error(404, ErrorCode.NOT_FOUND, 'Photo introuvable.', {
+        resource: 'photo', id: String(params['cloudAssetId']),
+      });
+    }
+    return HttpResponse.json(detailFor(photo));
+  }),
 
   http.get('*/tasks', () =>
     HttpResponse.json({
@@ -251,5 +261,50 @@ function byDate(direction: 1 | -1) {
     if (a.date === null) return 1;
     if (b.date === null) return -1;
     return direction * a.date.start.localeCompare(b.date.start);
+  };
+}
+
+/**
+ * Builds the detail view of a fixture photo. The proposal and the doubt are
+ * separate first-level blocks (spec §9.2), never folded into the date.
+ */
+function detailFor(photo: PhotoListItem) {
+  const isProposal = photo.date?.source === DateSource.LOGBOOK_BRACKET;
+  const missingFile = photo.fileName === 'sans-vignette.jpg';
+
+  return {
+    ...photo,
+    albumPaths: photo.albumPath === null ? [] : [photo.albumPath, 'all pics'],
+    tags: [
+      { name: 'boat', confidence: 71 },
+      { name: 'maya', confidence: 58 },
+      { name: 'famille', confidence: null },
+    ],
+    exif: {
+      cameraMake: 'NIKON', cameraModel: 'E5700', lens: null, iso: 100,
+      aperture: 4.5, shutter: '1/350', focalLength: 8.9, altitude: null,
+    },
+    ocrText: null,
+    fileSize: 778_000,
+    relativePath: `${photo.albumPath ?? 'racine'}/${photo.fileName}`,
+    proposal: isProposal && photo.date !== null
+      ? {
+          date: photo.date,
+          position: photo.position,
+          evidenceEntryIds: ['logbook/1999-12-07', 'logbook/1999-12-11'],
+        }
+      : null,
+    doubt: photo.date === null
+      ? {
+          reason: 'no-place-in-name',
+          label: 'Le nom de l’album ne nomme aucun lieu',
+          albumPath: photo.albumPath ?? '',
+          candidates: [],
+        }
+      : null,
+    overlappingTextCount: isProposal ? 7 : 0,
+    render: missingFile
+      ? { available: false, unavailableReason: 'source_file_missing' as const, cached: false }
+      : { available: true, unavailableReason: null, cached: true },
   };
 }
