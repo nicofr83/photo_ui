@@ -34,7 +34,7 @@ c'est qu'elle soit sans perte et sans re-décision.
 | Spécification backend | `contrat-api` | **terminée** | **commité** — `docs/backend-spec.md` |
 | Spécification frontend | `spec-frontend` | vivante, amendée en continu | **commité** — `docs/frontend-spec.md` |
 | Plan frontend | `impl-frontend` | établi | **commité** — `docs/superpowers/plans/2026-08-28-frontend.md` |
-| Implémentation frontend T1 | `impl-frontend` | **en vol** — socle, domaine de la date, rendu | **tout commité** (`08e71e5`) — rien en vol |
+| Implémentation frontend T1 | `impl-frontend` | tâches 1.0 à 1.6 **faites** — socle, domaine, rendu, client, fixtures, MSW | **tout commité** (`d193a1a`) — 232 tests verts, rien en vol |
 | Échantillon de légendes | *(agent non nommé)* | en cours | `docs/echantillon-legendes.html` est commité |
 | Plan d'implémentation backend | *(agent à lancer)* | **pas commencé** | — |
 
