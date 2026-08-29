@@ -418,3 +418,13 @@ Non fait, volontairement : `POST /jobs/caption` (aucune passe de légendage n'ex
 **La Tranche T1 (serveur) est maintenant complète : tâches 12 à 19, tous les endpoints de base + images + tâches + export + jobs tournent en réel.**
 
 ASK: aucun — je continue sur la Tranche T2 (le texte), tâche 20 : documents, pages, textes.
+
+---
+
+## Avancement — impl-backend, tâche 20 (2026-08-29)
+
+RE: tâche 20 — documents, pages, textes, terminée
+DONE: `GET /documents`, `GET /pages?documentId=`, `GET /pages/image?pageId=`, `GET /texts` (allowlist complet : `documentId`/`pageId`/`kind`/`dateFrom`/`dateTo`/`overlapsPhoto`/`confidence`/`hasCorrection`/`limit`/`offset`/`sort`). `metier/overlap/overlap_sql.ts` : LE prédicat de recouvrement (`&&`, jamais une inégalité), une seule fonction pure, réutilisée pour `overlappingPhotoCount` (sous-requête corrélée par texte) et le filtre `overlapsPhoto` — prête à resservir tâche 21. `TextDocument.span` vient de `ref.web_span`, toujours `kind: 'inference'` (comble un vide, n'arbitre pas — même règle que le rang 0 photo). `TextPage.window` toujours `inference` aussi, `carried` compris. 20 tests neufs, vérifié contre le corpus réel : **62 documents, 155 pages, 2871 textes — exactement les comptes cités par le contrat**, une vraie image de page servie (830×1282, conforme à sa ligne), le listing complet non filtré en 82 ms (l'index GiST justifie la sous-requête corrélée). 514 tests serveur, tsc/eslint propres.
+DETAIL: commit `acc1ba2`. Écart avec mon hypothèse initiale, sans conséquence : je pensais `logbook` ne portait que des entrées de journal — en réalité il porte aussi 492 passages (réflexions manuscrites séparées des lignes réglées). Le code ne supposait rien de tel, donc rien à corriger.
+
+ASK: aucun — je continue sur la tâche 21 (le recouvrement dans les deux sens, `OverlapInfo` complet et `GET /photos/:cloudAssetId/texts`).
