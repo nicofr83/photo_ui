@@ -13,16 +13,15 @@ import type { PhotoListItem } from '../src/api/contract/photo';
 import type { TextUnit } from '../src/api/contract/text';
 import { isIsoDate } from '../src/shared/date_interface';
 import {
-  DatePrecision, DateSource, ErrorCode, OverlapRule, PhotoSort, SelectionReason, TaskState,
+  CorrectionStatus, DatePrecision, DateSource, ErrorCode, OverlapRule, PhotoSort,
+  SelectionReason, TaskState,
 } from '../src/shared/enums';
 import type { TaskDetail } from '../src/api/contract/task';
 import type { Job } from '../src/api/contract/job';
 
 import { store } from './store';
 import { INVARIANT_ALBUMS } from '../fixtures/invariants/albums';
-import {
-  INVARIANT_DOCUMENTS, INVARIANT_PAGES, INVARIANT_TEXTS,
-} from '../fixtures/invariants/texts';
+import { INVARIANT_DOCUMENTS, INVARIANT_PAGES } from '../fixtures/invariants/texts';
 
 /** Contract §4.2. Anything outside this list is an UNKNOWN_PARAMETER. */
 const PHOTO_PARAMS = [
@@ -115,7 +114,7 @@ export const handlers = [
       });
     }
 
-    const items = photo.date === null ? [] : INVARIANT_TEXTS
+    const items = photo.date === null ? [] : store.texts
       .map((text) => {
         const effective = effectiveTextWindow(text);
         if (effective === null || photo.date === null) return null;
@@ -128,8 +127,8 @@ export const handlers = [
     return HttpResponse.json({
       items,
       total: items.length,
-      populationTotal: INVARIANT_TEXTS.length,
-      excludedCount: INVARIANT_TEXTS.length - items.length,
+      populationTotal: store.texts.length,
+      excludedCount: store.texts.length - items.length,
       filters: { applied: [], unmatchedValues: [] },
       importId: store.importId,
       overlapSummary: summarise(
@@ -145,7 +144,7 @@ export const handlers = [
     const pageId = params.get('pageId');
     const query = params.get('q');
 
-    let kept = [...INVARIANT_TEXTS];
+    let kept = [...store.texts];
     if (documentId !== null) kept = kept.filter((t) => t.documentId === documentId);
     if (pageId !== null) kept = kept.filter((t) => t.pageId === pageId);
     if (query !== null) {
@@ -159,8 +158,8 @@ export const handlers = [
     return HttpResponse.json({
       items: kept,
       total: kept.length,
-      populationTotal: INVARIANT_TEXTS.length,
-      excludedCount: INVARIANT_TEXTS.length - kept.length,
+      populationTotal: store.texts.length,
+      excludedCount: store.texts.length - kept.length,
       filters: {
         applied: [...params.keys()].map((parameter) => ({
           parameter, values: params.getAll(parameter), broadened: false,
@@ -169,6 +168,51 @@ export const handlers = [
       },
       importId: store.importId,
     });
+  }),
+
+  // Contract §4.4: the ref travels in the BODY, never the path — it contains
+  // `/` and is ambiguous without its kind (§2.6).
+  http.put('*/corrections', async ({ request }) => {
+    const body = (await request.json()) as { ref: { kind: string; id: string }; text: string };
+
+    if (body.text.trim() === '') {
+      return error(422, ErrorCode.EMPTY_CORRECTION, 'La correction ne peut pas être vide.', {
+        ref: body.ref,
+      });
+    }
+
+    const unit = store.texts.find((t) => t.ref.kind === body.ref.kind && t.ref.id === body.ref.id);
+    if (unit === undefined) {
+      return error(404, ErrorCode.NOT_FOUND, 'Texte introuvable.', {
+        resource: 'text', id: body.ref.id,
+      });
+    }
+
+    unit.correction = {
+      ref: unit.ref,
+      text: body.text,
+      originalAtCorrection: unit.textOriginal,
+      correctedAt: NOW,
+      status: CorrectionStatus.APPLIED,
+    };
+    unit.text = body.text;
+    return HttpResponse.json(unit);
+  }),
+
+  http.post('*/corrections/revert', async ({ request }) => {
+    const body = (await request.json()) as { ref: { kind: string; id: string } };
+    const unit = store.texts.find((t) => t.ref.kind === body.ref.kind && t.ref.id === body.ref.id);
+    if (unit === undefined) {
+      return error(404, ErrorCode.NOT_FOUND, 'Texte introuvable.', {
+        resource: 'text', id: body.ref.id,
+      });
+    }
+
+    // Idempotent: reverting a text with no correction just confirms the
+    // current (already original) state rather than erroring.
+    unit.correction = null;
+    unit.text = unit.textOriginal;
+    return HttpResponse.json(unit);
   }),
 
   http.post('*/tasks/:slug/export', async ({ params, request }) => {
@@ -402,7 +446,7 @@ export const handlers = [
     let withOverlap: PhotoWithOverlap[] | null = null;
 
     if (overlapsTextKind !== null && overlapsTextId !== null) {
-      const text = INVARIANT_TEXTS.find(
+      const text = store.texts.find(
         (t) => t.ref.kind === overlapsTextKind && t.ref.id === overlapsTextId,
       );
       if (text === undefined) {

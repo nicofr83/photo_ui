@@ -4,13 +4,17 @@
  * writing a note — instead of resolving into nothing.
  */
 import { INVARIANT_PHOTOS } from '../fixtures/invariants/photos';
+import { INVARIANT_TEXTS } from '../fixtures/invariants/texts';
 import type { PhotoListItem } from '../src/api/contract/photo';
 import type { TaskDetail } from '../src/api/contract/task';
+import type { TextUnit } from '../src/api/contract/text';
 import { TaskState } from '../src/shared/enums';
 import type { Job } from '../src/api/contract/job';
 
 export interface Store {
   photos: PhotoListItem[];
+  /** Mutable so a correction (PUT /corrections) makes a real round trip. */
+  texts: TextUnit[];
   tasks: Map<string, TaskDetail>;
   /** Identifies the import that produced this data. Contract §9. */
   importId: string;
@@ -44,6 +48,7 @@ function seedTask(): TaskDetail {
 function seed(): Store {
   return {
     photos: structuredClone(INVARIANT_PHOTOS) as PhotoListItem[],
+    texts: structuredClone(INVARIANT_TEXTS) as TextUnit[],
     tasks: new Map([['1999-transat', seedTask()]]),
     importId: 'import_mock',
     tasksRootAvailable: true,

@@ -46,8 +46,11 @@ export const INVARIANT_PAGES: readonly TextPage[] = [
   {
     id: 'logbook/p003', documentId: 'logbook', ordinal: 3, label: 'p003',
     width: 810, height: 1250,
+    // A page window is an INFERENCE (dateKind.ts: PAGE_WINDOW), never a
+    // reading — `reading()` only supplies start/end/bracketHours here.
     window: { ...reading('1999-12-08'), end: parseIsoDate('1999-12-12'),
-              precision: DatePrecision.DAY, source: DateSource.PAGE_WINDOW },
+              precision: DatePrecision.DAY, kind: DateKind.INFERENCE,
+              source: DateSource.PAGE_WINDOW },
     spanSource: PageSpanSource.ENTRIES,
     imageUrl: '/pages/image?pageId=logbook/p003',
     regionsAvailable: false,
@@ -57,7 +60,7 @@ export const INVARIANT_PAGES: readonly TextPage[] = [
     id: 'ma-vie/p007', documentId: 'ma-vie', ordinal: 7, label: 'p007',
     width: 810, height: 1250,
     window: { ...passageDate('1999-09-23'), end: parseIsoDate('1999-09-25'),
-              source: DateSource.PAGE_WINDOW },
+              kind: DateKind.INFERENCE, source: DateSource.PAGE_WINDOW },
     spanSource: PageSpanSource.CARRIED,
     imageUrl: '/pages/image?pageId=ma-vie/p007',
     regionsAvailable: false,

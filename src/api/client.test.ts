@@ -2,7 +2,7 @@ import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { z } from 'zod';
 
-import { ApiError, ContractError, apiGet, apiPost } from './client';
+import { ApiError, ContractError, apiGet, apiPost, apiPut } from './client';
 
 const server = setupServer();
 beforeAll(() => { server.listen({ onUnhandledRequest: 'error' }); });
@@ -26,6 +26,18 @@ describe('a conforming response', () => {
     );
     await expect(apiPost('/tasks', { title: 'transat' }, Schema)).resolves.toEqual({
       total: 7,
+    });
+  });
+
+  test('a PUT sends its body and parses the reply', async () => {
+    server.use(
+      http.put('*/corrections', async ({ request }) => {
+        const body = (await request.json()) as { text: string };
+        return HttpResponse.json({ total: body.text.length });
+      }),
+    );
+    await expect(apiPut('/corrections', { text: 'nœuds' }, Schema)).resolves.toEqual({
+      total: 5,
     });
   });
 });

@@ -1,7 +1,13 @@
+import { useState } from 'react';
+
+import { useCorrection } from '../../api/hooks/useCorrection';
+import { usePages } from '../../api/hooks/usePages';
 import type { TextRef, TextUnit } from '../../api/contract/text';
 import { CorrectionStatus, PageSpanSource, TranscriptionConfidence } from '../../shared/enums';
 import { ResolvedDateView } from '../date/ResolvedDate';
+import { ErrorBanner } from '../primitives/ErrorBanner';
 
+import { PageViewer } from './PageViewer';
 import styles from './TextCard.module.css';
 
 interface Props {
@@ -28,6 +34,16 @@ const SPAN_SOURCE: Record<PageSpanSource, string> = {
 
 export function TextCard({ unit, onShowPhotos }: Props): React.JSX.Element {
   const confidence = CONFIDENCE[unit.confidence];
+  const [showPage, setShowPage] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(unit.text);
+  const correction = useCorrection();
+
+  const startEditing = (): void => { setDraft(unit.text); setEditing(true); };
+  const save = (): void => {
+    if (draft.trim() === '') return;
+    void correction.submit({ ref: unit.ref, text: draft }).then(() => { setEditing(false); });
+  };
 
   return (
     <article className={styles['card']} data-testid={`text-${unit.ref.kind}-${unit.ref.id}`}>
@@ -68,14 +84,91 @@ export function TextCard({ unit, onShowPhotos }: Props): React.JSX.Element {
             {unit.overlappingPhotoCount} photos
           </button>
         ) : null}
+
+        {/* Spec §5.4: the facing page, only where one was scanned — the 569
+            web passages have none, and the panel says so rather than offering
+            a button that would open on nothing. */}
+        {unit.pageId !== null ? (
+          <button
+            className={styles['photos']}
+            type="button"
+            onClick={() => { setShowPage((v) => !v); }}
+          >
+            {showPage ? 'Masquer la page' : 'Voir la page'}
+          </button>
+        ) : null}
+
+        {!editing ? (
+          <button className={styles['photos']} type="button" onClick={startEditing}>
+            Corriger
+          </button>
+        ) : null}
+
+        {unit.correction !== null && !editing ? (
+          <button
+            className={styles['photos']}
+            type="button"
+            onClick={() => { void correction.revert(unit.ref); }}
+          >
+            Rétablir
+          </button>
+        ) : null}
       </div>
 
-      <p className={styles['text']} data-testid="text-effective">{unit.text}</p>
+      {correction.error !== null ? <ErrorBanner error={correction.error} /> : null}
+
+      {editing ? (
+        <div className={styles['editing']}>
+          <textarea
+            className={styles['draft']}
+            value={draft}
+            onChange={(event) => { setDraft(event.target.value); }}
+          />
+          <div className={styles['editingActions']}>
+            <button
+              className={styles['photos']}
+              type="button"
+              disabled={draft.trim() === '' || correction.isPending}
+              onClick={save}
+            >
+              Enregistrer
+            </button>
+            <button className={styles['photos']} type="button" onClick={() => { setEditing(false); }}>
+              Annuler
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className={styles['text']} data-testid="text-effective">{unit.text}</p>
+      )}
 
       {/* A correction never destroys the transcription: both coexist. */}
-      {unit.correction !== null ? (
+      {unit.correction !== null && !editing ? (
         <p className={styles['original']} data-testid="text-original">{unit.textOriginal}</p>
+      ) : null}
+
+      {showPage && unit.pageId !== null ? (
+        <FacingPage documentId={unit.documentId} pageId={unit.pageId} />
       ) : null}
     </article>
   );
+}
+
+function FacingPage({
+  documentId, pageId,
+}: {
+  readonly documentId: string;
+  readonly pageId: string;
+}): React.JSX.Element {
+  const pages = usePages(documentId);
+
+  if (pages.error !== null) return <ErrorBanner error={pages.error} />;
+  if (pages.isPending) return <p role="status">Chargement de la page…</p>;
+
+  const page = pages.data.items.find((p) => p.id === pageId);
+  // The document was loaded whole, so a missing page here is a genuine
+  // inconsistency, not a filter — say so rather than showing nothing.
+  if (page === undefined) return <p role="alert">Page introuvable ({pageId}).</p>;
+
+  return <PageViewer page={page} />;
 }

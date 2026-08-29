@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 
@@ -118,5 +118,67 @@ describe('the overlap count is reachable', () => {
     setup();
     const card = await screen.findByTestId('text-passage-web/2003/2003_gal_1/001');
     expect(within(card).queryByRole('button', { name: /photos/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('T2 — correcting a transcription, the original always stays reachable', () => {
+  test('correcting a passage replaces the effective text, and keeps the original beneath', async () => {
+    const user = userEvent.setup();
+    setup();
+    const card = await screen.findByTestId('text-passage-logbook/p003/001');
+    await user.click(within(card).getByRole('button', { name: /corriger/i }));
+
+    const field = within(card).getByRole('textbox');
+    await user.clear(field);
+    await user.type(field, 'On a passé la nuit à réparer la pompe de cale, cassée.');
+    await user.click(within(card).getByRole('button', { name: /enregistrer/i }));
+
+    await waitFor(() => {
+      expect(within(card).getByTestId('text-effective')).toHaveTextContent(
+        'On a passé la nuit à réparer la pompe de cale, cassée.',
+      );
+    });
+    expect(within(card).getByTestId('text-original')).toHaveTextContent(
+      'On a passé la nuit à réparer la pompe de cale.',
+    );
+  });
+
+  test('an empty draft cannot be saved', async () => {
+    const user = userEvent.setup();
+    setup();
+    const card = await screen.findByTestId('text-passage-logbook/p003/001');
+    await user.click(within(card).getByRole('button', { name: /corriger/i }));
+    await user.clear(within(card).getByRole('textbox'));
+    expect(within(card).getByRole('button', { name: /enregistrer/i })).toBeDisabled();
+  });
+
+  test('a correction can be reverted, restoring the original as the effective text', async () => {
+    const user = userEvent.setup();
+    setup();
+    const card = await screen.findByTestId('text-log_entry-logbook/p003/001');
+    await user.click(within(card).getByRole('button', { name: /rétablir/i }));
+
+    await waitFor(() => {
+      expect(within(card).getByTestId('text-effective')).toHaveTextContent(
+        'Mouillage devant Porlamar, vent d’est 15 noeuds.',
+      );
+    });
+    expect(within(card).queryByTestId('text-original')).not.toBeInTheDocument();
+  });
+});
+
+describe('spec §5.4 — the scanned page is reachable in regard, and only when there is one', () => {
+  test('a text with a page offers to show it, collapsed by default', async () => {
+    setup();
+    const card = await screen.findByTestId('text-log_entry-logbook/p003/001');
+    expect(screen.queryByRole('img', { name: /p003/i })).not.toBeInTheDocument();
+    await userEvent.setup().click(within(card).getByRole('button', { name: /voir la page/i }));
+    expect(await screen.findByRole('img', { name: /p003/i })).toBeInTheDocument();
+  });
+
+  test('a web passage — no page scanned — offers no such button', async () => {
+    setup();
+    const card = await screen.findByTestId('text-passage-web/2003/2003_gal_1/001');
+    expect(within(card).queryByRole('button', { name: /voir la page/i })).not.toBeInTheDocument();
   });
 });

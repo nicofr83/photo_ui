@@ -1,0 +1,38 @@
+.viewer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.button {
+  min-height: var(--tap-target);
+  min-width: var(--tap-target);
+  cursor: pointer;
+}
+
+.frame {
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  /* 810 × 1250 is the measured page size; the frame caps it to something
+     that fits a panel without forcing zoom just to see the whole page. */
+  max-height: 32rem;
+  touch-action: none;
+  cursor: grab;
+}
+
+.frame:active {
+  cursor: grabbing;
+}
+
+.image {
+  display: block;
+  max-width: none;
+  transform-origin: 0 0;
+  user-select: none;
+  -webkit-user-drag: none;
+}

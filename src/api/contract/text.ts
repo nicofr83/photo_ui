@@ -80,6 +80,16 @@ export const TextDateSchema = ResolvedDateSchema.superRefine((date, ctx) => {
   }
 });
 
+/** `PUT /corrections` body. Empty or blank ⇒ 422 EMPTY_CORRECTION (§9.6). */
+export const TextCorrectionInputSchema = z.strictObject({
+  ref: TextRefSchema,
+  text: z.string(),
+});
+export type TextCorrectionInput = z.infer<typeof TextCorrectionInputSchema>;
+
+/** `POST /corrections/revert` body. */
+export const RevertCorrectionInputSchema = z.strictObject({ ref: TextRefSchema });
+
 /** Global, never per task: an OCR error is wrong in every task. */
 export const TextCorrectionSchema = z.strictObject({
   ref: TextRefSchema,

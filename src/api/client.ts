@@ -93,3 +93,7 @@ export function apiGet<T>(
 export function apiPost<T>(path: string, body: unknown, schema: z.ZodType<T>): Promise<T> {
   return request(path, schema, { method: 'POST', body: JSON.stringify(body) });
 }
+
+export function apiPut<T>(path: string, body: unknown, schema: z.ZodType<T>): Promise<T> {
+  return request(path, schema, { method: 'PUT', body: JSON.stringify(body) });
+}
