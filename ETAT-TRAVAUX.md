@@ -285,3 +285,25 @@ ASK: aucun.
 Non fait, volontairement : `ref.country-aliases` (pas dans le mandat T4 reçu ni dans le contrat cité par team-lead).
 
 Reste pour T5 : chronologie de revue (`GET /tasks/:slug/review`), bandeau de contrôle, dupliquer/supprimer une tâche, bannière volume démonté.
+
+---
+
+## Avancement — impl-backend (2026-08-29)
+
+RE: correctifs + tâches 6-11 + légendes de galerie
+DONE:
+- **Les deux correctifs demandés** — lint `server/**` : 56 erreurs → 0, `npx eslint .` propre dépôt entier (convergé avec `front` sur `eslint.config.js`, même contenu indépendamment). `dating_proposal.date_source`/`.confidence` portés verbatim (`2bbf663`), rang 3 gaté sur `'logbook-bracket'` dans `cascade.ts` (`9706be6`).
+- **Tâches 6-11 du plan (Tranche 1) — cascade et import, complets.** `album_span.ts`, `arbitration.ts`, `capture_date.ts`, `cascade.ts` (100 % couverture dating/**), `covers.ts` (100 % overlap/**), 4 lecteurs SQLite + `annotations.jsonl`, `import_service.ts` (une transaction, COPY streamé, cascade calculée en ligne). **Import réel lancé sur `photo_ui`** : 42 911 photos, 675 albums, 1 859 passages, 1 012 entrées, 728 annotations. Rang 3 confirmé sur données réelles : 521 propositions `manual`, 0 `logbook-bracket` — 0 photo au rang `logbook_bracket`, exactement ce que corrige le gate.
+- **Légendes de galerie, bout en bout, données réelles écrites.** `docs/spike-dhash-galeries.md` : dHash « moyenne de surface » recalculé en TS (jamais dans `adobe_mcp` — `sips` + décodeur BMP maison, pas le pipeline Swift), extraction HTML `cp1252` du dump FrontPage (`WEB_GALLERY_ROOT`, nouvelle config), appariement `d≤6 marge≥4`. `npm run gallery:match` : **227 liens écrits dans `app.web_gallery_link`** (188 avec légende), 103 sur 2003-2004 seul — le spike en mesurait 108, écart attendu (pages en plus ratissées par le scan récursif). Cross-check exact sur l'exemple cité par le spike (`Long Bogue-021.JPG`, distance 0, légende mot pour mot).
+- 4 vrais bugs trouvés seulement à l'échelle réelle, tous corrigés : `pipeline.album.span_from/to/presumed` étaient `NOT NULL` — 27 albums réels sur 675 sans préfixe exploitable (`all pics`, `test`…) le contredisaient ; `readPhotoAlbumLinks`/`readPhotoPersonLinks` — SQLite rend `0/1` pas un booléen, et `photo_people` porte une ligne par visage détecté (33 doublons réels sur 13 612) ; les 3 `UPDATE photo_count` corrélés (un `count(*)` par tag) ont expiré sur les ~971 000 lignes réelles de `photo_tag`, remplacés par un `GROUP BY` unique ; `app.web_gallery_link` unique sur `(sha256, image_path)` **sans** `page` — deux pages peuvent référencer le même chemin relatif, `dedupeByLinkKey` garde la meilleure distance.
+- 349 tests (unit + integration), 100 % `metier/dating/**` et `metier/overlap/**`, `npx eslint .` et `tsc --noEmit` propres partout.
+
+DETAIL: commits `38e5103`..`d3b0469` sur `test_dev`. Nouveau : `server/src/metier/gallery/` (dhash, cp1252, extraction HTML, appariement), `server/src/io/` (bmp_decode, sips, concurrency), config `WEB_GALLERY_ROOT` (lecture seule). `server/src/contract/job_interface.ts` créé avec `ImportReport` — un correctif dessus, voir ASK.
+
+ASK — deux points pour `front`/`contrat-api`, aucun ne bloque, je continue sur le prédicat de tag de lieu puis les tâches 12+ :
+1. **Contrat §11 Q11(a) — `TextKind.WEB_CAPTION`/`GalleryCaptionFields`, vu dans `src/shared/enums.ts` et `src/api/contract/text.ts`.** Le design (légende de galerie comme troisième `TextKind`, réutilisant `texts[]`/`OverlapInfo`) est cohérent avec `app.web_gallery_link` — je le prends comme validé côté forme des champs (`sha256`, `page`, `imagePath`, `distance`, `margin`, `verified` : exactement mes colonnes). Ce qui reste ouvert et que je n'ai pas encore tranché : la synthèse de `TextRef.id`/`documentId` pour un `web_gallery_link` (pas de ligne `pipeline.text_unit` ni `pipeline.document` — jamais écrit là, TRUNCATE à chaque import tuerait la relecture humaine `verified`). Je m'en occupe à l'endpoint `/texts` (tâches 20-21), pas avant — dites si `front` a besoin de la forme exacte plus tôt.
+2. **`ImportReport.orphanedTextSelections` du contrat gelé n'a pas `textKind`**, seulement `{taskSlug, textId}` — contredit la propre règle du contrat juste au-dessus de `TextRef` (jamais un `TextId` seul). Corrigé dans ma transcription serveur (`job_interface.ts`) en sur-ensemble, pas un renommage. À corriger dans `docs/api-contract.md` quand `contrat-api` repasse dessus.
+
+Non fait, à savoir : **aucun endpoint HTTP n'existe encore** — pas de serveur Fastify, pas de composition root (tâche 12 pas commencée). Tout ce qui précède est `import`/`metier`/`repository`, testé en intégration contre Postgres, mais rien n'écoute encore sur le réseau. Les légendes de galerie sont EN BASE, prêtes à servir dès que l'endpoint existe.
+
+Reste, dans l'ordre où je compte l'attaquer : prédicat de tag de lieu (`ref.tag_kind`, périmètre demandé par `team-lead`), puis tâches 12 à 26 du plan (Tranche T1 à T5 — serveur, endpoints photos/textes/tâches/export/recherche/revue).
