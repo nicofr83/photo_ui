@@ -9,6 +9,7 @@ import { registerImagesRoutes } from '../http/images_controller.ts';
 import { registerPhotosRoutes } from '../http/photos_controller.ts';
 import { registerRefRoutes } from '../http/ref_controller.ts';
 import { registerSystemRoutes } from '../http/system_controller.ts';
+import { registerTasksRoutes } from '../http/tasks_controller.ts';
 import { buildServer } from './server.ts';
 import { loadConfig } from './config.ts';
 
@@ -57,6 +58,7 @@ export async function bootstrap(env: NodeJS.ProcessEnv): Promise<App> {
   registerSystemRoutes(server, { pool, config });
   registerPhotosRoutes(server, { pool, config });
   registerRefRoutes(server, { pool });
+  registerTasksRoutes(server, { pool });
   registerImagesRoutes(server, {
     pool,
     thumbsRoot: config.thumbsRoot,
