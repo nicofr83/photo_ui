@@ -46,6 +46,7 @@ TAGS_INLINE = 12
 cards = []
 for p in data:
     c = caps.get(p["num"], {})
+    low = 1 if str(p["low"]) == "1" else 0
     f = os.path.join(CACHE, p["sha256"] + ".jpg")
     img = (f'<img loading=lazy alt="" src="data:image/jpeg;base64,'
            f'{base64.standard_b64encode(open(f,"rb").read()).decode()}">'
@@ -59,7 +60,7 @@ for p in data:
     df = " ".join(f"<span class=df>{e(k)}</span>" for k in c.get("defauts") or [])
     cards.append(f"""
 <article class=card id="p{p['num']}" data-ens="{e(p['ens'])}" data-bucket="{e(p['bucket'])}"
-         data-date="{NAT[p['date_cls']]}" data-low="{int(bool(p['low']))}">
+         data-date="{NAT[p['date_cls']]}" data-low="{low}">
   <div class=img>{img}</div>
   <div class=body>
     <div class=hdr>
@@ -70,7 +71,7 @@ for p in data:
     <div class=facts>
       <span class="date {p['date_cls']}" title="{DATE_FR[p['date_cls']]}">{e(p['date_txt'])}</span>
       <span class=chip>{BUCKET_FR.get(p['bucket'], p['bucket'])}</span>
-      <span class="chip{' low' if p['low'] else ''}">esthétique {p['aesth']}</span>
+      <span class="chip{' low' if low else ''}">esthétique {p['aesth']}</span>
       <span class=chip>{e(p['dim'])}</span>
     </div>
     <div class=cols>
@@ -181,7 +182,7 @@ def btns(k, vals, label=str):
 ENS = ["1998-1999", "2000-2001", "2002", "2003", "2004"]
 BUCK = [b for b in BUCKET_FR if any(p["bucket"] == b for p in data)]
 DATN = [("exif", "EXIF"), ("album", "album seul"), ("humaine", "décision humaine")]
-nlow = sum(1 for p in data if p["low"])
+nlow = sum(1 for p in data if str(p["low"]) == "1")
 
 doc = f"""<!doctype html><html lang=fr><head><meta charset=utf-8>
 <meta name=viewport content="width=device-width,initial-scale=1">
@@ -200,11 +201,19 @@ une déduction.</p>
 <details class=doc><summary>La consigne de légendage (version 3, celle qu'on rejouerait
 sur un modèle bon marché)</summary><pre>{e(consigne)}</pre></details>
 <details class=doc><summary>Comment lire cette page</summary>
-<p>Regardez d'abord les photos <b>28, 45, 59</b> (sujet minuscule ou absent), <b>03, 21,
-32</b> (intérieurs de bateau que les tags lisent comme une maison), <b>31, 46, 50, 55</b>
-(du texte ou une date inscrits dans l'image), et <b>18, 43, 27</b> (les tags se trompent
-de sexe ou d'activité). Une légende utile nomme l'objet précis, dit le support et l'état
-de l'image, et sait dire qu'elle ne sait pas. Une légende creuse paraphrase les tags.</p>
+<p><b>03, 21, 32</b> — des intérieurs de voilier que les tags lisent comme une maison
+(<i>kitchen, home, bathroom</i>).<br>
+<b>31, 46, 48, 50, 55, 05, 20</b> — du texte, une position ou une date <i>inscrits dans
+l'image</i> et transcrits entre guillemets. Aucun tag ne porte jamais le contenu d'un
+texte.<br>
+<b>41, 46, 55, 09</b> — des lieux que les tags <i>affirment</i> et se trompent :
+<i>chicago</i> en Floride, <i>london</i> au Québec, <i>asia</i> au Yucatán. Rien ne les
+marque comme des inférences.<br>
+<b>18, 27, 30, 38</b> — les tags se trompent de sexe, d'activité ou de nature du lieu.<br>
+<b>28, 45, 56, 59</b> — sujet minuscule, ambigu ou absent : la légende sait-elle le dire ?</p>
+<p>Une légende utile nomme l'objet précis, dit le support et l'état de l'image, et sait
+dire qu'elle ne sait pas. Une légende creuse paraphrase les tags — si vous n'apprenez rien
+qu'ils ne disaient déjà, signalez-le : c'est le critère qui décide.</p>
 </details>
 </header>
 <nav>
