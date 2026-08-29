@@ -476,3 +476,13 @@ DETAIL : commits `d3c6eb6`..`23dbea8`. `TEXT_UNIT_SELECT` extrait de `listTexts`
 **Tranche T4 (écrire) est maintenant complète : tâche 24.**
 
 ASK: aucun — je continue sur la tâche 25 (référentiels et recalcul partiel — `PUT`/`DELETE /ref/album-span`, `/ref/web-span`).
+
+---
+
+## Avancement — impl-backend, tâche 25 (2026-08-30)
+
+RE: tâche 25 — référentiels et recalcul partiel, terminée
+DONE : `PUT`/`DELETE /ref/album-span`, `GET /ref/web-documents`, `PUT`/`DELETE /ref/web-span`. `recompute_album.ts` : seul recalcul PARTIEL de la cascade autorisé (une saisie d'album), synchrone, réutilise `resolveCascade` sans le réimplémenter — le plus gros album fait 286 photos. `outside_prefix_year` : `daterange(annéePréfixe,'[]') @> daterange(saisie,'[]')` — CONTAINMENT, jamais une inégalité ni un `&&` (l'intervalle saisi peut largement déborder l'année du préfixe, c'est précisément le cas d'usage). `overlaps_album` : `&&`, contre les autres albums du périmètre, jamais contre lui-même. Les deux avertissements voyagent dans un `200`, jamais un refus — seule `dateTo < dateFrom` refuse (400 `INVALID_PARAMETER`, avant la base, même comparaison de chaînes que `TaskPeriod`). Album/document inconnu ou hors périmètre → 404 `NOT_FOUND`. `DELETE` repasse en `presumed`, dérivé du préfixe, et recalcule à nouveau. `ref.web_span` ne sert que la règle C (`kind: 'inference'`, jamais `decision` — comble un vide, n'arbitre rien) ; documents non-`html` refusés en 404. 18 tests neufs (6 `album_span.itest.ts`, 12 `ref_controller.itest.ts`), vérifiés contre Postgres réel. 611 tests serveur, tsc/eslint propres.
+DETAIL : commits `4e9a458`, `25a72cd`. Écarté délibérément, hors mandat T4 reçu de front : `GET /ref/countries`, `PUT /ref/country-aliases`.
+
+ASK: aucun — je continue sur la tâche 26 (revue, duplication, suppression d'une tâche).
