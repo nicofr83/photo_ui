@@ -80,6 +80,38 @@ describe('an unknown photo is rejected and named, never silently dropped', () =>
   });
 });
 
+describe('spec §5.6/Q6 — the manifest order is reorderable, one request per move', () => {
+  test('moving the only image up or down is a no-op: there is no neighbour', async () => {
+    const { result } = renderHook(() => useSelection('1999-transat'), { wrapper: wrapper() });
+    await waitFor(() => { expect(result.current.images).toHaveLength(1); });
+
+    expect(result.current.moveUp(HELD)).toBeUndefined();
+    expect(result.current.moveDown(HELD)).toBeUndefined();
+  });
+
+  test('moving an image down swaps its order with its successor, in one request', async () => {
+    let calls = 0;
+    server.events.on('request:start', ({ request }) => {
+      if (request.method === 'POST') calls += 1;
+    });
+
+    const { result } = renderHook(() => useSelection('1999-transat'), { wrapper: wrapper() });
+    await waitFor(() => { expect(result.current.images).toHaveLength(1); });
+
+    await act(async () => { await result.current.add([A]); });
+    await waitFor(() => { expect(result.current.images).toHaveLength(2); });
+    calls = 0;
+
+    const before = result.current.images.map((i) => i.cloudAssetId);
+    await act(async () => { await result.current.moveDown(before[0] ?? ''); });
+
+    expect(calls).toBe(1);
+    await waitFor(() => {
+      expect(result.current.images.map((i) => i.cloudAssetId)).toEqual([before[1], before[0]]);
+    });
+  });
+});
+
 describe('a server failure rolls the optimism back and stays visible', () => {
   test('the selection returns to what the server actually holds', async () => {
     const { result } = renderHook(() => useSelection('1999-transat'), { wrapper: wrapper() });

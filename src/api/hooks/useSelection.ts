@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiGet, apiPost, type ApiError } from '../client';
 import {
   TaskDetailSchema, TaskImagesMutationResultSchema,
-  type TaskImagesMutationResult,
+  type TaskImageSelection, type TaskImagesMutationResult,
 } from '../contract/task';
 import type { SelectionReason } from '../../shared/enums';
 
@@ -11,10 +11,13 @@ interface Mutation {
   readonly add?: readonly string[];
   readonly remove?: readonly string[];
   readonly selectedBecause?: readonly SelectionReason[];
+  readonly update?: ReadonlyArray<{ readonly cloudAssetId: string; readonly order: number }>;
 }
 
 export interface Selection {
   readonly selected: ReadonlySet<string>;
+  /** Manifest order, spec §5.6/Q6 — chronological by default, reorderable. */
+  readonly images: readonly TaskImageSelection[];
   readonly isPending: boolean;
   readonly error: ApiError | null;
   /**
@@ -26,6 +29,13 @@ export interface Selection {
     selectedBecause?: readonly SelectionReason[],
   ) => Promise<TaskImagesMutationResult>;
   readonly remove: (cloudAssetIds: readonly string[]) => Promise<TaskImagesMutationResult>;
+  /**
+   * Swaps this image's manifest `order` with its neighbour's, in ONE request
+   * (contract §4.5's `update`) — never two, which would let the pair be
+   * observed half-swapped by another reader.
+   */
+  readonly moveUp: (cloudAssetId: string) => Promise<TaskImagesMutationResult> | undefined;
+  readonly moveDown: (cloudAssetId: string) => Promise<TaskImagesMutationResult> | undefined;
 }
 
 export function useSelection(slug: string): Selection {
@@ -46,8 +56,28 @@ export function useSelection(slug: string): Selection {
     onSettled: () => { void client.invalidateQueries({ queryKey: key }); },
   });
 
+  const images = task.data?.images ?? [];
+  const sorted = [...images].sort((a, b) => a.order - b.order);
+
+  const swapWithNeighbour = (
+    cloudAssetId: string,
+    neighbourOffset: -1 | 1,
+  ): Promise<TaskImagesMutationResult> | undefined => {
+    const index = sorted.findIndex((i) => i.cloudAssetId === cloudAssetId);
+    const neighbour = sorted[index + neighbourOffset];
+    const current = sorted[index];
+    if (current === undefined || neighbour === undefined) return undefined;
+    return mutation.mutateAsync({
+      update: [
+        { cloudAssetId: current.cloudAssetId, order: neighbour.order },
+        { cloudAssetId: neighbour.cloudAssetId, order: current.order },
+      ],
+    });
+  };
+
   return {
-    selected: new Set(task.data?.images.map((image) => image.cloudAssetId) ?? []),
+    selected: new Set(images.map((image) => image.cloudAssetId)),
+    images: sorted,
     isPending: mutation.isPending,
     error: mutation.error,
     add: (cloudAssetIds, selectedBecause) =>
@@ -57,5 +87,7 @@ export function useSelection(slug: string): Selection {
           : { add: cloudAssetIds, selectedBecause },
       ),
     remove: (cloudAssetIds) => mutation.mutateAsync({ remove: cloudAssetIds }),
+    moveUp: (cloudAssetId) => swapWithNeighbour(cloudAssetId, -1),
+    moveDown: (cloudAssetId) => swapWithNeighbour(cloudAssetId, 1),
   };
 }

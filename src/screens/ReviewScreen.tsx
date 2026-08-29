@@ -48,24 +48,40 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
       </p>
 
       <ul className={styles['list']}>
-        {[...task.data.images]
-          .sort((a, b) => a.order - b.order)
-          .map((image) => (
-            <li
-              className={styles['row']}
-              key={image.cloudAssetId}
-              data-testid={`review-image-${image.cloudAssetId}`}
+        {selection.images.map((image, index) => (
+          <li
+            className={styles['row']}
+            key={image.cloudAssetId}
+            data-testid={`review-image-${image.cloudAssetId}`}
+          >
+            <span>{image.cloudAssetId.slice(0, 8)}</span>
+            <button
+              className={styles['move']}
+              type="button"
+              disabled={index === 0}
+              aria-label={`Monter ${image.cloudAssetId.slice(0, 8)}`}
+              onClick={() => { void selection.moveUp(image.cloudAssetId); }}
             >
-              <span>{image.cloudAssetId.slice(0, 8)}</span>
-              <button
-                className={styles['remove']}
-                type="button"
-                onClick={() => { void selection.remove([image.cloudAssetId]); }}
-              >
-                Retirer scan-0007
-              </button>
-            </li>
-          ))}
+              ▲ Monter
+            </button>
+            <button
+              className={styles['move']}
+              type="button"
+              disabled={index === selection.images.length - 1}
+              aria-label={`Descendre ${image.cloudAssetId.slice(0, 8)}`}
+              onClick={() => { void selection.moveDown(image.cloudAssetId); }}
+            >
+              ▼ Descendre
+            </button>
+            <button
+              className={styles['remove']}
+              type="button"
+              onClick={() => { void selection.remove([image.cloudAssetId]); }}
+            >
+              Retirer scan-0007
+            </button>
+          </li>
+        ))}
       </ul>
 
       {/* A 409 means the directory exists. Name it and let the user choose;

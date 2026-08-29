@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 
@@ -32,6 +32,38 @@ describe('§5.6 — what is held is shown', () => {
     await waitFor(() => {
       expect(screen.queryByTestId('review-image-e8bc80b75e254b7db2e1454222416813'))
         .not.toBeInTheDocument();
+    });
+  });
+});
+
+describe('spec §5.6/Q6 — the manifest order is reorderable', () => {
+  test('the single image cannot move: both controls are disabled', async () => {
+    setup();
+    const row = await screen.findByTestId('review-image-e8bc80b75e254b7db2e1454222416813');
+    expect(within(row).getByRole('button', { name: /monter/i })).toBeDisabled();
+    expect(within(row).getByRole('button', { name: /descendre/i })).toBeDisabled();
+  });
+
+  test('moving the first image down swaps it with the second', async () => {
+    const user = userEvent.setup();
+    const task = store.tasks.get('1999-transat');
+    task?.images.push({
+      cloudAssetId: '05b9a4fac5df4dd28dcc1002d7ec0074',
+      order: 1, note: null, selectedBecause: ['manual'],
+      selectedAt: parseIsoTimestamp('2026-08-29T10:00:00.000Z'), orphaned: false,
+    });
+
+    setup();
+    const list = await screen.findByRole('list');
+    const firstRow = within(list).getAllByRole('listitem')[0];
+    if (firstRow === undefined) throw new Error('expected at least one row');
+    await user.click(within(firstRow).getByRole('button', { name: /descendre/i }));
+
+    await waitFor(() => {
+      const rows = within(list).getAllByRole('listitem');
+      expect(rows[0]?.dataset['testid']).toBe(
+        'review-image-05b9a4fac5df4dd28dcc1002d7ec0074',
+      );
     });
   });
 });

@@ -37,6 +37,7 @@ export const TaskImageSelectionSchema = z.strictObject({
   selectedAt: IsoTimestampSchema,
   orphaned: z.boolean(),
 });
+export type TaskImageSelection = z.infer<typeof TaskImageSelectionSchema>;
 
 export const TaskDetailSchema = TaskSummarySchema.extend({
   brief: z.string(),

@@ -2,6 +2,8 @@
 .list { display: flex; flex-direction: column; gap: 0.5rem; padding: 0; margin: 0; list-style: none; }
 .row { display: flex; align-items: center; gap: 0.75rem; padding: 0.35rem; border: 1px solid #e5e7eb; }
 .thumb { width: 4rem; height: 3rem; object-fit: cover; background: #e5e7eb; }
+.move { min-height: var(--tap-target); padding: 0 0.5rem; cursor: pointer; }
+.move:disabled { cursor: default; opacity: 0.4; }
 .remove { min-height: var(--tap-target); padding: 0 0.75rem; margin-left: auto; cursor: pointer; }
 .note { margin: 0; color: #6b7280; font-size: 0.85rem; }
 .brief { display: flex; flex-direction: column; gap: 0.25rem; }

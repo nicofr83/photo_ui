@@ -347,6 +347,7 @@ export const handlers = [
     }
     const body = (await request.json()) as {
       add?: string[]; remove?: string[]; selectedBecause?: SelectionReason[];
+      update?: { cloudAssetId: string; order?: number; note?: string | null }[];
     };
 
     const held = new Set(task.images.map((i) => i.cloudAssetId));
@@ -374,6 +375,16 @@ export const handlers = [
     const removed = task.images.filter((i) => removing.has(i.cloudAssetId)).map((i) => i.cloudAssetId);
     task.images = task.images.filter((i) => !removing.has(i.cloudAssetId));
     task.imageCount = task.images.length;
+
+    // Manifest reorder, spec §5.6/Q6: a batch of swaps in ONE request, never
+    // one request per row — the caller (useSelection.moveUp/moveDown) already
+    // sends both halves of a swap together.
+    for (const patch of body.update ?? []) {
+      const image = task.images.find((i) => i.cloudAssetId === patch.cloudAssetId);
+      if (image === undefined) continue;
+      if (patch.order !== undefined) image.order = patch.order;
+      if (patch.note !== undefined) image.note = patch.note;
+    }
 
     return HttpResponse.json({
       added, removed, merged, rejected, warnings: [], imageCount: task.images.length,
