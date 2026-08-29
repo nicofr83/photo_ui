@@ -1,7 +1,13 @@
 import type { DateSource } from '@shared/enums';
 import type { PoolClient } from '../db/pool.ts';
-import type { LogEntryFields, TextCorrection, TextDocument, TextPage, TextUnit } from '../contract/text_interface.ts';
-import { overlapPredicate, WEB_SPAN_JOIN } from '../metier/overlap/overlap_sql.ts';
+import type {
+  LogEntryFields, OverlapSummary, TextCorrection, TextDocument, TextPage, TextUnit, TextWithOverlap,
+} from '../contract/text_interface.ts';
+import { computeOverlapInfo, spanDays } from '../metier/overlap/overlap_info.ts';
+import {
+  EFFECTIVE_COVERS_END, EFFECTIVE_COVERS_RANGE, EFFECTIVE_COVERS_RULE, EFFECTIVE_COVERS_START, overlapPredicate,
+  WEB_SPAN_JOIN,
+} from '../metier/overlap/overlap_sql.ts';
 
 interface DocumentRow {
   id: string;
@@ -239,4 +245,76 @@ export async function listTexts(client: PoolClient, filters: TextFilters): Promi
      ${limitClause}${offsetClause}`, values);
 
   return { items: rows.map(mapTextRow), total };
+}
+
+export interface OverlappingTextsResult {
+  readonly items: readonly TextWithOverlap[];
+  readonly summary: OverlapSummary;
+}
+
+/**
+ * « Quels textes couvrent cette photo ? » (contrat §4.3) — la direction
+ * inverse de `overlapsPhoto`, MÊME prédicat (`overlap_sql.ts`), jamais une
+ * seconde implémentation. `null` si la photo elle-même n'existe pas ; un
+ * résultat vide (jamais une erreur) si elle existe mais n'a aucune date
+ * résolue — rien à comparer, pas une faute.
+ */
+export async function listOverlappingTexts(client: PoolClient, cloudAssetId: string): Promise<OverlappingTextsResult | null> {
+  const { rows: photoRows } = await client.query<{ resolved_start: string | null; resolved_end: string | null }>(
+    `SELECT resolved_start, resolved_end FROM pipeline.photo WHERE cloud_asset_id = $1`, [cloudAssetId]);
+  const photoRow = photoRows[0];
+  if (photoRow === undefined) return null;
+
+  const emptySummary: OverlapSummary = {
+    matchCount: 0, windowDays: 0, datedToDayCount: 0, datedToMonthCount: 0, datedToYearCount: 0, undatedCount: 0,
+  };
+  if (photoRow.resolved_start === null || photoRow.resolved_end === null) {
+    return { items: [], summary: emptySummary };
+  }
+  const photoWindow = { start: photoRow.resolved_start, end: photoRow.resolved_end };
+
+  const { rows } = await client.query<TextRow & {
+    effective_start: string; effective_end: string; effective_rule: string | null;
+  }>(`
+    SELECT t.kind, t.id, t.document_id, t.page_id, t.ordinal, t.body,
+           tc.corrected_text, tc.original_at_correction, tc.corrected_at,
+           t.confidence, t.date_source, t.date_start, t.date_end, t.date_kind, t.page_span_source,
+           (SELECT count(*)::int FROM pipeline.photo p2
+             WHERE p2.resolved_range IS NOT NULL AND ${EFFECTIVE_COVERS_RANGE} IS NOT NULL
+               AND p2.resolved_range && ${EFFECTIVE_COVERS_RANGE}) AS overlapping_photo_count,
+           t.entry_time, ST_Y(t.entry_position::geometry) AS entry_lat, ST_X(t.entry_position::geometry) AS entry_lon,
+           t.raw_position, t.place_name, t.heading, t.wind, t.baro, t.engine_hours,
+           t.fix_confidence, t.remark_confidence,
+           ${EFFECTIVE_COVERS_START} AS effective_start, ${EFFECTIVE_COVERS_END} AS effective_end,
+           ${EFFECTIVE_COVERS_RULE} AS effective_rule
+      FROM pipeline.text_unit t
+      JOIN pipeline.document d ON d.id = t.document_id
+      LEFT JOIN app.text_correction tc ON tc.text_kind = t.kind AND tc.text_id = t.id
+      ${WEB_SPAN_JOIN}
+     WHERE ${EFFECTIVE_COVERS_RANGE} IS NOT NULL
+       AND daterange($1::date, $2::date, '[]') && ${EFFECTIVE_COVERS_RANGE}`,
+    [photoWindow.start, photoWindow.end]);
+
+  const items = rows
+    .map((row): TextWithOverlap => ({
+      ...mapTextRow(row),
+      overlap: computeOverlapInfo(
+        photoWindow, { start: row.effective_start, end: row.effective_end }, row.effective_rule ?? '',
+      ),
+    }))
+    // Tri par défaut : la somme des largeurs, croissante (contrat, tâche 21).
+    .sort((a, b) => a.overlap.totalSpanDays - b.overlap.totalSpanDays);
+
+  const summary: OverlapSummary = {
+    matchCount: items.length,
+    windowDays: spanDays(photoWindow),
+    datedToDayCount: items.filter((i) => i.date !== null).length,
+    // Un texte n'a jamais de date au mois ou à l'année (contrat §2.6 —
+    // quand `date` n'est pas nulle, `precision` vaut TOUJOURS `day`).
+    datedToMonthCount: 0,
+    datedToYearCount: 0,
+    undatedCount: items.filter((i) => i.date === null).length,
+  };
+
+  return { items, summary };
 }

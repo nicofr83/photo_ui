@@ -52,6 +52,24 @@ export interface TextCorrection {
   readonly status: CorrectionStatus;
 }
 
+export interface OverlapInfo {
+  readonly rule: string;
+  readonly photoSpanDays: number;
+  readonly textSpanDays: number;
+  readonly totalSpanDays: number;
+  readonly distanceToCentreDays: number;
+}
+
+/** « 87 photos dans une fenêtre de 41 jours, dont 34 datées au mois seulement. » */
+export interface OverlapSummary {
+  readonly matchCount: number;
+  readonly windowDays: number;
+  readonly datedToDayCount: number;
+  readonly datedToMonthCount: number;
+  readonly datedToYearCount: number;
+  readonly undatedCount: number;
+}
+
 export interface TextUnit {
   readonly ref: TextRef;
   readonly documentId: string;
@@ -66,4 +84,8 @@ export interface TextUnit {
   readonly overlappingPhotoCount: number;
   readonly highlights: readonly TextRange[];
   readonly logEntry: LogEntryFields | null;
+}
+
+export interface TextWithOverlap extends TextUnit {
+  readonly overlap: OverlapInfo;
 }

@@ -5,7 +5,7 @@ import { afterAll, beforeAll, expect, test } from 'vitest';
 import { runMigrations } from '../db/migrate.ts';
 import { createLog, LogLevel } from '../log/log.ts';
 import { closeTestPool, testPool, withRollback } from '../../test/helpers/db.ts';
-import { getPageImageRelpath, listDocuments, listPages, listTexts } from './text_repository.ts';
+import { getPageImageRelpath, listDocuments, listOverlappingTexts, listPages, listTexts } from './text_repository.ts';
 
 const MIGRATIONS = fileURLToPath(new URL('../../db/migrations', import.meta.url));
 
@@ -228,5 +228,100 @@ test('RULE C — ref.web_span entered AFTER import still makes the overlap appea
     const { items } = await listTexts(client, { overlapsPhoto: photo });
     expect(items).toHaveLength(1);
     expect(items[0]?.overlappingPhotoCount).toBe(1);
+  });
+});
+
+test('listOverlappingTexts returns null for an unknown photo, never throws', async () => {
+  await withRollback(async (client) => {
+    expect(await listOverlappingTexts(client, 'f'.repeat(32))).toBeNull();
+  });
+});
+
+test('listOverlappingTexts on an undated photo is an EMPTY result, never an error', async () => {
+  await withRollback(async (client) => {
+    const id = 'a'.repeat(32);
+    await client.query(`INSERT INTO pipeline.photo (cloud_asset_id, sha256, relative_path, file_name, format, raw_date_source)
+                        VALUES ($1, $2, 'x/p.jpg', 'p.jpg', 'jpg', 'none')`, [id, 'b'.repeat(64)]);
+    const result = await listOverlappingTexts(client, id);
+    expect(result).toEqual({
+      items: [],
+      summary: { matchCount: 0, windowDays: 0, datedToDayCount: 0, datedToMonthCount: 0, datedToYearCount: 0, undatedCount: 0 },
+    });
+  });
+});
+
+test('both widths travel, and the default order is the sum of the widths, ascending', async () => {
+  await withRollback(async (client) => {
+    const id = 'a'.repeat(32);
+    // Photo au MOIS — 29 jours d'écart, ignorés.
+    await client.query(`INSERT INTO pipeline.photo
+      (cloud_asset_id, sha256, relative_path, file_name, format, raw_date_source,
+       resolved_from, resolved_start, resolved_end, resolved_precision)
+      VALUES ($1, $2, 'x/p.jpg', 'p.jpg', 'jpg', 'folder-month', 'album_month', '2000-06-01', '2000-06-30', 'month')`,
+      [id, 'b'.repeat(64)]);
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                        VALUES ('logbook', 'handwritten', 'Journal', true)`);
+    // Fenêtre étroite (6 jours), à l'intérieur du mois.
+    await client.query(`INSERT INTO pipeline.text_unit
+      (kind, id, document_id, ordinal, body, confidence, covers_start, covers_end, covers_rule)
+      VALUES ('log_entry', 'logbook/p001/001', 'logbook', 1, 'proche', 'transcribed', '2000-06-10', '2000-06-16', 'logbook_entry')`);
+    // Fenêtre large (le mois entier + au-delà), chevauche aussi.
+    await client.query(`INSERT INTO pipeline.text_unit
+      (kind, id, document_id, ordinal, body, confidence, covers_start, covers_end, covers_rule)
+      VALUES ('log_entry', 'logbook/p002/001', 'logbook', 2, 'large', 'transcribed', '2000-05-01', '2000-07-31', 'logbook_entry')`);
+
+    const result = await listOverlappingTexts(client, id);
+    expect(result?.items).toHaveLength(2);
+    expect(result?.items[0]?.text).toBe('proche'); // la fenêtre étroite gagne : somme plus petite
+    expect(result?.items[0]?.overlap).toMatchObject({
+      rule: 'logbook_entry', photoSpanDays: 29, textSpanDays: 6, totalSpanDays: 35,
+    });
+    const sums = (result?.items ?? []).map((i) => i.overlap.totalSpanDays);
+    expect([...sums].sort((a, b) => a - b)).toEqual(sums);
+    expect(result?.summary).toEqual({
+      matchCount: 2, windowDays: 29, datedToDayCount: 0, datedToMonthCount: 0, datedToYearCount: 0, undatedCount: 2,
+    });
+  });
+});
+
+test('a text outside the photo window is excluded — no width cap needed to say so', async () => {
+  await withRollback(async (client) => {
+    const id = 'a'.repeat(32);
+    await client.query(`INSERT INTO pipeline.photo
+      (cloud_asset_id, sha256, relative_path, file_name, format, raw_date_source,
+       resolved_from, resolved_start, resolved_end, resolved_precision)
+      VALUES ($1, $2, 'x/p.jpg', 'p.jpg', 'jpg', 'folder-month', 'album_month', '2000-06-01', '2000-06-01', 'day')`,
+      [id, 'b'.repeat(64)]);
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                        VALUES ('logbook', 'handwritten', 'Journal', true)`);
+    await client.query(`INSERT INTO pipeline.text_unit
+      (kind, id, document_id, ordinal, body, confidence, covers_start, covers_end, covers_rule)
+      VALUES ('log_entry', 'logbook/p001/001', 'logbook', 1, 'x', 'transcribed', '2001-01-01', '2001-01-05', 'logbook_entry')`);
+
+    const result = await listOverlappingTexts(client, id);
+    expect(result?.items).toEqual([]);
+  });
+});
+
+test('RULE C reaches the reverse direction too — a web passage overlaps once ref.web_span exists', async () => {
+  await withRollback(async (client) => {
+    const id = 'a'.repeat(32);
+    await client.query(`INSERT INTO pipeline.photo
+      (cloud_asset_id, sha256, relative_path, file_name, format, raw_date_source,
+       resolved_from, resolved_start, resolved_end, resolved_precision)
+      VALUES ($1, $2, 'x/p.jpg', 'p.jpg', 'jpg', 'folder-month', 'album_month', '1999-10-01', '1999-10-01', 'day')`,
+      [id, 'b'.repeat(64)]);
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                        VALUES ('web/1999/Transat', 'html', 'La transat', false)`);
+    await client.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+                        VALUES ('passage', 'web/1999/Transat/001', 'web/1999/Transat', 1, 'x', 'transcribed')`);
+
+    expect((await listOverlappingTexts(client, id))?.items).toEqual([]);
+
+    await client.query(`INSERT INTO ref.web_span (document_id, date_from, date_to)
+                        VALUES ('web/1999/Transat', '1999-09-01', '1999-11-30')`);
+    const result = await listOverlappingTexts(client, id);
+    expect(result?.items).toHaveLength(1);
+    expect(result?.items[0]?.overlap.rule).toBe('web_span');
   });
 });

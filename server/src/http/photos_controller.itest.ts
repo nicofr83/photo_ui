@@ -10,6 +10,7 @@ import { createLog, LogLevel } from '../log/log.ts';
 import { closeTestPool, testPool } from '../../test/helpers/db.ts';
 import type { ListEnvelope } from '../contract/filter_interface.ts';
 import type { PhotoListItem } from '../contract/photo_interface.ts';
+import type { OverlapSummary, TextWithOverlap } from '../contract/text_interface.ts';
 import { bootstrap, type App } from '../runtime/bootstrap.ts';
 
 const MIGRATIONS = fileURLToPath(new URL('../../db/migrations', import.meta.url));
@@ -137,6 +138,49 @@ describe('GET /photos/:cloudAssetId', () => {
       // SOURCE_FILE_MISSING, jamais VOLUME_UNAVAILABLE — la racine EST montée.
       expect(body.render).toEqual({ available: false, unavailableReason: 'SOURCE_FILE_MISSING', cached: false });
     } finally {
+      await setup.query('DELETE FROM pipeline.photo');
+    }
+  });
+});
+
+describe('GET /photos/:cloudAssetId/texts', () => {
+  test('a malformed id is a 404', async () => {
+    app = await bootstrap(await completeEnv());
+    const response = await app.server.inject({ method: 'GET', url: '/photos/not-a-real-id/texts' });
+    expect(response.statusCode).toBe(404);
+  });
+
+  test('an unknown but well-formed id is a 404', async () => {
+    app = await bootstrap(await completeEnv());
+    const response = await app.server.inject({ method: 'GET', url: `/photos/${'f'.repeat(32)}/texts` });
+    expect(response.statusCode).toBe(404);
+  });
+
+  test('a real overlap round-trips through the full HTTP path, with an OverlapSummary', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    const id = 'a'.repeat(32);
+    try {
+      await setup.query(`INSERT INTO pipeline.photo
+        (cloud_asset_id, sha256, relative_path, file_name, format, raw_date_source,
+         resolved_from, resolved_start, resolved_end, resolved_precision)
+        VALUES ($1, $2, 'x/p.jpg', 'p.jpg', 'jpg', 'folder-month', 'album_month', '2000-06-01', '2000-06-01', 'day')`,
+        [id, 'b'.repeat(64)]);
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                         VALUES ('logbook', 'handwritten', 'Journal', true)`);
+      await setup.query(`INSERT INTO pipeline.text_unit
+        (kind, id, document_id, ordinal, body, confidence, covers_start, covers_end, covers_rule)
+        VALUES ('log_entry', 'logbook/p001/001', 'logbook', 1, 'x', 'transcribed', '2000-05-28', '2000-06-03', 'logbook_entry')`);
+
+      const response = await app.server.inject({ method: 'GET', url: `/photos/${id}/texts` });
+      expect(response.statusCode).toBe(200);
+      const body = response.json<ListEnvelope<TextWithOverlap> & { summary: OverlapSummary }>();
+      expect(body.items).toHaveLength(1);
+      expect(body.items[0]?.overlap.rule).toBe('logbook_entry');
+      expect(body.summary.matchCount).toBe(1);
+    } finally {
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'logbook'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
       await setup.query('DELETE FROM pipeline.photo');
     }
   });

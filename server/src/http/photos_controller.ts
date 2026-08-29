@@ -7,11 +7,13 @@ import { ErrorCode } from '@shared/enums';
 import { AppError } from '../contract/error_interface.ts';
 import type { ListEnvelope } from '../contract/filter_interface.ts';
 import type { PhotoDetail, PhotoListItem } from '../contract/photo_interface.ts';
+import type { OverlapSummary, TextWithOverlap } from '../contract/text_interface.ts';
 import type { Pool } from '../db/pool.ts';
 import type { Config } from '../runtime/config.ts';
 import { classifyRenderFailure } from '../metier/images/render_availability.ts';
 import { getLatestImportId } from '../repository/import_run_repository.ts';
 import { getPhotoDetail, listPhotos, type PhotoFilters } from '../repository/photo_repository.ts';
+import { listOverlappingTexts } from '../repository/text_repository.ts';
 import { parseQueryParams, type ParamSpec } from './query_params.ts';
 
 const CLOUD_ASSET_ID = /^[0-9a-f]{32}$/;
@@ -122,6 +124,42 @@ export function registerPhotosRoutes(server: FastifyInstance, deps: { pool: Pool
     }
 
     return { ...detail, render: await checkRenderAvailability(config, detail.relativePath, detail.format) };
+  });
+
+  // « Quels textes couvrent cette photo ? » — la direction inverse
+  // d'`overlapsTextKind`/`overlapsTextId` sur `GET /photos`, MÊME prédicat
+  // (`metier/overlap/overlap_sql.ts`), jamais une seconde implémentation
+  // (contrat §4.3, tâche 21).
+  server.get('/photos/:cloudAssetId/texts', async (request): Promise<ListEnvelope<TextWithOverlap> & { summary: OverlapSummary }> => {
+    const { cloudAssetId } = request.params as { cloudAssetId: string };
+    if (!CLOUD_ASSET_ID.test(cloudAssetId)) {
+      throw new AppError(ErrorCode.NOT_FOUND, `identifiant de photo invalide : ${cloudAssetId}`, 404,
+        { resource: 'photo', id: cloudAssetId });
+    }
+
+    const client = await pool.connect();
+    let result;
+    let importId;
+    try {
+      result = await listOverlappingTexts(client, cloudAssetId);
+      importId = await getLatestImportId(client);
+    } finally {
+      client.release();
+    }
+    if (result === null) {
+      throw new AppError(ErrorCode.NOT_FOUND, `photo introuvable : ${cloudAssetId}`, 404,
+        { resource: 'photo', id: cloudAssetId });
+    }
+
+    return {
+      items: result.items,
+      total: result.items.length,
+      populationTotal: result.items.length,
+      excludedCount: 0,
+      filters: { applied: [], unmatchedValues: [] },
+      importId: importId ?? '',
+      summary: result.summary,
+    };
   });
 }
 
