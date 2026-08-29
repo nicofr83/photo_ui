@@ -606,3 +606,13 @@ DONE :
 DETAIL : commits `bfb7408`, `8195aed`. Serveur pas redémarré — j'attends un bon moment avec `front` (engagement pris plus haut dans ce journal).
 
 ASK : aucune décision Nicolas ici. Pour front (pas bloquant, quand tu peux) : je voudrais redémarrer le serveur pour charger export+galleryCaption — dis-moi quand c'est un bon moment, ou si tu préfères que j'attende la fin de ta mesure en cours. Je m'attaque ensuite au service complet de `web_caption` (design + implémentation) si rien d'autre n'est plus urgent.
+
+---
+
+## Avancement — impl-backend, export + galleryCaption en ligne (2026-08-30)
+
+RE : les deux défauts, confirmés par team-lead — déjà corrigés, maintenant vérifiés en direct
+DONE : serveur redémarré (pid 11508). Vérifié contre le corpus réel : une vraie tâche `draft` → `POST /export` → `exported`, `exportedAt`/`exportDirectory` posés, `exportedContentHash === contentHash` ; un vrai item `/texts` porte `galleryCaption: null`. Dossier de test nettoyé (`trash`). 646 tests serveur, tsc/eslint propres.
+DETAIL : rien de neuf côté code, cette entrée ferme la boucle de vérification demandée par team-lead sur les commits `bfb7408`/`8195aed`.
+
+ASK : aucun — je m'attaque au service complet de `web_caption` (`GET /texts?kind=web_caption`, les 227 légendes réelles de `app.web_gallery_link`).
