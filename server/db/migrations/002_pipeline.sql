@@ -208,6 +208,17 @@ CREATE TABLE pipeline.photo_person (
 CREATE TABLE pipeline.dating_proposal (
   cloud_asset_id  char(32) PRIMARY KEY REFERENCES pipeline.photo ON DELETE CASCADE,
   proposed_date   date NOT NULL,
+  -- Portées VERBATIM depuis `dating.db proposals` (dateSource, confidence).
+  -- La faille qu'elles ferment : sans cette colonne, rien ne distingue une
+  -- ligne `logbook-bracket` — la machine a rapproché un lieu du journal —
+  -- d'une ligne `manual` — quelqu'un a tapé cette date dans l'UI de la
+  -- pipeline, une DÉCISION, pas une inférence. Servir la seconde comme un
+  -- rang 3 rendrait une décision humaine pour une conjecture : la règle
+  -- capitale, violée par le schéma plutôt que par un oubli de code.
+  -- VOCABULAIRE OUVERT — aucun CHECK, même raison que `dating_doubt.reason` :
+  -- c'est amont, et amont a déjà changé de vocabulaire sous le projet.
+  date_source     text NOT NULL,     -- 'logbook-bracket' | 'manual'
+  confidence      text NOT NULL,     -- 'proposed' | 'manual'
   position        geography(Point, 4326),
   position_source text,
   evidence_entry_ids text[] NOT NULL DEFAULT '{}',
