@@ -280,6 +280,16 @@ considère que 551 photos.
 - **La précision voyage avec la date.** Un champ `precision` ∈ `day` | `month` |
   `year`, et **l'affichage suit** : `1999-10-14`, `octobre 1999`, `2000` —
   jamais un jour inventé.
+- **`precision` qualifie chaque borne, pas la largeur de l'intervalle.** Les deux
+  coïncident pour un album d'un mois, et divergent dès que l'album porte une
+  plage : `1998-02-Maison rose Algès` donne `[1998-02-01, 1999-06-30]`, des
+  bornes connues au jour près sur une largeur de dix-sept mois. La largeur se
+  calcule, elle ne se déclare pas. Confondre les deux fait chercher une valeur
+  de `precision` qui n'existe pas.
+- **Un intervalle plus large que sa précision s'affiche comme un intervalle** :
+  « entre février 1998 et juin 1999 », jamais « février 1998 ». C'est la
+  quatrième forme d'affichage, et elle concerne les 421 photos des albums à
+  plage.
 - **Une photo datée au mois est un intervalle**, pas un point (§4.1).
 - **L'arbitrage se voit** : une date du rang 2 est une lecture *retenue contre
   une autre source*, et l'interface le dit au détail (« EXIF, confirmé à 2 mois
@@ -313,7 +323,7 @@ comme une date.
 **On croise deux intervalles, jamais un point.**
 
 ```
-photo   [Pd, Pf]   1 jour, 1 mois ou 1 an selon sa précision
+photo   [Pd, Pf]   l'intervalle résolu — sa largeur, pas sa précision
 texte   [Td, Tf]   LA FENÊTRE DE RECOUVREMENT, pas la date affirmée
 recouvre  ⟺  Pd ≤ Tf  ET  Td ≤ Pf
 ```

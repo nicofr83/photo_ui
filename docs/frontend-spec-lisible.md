@@ -137,6 +137,11 @@ D'où un écran de réglage où tu saisis la période réelle d'un album. Vingt-
 saisies corrigent 421 photos. Tant qu'un album n'y est pas, sa période est celle
 de son préfixe, et c'est marqué comme une supposition.
 
+Conséquence à l'écran : ces photos-là s'affichent **« entre février 1998 et juin
+1999 »**, pas « février 1998 ». Une photo n'affiche jamais une date plus serrée
+que ce qu'on sait d'elle — c'est vrai du jour, du mois, et c'est vrai d'une
+plage de dix-sept mois.
+
 ---
 
 ## Rapprocher les textes des photos
