@@ -60,4 +60,15 @@ describe('arbitrate', () => {
       expect(arbitrate(raw, december2000)?.exifDay).toBe('2000-12-14');
     }
   });
+
+  test('a captureDate whose first 10 characters are not a civil day is refused, never guessed', () => {
+    expect(arbitrate('n/a', december2000)).toBeNull();
+    expect(arbitrate('', december2000)).toBeNull();
+  });
+
+  test('an EXIF BEFORE the album interval also measures its gap, not just after', () => {
+    expect(arbitrate('2000-06-01T00:00:00', december2000))
+      .toEqual({ outcome: 'accepted', gapMonths: 6, exifDay: '2000-06-01' });
+    expect(arbitrate('1999-01-01T00:00:00', december2000)?.outcome).toBe('rejected');
+  });
 });
