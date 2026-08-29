@@ -1,7 +1,8 @@
-import { TaskState } from '@shared/enums';
+import { SelectionReason, TaskState } from '@shared/enums';
 import type { PoolClient } from '../db/pool.ts';
 import type {
-  TaskCreateInput, TaskDetail, TaskImageSelection, TaskNote, TaskPatchInput, TaskSummary, TaskTextSelection,
+  TaskCreateInput, TaskDetail, TaskImageSelection, TaskImagesMutation, TaskImagesMutationResult, TaskNote,
+  TaskPatchInput, TaskSummary, TaskTextSelection,
 } from '../contract/task_interface.ts';
 import { contentHash, type TaskContent } from '../metier/tasks/content_hash.ts';
 
@@ -270,4 +271,192 @@ export async function patchTask(client: PoolClient, slug: string, patch: TaskPat
   if (row === null) return null;
   const { images, texts, notes } = await loadParts(client, slug, row);
   return toSummary(row, toContent(row, images, texts, notes), images, texts, notes);
+}
+
+interface ExistingSelection {
+  cloud_asset_id: string;
+  note: string | null;
+  selected_because: string[];
+  position: number;
+}
+
+/**
+ * En UNE requête batchée, jamais une par photo (contrat §7.2 — 286 photos,
+ * un seul geste) : l'existence dans `pipeline.photo` ET le chevauchement
+ * `daterange &&` avec `task.period`, la même règle qu'ailleurs, jamais une
+ * inégalité, jamais reconstruite en JS.
+ */
+async function loadPhotoInfo(
+  client: PoolClient, ids: readonly string[], periodFrom: string | null, periodTo: string | null,
+): Promise<Map<string, { outOfPeriod: boolean }>> {
+  const info = new Map<string, { outOfPeriod: boolean }>();
+  if (ids.length === 0) return info;
+  const { rows } = await client.query<{ cloud_asset_id: string; out_of_period: boolean }>(`
+    SELECT cloud_asset_id,
+           CASE
+             WHEN $2::date IS NULL OR $3::date IS NULL THEN false
+             WHEN resolved_start IS NULL OR resolved_end IS NULL THEN false
+             WHEN NOT (daterange(resolved_start, resolved_end, '[]') && daterange($2::date, $3::date, '[]'))
+               THEN true
+             ELSE false
+           END AS out_of_period
+      FROM pipeline.photo
+     WHERE cloud_asset_id = ANY($1::char(32)[])`, [ids, periodFrom, periodTo]);
+  for (const photoRow of rows) info.set(photoRow.cloud_asset_id, { outOfPeriod: photoRow.out_of_period });
+  return info;
+}
+
+async function loadExistingSelections(
+  client: PoolClient, slug: string, ids: readonly string[],
+): Promise<Map<string, ExistingSelection>> {
+  const existing = new Map<string, ExistingSelection>();
+  if (ids.length === 0) return existing;
+  const { rows } = await client.query<ExistingSelection>(`
+    SELECT cloud_asset_id, note, selected_because, position FROM app.task_image
+     WHERE task_slug = $1 AND cloud_asset_id = ANY($2::char(32)[])`, [slug, ids]);
+  for (const selectionRow of rows) existing.set(selectionRow.cloud_asset_id, selectionRow);
+  return existing;
+}
+
+async function nextFreePosition(client: PoolClient, slug: string): Promise<number> {
+  const { rows } = await client.query<{ max_position: number | null }>(
+    `SELECT max(position) AS max_position FROM app.task_image WHERE task_slug = $1`, [slug]);
+  return (rows[0]?.max_position ?? -1) + 1;
+}
+
+/**
+ * `add`, `remove` et `update` dans UN seul appel : sélectionner un album de
+ * 286 photos est un geste, pas 286 requêtes — mais l'enregistrement fait bien
+ * une ligne par photo (tâche 17). Rien n'échoue en silence : chaque entrée
+ * qu'on ne peut pas appliquer est nommée dans `rejected`, chaque réserve dans
+ * `warnings` — un avertissement n'est jamais un rejet.
+ */
+export async function mutateTaskImages(
+  client: PoolClient, slug: string, mutation: TaskImagesMutation,
+): Promise<TaskImagesMutationResult | null> {
+  const row = await loadRow(client, slug);
+  if (row === null) return null;
+
+  const allIds = new Set<string>();
+  for (const item of mutation.add ?? []) allIds.add(item.cloudAssetId);
+  for (const id of mutation.remove ?? []) allIds.add(id);
+  for (const item of mutation.update ?? []) allIds.add(item.cloudAssetId);
+  const idList = [...allIds];
+
+  const photoInfo = await loadPhotoInfo(client, idList, row.period_from, row.period_to);
+  const existing = await loadExistingSelections(client, slug, idList);
+  let nextPosition = await nextFreePosition(client, slug);
+
+  let added = 0;
+  let merged = 0;
+  let removed = 0;
+  let updated = 0;
+  const implicitlyAdded: string[] = [];
+  const rejected: TaskImagesMutationResult['rejected'][number][] = [];
+  const warnings: TaskImagesMutationResult['warnings'][number][] = [];
+
+  for (const item of mutation.add ?? []) {
+    const info = photoInfo.get(item.cloudAssetId);
+    if (info === undefined) {
+      rejected.push({ cloudAssetId: item.cloudAssetId, reason: 'unknown_photo' });
+      continue;
+    }
+    const current = existing.get(item.cloudAssetId);
+    if (current !== undefined) {
+      const mergedBecause = [...new Set([...current.selected_because, ...item.selectedBecause])];
+      await client.query(
+        `UPDATE app.task_image SET selected_because = $3 WHERE task_slug = $1 AND cloud_asset_id = $2`,
+        [slug, item.cloudAssetId, mergedBecause],
+      );
+      current.selected_because = mergedBecause;
+      merged++;
+    } else {
+      const dedupedBecause = [...new Set(item.selectedBecause)];
+      await client.query(
+        `INSERT INTO app.task_image (task_slug, cloud_asset_id, position, note, selected_because)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [slug, item.cloudAssetId, nextPosition, item.note ?? null, dedupedBecause],
+      );
+      existing.set(item.cloudAssetId, {
+        cloud_asset_id: item.cloudAssetId, note: item.note ?? null,
+        selected_because: dedupedBecause, position: nextPosition,
+      });
+      nextPosition++;
+      added++;
+      if (info.outOfPeriod) warnings.push({ cloudAssetId: item.cloudAssetId, code: 'out_of_period' });
+    }
+  }
+
+  for (const cloudAssetId of mutation.remove ?? []) {
+    if (!existing.has(cloudAssetId)) {
+      rejected.push({ cloudAssetId, reason: 'not_selected' });
+      continue;
+    }
+    await client.query(`DELETE FROM app.task_image WHERE task_slug = $1 AND cloud_asset_id = $2`,
+      [slug, cloudAssetId]);
+    existing.delete(cloudAssetId);
+    removed++;
+  }
+
+  for (const item of mutation.update ?? []) {
+    const current = existing.get(item.cloudAssetId);
+    if (current === undefined) {
+      // Écrire une note SÉLECTIONNE implicitement — c'est le geste. Sans
+      // note, il n'y a rien qui justifie une sélection : rejeté, nommé.
+      if (item.note === undefined) {
+        rejected.push({ cloudAssetId: item.cloudAssetId, reason: 'not_selected' });
+        continue;
+      }
+      const info = photoInfo.get(item.cloudAssetId);
+      if (info === undefined) {
+        rejected.push({ cloudAssetId: item.cloudAssetId, reason: 'unknown_photo' });
+        continue;
+      }
+      const impliedBecause = [SelectionReason.MANUAL];
+      await client.query(
+        `INSERT INTO app.task_image (task_slug, cloud_asset_id, position, note, selected_because)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [slug, item.cloudAssetId, nextPosition, item.note, impliedBecause],
+      );
+      existing.set(item.cloudAssetId, {
+        cloud_asset_id: item.cloudAssetId, note: item.note, selected_because: impliedBecause, position: nextPosition,
+      });
+      nextPosition++;
+      implicitlyAdded.push(item.cloudAssetId);
+      updated++;
+      if (info.outOfPeriod) warnings.push({ cloudAssetId: item.cloudAssetId, code: 'out_of_period' });
+      continue;
+    }
+
+    const sets: string[] = [];
+    const values: unknown[] = [slug, item.cloudAssetId];
+    if (item.note !== undefined) {
+      values.push(item.note);
+      sets.push(`note = $${String(values.length)}`);
+    }
+    if (item.order !== undefined) {
+      values.push(item.order);
+      sets.push(`position = $${String(values.length)}`);
+    }
+    if (sets.length > 0) {
+      await client.query(`UPDATE app.task_image SET ${sets.join(', ')} WHERE task_slug = $1 AND cloud_asset_id = $2`,
+        values);
+    }
+    updated++;
+    if (photoInfo.get(item.cloudAssetId) === undefined) {
+      warnings.push({ cloudAssetId: item.cloudAssetId, code: 'orphaned' });
+    }
+  }
+
+  const finalRow = await loadRow(client, slug);
+  if (finalRow === null) {
+    throw new Error(`tâche disparue pendant sa propre mutation : ${slug}`);
+  }
+  const { images, texts, notes } = await loadParts(client, slug, finalRow);
+  const summary = toSummary(finalRow, toContent(finalRow, images, texts, notes), images, texts, notes);
+
+  return {
+    added, merged, removed, updated, implicitlyAdded, rejected, warnings,
+    imageCount: summary.imageCount, contentHash: summary.contentHash, state: summary.state,
+  };
 }

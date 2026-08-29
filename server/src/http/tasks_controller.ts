@@ -2,9 +2,12 @@ import type { FastifyInstance } from 'fastify';
 
 import { ErrorCode } from '@shared/enums';
 import { AppError } from '../contract/error_interface.ts';
-import type { TaskCreateInput, TaskDetail, TaskPatchInput, TaskPeriod, TaskSummary } from '../contract/task_interface.ts';
+import type {
+  TaskCreateInput, TaskDetail, TaskImagesMutation, TaskImagesMutationResult, TaskPatchInput, TaskPeriod, TaskSummary,
+} from '../contract/task_interface.ts';
 import type { Pool } from '../db/pool.ts';
-import { createTask, getTaskDetail, listTasks, patchTask } from '../repository/task_repository.ts';
+import { withTransaction } from '../db/transaction.ts';
+import { createTask, getTaskDetail, listTasks, mutateTaskImages, patchTask } from '../repository/task_repository.ts';
 
 /** Même expression que `app.task.task_slug_is_a_folder_name` — un refus nommé plutôt qu'une contrainte Postgres brute. */
 const SLUG = /^[a-z0-9][a-z0-9-]*$/;
@@ -74,6 +77,33 @@ function parsePatchInput(body: unknown): TaskPatchInput {
   return patch;
 }
 
+/**
+ * Validation SUPERFICIELLE, comme `parsePatchInput` — la forme des tableaux,
+ * pas chaque champ de chaque élément. Un élément malformé plus profond
+ * échouerait à l'écriture SQL, jamais en silence (INTERNAL journalisé, jamais
+ * un 200 qui ment).
+ */
+function parseImagesMutation(body: unknown): TaskImagesMutation {
+  if (typeof body !== 'object' || body === null) {
+    throw invalidParameter('body', JSON.stringify(body), 'corps de requête invalide');
+  }
+  const { add, remove, update } = body as Record<string, unknown>;
+  const mutation: Record<string, unknown> = {};
+  if (add !== undefined) {
+    if (!Array.isArray(add)) throw invalidParameter('add', JSON.stringify(add), 'add doit être un tableau');
+    mutation.add = add;
+  }
+  if (remove !== undefined) {
+    if (!Array.isArray(remove)) throw invalidParameter('remove', JSON.stringify(remove), 'remove doit être un tableau');
+    mutation.remove = remove;
+  }
+  if (update !== undefined) {
+    if (!Array.isArray(update)) throw invalidParameter('update', JSON.stringify(update), 'update doit être un tableau');
+    mutation.update = update;
+  }
+  return mutation;
+}
+
 export function registerTasksRoutes(server: FastifyInstance, deps: { pool: Pool }): void {
   const { pool } = deps;
 
@@ -137,5 +167,18 @@ export function registerTasksRoutes(server: FastifyInstance, deps: { pool: Pool 
       throw new AppError(ErrorCode.NOT_FOUND, `tâche introuvable : ${slug}`, 404, { resource: 'task', id: slug });
     }
     return summary;
+  });
+
+  server.post('/tasks/:slug/images', async (request): Promise<TaskImagesMutationResult> => {
+    const { slug } = request.params as { slug: string };
+    const mutation = parseImagesMutation(request.body);
+
+    // `add`/`remove`/`update` d'un seul geste : une transaction, jamais une
+    // par ligne (tâche 17, contrat §7.2).
+    const result = await withTransaction(pool, (client) => mutateTaskImages(client, slug, mutation));
+    if (result === null) {
+      throw new AppError(ErrorCode.NOT_FOUND, `tâche introuvable : ${slug}`, 404, { resource: 'task', id: slug });
+    }
+    return result;
   });
 }

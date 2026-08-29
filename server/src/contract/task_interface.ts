@@ -80,3 +80,38 @@ export interface TaskPatchInput {
   readonly brief?: string;
   readonly period?: TaskPeriod | null;
 }
+
+/**
+ * Une seule mutation transactionnelle (contrat §7.2) : sélectionner un album
+ * de 286 photos est UN geste HTTP, pas 286 — mais l'enregistrement fait bien
+ * une ligne par photo.
+ */
+export interface TaskImagesMutation {
+  readonly add?: readonly {
+    readonly cloudAssetId: string;
+    readonly selectedBecause: readonly SelectionReason[];
+    readonly note?: string;
+  }[];
+  readonly remove?: readonly string[];
+  readonly update?: readonly {
+    readonly cloudAssetId: string;
+    readonly note?: string | null;
+    readonly order?: number;
+  }[];
+}
+
+export interface TaskImagesMutationResult {
+  readonly added: number;
+  /** Déjà sélectionnées : `selectedBecause` FUSIONNÉ, jamais rejeté. */
+  readonly merged: number;
+  readonly removed: number;
+  readonly updated: number;
+  /** Sélectionnées IMPLICITEMENT par un `update` (écrire une note retient la photo) — jamais silencieux. */
+  readonly implicitlyAdded: readonly string[];
+  readonly rejected: readonly { readonly cloudAssetId: string; readonly reason: 'unknown_photo' | 'not_selected' }[];
+  /** ACCEPTÉ avec réserve — un avertissement n'est pas un rejet. */
+  readonly warnings: readonly { readonly cloudAssetId: string; readonly code: 'out_of_period' | 'orphaned' }[];
+  readonly imageCount: number;
+  readonly contentHash: string;
+  readonly state: TaskState;
+}

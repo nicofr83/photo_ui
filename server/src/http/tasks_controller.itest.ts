@@ -146,3 +146,40 @@ describe('PATCH /tasks/:slug', () => {
     expect(response.statusCode).toBe(404);
   });
 });
+
+describe('POST /tasks/:slug/images', () => {
+  test('adds a real photo and returns the mutation result, through the full HTTP path', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    const id = 'a'.repeat(32);
+    try {
+      await setup.query(`INSERT INTO pipeline.photo
+        (cloud_asset_id, sha256, relative_path, file_name, format, raw_date_source)
+        VALUES ($1, $2, 'x/p.jpg', 'p.jpg', 'jpg', 'none')`, [id, 'b'.repeat(64)]);
+      await app.server.inject({
+        method: 'POST', url: '/tasks',
+        payload: { title: 'x', slug: 'x', brief: '', period: null },
+      });
+
+      const response = await app.server.inject({
+        method: 'POST', url: '/tasks/x/images',
+        payload: { add: [{ cloudAssetId: id, selectedBecause: ['manual'] }] },
+      });
+      expect(response.statusCode).toBe(200);
+      const body = response.json<{ added: number; imageCount: number }>();
+      expect(body.added).toBe(1);
+      expect(body.imageCount).toBe(1);
+    } finally {
+      await setup.query('DELETE FROM pipeline.photo');
+    }
+  });
+
+  test('an unknown task slug is a named 404', async () => {
+    app = await bootstrap(await completeEnv());
+    const response = await app.server.inject({
+      method: 'POST', url: '/tasks/nowhere/images', payload: { add: [] },
+    });
+    expect(response.statusCode).toBe(404);
+    expect(response.json<{ error: { code: string } }>().error.code).toBe('NOT_FOUND');
+  });
+});
