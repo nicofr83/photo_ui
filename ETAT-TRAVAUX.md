@@ -540,3 +540,29 @@ DONE : relancé (`npm run start`, pid 7323), confirmé par team-lead — un seul
 DETAIL : mon fait — je le tuais après chaque vérification manuelle sans savoir que la mesure de grille de front en dépendait. Engagement pris (team-lead) : je le laisse vivre, je préviens `front` avant tout redémarrage.
 
 ASK : aucun.
+
+---
+
+## Avancement — front, mesure de grille + intégration réelle (2026-08-30)
+
+RE : intégration réelle front — mandat rempli
+DONE : serveur revenu (merci `back`). Mesure faite en pilotant un vrai Chromium headless (`playwright`) sur `/images/zz-repro-bug1` (route non filtrée → les 3930 photos du périmètre, `usePhotos` n'envoie aucune limite et le serveur non plus, `PhotoGrid` n'a aucune pagination/virtualisation) :
+- 3930 tuiles rendues, 48 645 nœuds DOM, grille stable en 1,56 s après navigation.
+- **0 « long task »** (>50 ms) pendant un défilement programmatique du haut jusqu'au bas de la page (104 628 px, 20 paliers). Tas JS : 69 Mo utilisés / 125 Mo réservés. Aucune erreur console.
+- `loading="lazy"` (déjà en place, `PhotoTile.tsx:39`) fait son travail : les vignettes hors-champ ne se chargent pas tant qu'elles n'approchent pas du viewport (confirmé par capture d'écran bas de page — cases grises, pas de requête).
+**Verdict, avec les chiffres en main plutôt qu'en survalidez** : la grille tient sans virtualisation sur le périmètre réel complet, sur ce poste. Aucun palier de jank détecté. Je ne recommande pas de l'ajouter maintenant — mesure sans throttling CPU/réseau ni défilement continu à la molette, donc pas une garantie sur un poste plus modeste, mais rien dans les chiffres n'appelle une optimisation aujourd'hui. À réviser si une plainte réelle apparaît.
+
+Deux vrais défauts d'intégration trouvés en pilotant l'app réelle (jamais visibles au `curl`), corrigés côté front :
+1. **CORS** (`vite.config.ts`, commit `cdddcc2`) : le vrai serveur n'envoie aucun `Access-Control-Allow-Origin`. Proxy Vite vers `127.0.0.1:4310`, une clé regex dédiée pour `/images/:sha256/thumb|render` — `/images/:slug` est AUSSI une route de cette app (écran images d'une tâche), un préfixe générique avalait sa propre navigation.
+2. **`TaskImageSelection.outOfPeriod` absent du schéma front** (commit `2f42296`) : le contrat a bougé tâche 26 côté `back`, jamais répercuté ici. `/revue/:slug` réel → `ContractError` immédiate. Corrigé, calculé en LIVE dans le mock (jamais figé à l'ajout, un changement de période ne doit jamais laisser un indicateur périmé) ; 588 tests toujours verts, tsc propre.
+
+Tour des écrans réels (`images`, `textes`, `revue`, `réglages`, `tâches`) : quatre propres, zéro bannière d'erreur, zéro console. `revue` affiche les huit compteurs réels correctement après le correctif ci-dessus.
+
+**Un écart confirmé, pas corrigé — pour `back`** : `textes` lève 63 bannières « le champ items.0.galleryCaption ne respecte pas le contrat ». Deux causes, mêmes que l'écart déjà connu (contrat §11 Q11, jamais écrit côté serveur, en attente de l'intégration front) :
+- `GET /texts?kind=web_caption` → 400 `INVALID_PARAMETER`, `accepted: ["passage","log_entry"]` — `web_caption` absent de la liste serveur.
+- `galleryCaption` absent de chaque item de `/texts` (devrait être `null` pour tout ce qui n'est pas `web_caption`, jamais un champ manquant).
+Forme déjà conçue et prête à implémenter telle quelle : `src/api/contract/text.ts:134-142` (`GalleryCaptionFieldsSchema` : `sha256, page, imagePath, distance, margin, verified`) et `:173` (`galleryCaption: GalleryCaptionFieldsSchema.nullable()` sur `TextUnitSchema`). `TextKind.WEB_CAPTION = 'web_caption'` déjà côté front (`src/shared/enums.ts:80`).
+
+DETAIL : commits `cdddcc2`, `7e2138a`, `2f42296`. `playwright` reste installé en local (`npm install --no-save`, jamais dans `package.json`) faute de `chromium-cli` sur ce poste — script de pilotage en scratchpad, rien dans le dépôt.
+
+ASK : aucune décision Nicolas. Je continue l'intégration de bout en bout (corrections, jobs, export, notes) contre le serveur réel.
