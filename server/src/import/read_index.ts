@@ -52,6 +52,15 @@ export interface PhotoAlbumLink {
   readonly isPrimary: boolean;
 }
 
+export interface RawTag {
+  readonly name: string;
+  readonly kind: string;
+}
+
+export interface RawPerson {
+  readonly name: string;
+}
+
 export interface PhotoTagLink {
   readonly cloudAssetId: string;
   readonly tagName: string;
@@ -83,6 +92,19 @@ export function readPhotos(db: DatabaseSync): Generator<RawPhoto> {
 
 export function readAlbums(db: DatabaseSync): Generator<RawAlbum> {
   return rows<RawAlbum>(db, `SELECT path, setName, albumName, groupName FROM albums`);
+}
+
+/**
+ * Lue depuis `tags`, pas dérivée des ~971 000 lignes de `photo_tags` : la
+ * table de base a ~8 000 lignes, l'accumulation d'un ensemble unique sur le
+ * flux de liens coûterait cent fois plus pour le même résultat.
+ */
+export function readTags(db: DatabaseSync): Generator<RawTag> {
+  return rows<RawTag>(db, `SELECT name, kind FROM tags`);
+}
+
+export function readPeople(db: DatabaseSync): Generator<RawPerson> {
+  return rows<RawPerson>(db, `SELECT name FROM people`);
 }
 
 /**

@@ -6,7 +6,8 @@ import { DatabaseSync } from 'node:sqlite';
 import { afterEach, beforeEach, expect, test } from 'vitest';
 
 import {
-  readAlbums, readPhotoAlbumLinks, readPhotoPersonLinks, readPhotoTagLinks, readPhotos,
+  readAlbums, readPeople, readPhotoAlbumLinks, readPhotoPersonLinks, readPhotos, readPhotoTagLinks,
+  readTags,
 } from './read_index.ts';
 
 let db: DatabaseSync;
@@ -113,6 +114,14 @@ test('readPhotoPersonLinks joins to the durable cloudAssetId and normalizes the 
   db.prepare(`INSERT INTO photo_people (photoId, personId) VALUES (1, 1)`).run();
 
   expect([...readPhotoPersonLinks(db)]).toEqual([{ cloudAssetId: id, personName: NFC_ALGES }]);
+});
+
+test('readTags and readPeople are NFC-normalized', () => {
+  db.prepare(`INSERT INTO tags (name, kind) VALUES ('italy', 'ai')`).run();
+  db.prepare(`INSERT INTO people (name) VALUES ($n)`).run({ n: NFD_ALGES });
+
+  expect([...readTags(db)]).toEqual([{ name: 'italy', kind: 'ai' }]);
+  expect([...readPeople(db)]).toEqual([{ name: NFC_ALGES }]);
 });
 
 test('an empty table yields an empty generator, not an error', () => {
