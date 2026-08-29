@@ -127,25 +127,35 @@ export interface PhotoDetail extends PhotoListItem {
   readonly render: RenderAvailability;
 }
 
+/** Transcrit de `docs/api-contract.md` — l'intervalle EFFECTIVEMENT utilisé par la cascade (rang 0). */
 export interface AlbumSpan {
   readonly from: string;
   readonly to: string;
-  readonly precision: DatePrecision;
+  /** `false` = saisi dans `ref.album_span` · `true` = déduit du préfixe, à revoir. */
   readonly presumed: boolean;
+  readonly note: string | null;
 }
 
-export interface AlbumHints {
+export interface AlbumSpanHints {
+  /** Motifs `NN-NN` lus dans les noms de FICHIERS (`98-99 maison rose Lisbonne`). */
   readonly fileNamePatterns: readonly string[];
+  /** La plage des `captureDate` que l'arbitrage a ÉCARTÉS — souvent des dates de scan. */
+  readonly rejectedExifRange: { readonly from: string; readonly to: string } | null;
+  readonly rejectedExifCount: number;
 }
 
+/** Un des 82 albums, tel que le filtre et l'écran de saisie des plages en ont besoin. */
 export interface Album {
   readonly path: string;
   readonly setName: string | null;
   readonly albumName: string;
   readonly groupName: string | null;
   readonly photoCount: number;
-  readonly inPerimeter: boolean;
+  /** Ce que le PRÉFIXE du nom donne. Jamais présenté comme une date à l'utilisateur. */
+  readonly prefixYear: number | null;
+  readonly prefixMonth: number | null;
+  readonly span: AlbumSpan;
+  /** Le nom annonce une durée ou un trajet. */
   readonly suspectedRange: boolean;
-  readonly span: AlbumSpan | null;
-  readonly hints: AlbumHints;
+  readonly hints: AlbumSpanHints;
 }
