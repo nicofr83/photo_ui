@@ -340,3 +340,50 @@ jouable pour les 421 photos concernées : `month` et `year` refusés par la base
 Trouvée et mesurée par `impl-backend`, corrigée en testant l'alignement des
 bornes. Le cas `[2004-09-14, 2004-09-14]` en `precision: 'month'` reste rejeté :
 rien de ce qui était protégé n'est perdu.
+
+---
+
+## Protocole d'échange entre agents — obligatoire
+
+Les échanges entre agents ont consommé une part majeure du budget de ce projet.
+Un message coûte **deux fois** : l'émetteur l'écrit, le récepteur recharge son
+contexte entier pour le lire. Une ligne écrite ici coûte une fois, et n'est lue
+que par qui en a besoin.
+
+### Règle 1 — n'envoie pas de message
+
+Par défaut, **écris ici**. Un message ne se justifie que si l'autre agent est
+**bloqué maintenant** par ce que tu as à dire.
+
+| Situation | Où |
+|:---|:---|
+| Avancement, décision d'archi, ce qui reste | **ici**, jamais un message |
+| Faute trouvée dans un document | **ici** + corrige le document |
+| Question dont la réponse débloque ton prochain commit | message |
+| Décision qui appartient à Nicolas | message à la session pilote |
+
+### Règle 2 — format fixe, pas de prose
+
+```
+RE: <sujet en 3 mots>
+ASK|TELL|BLOCK|DONE: <une ligne>
+DETAIL: <3 lignes maximum, seulement si indispensable>
+```
+
+Pas de salutation, pas de reformulation du contexte que l'autre a déjà, pas de
+justification sauf si elle change la réponse. Référence les fichiers par
+`chemin:ligne` — **ne recopie jamais leur contenu**, le destinataire peut les
+ouvrir.
+
+Exemple réel de ce qui suffit :
+
+```
+RE: api légendes galerie
+ASK: forme de GET /gallery-captions ?
+DETAIL: besoin pour T2.4. Attendu: {caption, page, distance, margin, verified}[]
+```
+
+### Règle 3 — la session pilote se tait aussi
+
+Elle ne relaie plus. Elle n'écrit qu'une décision de Nicolas ou un arrêt. Ses
+messages suivent le même format.
