@@ -11,7 +11,8 @@
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
     "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate_cli.ts",
-    "db:import": "tsx --env-file-if-exists=.env src/import/import_cli.ts"
+    "db:import": "tsx --env-file-if-exists=.env src/import/import_cli.ts",
+    "gallery:match": "tsx --env-file-if-exists=.env src/import/gallery_match_cli.ts"
   },
   "dependencies": {
     "fastify": "^5.2.1",

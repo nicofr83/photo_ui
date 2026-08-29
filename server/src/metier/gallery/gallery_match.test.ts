@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { findBestMatch, isConfidentMatch } from './gallery_match.ts';
+import { dedupeByLinkKey, findBestMatch, isConfidentMatch } from './gallery_match.ts';
 
 describe('findBestMatch', () => {
   test('picks the closest hash, and the margin is the gap to the SECOND closest', () => {
@@ -51,5 +51,34 @@ describe('isConfidentMatch — the spike’s own rule: d ≤ 6 and margin ≥ 4'
 
   test('margin too narrow, even at distance 0: not confident — the ambiguous-neighbour case', () => {
     expect(isConfidentMatch({ sha256: 'x', distance: 0, margin: 3 })).toBe(false);
+  });
+});
+
+describe('dedupeByLinkKey — app.web_gallery_link is unique on (sha256, image_path), NOT page', () => {
+  const link = (sha256: string, imagePath: string, distance: number, margin: number) =>
+    ({ sha256, imagePath, distance, margin, page: 'irrelevant' });
+
+  test('two different keys both survive', () => {
+    const links = [link('a', 'x.jpg', 2, 5), link('b', 'y.jpg', 3, 5)];
+    expect(dedupeByLinkKey(links)).toHaveLength(2);
+  });
+
+  test('a repeated key keeps the LOWER distance', () => {
+    const links = [link('a', 'x.jpg', 5, 5), link('a', 'x.jpg', 2, 5)];
+    expect(dedupeByLinkKey(links)).toEqual([link('a', 'x.jpg', 2, 5)]);
+  });
+
+  test('a tie on distance keeps the WIDER margin', () => {
+    const links = [link('a', 'x.jpg', 2, 4), link('a', 'x.jpg', 2, 9)];
+    expect(dedupeByLinkKey(links)).toEqual([link('a', 'x.jpg', 2, 9)]);
+  });
+
+  test('the same imagePath under a DIFFERENT sha256 is a different key — not collapsed', () => {
+    const links = [link('a', 'x.jpg', 2, 5), link('b', 'x.jpg', 2, 5)];
+    expect(dedupeByLinkKey(links)).toHaveLength(2);
+  });
+
+  test('an empty input yields an empty output', () => {
+    expect(dedupeByLinkKey([])).toEqual([]);
   });
 });
