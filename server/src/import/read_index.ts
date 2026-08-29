@@ -138,9 +138,16 @@ export function readPhotoTagLinks(db: DatabaseSync): Generator<PhotoTagLink> {
       JOIN tags t ON t.id = pt.tagId`);
 }
 
+/**
+ * `DISTINCT` : `photo_people` porte une boîte (x, y, w, h) par VISAGE détecté,
+ * donc la même personne reconnue deux fois sur une photo produit deux lignes
+ * amont pour le même couple (photoId, personId) — mesuré, 33 cas réels sur
+ * 13 612. `pipeline.photo_person` n'a pas de notion de boîte : sa clé est le
+ * couple, et `pipeline.photo` en réclame l'unicité.
+ */
 export function readPhotoPersonLinks(db: DatabaseSync): Generator<PhotoPersonLink> {
   return rows<PhotoPersonLink>(db, `
-    SELECT p.cloudAssetId AS cloudAssetId, pe.name AS personName
+    SELECT DISTINCT p.cloudAssetId AS cloudAssetId, pe.name AS personName
       FROM photo_people pp
       JOIN photos p ON p.id = pp.photoId
       JOIN people pe ON pe.id = pp.personId`);

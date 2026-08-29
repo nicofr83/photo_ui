@@ -116,6 +116,18 @@ test('readPhotoPersonLinks joins to the durable cloudAssetId and normalizes the 
   expect([...readPhotoPersonLinks(db)]).toEqual([{ cloudAssetId: id, personName: NFC_ALGES }]);
 });
 
+test('readPhotoPersonLinks DEDUPLICATES — several face boxes for the same person is ONE link', () => {
+  const id = 'e'.repeat(32);
+  db.prepare(`INSERT INTO photos (id, cloudAssetId, path, folder, dateSource, format)
+    VALUES (1, $id, '/x/1.jpg', 'f', 'exif', 'jpg')`).run({ id });
+  db.prepare(`INSERT INTO people (id, name) VALUES (1, 'Atlas')`).run();
+  // Deux détections de visage, deux boîtes différentes, même personne.
+  db.prepare(`INSERT INTO photo_people (photoId, personId, x, y, w, h) VALUES (1, 1, 0.1, 0.1, 0.2, 0.2)`).run();
+  db.prepare(`INSERT INTO photo_people (photoId, personId, x, y, w, h) VALUES (1, 1, 0.5, 0.5, 0.2, 0.2)`).run();
+
+  expect([...readPhotoPersonLinks(db)]).toEqual([{ cloudAssetId: id, personName: 'Atlas' }]);
+});
+
 test('readTags and readPeople are NFC-normalized', () => {
   db.prepare(`INSERT INTO tags (name, kind) VALUES ('italy', 'ai')`).run();
   db.prepare(`INSERT INTO people (name) VALUES ($n)`).run({ n: NFD_ALGES });

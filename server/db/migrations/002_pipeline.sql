@@ -159,10 +159,17 @@ CREATE TABLE pipeline.album (
   prefix_month    int,                     -- NULL si NN > 12 ou année seule
   in_perimeter    boolean NOT NULL,
   suspected_range boolean NOT NULL DEFAULT false,
-  span_from       date NOT NULL,           -- la cascade s'en sert (rang 0)
-  span_to         date NOT NULL,
-  span_presumed   boolean NOT NULL,        -- true = déduit du préfixe, à revoir
-  CONSTRAINT album_span_ordered CHECK (span_from <= span_to)
+  -- NULLABLE, et ce n'est pas théorique : 27 des 675 albums réels n'ont AUCUN
+  -- préfixe exploitable (« all pics », « test », « Perso »…), tous hors
+  -- périmètre. `album_span.ts` le rend déjà comme `null` — « rien n'est
+  -- inventé » — ce que la contrainte d'origine (NOT NULL) contredisait : la
+  -- ligne existe (photo_album y a une FK), son intervalle ne l'est pas.
+  span_from       date,                    -- la cascade s'en sert (rang 0)
+  span_to         date,
+  span_presumed   boolean,                 -- true = déduit du préfixe, à revoir ; NULL = aucun intervalle
+  CONSTRAINT album_span_ordered CHECK (span_from <= span_to),
+  CONSTRAINT album_span_complete CHECK (
+    (span_from IS NULL) = (span_to IS NULL) AND (span_from IS NULL) = (span_presumed IS NULL))
 );
 
 CREATE TABLE pipeline.photo_album (
