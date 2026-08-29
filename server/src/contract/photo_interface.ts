@@ -1,0 +1,151 @@
+import type { DatePrecision, DateKind, DateSource, PositionSource } from '@shared/enums';
+import type { FieldMatch, TextRange } from './filter_interface.ts';
+
+/** Transcrit de `docs/api-contract.md` §2.2, §2.5. */
+export interface ResolvedDate {
+  readonly start: string;
+  readonly end: string;
+  readonly precision: DatePrecision;
+  readonly kind: DateKind;
+  readonly source: DateSource;
+  readonly bracketHours: number | null;
+}
+
+export interface ResolvedPosition {
+  readonly lat: number;
+  readonly lon: number;
+  readonly kind: DateKind;
+  readonly source: PositionSource;
+}
+
+export interface DateArbitration {
+  readonly exifDate: string;
+  readonly gapMonths: number;
+  readonly outcome: 'accepted' | 'rejected';
+}
+
+export interface CaptionExcerpt {
+  readonly text: string;
+  readonly highlights: readonly TextRange[];
+}
+
+export interface PhotoPlace {
+  readonly city: string | null;
+  readonly state: string | null;
+  readonly country: string | null;
+  readonly countryRaw: string | null;
+  readonly sublocation: string | null;
+}
+
+export interface PhotoListItem {
+  readonly cloudAssetId: string;
+  readonly sha256: string;
+  readonly date: ResolvedDate | null;
+  readonly arbitration: DateArbitration | null;
+  readonly rawDateSource: string;
+  readonly captureDateLocal: string | null;
+  readonly captureOffsetMin: number | null;
+  readonly captureDateRaw: string | null;
+  readonly position: ResolvedPosition | null;
+  readonly place: PhotoPlace;
+  readonly albumPath: string | null;
+  readonly groupName: string | null;
+  readonly fileName: string;
+  readonly format: string;
+  readonly width: number | null;
+  readonly height: number | null;
+  readonly aestheticsScore: number | null;
+  readonly people: readonly string[];
+  readonly inTaskSlugs: readonly string[];
+  readonly matchedOn: readonly FieldMatch[];
+  readonly hasCaption: boolean;
+  readonly captionExcerpt: CaptionExcerpt | null;
+  readonly thumbUrl: string;
+  readonly renderUrl: string;
+}
+
+export interface PhotoExif {
+  readonly cameraMake: string | null;
+  readonly cameraModel: string | null;
+  readonly lens: string | null;
+  readonly iso: number | null;
+  readonly aperture: number | null;
+  readonly shutter: string | null;
+  readonly focalLength: number | null;
+  readonly altitude: number | null;
+}
+
+export interface PhotoTag {
+  readonly name: string;
+  readonly confidence: number | null;
+}
+
+export interface DoubtCandidate {
+  readonly place: string;
+  readonly range: { readonly from: string; readonly to: string };
+  readonly fixes: number;
+}
+
+export interface DatingDoubt {
+  readonly reason: string;
+  readonly label: string | null;
+  readonly albumPath: string;
+  readonly candidates: readonly DoubtCandidate[];
+}
+
+export interface DatingProposal {
+  readonly date: ResolvedDate;
+  readonly position: ResolvedPosition | null;
+  readonly evidenceEntryIds: readonly string[];
+}
+
+export interface RenderAvailability {
+  readonly available: boolean;
+  readonly unavailableReason: 'VOLUME_UNAVAILABLE' | 'SOURCE_FILE_MISSING' | 'NOT_RENDERABLE' | null;
+  readonly cached: boolean;
+}
+
+export interface MachineCaption {
+  readonly text: string;
+  readonly keywords: readonly string[];
+  readonly kind: string;
+  readonly editedText: string | null;
+  readonly editedKeywords: readonly string[] | null;
+}
+
+export interface PhotoDetail extends PhotoListItem {
+  readonly albumPaths: readonly string[];
+  readonly tags: readonly PhotoTag[];
+  readonly exif: PhotoExif;
+  readonly ocrText: string | null;
+  readonly fileSize: number | null;
+  readonly relativePath: string;
+  readonly proposal: DatingProposal | null;
+  readonly doubt: DatingDoubt | null;
+  readonly overlappingTextCount: number;
+  readonly caption: MachineCaption | null;
+  readonly render: RenderAvailability;
+}
+
+export interface AlbumSpan {
+  readonly from: string;
+  readonly to: string;
+  readonly precision: DatePrecision;
+  readonly presumed: boolean;
+}
+
+export interface AlbumHints {
+  readonly fileNamePatterns: readonly string[];
+}
+
+export interface Album {
+  readonly path: string;
+  readonly setName: string | null;
+  readonly albumName: string;
+  readonly groupName: string | null;
+  readonly photoCount: number;
+  readonly inPerimeter: boolean;
+  readonly suspectedRange: boolean;
+  readonly span: AlbumSpan | null;
+  readonly hints: AlbumHints;
+}

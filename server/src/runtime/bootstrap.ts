@@ -5,6 +5,7 @@ import type { FastifyInstance } from 'fastify';
 import { createLog } from '../log/log.ts';
 import { createPool, type Pool } from '../db/pool.ts';
 import { createSafeFs } from '../io/safe_fs.ts';
+import { registerPhotosRoutes } from '../http/photos_controller.ts';
 import { registerSystemRoutes } from '../http/system_controller.ts';
 import { buildServer } from './server.ts';
 import { loadConfig } from './config.ts';
@@ -52,6 +53,7 @@ export async function bootstrap(env: NodeJS.ProcessEnv): Promise<App> {
 
   const server = buildServer(log);
   registerSystemRoutes(server, { pool, config });
+  registerPhotosRoutes(server, { pool });
   await server.ready();
 
   log.info('serveur prêt', { host: config.host, port: config.port });
