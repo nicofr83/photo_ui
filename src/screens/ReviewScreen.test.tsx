@@ -1,5 +1,6 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router';
 
 import { store } from '../../mocks/store';
 import { parseIsoTimestamp } from '../shared/date_interface';
@@ -7,7 +8,10 @@ import { renderWithProviders } from '../test/renderWithProviders';
 
 import { ReviewScreen } from './ReviewScreen';
 
-const setup = () => renderWithProviders(<ReviewScreen slug="1999-transat" />);
+// ReviewScreen renders TaskNav, which needs a Router — the real app always
+// provides one (app/router.tsx), so the test does too.
+const setup = () =>
+  renderWithProviders(<MemoryRouter><ReviewScreen slug="1999-transat" /></MemoryRouter>);
 
 describe('§5.6 — what is held is shown', () => {
   test('the retained images are listed', async () => {

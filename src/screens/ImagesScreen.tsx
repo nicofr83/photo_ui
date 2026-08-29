@@ -8,6 +8,7 @@ import { PhotoDetail } from '../ui/detail/PhotoDetail';
 import { FilterPanel } from '../ui/filters/FilterPanel';
 import { PhotoGrid } from '../ui/grid/PhotoGrid';
 import { ErrorBanner } from '../ui/primitives/ErrorBanner';
+import { TaskNav } from '../ui/primitives/TaskNav';
 
 import styles from './ImagesScreen.module.css';
 
@@ -34,33 +35,36 @@ export function ImagesScreen(): React.JSX.Element {
   };
 
   return (
-    <div className={styles['layout']}>
-      <aside className={styles['aside']}>
-        <FilterPanel
-          filters={filters}
-          onChange={(next) => { setSearchParams(toSearchParams(next)); }}
-        />
-      </aside>
+    <>
+      <TaskNav slug={slug} />
+      <div className={styles['layout']}>
+        <aside className={styles['aside']}>
+          <FilterPanel
+            filters={filters}
+            onChange={(next) => { setSearchParams(toSearchParams(next)); }}
+          />
+        </aside>
 
-      <main>
-        {selection.error !== null ? <ErrorBanner error={selection.error} /> : null}
+        <main>
+          {selection.error !== null ? <ErrorBanner error={selection.error} /> : null}
 
-        <PhotoGrid
-          params={params}
-          selected={selection.selected}
-          onToggle={(cloudAssetId) => {
-            void (selection.selected.has(cloudAssetId)
-              ? selection.remove([cloudAssetId])
-              : selection.add([cloudAssetId], reasons()));
-          }}
-          onSelectAll={(ids) => { void selection.add(ids, reasons()); }}
-          onOpen={setOpenPhoto}
-        />
+          <PhotoGrid
+            params={params}
+            selected={selection.selected}
+            onToggle={(cloudAssetId) => {
+              void (selection.selected.has(cloudAssetId)
+                ? selection.remove([cloudAssetId])
+                : selection.add([cloudAssetId], reasons()));
+            }}
+            onSelectAll={(ids) => { void selection.add(ids, reasons()); }}
+            onOpen={setOpenPhoto}
+          />
 
-        {openPhoto === null ? null : (
-          <PhotoDetail cloudAssetId={openPhoto} onClose={() => { setOpenPhoto(null); }} />
-        )}
-      </main>
-    </div>
+          {openPhoto === null ? null : (
+            <PhotoDetail cloudAssetId={openPhoto} onClose={() => { setOpenPhoto(null); }} />
+          )}
+        </main>
+      </div>
+    </>
   );
 }

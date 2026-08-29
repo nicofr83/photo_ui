@@ -1,0 +1,14 @@
+.nav {
+  display: flex;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 0.75rem;
+}
+
+.nav a {
+  min-height: var(--tap-target);
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.25rem;
+}

@@ -6,6 +6,7 @@ import { TaskDetailSchema } from '../api/contract/task';
 import { useExport } from '../api/hooks/useExport';
 import { useSelection } from '../api/hooks/useSelection';
 import { ErrorBanner } from '../ui/primitives/ErrorBanner';
+import { TaskNav } from '../ui/primitives/TaskNav';
 import styles from '../ui/review/ReviewList.module.css';
 
 const SKIP_REASONS: Record<string, string> = {
@@ -30,6 +31,7 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
 
   return (
     <section className={styles['screen']}>
+      <TaskNav slug={slug} />
       <h1>Revue — {task.data.title}</h1>
 
       <label className={styles['brief']}>
