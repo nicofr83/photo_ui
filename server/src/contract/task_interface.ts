@@ -115,3 +115,30 @@ export interface TaskImagesMutationResult {
   readonly contentHash: string;
   readonly state: TaskState;
 }
+
+/** Contrat §7.4. */
+export interface TaskExportInput {
+  /** Défaut : `<TASKS_ROOT>/<slug>`. */
+  readonly directory?: string;
+  /** Défaut `false`. Dossier existant + `false` ⇒ 409, jamais d'écrasement silencieux. */
+  readonly overwrite?: boolean;
+}
+
+export interface TaskExportReport {
+  readonly directory: string;
+  readonly manifestPath: string;
+  readonly imagesWritten: number;
+  readonly pagesWritten: number;
+  readonly textsWritten: number;
+  readonly notesWritten: number;
+  readonly bytesWritten: number;
+  /** Absente du dossier ET du manifeste — nommée ici avec sa cause. Jamais un manifeste qui référence un fichier absent. */
+  readonly skippedImages: readonly {
+    readonly cloudAssetId: string;
+    readonly reason: 'SOURCE_FILE_MISSING' | 'NOT_RENDERABLE' | 'VOLUME_UNAVAILABLE';
+    readonly expectedPath: string | null;
+  }[];
+  /** Disque plein : arrêt, rapport, dossier partiel signalé. */
+  readonly partial: boolean;
+  readonly exportedAt: string;
+}
