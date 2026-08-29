@@ -54,7 +54,7 @@ export async function bootstrap(env: NodeJS.ProcessEnv): Promise<App> {
 
   const server = buildServer(log);
   registerSystemRoutes(server, { pool, config });
-  registerPhotosRoutes(server, { pool });
+  registerPhotosRoutes(server, { pool, config });
   registerRefRoutes(server, { pool });
   await server.ready();
 

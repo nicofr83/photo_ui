@@ -1,13 +1,20 @@
+import { access } from 'node:fs/promises';
+import path from 'node:path';
+
 import type { FastifyInstance } from 'fastify';
 
 import { ErrorCode } from '@shared/enums';
 import { AppError } from '../contract/error_interface.ts';
 import type { ListEnvelope } from '../contract/filter_interface.ts';
-import type { PhotoListItem } from '../contract/photo_interface.ts';
+import type { PhotoDetail, PhotoListItem } from '../contract/photo_interface.ts';
 import type { Pool } from '../db/pool.ts';
+import type { Config } from '../runtime/config.ts';
+import { classifyRenderFailure } from '../metier/images/render_availability.ts';
 import { getLatestImportId } from '../repository/import_run_repository.ts';
-import { listPhotos, type PhotoFilters } from '../repository/photo_repository.ts';
+import { getPhotoDetail, listPhotos, type PhotoFilters } from '../repository/photo_repository.ts';
 import { parseQueryParams, type ParamSpec } from './query_params.ts';
+
+const CLOUD_ASSET_ID = /^[0-9a-f]{32}$/;
 
 const PHOTOS_PARAM_SPEC: ParamSpec = {
   scope: { kind: 'closed', values: ['hierarchy', 'out_of_hierarchy', 'all'], fallback: 'hierarchy' },
@@ -68,8 +75,8 @@ function toFilters(parsed: Record<string, unknown>): PhotoFilters {
   return filters;
 }
 
-export function registerPhotosRoutes(server: FastifyInstance, deps: { pool: Pool }): void {
-  const { pool } = deps;
+export function registerPhotosRoutes(server: FastifyInstance, deps: { pool: Pool; config: Config }): void {
+  const { pool, config } = deps;
 
   server.get('/photos', async (request): Promise<ListEnvelope<PhotoListItem>> => {
     const parsed = parseQueryParams(request.query as Record<string, unknown>, PHOTOS_PARAM_SPEC);
@@ -91,4 +98,41 @@ export function registerPhotosRoutes(server: FastifyInstance, deps: { pool: Pool
       client.release();
     }
   });
+
+  server.get('/photos/:cloudAssetId', async (request): Promise<PhotoDetail> => {
+    const { cloudAssetId } = request.params as { cloudAssetId: string };
+    if (!CLOUD_ASSET_ID.test(cloudAssetId)) {
+      throw new AppError(ErrorCode.NOT_FOUND, `identifiant de photo invalide : ${cloudAssetId}`, 404,
+        { resource: 'photo', id: cloudAssetId });
+    }
+
+    const client = await pool.connect();
+    let detail;
+    try {
+      detail = await getPhotoDetail(client, cloudAssetId);
+    } finally {
+      client.release();
+    }
+    if (detail === null) {
+      throw new AppError(ErrorCode.NOT_FOUND, `photo introuvable : ${cloudAssetId}`, 404,
+        { resource: 'photo', id: cloudAssetId });
+    }
+
+    return { ...detail, render: await checkRenderAvailability(config, detail.relativePath, detail.format) };
+  });
+}
+
+/**
+ * Les trois échecs (tâche 15), déterminés AVANT `sips` : le service d'images
+ * les recalculera à l'identique pour `/images/:sha256/render` — même
+ * classifieur, `metier/images/render_availability.ts`.
+ */
+async function checkRenderAvailability(
+  config: Config, relativePath: string, format: string,
+): Promise<PhotoDetail['render']> {
+  const rootMounted = await access(config.originalsRoot).then(() => true, () => false);
+  const fileExists = !rootMounted ? false
+    : await access(path.join(config.originalsRoot, relativePath)).then(() => true, () => false);
+  const failure = classifyRenderFailure({ rootMounted, fileExists, format });
+  return { available: failure === null, unavailableReason: failure, cached: false };
 }

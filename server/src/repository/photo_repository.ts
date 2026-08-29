@@ -1,6 +1,9 @@
+import { DateKind, DatePrecision, DateSource, PositionSource } from '@shared/enums';
 import type { PoolClient } from '../db/pool.ts';
 import type { AppliedFilter, UnmatchedFilterValue } from '../contract/filter_interface.ts';
-import type { PhotoListItem } from '../contract/photo_interface.ts';
+import type {
+  DatingDoubt, DatingProposal, DoubtCandidate, PhotoDetail, PhotoExif, PhotoListItem, PhotoTag,
+} from '../contract/photo_interface.ts';
 import { cleanSearchQuery } from '../metier/search/clean_query.ts';
 import { mapPhotoRow, type PhotoRow } from '../metier/photos/map_photo_row.ts';
 
@@ -342,4 +345,103 @@ async function nearest(client: PoolClient, table: string, column: string, value:
     [value],
   );
   return rows.map((r) => r.v);
+}
+
+/**
+ * `PhotoDetail` — `proposal`/`doubt` sont des champs de PREMIER NIVEAU, jamais
+ * fondus dans `date` : `proposal` n'apparaît que quand `dating_proposal.date_source
+ * = 'logbook-bracket'` — le même gate que `cascade.ts`, pour la même raison. Une
+ * ligne `manual` est une décision humaine ; l'afficher ici comme un rang 3
+ * referait, à l'écran, exactement la faute que le gate corrige en base.
+ */
+export async function getPhotoDetail(client: PoolClient, cloudAssetId: string): Promise<PhotoDetail | null> {
+  const { rows } = await client.query<PhotoRow & {
+    relative_path: string; file_size: number | null; ocr_text: string | null;
+    camera_make: string | null; camera_model: string | null; lens: string | null;
+    iso: number | null; aperture: number | null; shutter: string | null; focal_length: number | null;
+    altitude_m: number | null;
+    album_paths: readonly string[];
+    tags: readonly { name: string; confidence: number | null }[];
+    overlapping_text_count: number;
+  }>(`
+    SELECT p.*, coalesce(ca.normalized, p.country_raw) AS country,
+           ST_Y(p.position::geometry) AS lat, ST_X(p.position::geometry) AS lon,
+           EXISTS (SELECT 1 FROM app.photo_caption c WHERE c.sha256 = p.sha256) AS has_caption,
+           '[]'::jsonb AS matched_on,
+           (SELECT coalesce(array_agg(pp.person_name ORDER BY pp.person_name), '{}')
+              FROM pipeline.photo_person pp WHERE pp.cloud_asset_id = p.cloud_asset_id) AS people,
+           (SELECT coalesce(array_agg(ti.task_slug ORDER BY ti.task_slug), '{}')
+              FROM app.task_image ti WHERE ti.cloud_asset_id = p.cloud_asset_id) AS in_task_slugs,
+           (SELECT coalesce(array_agg(pa.album_path ORDER BY pa.album_path), '{}')
+              FROM pipeline.photo_album pa WHERE pa.cloud_asset_id = p.cloud_asset_id) AS album_paths,
+           (SELECT coalesce(jsonb_agg(jsonb_build_object('name', pt.tag_name, 'confidence', pt.confidence)
+                                       ORDER BY pt.tag_name), '[]'::jsonb)
+              FROM pipeline.photo_tag pt WHERE pt.cloud_asset_id = p.cloud_asset_id) AS tags,
+           (SELECT count(*)::int FROM pipeline.text_unit t
+             WHERE p.resolved_range IS NOT NULL AND p.resolved_range && t.covers_range) AS overlapping_text_count
+      FROM pipeline.photo p
+      LEFT JOIN ref.country_alias ca ON ca.raw = p.country_raw
+     WHERE p.cloud_asset_id = $1`, [cloudAssetId]);
+
+  const row = rows[0];
+  if (row === undefined) return null;
+
+  const { rows: proposalRows } = await client.query<{
+    proposed_date: string; date_source: string; span_hours: number | null; evidence_entry_ids: readonly string[];
+    lat: number | null; lon: number | null; position_source: string | null;
+  }>(`SELECT proposed_date, date_source, span_hours, evidence_entry_ids,
+             ST_Y(position::geometry) AS lat, ST_X(position::geometry) AS lon, position_source
+        FROM pipeline.dating_proposal WHERE cloud_asset_id = $1`, [cloudAssetId]);
+  const proposalRow = proposalRows[0];
+  // Le même gate que le rang 3 de la cascade — voir cascade.ts et le correctif du rang 3.
+  const proposal: DatingProposal | null = proposalRow === undefined || proposalRow.date_source !== 'logbook-bracket'
+    ? null
+    : {
+        date: {
+          start: proposalRow.proposed_date, end: proposalRow.proposed_date,
+          precision: DatePrecision.DAY, kind: DateKind.INFERENCE, source: DateSource.LOGBOOK_BRACKET,
+          bracketHours: proposalRow.span_hours,
+        },
+        position: proposalRow.lat === null || proposalRow.lon === null ? null : {
+          lat: proposalRow.lat, lon: proposalRow.lon, kind: DateKind.INFERENCE,
+          source: (proposalRow.position_source ?? PositionSource.LOGBOOK_INTERPOLATED) as PositionSource,
+        },
+        evidenceEntryIds: proposalRow.evidence_entry_ids,
+      };
+
+  const { rows: doubtRows } = await client.query<{
+    reason: string; label: string | null; album_path: string; candidates: readonly DoubtCandidate[];
+  }>(`SELECT d.reason, dr.label, d.album_path, d.candidates
+        FROM pipeline.dating_doubt d
+        LEFT JOIN ref.doubt_reason dr ON dr.reason = d.reason
+       WHERE d.cloud_asset_id = $1`, [cloudAssetId]);
+  const doubtRow = doubtRows[0];
+  const doubt: DatingDoubt | null = doubtRow === undefined ? null : {
+    reason: doubtRow.reason, label: doubtRow.label, albumPath: doubtRow.album_path,
+    candidates: doubtRow.candidates,
+  };
+
+  const exif: PhotoExif = {
+    cameraMake: row.camera_make, cameraModel: row.camera_model, lens: row.lens,
+    iso: row.iso, aperture: row.aperture, shutter: row.shutter, focalLength: row.focal_length,
+    altitude: row.altitude_m,
+  };
+  const tags: PhotoTag[] = row.tags.map((t) => ({ name: t.name, confidence: t.confidence }));
+
+  return {
+    ...mapPhotoRow(row),
+    albumPaths: row.album_paths,
+    tags,
+    exif,
+    ocrText: row.ocr_text,
+    fileSize: row.file_size,
+    relativePath: row.relative_path,
+    proposal,
+    doubt,
+    overlappingTextCount: row.overlapping_text_count,
+    // La passe de légendage n'a jamais tourné (D9).
+    caption: null,
+    // Rempli par le contrôleur, qui seul connaît `ORIGINALS_ROOT` (tâche 15).
+    render: { available: true, unavailableReason: null, cached: false },
+  };
 }

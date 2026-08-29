@@ -107,3 +107,57 @@ describe('GET /photos', () => {
     }
   });
 });
+
+describe('GET /photos/:cloudAssetId', () => {
+  test('a malformed id is a 404, named, never a 500 from a bad query', async () => {
+    app = await bootstrap(await completeEnv());
+    const response = await app.server.inject({ method: 'GET', url: '/photos/not-a-real-id' });
+    expect(response.statusCode).toBe(404);
+    expect(response.json<{ error: { code: string } }>().error.code).toBe('NOT_FOUND');
+  });
+
+  test('a well-formed but unknown id is a 404', async () => {
+    app = await bootstrap(await completeEnv());
+    const response = await app.server.inject({ method: 'GET', url: `/photos/${'f'.repeat(32)}` });
+    expect(response.statusCode).toBe(404);
+  });
+
+  test('a real photo is served with render availability filled in', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.photo
+        (cloud_asset_id, sha256, relative_path, file_name, format, raw_date_source)
+        VALUES ($1, $2, 'nowhere/p.jpg', 'p.jpg', 'jpg', 'none')`, ['a'.repeat(32), 'b'.repeat(64)]);
+
+      const response = await app.server.inject({ method: 'GET', url: `/photos/${'a'.repeat(32)}` });
+      expect(response.statusCode).toBe(200);
+      const body = response.json<{ render: { available: boolean; unavailableReason: string | null } }>();
+      // ORIGINALS_ROOT existe (répertoire temporaire vide) mais le fichier non :
+      // SOURCE_FILE_MISSING, jamais VOLUME_UNAVAILABLE — la racine EST montée.
+      expect(body.render).toEqual({ available: false, unavailableReason: 'SOURCE_FILE_MISSING', cached: false });
+    } finally {
+      await setup.query('DELETE FROM pipeline.photo');
+    }
+  });
+});
+
+describe('GET /albums', () => {
+  test('serves the in-perimeter albums through the full HTTP path', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.album
+        (path, album_name, in_perimeter, span_from, span_to, span_presumed)
+        VALUES ('set/x', 'x', true, '2000-12-01', '2000-12-31', true)`);
+
+      const response = await app.server.inject({ method: 'GET', url: '/albums' });
+      expect(response.statusCode).toBe(200);
+      const body = response.json<{ items: { path: string }[] }>();
+      expect(body.items).toHaveLength(1);
+      expect(body.items[0]?.path).toBe('set/x');
+    } finally {
+      await setup.query('DELETE FROM pipeline.album');
+    }
+  });
+});
