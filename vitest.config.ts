@@ -33,7 +33,12 @@ export default defineConfig({
           name: 'ui',
           environment: 'jsdom',
           setupFiles: ['./src/test/setup.ts'],
-          include: ['src/{app,ui,screens}/**/*.test.{ts,tsx}', 'src/App.test.tsx'],
+          // Hook tests live beside their hooks in src/api/ but need a DOM.
+          include: [
+            'src/{app,ui,screens}/**/*.test.{ts,tsx}',
+            'src/api/**/*.test.tsx',
+            'src/App.test.tsx',
+          ],
           exclude: ['src/ui/date/noBareDateRendering.test.ts'],
         },
       },

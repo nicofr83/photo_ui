@@ -10,7 +10,8 @@ import { http, HttpResponse } from 'msw';
 import { overlaps } from '../src/domain/interval';
 import type { PhotoListItem } from '../src/api/contract/photo';
 import { isIsoDate } from '../src/shared/date_interface';
-import { ErrorCode, PhotoSort } from '../src/shared/enums';
+import { ErrorCode, PhotoSort, SelectionReason, TaskState } from '../src/shared/enums';
+import type { TaskDetail } from '../src/api/contract/task';
 
 import { store } from './store';
 import { INVARIANT_ALBUMS } from '../fixtures/invariants/albums';
@@ -33,9 +34,107 @@ interface UnmatchedValue {
   nearest: string[];
 }
 
+const NOW = '2026-08-29T10:00:00.000Z' as TaskDetail['createdAt'];
+
 export const handlers = [
   // Contract §4.2: the 82 albums fit in one response.
   http.get('*/albums', () => HttpResponse.json({ items: INVARIANT_ALBUMS })),
+
+  http.get('*/tasks', () =>
+    HttpResponse.json({
+      items: [...store.tasks.values()]
+        .map(({ images: _images, brief: _brief, ...summary }) => summary)
+        // The most recently opened first. Spec §5.1.
+        .sort((a, b) => (b.lastOpenedAt ?? '').localeCompare(a.lastOpenedAt ?? '')),
+    }),
+  ),
+
+  http.get('*/tasks/:slug', ({ params }) => {
+    const task = store.tasks.get(String(params['slug']));
+    if (task === undefined) {
+      return error(404, ErrorCode.NOT_FOUND, 'Tâche introuvable.', {
+        resource: 'task', id: String(params['slug']),
+      });
+    }
+    return HttpResponse.json(task);
+  }),
+
+  http.post('*/tasks', async ({ request }) => {
+    const body = (await request.json()) as {
+      slug: string; title: string; brief: string; period: unknown;
+    };
+
+    // Never let a task be created that could not be exported. Spec §5.1.
+    if (!store.tasksRootAvailable) {
+      return error(503, ErrorCode.VOLUME_UNAVAILABLE, 'Le dossier des tâches est inaccessible.', {
+        root: '/tasks', envVar: 'TASKS_ROOT',
+      });
+    }
+
+    const existing = store.tasks.get(body.slug);
+    if (existing !== undefined) {
+      return error(409, ErrorCode.SLUG_TAKEN, `Le slug « ${body.slug} » est déjà pris.`, {
+        slug: body.slug, existingTaskTitle: existing.title,
+      });
+    }
+
+    const created: TaskDetail = {
+      slug: body.slug,
+      title: body.title,
+      brief: body.brief,
+      period: null,
+      imageCount: 0, textCount: 0, noteCount: 0, orphanCount: 0,
+      state: TaskState.DRAFT,
+      createdAt: NOW, updatedAt: NOW, lastOpenedAt: NOW,
+      exportedAt: null, exportDirectory: null,
+      contentHash: `hash-${body.slug}`, exportedContentHash: null,
+      images: [],
+    };
+    store.tasks.set(body.slug, created);
+    return HttpResponse.json(created, { status: 201 });
+  }),
+
+  http.post('*/tasks/:slug/images', async ({ params, request }) => {
+    const task = store.tasks.get(String(params['slug']));
+    if (task === undefined) {
+      return error(404, ErrorCode.NOT_FOUND, 'Tâche introuvable.', {
+        resource: 'task', id: String(params['slug']),
+      });
+    }
+    const body = (await request.json()) as {
+      add?: string[]; remove?: string[]; selectedBecause?: SelectionReason[];
+    };
+
+    const held = new Set(task.images.map((i) => i.cloudAssetId));
+    const added: string[] = [];
+    const merged: string[] = [];
+    const rejected: { cloudAssetId: string; reason: string }[] = [];
+
+    for (const id of body.add ?? []) {
+      if (!store.photos.some((p) => p.cloudAssetId === id)) {
+        rejected.push({ cloudAssetId: id, reason: 'unknown_photo' });
+        continue;
+      }
+      // Set union: re-adding is an idempotent success, never a rejection.
+      if (held.has(id)) { merged.push(id); continue; }
+      held.add(id);
+      added.push(id);
+      task.images.push({
+        cloudAssetId: id, order: task.images.length, note: null,
+        selectedBecause: body.selectedBecause ?? [SelectionReason.MANUAL],
+        selectedAt: NOW, orphaned: false,
+      });
+    }
+
+    const removing = new Set(body.remove ?? []);
+    const removed = task.images.filter((i) => removing.has(i.cloudAssetId)).map((i) => i.cloudAssetId);
+    task.images = task.images.filter((i) => !removing.has(i.cloudAssetId));
+    task.imageCount = task.images.length;
+
+    return HttpResponse.json({
+      added, removed, merged, rejected, warnings: [], imageCount: task.images.length,
+    });
+  }),
 
   http.get('*/photos', ({ request }) => {
     const url = new URL(request.url);

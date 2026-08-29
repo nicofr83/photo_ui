@@ -2,7 +2,18 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'coverage/**', 'public/**', '.fixtures-cache/**'] },
+  {
+    ignores: [
+      'dist/**',
+      'coverage/**',
+      'public/**',
+      '.fixtures-cache/**',
+      // server/ belongs to impl-backend and carries its own tsconfig. It is
+      // ignored here until they add their own `files: ['server/**/*.ts']`
+      // block, so that a red frontend gate always means a frontend problem.
+      'server/**',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   {

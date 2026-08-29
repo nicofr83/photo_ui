@@ -5,15 +5,45 @@
  */
 import { INVARIANT_PHOTOS } from '../fixtures/invariants/photos';
 import type { PhotoListItem } from '../src/api/contract/photo';
+import type { TaskDetail } from '../src/api/contract/task';
+import { TaskState } from '../src/shared/enums';
 
 export interface Store {
   photos: PhotoListItem[];
+  tasks: Map<string, TaskDetail>;
   /** Identifies the import that produced this data. Contract §9. */
   importId: string;
+  /** Set by a test to make TASKS_ROOT unreachable. Spec §5.1. */
+  tasksRootAvailable: boolean;
+}
+
+const NOW = '2026-08-29T10:00:00.000Z' as TaskDetail['createdAt'];
+
+function seedTask(): TaskDetail {
+  return {
+    slug: '1999-transat', title: 'La transat, septembre-octobre 1999',
+    brief: '', period: null,
+    imageCount: 1, textCount: 0, noteCount: 0, orphanCount: 0,
+    state: TaskState.DRAFT,
+    createdAt: NOW, updatedAt: NOW, lastOpenedAt: NOW,
+    exportedAt: null, exportDirectory: null,
+    contentHash: 'hash-a', exportedContentHash: null,
+    images: [
+      {
+        cloudAssetId: 'e8bc80b75e254b7db2e1454222416813',
+        order: 0, note: null, selectedBecause: ['manual'], selectedAt: NOW, orphaned: false,
+      },
+    ],
+  };
 }
 
 function seed(): Store {
-  return { photos: structuredClone(INVARIANT_PHOTOS) as PhotoListItem[], importId: 'import_mock' };
+  return {
+    photos: structuredClone(INVARIANT_PHOTOS) as PhotoListItem[],
+    tasks: new Map([['1999-transat', seedTask()]]),
+    importId: 'import_mock',
+    tasksRootAvailable: true,
+  };
 }
 
 export let store: Store = seed();
