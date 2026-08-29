@@ -3,11 +3,13 @@
  * real round trip during development and component tests — selecting a photo,
  * writing a note — instead of resolving into nothing.
  */
+import { INVARIANT_ALBUMS } from '../fixtures/invariants/albums';
 import { INVARIANT_PHOTOS } from '../fixtures/invariants/photos';
-import { INVARIANT_TEXTS } from '../fixtures/invariants/texts';
+import { INVARIANT_DOCUMENTS, INVARIANT_TEXTS } from '../fixtures/invariants/texts';
+import type { Album } from '../src/api/contract/album';
 import type { PhotoListItem } from '../src/api/contract/photo';
 import type { TaskDetail } from '../src/api/contract/task';
-import type { TextUnit } from '../src/api/contract/text';
+import type { TextDocument, TextUnit } from '../src/api/contract/text';
 import { TaskState } from '../src/shared/enums';
 import type { Job } from '../src/api/contract/job';
 
@@ -15,6 +17,10 @@ export interface Store {
   photos: PhotoListItem[];
   /** Mutable so a correction (PUT /corrections) makes a real round trip. */
   texts: TextUnit[];
+  /** Mutable so PUT/DELETE /ref/album-span make a real round trip. */
+  albums: Album[];
+  /** Mutable so PUT/DELETE /ref/web-span make a real round trip. */
+  documents: TextDocument[];
   tasks: Map<string, TaskDetail>;
   /** Identifies the import that produced this data. Contract §9. */
   importId: string;
@@ -50,6 +56,8 @@ function seed(): Store {
   return {
     photos: structuredClone(INVARIANT_PHOTOS) as PhotoListItem[],
     texts: structuredClone(INVARIANT_TEXTS) as TextUnit[],
+    albums: structuredClone(INVARIANT_ALBUMS) as Album[],
+    documents: structuredClone(INVARIANT_DOCUMENTS) as TextDocument[],
     tasks: new Map([['1999-transat', seedTask()]]),
     importId: 'import_mock',
     tasksRootAvailable: true,

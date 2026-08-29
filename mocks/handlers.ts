@@ -20,9 +20,8 @@ import { TaskNoteCreateInputSchema, type TaskDetail } from '../src/api/contract/
 import type { Job } from '../src/api/contract/job';
 
 import { store } from './store';
-import { INVARIANT_ALBUMS } from '../fixtures/invariants/albums';
 import { PHOTO_OCR, PHOTO_TAGS } from '../fixtures/invariants/photoTags';
-import { INVARIANT_DOCUMENTS, INVARIANT_PAGES } from '../fixtures/invariants/texts';
+import { INVARIANT_PAGES } from '../fixtures/invariants/texts';
 
 /**
  * The mock's own knowledge of which tags name a place — standing in for
@@ -62,7 +61,7 @@ function effectiveTextWindow(text: TextUnit): { window: DayInterval; rule: Overl
       ? null
       : { window: { start: page.window.start, end: page.window.end }, rule: OverlapRule.PASSAGE };
   }
-  const doc = INVARIANT_DOCUMENTS.find((d) => d.id === text.documentId);
+  const doc = store.documents.find((d) => d.id === text.documentId);
   return doc?.span == null
     ? null
     : { window: { start: doc.span.start, end: doc.span.end }, rule: OverlapRule.WEB_SPAN };
@@ -240,9 +239,9 @@ const NOW = '2026-08-29T10:00:00.000Z' as TaskDetail['createdAt'];
 
 export const handlers = [
   // Contract §4.2: the 82 albums fit in one response.
-  http.get('*/albums', () => HttpResponse.json({ items: INVARIANT_ALBUMS })),
+  http.get('*/albums', () => HttpResponse.json({ items: store.albums })),
 
-  http.get('*/documents', () => HttpResponse.json({ items: INVARIANT_DOCUMENTS })),
+  http.get('*/documents', () => HttpResponse.json({ items: store.documents })),
 
   http.get('*/pages', ({ request }) => {
     const documentId = new URL(request.url).searchParams.get('documentId');
