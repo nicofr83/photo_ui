@@ -2,6 +2,8 @@ import { describe, expect, test } from 'vitest';
 
 import { ErrorCode } from '@shared/enums';
 import { AppError } from '../contract/error_interface.ts';
+import { must } from '../../test/helpers/assert.ts';
+import { parseLogLine } from '../../test/helpers/log_lines.ts';
 import { createLog, LogLevel } from '../log/log.ts';
 import { toApiError } from './error_handler.ts';
 
@@ -66,10 +68,10 @@ describe('an untyped exception becomes an INTERNAL, and says nothing more', () =
 
     const traceId = (body as { error: { details: { traceId: string } } }).error.details.traceId;
     expect(lines).toHaveLength(1);
-    const logged = JSON.parse(lines[0]!);
+    const logged = parseLogLine(must(lines[0]));
     expect(logged.traceId).toBe(traceId);
     expect(logged.level).toBe('error');
-    expect(String(logged.stack)).toContain('connexion refusée sur 5432');
+    expect(logged.stack).toContain('connexion refusée sur 5432');
   });
 
   test('a thrown non-Error is handled too — never a crash inside the handler', () => {

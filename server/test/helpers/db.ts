@@ -1,9 +1,10 @@
 import { createPool, type Pool, type PoolClient } from '../../src/db/pool.ts';
+import { requiredEnv } from './env.ts';
 
 let pool: Pool | undefined;
 
 export function testPool(): Pool {
-  pool ??= createPool(process.env.DATABASE_URL_TEST!);
+  pool ??= createPool(requiredEnv('DATABASE_URL_TEST'));
   return pool;
 }
 

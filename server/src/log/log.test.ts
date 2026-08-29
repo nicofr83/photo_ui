@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vitest';
 
+import { must } from '../../test/helpers/assert.ts';
+import { parseLogLine } from '../../test/helpers/log_lines.ts';
 import { createLog, isLogLevel, LogLevel } from './log.ts';
 
 /** Un puits qui capture les lignes, pour asserter sur ce qui est RÉELLEMENT écrit. */
@@ -14,7 +16,7 @@ describe('createLog', () => {
     createLog(LogLevel.INFO, {}, sink).info('migration appliquée', { version: '001' });
 
     expect(lines).toHaveLength(1);
-    expect(JSON.parse(lines[0]!)).toMatchObject({
+    expect(parseLogLine(must(lines[0]))).toMatchObject({
       level: 'info', message: 'migration appliquée', version: '001',
     });
   });
@@ -27,7 +29,7 @@ describe('createLog', () => {
     log.warn('gardé');
     log.error('gardé');
 
-    expect(lines.map((line) => JSON.parse(line).message)).toEqual(['gardé', 'gardé']);
+    expect(lines.map((line) => parseLogLine(line).message)).toEqual(['gardé', 'gardé']);
   });
 
   test('a child carries its parent fields — that is how a request id reaches every line', () => {
@@ -36,7 +38,7 @@ describe('createLog', () => {
       .child({ requestId: 'abc' })
       .info('démarré');
 
-    expect(JSON.parse(lines[0]!)).toMatchObject({ service: 'import', requestId: 'abc' });
+    expect(parseLogLine(must(lines[0]))).toMatchObject({ service: 'import', requestId: 'abc' });
   });
 
   test('a child never mutates its parent', () => {
@@ -45,14 +47,14 @@ describe('createLog', () => {
     parent.child({ requestId: 'abc' });
     parent.info('sans id');
 
-    expect(JSON.parse(lines[0]!).requestId).toBeUndefined();
+    expect(parseLogLine(must(lines[0])).requestId).toBeUndefined();
   });
 
   test('every line carries a timestamp — a log without one cannot be correlated', () => {
     const { lines, sink } = capture();
     createLog(LogLevel.INFO, {}, sink).info('x');
 
-    expect(JSON.parse(lines[0]!).at).toMatch(/^\d{4}-\d{2}-\d{2}T.*Z$/);
+    expect(parseLogLine(must(lines[0])).at).toMatch(/^\d{4}-\d{2}-\d{2}T.*Z$/);
   });
 });
 

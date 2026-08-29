@@ -5,6 +5,8 @@ import path from 'node:path';
 import { afterAll, beforeEach, expect, test } from 'vitest';
 
 import { createLog, LogLevel } from '../log/log.ts';
+import { must } from '../../test/helpers/assert.ts';
+import { requiredEnv } from '../../test/helpers/env.ts';
 import { runMigrations } from './migrate.ts';
 import { createPool } from './pool.ts';
 
@@ -15,7 +17,7 @@ import { createPool } from './pool.ts';
  */
 const TRACKING = 'public.schema_migration_runner_test';
 
-const pool = createPool(process.env.DATABASE_URL_TEST!);
+const pool = createPool(requiredEnv('DATABASE_URL_TEST'));
 const log = createLog(LogLevel.ERROR);
 
 afterAll(async () => {
@@ -47,7 +49,7 @@ test('applies files in lexicographic order, not in directory order', async () =>
   const applied = await runMigrations(pool, log, dir, TRACKING);
 
   expect(applied).toEqual(['001_create', '002_add_column']);
-  const { rows } = await pool.query(
+  const { rows } = await pool.query<{ column_name: string }>(
     `SELECT column_name FROM information_schema.columns
       WHERE table_schema='public' AND table_name='m_one' ORDER BY column_name`);
   expect(rows.map((r) => r.column_name)).toEqual(['id', 'label']);
@@ -80,14 +82,14 @@ test('a failing migration leaves NOTHING behind — it is one transaction', asyn
 
   await expect(runMigrations(pool, log, dir, TRACKING)).rejects.toThrow();
 
-  const { rows: applied } = await pool.query(
+  const { rows: applied } = await pool.query<{ version: string }>(
     `SELECT version FROM ${TRACKING} ORDER BY version`);
   expect(applied.map((r) => r.version)).toEqual(['001_create']);
 
   // m_two ne doit pas exister : sa migration a échoué APRÈS l'avoir créée.
-  const { rows: tables } = await pool.query(
+  const { rows: tables } = await pool.query<{ t: string | null }>(
     `SELECT to_regclass('public.m_two') AS t`);
-  expect(tables[0].t).toBeNull();
+  expect(must(tables[0]).t).toBeNull();
 });
 
 test('ignores files that are not .sql', async () => {

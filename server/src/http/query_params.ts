@@ -31,6 +31,24 @@ export interface ParsedParams extends Record<string, unknown> {
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+/**
+ * Query values arrive as strings, or numbers/booleans once Fastify's own
+ * schema coercion has run. `no-base-to-string` rightly distrusts a bare
+ * `String(value)` on something typed `unknown` — this is the one place that
+ * decides what counts as text, and an unexpected shape is a named 400 rather
+ * than a silent `"[object Object]"`.
+ */
+function toText(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  throw new AppError(
+    ErrorCode.INVALID_PARAMETER,
+    `type de valeur inattendu pour un paramètre : ${typeof value}`,
+    400,
+    { receivedType: typeof value },
+  );
+}
+
 /** `1999-02-30` a le bon format et n'est pas un jour. */
 function isRealCalendarDay(raw: string): boolean {
   if (!ISO_DATE.test(raw)) return false;
@@ -86,40 +104,40 @@ export function parseQueryParams(
 
     switch (rule.kind) {
       case 'closed': {
-        const text = String(value);
+        const text = toText(value);
         if (!rule.values.includes(text)) invalid(name, text, rule.values);
         out[name] = text;
         record(name, [text]);
         break;
       }
       case 'openList': {
-        const list = (Array.isArray(value) ? value : [value]).map(String);
+        const list = (Array.isArray(value) ? value : [value]).map(toText);
         out[name] = list;
         record(name, list);
         break;
       }
       case 'open': {
-        const text = String(value);
+        const text = toText(value);
         out[name] = text;
         record(name, [text]);
         break;
       }
       case 'isoDate': {
-        const text = String(value);
+        const text = toText(value);
         if (!isRealCalendarDay(text)) invalid(name, text, null);
         out[name] = text;
         record(name, [text]);
         break;
       }
       case 'boolean': {
-        const text = String(value);
+        const text = toText(value);
         if (text !== 'true' && text !== 'false') invalid(name, text, ['true', 'false']);
         out[name] = text === 'true';
         record(name, [text]);
         break;
       }
       case 'integer': {
-        const text = String(value);
+        const text = toText(value);
         if (!/^\d+$/.test(text)) invalid(name, text, null);
         out[name] = Number(text);
         record(name, [text]);
@@ -128,5 +146,5 @@ export function parseQueryParams(
     }
   }
 
-  return { ...out, applied } as ParsedParams;
+  return { ...out, applied };
 }

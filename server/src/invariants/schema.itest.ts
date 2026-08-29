@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 
 import { runMigrations } from '../db/migrate.ts';
 import { createLog, LogLevel } from '../log/log.ts';
+import { must } from '../../test/helpers/assert.ts';
 import { closeTestPool, testPool, withRollback } from '../../test/helpers/db.ts';
 
 const MIGRATIONS = fileURLToPath(new URL('../../db/migrations', import.meta.url));
@@ -29,7 +30,7 @@ async function insertPhoto(
     ...overrides,
   };
   const columns = Object.keys(row);
-  const placeholders = columns.map((_, index) => `$${index + 1}`);
+  const placeholders = columns.map((_, index) => `$${String(index + 1)}`);
   await client.query(
     `INSERT INTO pipeline.photo (${columns.join(', ')}) VALUES (${placeholders.join(', ')})`,
     Object.values(row),
@@ -67,8 +68,9 @@ describe('INVARIANT 1 — an inference can never be served as a reading', () => 
             : { resolved_start: '1999-03-02', resolved_end: '1999-03-02', resolved_precision: 'day' };
 
         await insertPhoto(client, { resolved_from: source, ...bounds });
-        const { rows } = await client.query('SELECT resolved_kind FROM pipeline.photo');
-        expect(rows[0].resolved_kind, `${source} doit donner ${kind}`).toBe(kind);
+        const { rows } = await client.query<{ resolved_kind: string }>(
+          'SELECT resolved_kind FROM pipeline.photo');
+        expect(must(rows[0]).resolved_kind, `${source} doit donner ${kind}`).toBe(kind);
       });
     }
   });
@@ -89,9 +91,9 @@ describe('INVARIANT 1 — an inference can never be served as a reading', () => 
         resolved_from: 'exif_arbitrated', resolved_start: '1999-03-02',
         resolved_end: '1999-03-02', resolved_precision: 'day',
       });
-      const { rows } = await client.query(
+      const { rows } = await client.query<{ n: number }>(
         `SELECT count(*)::int AS n FROM pipeline.photo WHERE resolved_kind = 'decision'`);
-      expect(rows[0].n).toBe(0);
+      expect(must(rows[0]).n).toBe(0);
     });
   });
 });
@@ -182,10 +184,10 @@ describe('bounds and brackets', () => {
   test('a photo with NO date at all is allowed — the 420 that have none', async () => {
     await withRollback(async (client) => {
       await insertPhoto(client, { raw_date_source: 'none' });
-      const { rows } = await client.query(
+      const { rows } = await client.query<{ resolved_kind: string | null; resolved_range: string | null }>(
         'SELECT resolved_kind, resolved_range FROM pipeline.photo');
-      expect(rows[0].resolved_kind).toBeNull();
-      expect(rows[0].resolved_range).toBeNull();
+      expect(must(rows[0]).resolved_kind).toBeNull();
+      expect(must(rows[0]).resolved_range).toBeNull();
     });
   });
 });
@@ -206,7 +208,7 @@ describe('INVARIANT 1 (texts) — a text asserts a day, or nothing', () => {
     const columns = Object.keys(row);
     await client.query(
       `INSERT INTO pipeline.text_unit (${columns.join(', ')})
-       VALUES (${columns.map((_, i) => `$${i + 1}`).join(', ')})`,
+       VALUES (${columns.map((_, i) => `$${String(i + 1)}`).join(', ')})`,
       Object.values(row),
     );
   }
@@ -251,8 +253,9 @@ describe('INVARIANT 1 (texts) — a text asserts a day, or nothing', () => {
         await insertText(client, {
           date_source: source, date_start: '1999-09-23', date_end: '1999-09-23',
         });
-        const { rows } = await client.query('SELECT date_kind FROM pipeline.text_unit');
-        expect(rows[0].date_kind).toBe('reading');
+        const { rows } = await client.query<{ date_kind: string }>(
+          'SELECT date_kind FROM pipeline.text_unit');
+        expect(must(rows[0]).date_kind).toBe('reading');
       });
     }
   });
@@ -263,11 +266,12 @@ describe('INVARIANT 1 (texts) — a text asserts a day, or nothing', () => {
         covers_start: '1999-09-23', covers_end: '1999-09-25',
         covers_rule: 'passage', page_span_source: 'carried',
       });
-      const { rows } = await client.query(
-        'SELECT date_kind, date_start, covers_range FROM pipeline.text_unit');
-      expect(rows[0].date_kind).toBeNull();
-      expect(rows[0].date_start).toBeNull();
-      expect(rows[0].covers_range).toBe('[1999-09-23,1999-09-26)');
+      const { rows } = await client.query<
+        { date_kind: string | null; date_start: string | null; covers_range: string | null }
+      >('SELECT date_kind, date_start, covers_range FROM pipeline.text_unit');
+      expect(must(rows[0]).date_kind).toBeNull();
+      expect(must(rows[0]).date_start).toBeNull();
+      expect(must(rows[0]).covers_range).toBe('[1999-09-23,1999-09-26)');
     });
   });
 
@@ -276,10 +280,10 @@ describe('INVARIANT 1 (texts) — a text asserts a day, or nothing', () => {
       await insertText(client, { kind: 'passage', body: 'la prose du haut de page' });
       await insertText(client, { kind: 'log_entry', body: 'Départ Lisbonne - Ecluse' });
 
-      const { rows } = await client.query(
+      const { rows } = await client.query<{ kind: string; body: string }>(
         `SELECT kind, body FROM pipeline.text_unit WHERE id = 'logbook/p003/001' ORDER BY kind`);
       expect(rows).toHaveLength(2);
-      expect(rows[0].body).not.toBe(rows[1].body);
+      expect(must(rows[0]).body).not.toBe(must(rows[1]).body);
     });
   });
 });
@@ -312,33 +316,33 @@ describe('NFC and full text search', () => {
            (path, album_name, in_perimeter, span_from, span_to, span_presumed)
          VALUES ($1, 'x', true, '1998-02-01', '1998-02-28', true)`, [nfd]);
 
-      const { rows } = await client.query(
+      const { rows } = await client.query<{ n: number }>(
         'SELECT count(*)::int AS n FROM pipeline.album WHERE path = $1',
         ['1998-1999/1998-02-Maison rose Algès']);
-      expect(rows[0].n).toBe(1);
+      expect(must(rows[0]).n).toBe(1);
     });
   });
 
   test('search_meta is generated, unaccented and French-stemmed', async () => {
     await withRollback(async (client) => {
       await insertPhoto(client, { album_path: '1998-02-Maison rose Algès' });
-      const { rows } = await client.query(
+      const { rows } = await client.query<{ n: number }>(
         `SELECT count(*)::int AS n FROM pipeline.photo
           WHERE search_meta @@ to_tsquery('public.fr_unaccent', 'alges')`);
-      expect(rows[0].n).toBe(1);
+      expect(must(rows[0]).n).toBe(1);
     });
   });
 
   test('OCR is a SEPARATE vector — merging it with metadata would be a measurable fault', async () => {
     await withRollback(async (client) => {
       await insertPhoto(client, { album_path: 'un album', ocr_text: 'ROBERT IS HERE FRUIT STAND' });
-      const { rows } = await client.query(
+      const { rows } = await client.query<{ in_meta: boolean; in_ocr: boolean }>(
         `SELECT
            (search_meta @@ to_tsquery('public.fr_unaccent', 'robert')) AS in_meta,
            (search_ocr  @@ to_tsquery('public.fr_unaccent', 'robert')) AS in_ocr
          FROM pipeline.photo`);
-      expect(rows[0].in_meta).toBe(false);
-      expect(rows[0].in_ocr).toBe(true);
+      expect(must(rows[0]).in_meta).toBe(false);
+      expect(must(rows[0]).in_ocr).toBe(true);
     });
   });
 });
@@ -351,11 +355,11 @@ describe('the overlap operator', () => {
         resolved_end: '2000-12-31', resolved_precision: 'month',
       });
 
-      const { rows } = await client.query(
+      const { rows } = await client.query<{ n: number }>(
         `SELECT count(*)::int AS n FROM pipeline.photo
           WHERE resolved_range && daterange($1::date, $2::date, '[]')`,
         ['2000-12-01', '2000-12-20']);
-      expect(rows[0].n).toBe(1);
+      expect(must(rows[0]).n).toBe(1);
     });
   });
 });

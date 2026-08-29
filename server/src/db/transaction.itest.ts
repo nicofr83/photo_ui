@@ -1,9 +1,11 @@
 import { afterAll, expect, test } from 'vitest';
 
+import { must } from '../../test/helpers/assert.ts';
+import { requiredEnv } from '../../test/helpers/env.ts';
 import { createPool } from './pool.ts';
 import { withTransaction } from './transaction.ts';
 
-const pool = createPool(process.env.DATABASE_URL_TEST!);
+const pool = createPool(requiredEnv('DATABASE_URL_TEST'));
 afterAll(async () => { await pool.end(); });
 
 test('commits when the callback returns', async () => {
@@ -12,8 +14,8 @@ test('commits when the callback returns', async () => {
     await client.query('INSERT INTO public.t_commit VALUES ($1)', [1]);
   });
 
-  const { rows } = await pool.query('SELECT count(*)::int AS n FROM public.t_commit');
-  expect(rows[0].n).toBe(1);
+  const { rows } = await pool.query<{ n: number }>('SELECT count(*)::int AS n FROM public.t_commit');
+  expect(must(rows[0]).n).toBe(1);
   await pool.query('DROP TABLE public.t_commit');
 });
 
@@ -26,8 +28,8 @@ test('rolls back and rethrows the ORIGINAL error when the callback throws', asyn
     throw boom;
   })).rejects.toBe(boom);
 
-  const { rows } = await pool.query('SELECT count(*)::int AS n FROM public.t_rollback');
-  expect(rows[0].n).toBe(0);
+  const { rows } = await pool.query<{ n: number }>('SELECT count(*)::int AS n FROM public.t_rollback');
+  expect(must(rows[0]).n).toBe(0);
   await pool.query('DROP TABLE public.t_rollback');
 });
 
@@ -35,12 +37,12 @@ test('releases the client back to the pool even after a failure', async () => {
   // Un client non relâché sur le chemin d'erreur épuise le pool après N échecs,
   // et le symptôme est un serveur qui se fige sans un mot. 30 > max (10).
   for (let attempt = 0; attempt < 30; attempt++) {
-    await withTransaction(pool, async () => { throw new Error('boum'); })
+    await withTransaction(pool, () => { throw new Error('boum'); })
       .catch(() => undefined);
   }
 
-  const { rows } = await pool.query('SELECT 1 AS ok');
-  expect(rows[0].ok).toBe(1);
+  const { rows } = await pool.query<{ ok: number }>('SELECT 1 AS ok');
+  expect(must(rows[0]).ok).toBe(1);
 });
 
 test('releases the client even when the SQL itself is what failed', async () => {
@@ -50,13 +52,13 @@ test('releases the client even when the SQL itself is what failed', async () => 
     }).catch(() => undefined);
   }
 
-  const { rows } = await pool.query('SELECT 1 AS ok');
-  expect(rows[0].ok).toBe(1);
+  const { rows } = await pool.query<{ ok: number }>('SELECT 1 AS ok');
+  expect(must(rows[0]).ok).toBe(1);
 });
 
 test('a DATE comes back as a civil day string, never a zoned Date object', async () => {
   // Sans le parseur, node-postgres construit un Date dans le fuseau local et
   // une borne au 1er du mois recule d'un jour à l'ouest de Greenwich.
-  const { rows } = await pool.query(`SELECT '2000-12-01'::date AS d`);
-  expect(rows[0].d).toBe('2000-12-01');
+  const { rows } = await pool.query<{ d: string }>(`SELECT '2000-12-01'::date AS d`);
+  expect(must(rows[0]).d).toBe('2000-12-01');
 });

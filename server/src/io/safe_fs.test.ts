@@ -22,15 +22,15 @@ beforeEach(async () => {
 
 describe('what is allowed', () => {
   test('a path inside a writable root', () => {
-    expect(() => safeFs.assertWritable(path.join(cacheRoot, 'abc-1400.jpg'))).not.toThrow();
+    expect(() => { safeFs.assertWritable(path.join(cacheRoot, 'abc-1400.jpg')); }).not.toThrow();
   });
 
   test('a nested path inside a writable root', () => {
-    expect(() => safeFs.assertWritable(path.join(cacheRoot, 'a', 'b', 'c.jpg'))).not.toThrow();
+    expect(() => { safeFs.assertWritable(path.join(cacheRoot, 'a', 'b', 'c.jpg')); }).not.toThrow();
   });
 
   test('the root itself', () => {
-    expect(() => safeFs.assertWritable(cacheRoot)).not.toThrow();
+    expect(() => { safeFs.assertWritable(cacheRoot); }).not.toThrow();
   });
 
   test('and writing actually works', async () => {
@@ -41,19 +41,19 @@ describe('what is allowed', () => {
 
 describe('what is refused', () => {
   test('a path outside every writable root', () => {
-    expect(() => safeFs.assertWritable(path.join(originalsRoot, 'photo.jpg')))
+    expect(() => { safeFs.assertWritable(path.join(originalsRoot, 'photo.jpg')); })
       .toThrow(/écriture refusée hors racine/);
   });
 
   test('a traversal that climbs out of the root', () => {
-    expect(() => safeFs.assertWritable(path.join(cacheRoot, '..', 'originals', 'photo.jpg')))
+    expect(() => { safeFs.assertWritable(path.join(cacheRoot, '..', 'originals', 'photo.jpg')); })
       .toThrow(/écriture refusée hors racine/);
   });
 
   test('a SIBLING whose name merely starts with the root — the startsWith trap', () => {
     // `/tmp/x/cache-evil` commence bien par `/tmp/x/cache`. Sans le séparateur
     // dans la comparaison, il passerait.
-    expect(() => safeFs.assertWritable(`${cacheRoot}-evil/x.jpg`))
+    expect(() => { safeFs.assertWritable(`${cacheRoot}-evil/x.jpg`); })
       .toThrow(/écriture refusée hors racine/);
   });
 
@@ -68,7 +68,7 @@ describe('what is refused', () => {
 
   test('the refusal names the offending path, so a log says WHICH write was blocked', () => {
     const target = path.join(originalsRoot, 'photo.jpg');
-    expect(() => safeFs.assertWritable(target)).toThrow(new RegExp(target.replace(/\//g, '\\/')));
+    expect(() => { safeFs.assertWritable(target); }).toThrow(new RegExp(target.replace(/\//g, '\\/')));
   });
 });
 
