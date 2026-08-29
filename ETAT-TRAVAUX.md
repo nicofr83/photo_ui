@@ -579,3 +579,16 @@ DONE : cycle `PUT /corrections` → `GET /corrections?status=applied` → `GET /
 DETAIL : reproduction — `POST /tasks/zz-repro-bug1/export`, `{}`, attendre `succeeded` sur `GET /jobs`, puis `GET /tasks/zz-repro-bug1` : les trois champs restent à leur valeur de création.
 
 ASK : aucune décision Nicolas. Je continue (notes, réordonnancement, revue avec vraie sélection multiple) pendant que `back` regarde l'export.
+
+---
+
+## Avancement — front, notes + réordonnancement réels (2026-08-30)
+
+RE : intégration de bout en bout, notes et réordonnancement contre le serveur réel
+DONE : cycle complet vérifié en réel sur `zz-repro-bug1` — création de note (`POST /tasks/:slug/notes`), modification (`PATCH`), suppression (`DELETE`, 204, confirmée absente ensuite) ; ajout d'une seconde photo réelle, permutation d'ordre (`POST /tasks/:slug/images` avec `update: [{cloudAssetId, order}, …]`, un seul appel pour les deux moitiés de la permutation — Q6), puis retrait et remise en ordre pour restaurer l'état initial (`contentHash` identique avant/après : `98e367b2…`, rien laissé).
+
+Ceci clôt le tour d'intégration de bout en bout demandé : images (mesuré), textes (bloqué, cause connue, chez `back`), revue (corrigé), réglages, tâches, corrections (round-trip), export (bug trouvé, chez `back`), notes, réordonnancement — tous vérifiés contre le serveur réel et les vraies données, pas seulement contre MSW.
+
+DETAIL : aucun fichier touché par cette entrée — vérification pure, aucune régression, aucun résidu dans `TASKS_ROOT` ni dans le store réel.
+
+ASK : aucune décision Nicolas. Mandat d'intégration réelle rempli ; je reste disponible pendant que `back` regarde l'export et `galleryCaption`.
