@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
@@ -5,6 +6,12 @@ import { defineConfig } from 'vitest/config';
 // Le serveur les importe en lecture seule par cet alias — voir le plan, D2.
 const shared = fileURLToPath(new URL('../src/shared', import.meta.url));
 const alias = { '@shared': shared };
+
+// `.env` local, non versionné. La suite d'intégration a besoin de
+// DATABASE_URL_TEST ; `setup_integration.ts` refuse de tourner sans lui, et
+// refuse aussi de viser autre chose que `photo_ui_test`.
+const envFile = fileURLToPath(new URL('.env', import.meta.url));
+if (existsSync(envFile)) process.loadEnvFile(envFile);
 
 export default defineConfig({
   resolve: { alias },
