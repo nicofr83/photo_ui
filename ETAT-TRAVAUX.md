@@ -499,3 +499,18 @@ DONE : `GET /tasks/:slug/review`, `POST /tasks/:slug/duplicate`, `DELETE /tasks/
 DETAIL : commit `76f5653`. `POST /tasks/:slug/opened` reste non fait — déjà consigné comme un écart mineur volontaire plus haut dans ce journal, pas une régression de cette tâche.
 
 ASK : aucun. Le plan backend est intégralement déroulé — 26 tâches, T1 à T5. Je reste disponible si Nicolas ou une autre tâche apparaît, mais il n'y a plus d'étape suivante prévue par `docs/superpowers/plans/2026-08-28-backend.md`.
+
+---
+
+## Avancement — impl-backend, 4 défauts remontés par front (2026-08-30)
+
+RE : intégration réelle front — 4 défauts (1 « bloquant »), tous root-causés (`superpowers:systematic-debugging`), 3 vrais bugs corrigés, 1 faux positif expliqué.
+DONE :
+1. **`captureDateLocal`/`arbitration.exifDate` avaient un espace, jamais `T`** — `capture_date_local` est une vraie colonne `timestamp` (jamais convertie en `Date`, mais le driver rend l'espace du wire format Postgres). Le test unitaire existant utilisait déjà une fixture au format `T`, donc n'exerçait jamais ce que le driver rend vraiment. `toLocalDateTime()` ajouté dans `map_photo_row.ts`, fixture corrigée.
+2. **`fileSize` revenait en `string`** — `file_size` est `bigint`, `pg` le rend en chaîne par défaut (perte de précision possible), et `db/pool.ts` n'avait que `DATE_OID`/`TIMESTAMP_OID`, jamais `BIGINT_OID`. Corrigé au même endroit que les deux autres — aucune colonne `bigint` du schéma n'approche `MAX_SAFE_INTEGER`.
+3. **`GET /system/status` : `attention`/`features` absents, `runningJobId` figé à `null`** — pas périmé, jamais écrit : `system_controller.ts` date de la tâche 12, jamais retouché depuis les tâches 19 (jobs), 24 (corrections), 25 (référentiels). Ajoutés au contrat et câblés : `countOrphanedSelections` (global, toutes tâches), `countAlbumsWithPresumedSpan`, `countWebDocumentsWithoutSpan`, `listCorrections(status)` réutilisée pour les deux compteurs de correction. `JobStore.runningJobId()` ajouté (le champ privé que `submit()` vérifiait déjà), câblé dans `registerSystemRoutes`.
+4. **PAS un bug serveur** : le « bloquant » (`POST /tasks/:slug/images` rejette tout id réel) et le TELL (`rejected[]` sans `cloudAssetId`) ont la MÊME cause — le repro de front envoyait `add: [idNu]` au lieu de `add: [{cloudAssetId, selectedBecause}]`. `item.cloudAssetId` vaut `undefined` en JS sur une chaîne nue (jamais une erreur), traverse tout jusqu'à `rejected: [{reason: 'unknown_photo'}]` — `cloudAssetId: undefined` disparaît de la sérialisation JSON avec lui. Vérifié en curl AVANT de toucher au code : la forme `{cloudAssetId, selectedBecause}` fonctionne et a toujours fonctionné. Corrigé quand même le vrai défaut sous-jacent : `parseImagesMutation`/`parseTextsMutation` avaient une validation délibérément superficielle (« un élément malformé échouerait à l'écriture SQL, jamais en silence ») — ce repro prouve cette hypothèse fausse. Ajouté une validation par élément (400 `INVALID_PARAMETER`, nommant `add[i].champ`) aux deux fonctions.
+19 tests neufs/modifiés, vérifié en réel contre `photo_ui` (vraie photo avec `capture_date_local` réel, vrai `runningJobId` capturé PENDANT un vrai job de pré-rendu annulé ensuite, forme malformée → 400 réel, forme correcte → 200 réel). 642 tests serveur, tsc/eslint propres.
+DETAIL : commit `dc44729`. `vite.config.ts` modifié dans l'arbre partagé (front) — jamais touché, jamais ajouté au commit.
+
+ASK : aucun — j'ai répondu directement à front (forme correcte de `add[]`, confirmation des 3 correctifs). Je reste disponible.
