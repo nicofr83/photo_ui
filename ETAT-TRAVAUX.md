@@ -208,7 +208,7 @@ session pilote pour un relais.
 
 ## Deux choses acquises hors dépôt
 
-- **La base `photo_ui` existe** : `localhost:5432`, conteneur Docker
+- **La base `photo_ui` existe** : PostgreSQL **17.6** (le client `psql` est en 18.6), `localhost:5432`, conteneur Docker
   `timescaledb`, utilisateur `nico`, collation ICU `fr-FR`, extensions
   `postgis` 3.5.3, `pg_trgm`, `unaccent` installées. Vide de schéma applicatif.
 - **Le skill `bd_dossier` est actif globalement** : symlink créé par Nicolas
