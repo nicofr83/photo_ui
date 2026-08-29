@@ -363,3 +363,24 @@ describe('the overlap operator', () => {
     });
   });
 });
+
+describe('ref.tag_kind — the place-tag predicate', () => {
+  test('accepts the three known values', async () => {
+    await withRollback(async (client) => {
+      for (const kind of ['place', 'descriptive', 'unknown']) {
+        await client.query(
+          `INSERT INTO ref.tag_kind (tag_name, kind) VALUES ($1, $2)`, [`t-${kind}`, kind]);
+      }
+      const { rows } = await client.query<{ n: number }>('SELECT count(*)::int AS n FROM ref.tag_kind');
+      expect(must(rows[0]).n).toBe(3);
+    });
+  });
+
+  test('refuses anything outside the three values', async () => {
+    await withRollback(async (client) => {
+      await expect(client.query(
+        `INSERT INTO ref.tag_kind (tag_name, kind) VALUES ('italy', 'country')`))
+        .rejects.toThrow(/tag_kind_known/);
+    });
+  });
+});
