@@ -195,6 +195,9 @@ function mapTextRow(row: TextRow): TextUnit {
     overlappingPhotoCount: row.overlapping_photo_count,
     highlights: [],
     logEntry,
+    // `TEXT_UNIT_SELECT` ne lit que `pipeline.text_unit` — jamais un `web_caption`
+    // (appariement de galerie, `app.web_gallery_link`, servi ailleurs).
+    galleryCaption: null,
   };
 }
 

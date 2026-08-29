@@ -70,6 +70,21 @@ export interface OverlapSummary {
   readonly undatedCount: number;
 }
 
+/**
+ * Une légende du site 2003-2004, appariée à sa photo par hash perceptuel
+ * (contrat §11 Q11), jamais par date — 227 liens réels dans `app.web_gallery_link`
+ * aujourd'hui. `verified` distingue une relecture humaine d'un appariement
+ * machine tel quel ; jamais effacé par un recalcul de hash (`gallery_repository.ts`).
+ */
+export interface GalleryCaptionFields {
+  readonly sha256: string;
+  readonly page: string;
+  readonly imagePath: string;
+  readonly distance: number;
+  readonly margin: number;
+  readonly verified: boolean;
+}
+
 export interface TextUnit {
   readonly ref: TextRef;
   readonly documentId: string;
@@ -84,6 +99,8 @@ export interface TextUnit {
   readonly overlappingPhotoCount: number;
   readonly highlights: readonly TextRange[];
   readonly logEntry: LogEntryFields | null;
+  /** `null` pour tout ce qui n'est pas `kind: 'web_caption'` — jamais un champ absent. */
+  readonly galleryCaption: GalleryCaptionFields | null;
 }
 
 export interface TextWithOverlap extends TextUnit {

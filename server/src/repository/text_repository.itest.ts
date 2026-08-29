@@ -50,6 +50,19 @@ test('text and textOriginal are ALWAYS both present — never one without the ot
   });
 });
 
+test('galleryCaption is present and null on an ordinary text — never an absent field (contract §11 Q11)', async () => {
+  await withRollback(async (client) => {
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                        VALUES ('logbook', 'handwritten', 'Journal', true)`);
+    await client.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+                        VALUES ('log_entry', 'logbook/p001/001', 'logbook', 1, 'x', 'transcribed')`);
+
+    const { items } = await listTexts(client, {});
+    expect(items[0]).toHaveProperty('galleryCaption');
+    expect(items[0]?.galleryCaption).toBeNull();
+  });
+});
+
 test('a correction replaces text but textOriginal keeps the upstream transcription', async () => {
   await withRollback(async (client) => {
     await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
