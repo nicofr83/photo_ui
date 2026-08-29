@@ -440,3 +440,15 @@ DETAIL: commit `406ca35`. **Vrai bug trouvé en écrivant le test de la tâche 2
 **Décision documentée, non retouchée** : `GET /photos?sort=overlap` dégénère au tri par date même quand `overlapsTextKind`/`overlapsTextId` sont actifs (commentaire déjà posé tâche 13 : « pas de recouvrement matérialisé »). Je ne l'ai pas changé — aucun test de la tâche 21 ne porte sur ce sens, et le retravailler demanderait de recalculer un `OverlapInfo` par ligne dans `listPhotos`. Signalé ici au cas où Nicolas le veuille plus tard.
 
 ASK: aucun — je continue sur la tâche 22 (notes et sélection de textes, `POST /tasks/:slug/texts` et `POST /tasks/:slug/notes`).
+
+---
+
+## Avancement — impl-backend, tâche 22 (2026-08-29) — Tranche T2 complète
+
+RE: tâche 22 — notes et sélection de textes, terminée. Tranche T2 (le texte) complète.
+DONE: `POST /tasks/:slug/texts` (`add`/`remove`/`reorder` par `TextRef`, jamais un id seul — clé composite `(kind, id)` partout), `POST /tasks/:slug/notes`, `PATCH`/`DELETE /tasks/:slug/notes/:noteId`. Une note sans rattachement est une note GÉNÉRALE (`attachedTo.images`/`.texts` toujours des tableaux vides, jamais `null`). Supprimer une note ne touche jamais les images/textes rattachés (`ON DELETE CASCADE` sur les lignes de rattachement seulement). Ajout idempotent d'un texte déjà sélectionné (`ON CONFLICT DO NOTHING`, pas de doublon ni de plantage sur la clé composite). 31 tests neufs, vérifié en HTTP réel contre `photo_ui` (`logbook/p003/001` ajouté à une tâche, note réelle avec un vrai ULID rattachée, détail complet relu), nettoyé ensuite. 548 tests serveur, tsc/eslint propres.
+DETAIL: commits `75f315b`..`95eee0a`. `note_<ulid>` utilise le paquet `ulid` déjà présent (même que `import_id`), pas un UUID déguisé.
+
+**Tranche T2 (le texte) est maintenant complète : tâches 20 à 22.**
+
+ASK: aucun — je continue sur la Tranche T3 (chercher), tâche 23 : `q`, les offsets et les facettes.
