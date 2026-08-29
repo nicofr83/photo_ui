@@ -13,6 +13,7 @@ import { isIsoDate } from '../src/shared/date_interface';
 import { ErrorCode, PhotoSort } from '../src/shared/enums';
 
 import { store } from './store';
+import { INVARIANT_ALBUMS } from '../fixtures/invariants/albums';
 
 /** Contract §4.2. Anything outside this list is an UNKNOWN_PARAMETER. */
 const PHOTO_PARAMS = [
@@ -33,6 +34,9 @@ interface UnmatchedValue {
 }
 
 export const handlers = [
+  // Contract §4.2: the 82 albums fit in one response.
+  http.get('*/albums', () => HttpResponse.json({ items: INVARIANT_ALBUMS })),
+
   http.get('*/photos', ({ request }) => {
     const url = new URL(request.url);
     const params = url.searchParams;
