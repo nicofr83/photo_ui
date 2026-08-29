@@ -2,6 +2,7 @@ import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router';
 
 import { ImagesScreen } from '../screens/ImagesScreen';
 import { ReviewScreen } from '../screens/ReviewScreen';
+import { SettingsScreen } from '../screens/SettingsScreen';
 import { TasksScreen } from '../screens/TasksScreen';
 import { TextsScreen } from '../screens/TextsScreen';
 
@@ -23,6 +24,7 @@ export function AppRoutes(): React.JSX.Element {
       <Route path="/images/:slug" element={<ImagesScreen />} />
       <Route path="/textes/:slug" element={<TextsScreen />} />
       <Route path="/revue/:slug" element={<Review />} />
+      <Route path="/reglages" element={<SettingsScreen />} />
     </Routes>
   );
 }

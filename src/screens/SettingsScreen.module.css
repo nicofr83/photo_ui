@@ -1,0 +1,14 @@
+.screen { display: flex; flex-direction: column; gap: 2rem; }
+.list { display: flex; flex-direction: column; gap: 0.75rem; padding: 0; margin: 0; list-style: none; }
+.row { display: flex; flex-direction: column; gap: 0.4rem; padding: 0.75rem; border: 1px solid #e5e7eb; }
+.title { margin: 0; font-weight: 600; }
+.current { margin: 0; color: #374151; font-size: 0.9rem; }
+.presumed { color: var(--date-inference); font-style: italic; }
+.saisi { color: var(--date-decision); }
+.hints { display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.8rem; color: #6b7280; }
+.form { display: flex; flex-wrap: wrap; align-items: end; gap: 0.5rem; }
+.field { display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.85rem; }
+.control { min-height: var(--tap-target); padding: 0 0.4rem; }
+.button { min-height: var(--tap-target); padding: 0 0.75rem; cursor: pointer; }
+.warning { color: var(--date-inference); font-size: 0.85rem; }
+.report { color: var(--date-reading); font-size: 0.85rem; }

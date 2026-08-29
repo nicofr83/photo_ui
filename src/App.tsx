@@ -14,7 +14,8 @@ export function App(): React.JSX.Element {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <header>
-          <strong>photo_ui</strong> <Link to="/taches">Tâches</Link>
+          <strong>photo_ui</strong> <Link to="/taches">Tâches</Link>{' '}
+          <Link to="/reglages">Réglages</Link>
         </header>
         <AppRoutes />
       </BrowserRouter>
