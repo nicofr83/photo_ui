@@ -10,7 +10,7 @@ import type { SafeFs } from '../../io/safe_fs.ts';
 import {
   loadCoversImages, loadExportDocuments, loadExportImages, loadExportTexts, loadPageImageRelpaths,
 } from '../../repository/export_repository.ts';
-import { getTaskDetail } from '../../repository/task_repository.ts';
+import { getTaskDetail, markTaskExported } from '../../repository/task_repository.ts';
 import { getRender, type ImageServiceDeps } from '../images/image_service.ts';
 import type { RenderFailure } from '../images/render_availability.ts';
 import { serialise } from './canonical.ts';
@@ -217,6 +217,11 @@ export async function exportTask(
 
   if (await pathExists(targetDir)) await deps.safeFs.rm(targetDir);
   await deps.safeFs.rename(tmpDir, targetDir);
+
+  // Après le `rename`, jamais avant : le dossier existe pour de vrai avant
+  // que la tâche ne prétende être exportée (contrat §7.4, invariant 7).
+  await loadFromClient(deps.pool,
+    (client2) => markTaskExported(client2, slug, manifest.task.exported_at, targetDir, task.contentHash));
 
   return {
     directory: targetDir,

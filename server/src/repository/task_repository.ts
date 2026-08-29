@@ -651,6 +651,23 @@ export async function patchTaskNote(
  * Supprimer une note ne touche JAMAIS aux images/textes rattachés — seule la
  * note et ses lignes de rattachement (`ON DELETE CASCADE`) disparaissent.
  */
+/**
+ * Le dernier geste d'un export réussi (contrat §7.4) — après le `rename`
+ * atomique, jamais avant : marquer la tâche pour un dossier qui n'existe pas
+ * encore serait pire que ne pas la marquer. `exportedContentHash` est le
+ * `contentHash` DÉJÀ calculé par `getTaskDetail` en tête d'`exportTask`, sur
+ * l'instantané exact qui a été écrit — jamais recalculé ici, où une mutation
+ * concurrente aurait pu changer la sélection depuis.
+ */
+export async function markTaskExported(
+  client: PoolClient, slug: string, exportedAt: string, exportDirectory: string, exportedContentHash: string,
+): Promise<void> {
+  await client.query(
+    `UPDATE app.task SET exported_at = $2, export_directory = $3, exported_content_hash = $4 WHERE slug = $1`,
+    [slug, exportedAt, exportDirectory, exportedContentHash],
+  );
+}
+
 export async function deleteTaskNote(client: PoolClient, slug: string, noteId: string): Promise<boolean> {
   const { rowCount } = await client.query(
     `DELETE FROM app.task_note WHERE task_slug = $1 AND id = $2`, [slug, noteId]);

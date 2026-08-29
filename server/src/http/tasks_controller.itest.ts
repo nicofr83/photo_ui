@@ -232,6 +232,34 @@ describe('POST /tasks/:slug/export', () => {
     expect(settled?.state).toBe('succeeded');
     expect(settled?.result.report.imagesWritten).toBe(0);
   });
+
+  test('after a successful export, GET /tasks/:slug reports state EXPORTED, not draft — front\'s exact repro', async () => {
+    app = await bootstrap(await completeEnv());
+    await app.server.inject({
+      method: 'POST', url: '/tasks',
+      payload: { title: 'x', slug: 'x', brief: '', period: null },
+    });
+
+    const submitted = await app.server.inject({ method: 'POST', url: '/tasks/x/export' });
+    const job = submitted.json<{ id: string }>();
+
+    const deadline = Date.now() + 2000;
+    let jobState: string | undefined;
+    while (Date.now() < deadline) {
+      const poll = await app.server.inject({ method: 'GET', url: `/jobs/${job.id}` });
+      jobState = poll.json<{ state: string }>().state;
+      if (jobState !== 'queued' && jobState !== 'running') break;
+      await new Promise((resolve) => { setTimeout(resolve, 10); });
+    }
+    expect(jobState).toBe('succeeded');
+
+    const detail = await app.server.inject({ method: 'GET', url: '/tasks/x' });
+    const body = detail.json<TaskDetail>();
+    expect(body.state).toBe('exported');
+    expect(body.exportedAt).not.toBeNull();
+    expect(body.exportDirectory).not.toBeNull();
+    expect(body.exportedContentHash).toBe(body.contentHash);
+  });
 });
 
 describe('POST /tasks/:slug/texts', () => {

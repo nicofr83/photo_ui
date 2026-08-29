@@ -133,6 +133,45 @@ describe('exportTask', () => {
     }
   });
 
+  test('a successful export marks the task itself — exportedAt, exportDirectory, exportedContentHash', async () => {
+    const setup = testPool();
+    await setup.query(`INSERT INTO app.task (slug, title, brief) VALUES ('x', 'Titre', '')`);
+    try {
+      const before = await setup.query<{ exported_at: string | null; export_directory: string | null; exported_content_hash: string | null }>(
+        `SELECT exported_at, export_directory, exported_content_hash FROM app.task WHERE slug = 'x'`);
+      expect(before.rows[0]).toEqual({ exported_at: null, export_directory: null, exported_content_hash: null });
+
+      const report = await exportTask(deps, 'x', {});
+
+      const after = await setup.query<{ exported_at: string | null; export_directory: string | null; exported_content_hash: string | null }>(
+        `SELECT exported_at, export_directory, exported_content_hash FROM app.task WHERE slug = 'x'`);
+      const row = after.rows[0];
+      expect(row?.exported_at).not.toBeNull();
+      expect(row?.export_directory).toBe(report.directory);
+      expect(row?.exported_content_hash).not.toBeNull();
+    } finally {
+      await setup.query(`DELETE FROM app.task WHERE slug = 'x'`);
+    }
+  });
+
+  test('a re-export of an UNCHANGED task keeps the SAME exportedContentHash — that equality is what state EXPORTED depends on', async () => {
+    const setup = testPool();
+    await setup.query(`INSERT INTO app.task (slug, title, brief) VALUES ('x', 'Titre', '')`);
+    try {
+      await exportTask(deps, 'x', {});
+      const first = await setup.query<{ exported_content_hash: string | null }>(
+        `SELECT exported_content_hash FROM app.task WHERE slug = 'x'`);
+
+      await exportTask(deps, 'x', { overwrite: true });
+      const second = await setup.query<{ exported_content_hash: string | null }>(
+        `SELECT exported_content_hash FROM app.task WHERE slug = 'x'`);
+
+      expect(second.rows[0]?.exported_content_hash).toBe(first.rows[0]?.exported_content_hash);
+    } finally {
+      await setup.query(`DELETE FROM app.task WHERE slug = 'x'`);
+    }
+  });
+
   test('an orphaned image selection is skipped, absent from folder and manifest, cause named with a null expectedPath', async () => {
     const setup = testPool();
     const ghost = 'a'.repeat(32);
