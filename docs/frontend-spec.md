@@ -670,6 +670,56 @@ Trois règles d'interface :
 tags IA et 656 sont des noms d'album ; les présenter comme « vos mots-clés » est
 faux.
 
+#### Les tags de lieu ne sont pas des lieux
+
+Une quatrième règle, et c'est la plus importante des quatre parce qu'elle touche
+la règle capitale.
+
+Le classifieur d'Adobe émet des **noms de lieux**, et ils sont faux. Mesuré sur
+le périmètre : `europe` 357 photos, `italy` 141, `spain` 138, `africa` 131,
+`asia` 125, `egypt` 61, `china` 32, `thailand` 23, `japan` 8, `moscow` 8. Le
+bateau n'est allé dans aucun de ces endroits. **Au moins 901 photos en portent
+un**, sur une sonde de quarante noms qui n'est pas exhaustive.
+
+Où ils tombent achève la démonstration : **`italy` frappe 18 photos de Tikal,
+16 de Chichen Itza et 13 de Tulum ; `egypt` en frappe 30 du Maroc et 12 de
+Chichen Itza.** Le classifieur voit des ruines de pierre monumentales et sort
+un nom de pays.
+
+**Ce qu'il faut comprendre : un tag de lieu est une description d'apparence qui
+porte le nom d'un lieu.** Le signal visuel est réel — Chichen Itza *ressemble*
+à de l'antiquité monumentale, et `ruins` 184 le dit bien. C'est l'étiquette qui
+ment. Un tag de lieu n'est donc pas une information de lieu dégradée, c'est
+autre chose déguisé en information de lieu.
+
+**La distinction générale, qui vaut au-delà des tags** :
+
+| | Vérifiable | Traitement |
+|:---|:---|:---|
+| Un tag qui **décrit ce qui est visible** — `ruins`, `boat`, `dunes` | oui, en regardant la photo | s'affiche tel quel |
+| Un tag qui **nomme un lieu, une date ou une personne** — `italy`, `egypt` | non, l'image ne peut pas l'établir | inférence machine, marquée ou retirée |
+
+La confiance ne sauve pas : les tags de lieu sortent à **60 de moyenne** contre
+69 pour les descriptifs — plus bas, mais très au-dessus du plancher de 48. Aucun
+seuil ne les sépare.
+
+**Traitement retenu, en trois points :**
+
+1. **Ils n'alimentent jamais l'axe lieu** (§6.2). Le lieu du corpus vient du nom
+   d'album et du journal de bord, jamais du classifieur.
+2. **Ils sortent du vocabulaire proposé** dans la facette contenu. Offrir
+   `italy (141)` dans une liste triée par sélectivité invite à croire qu'il
+   existe 141 photos d'Italie.
+3. **Ils restent cherchables**, et s'affichent alors **marqués comme une
+   supposition de machine**. Ne pas proposer n'est pas exclure (§7.3) : un
+   utilisateur qui tape `egypt` obtient ses 61 photos, avec la mention que le
+   classifieur les a devinées. C'est ce qui préserve le rappel sans mentir.
+
+Le signal sous-jacent reste exploitable si l'on veut : `egypt` sur Chichen Itza
+veut dire « antiquité monumentale de pierre ». Le lire comme une apparence
+plutôt que comme un lieu serait juste — ce n'est pas nécessaire en V1, et ça ne
+se fait pas sans relire la correspondance à la main.
+
 ### 6.4 Contenu par la phrase descriptive — la brique à construire
 
 **Ce que le pipeline n'a jamais fait.** Sa passe contenu a lu le texte imprimé
@@ -823,6 +873,30 @@ voyagent séparément. C'est précisément à ça que servent deux champs.
 correction), **texte produit par une machine** (légende VLM : `kind: "machine"`
 + le modèle et la date). Un texte que personne n'a écrit ne doit jamais pouvoir
 être lu comme un souvenir.
+
+**Et elle porte sur tout ce qu'une machine dit d'une image — la même distinction
+sous un autre nom : lire ou déduire.**
+
+Une machine qui regarde une photo fait deux choses de nature opposée, et rien
+dans sa sortie ne les sépare. Elle **lit** ce qui est écrit dans l'image : une
+enseigne, un panneau, la date affichée sur un écran de navigation. C'est une
+lecture, aussi vérifiable qu'un EXIF, et **précieuse** — c'est parfois le seul
+témoignage daté d'une photo qui n'a plus de date. Elle **déduit** aussi, à
+partir de l'apparence : un lieu, une époque, une identité. C'est une conjecture,
+et elle est souvent fausse.
+
+Les deux applications de cette distinction, aujourd'hui :
+
+- **Les tags de lieu du classifieur** (§6.3) — `italy` sur Tikal, `egypt` sur
+  Chichen Itza. Déduits, donc marqués et retirés du vocabulaire proposé.
+- **Les légendes VLM** (§6.4) — la consigne doit demander de **transcrire** ce
+  qui est écrit, entre guillemets, et **interdire de déduire** un lieu, une date
+  ou une identité. « Ne pas dater ni localiser » était trop large : cela
+  interdisait aussi de recopier une date visible à l'écran, qui est une lecture.
+
+La règle générale : **une machine peut rapporter ce qu'elle voit écrit ; elle ne
+peut pas conclure ce que l'image ne dit pas.** Le premier entre dans le dossier
+comme une lecture, le second comme une inférence marquée, ou pas du tout.
 
 **Corollaires.** La fourchette voyage avec la proposition — sans elle, afficher
 `sans fourchette`, jamais un nombre non soutenu. Les preuves sont atteignables.

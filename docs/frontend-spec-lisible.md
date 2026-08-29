@@ -370,6 +370,19 @@ du dossier et ne peut pas faire la différence tout seul.
 porte au moins un. Le vocabulaire colle au corpus : `maya` 93 photos, `ruins`
 184, `fortress` 83, `gator` 16 pour les Everglades.
 
+**Sauf les tags de lieu, qui mentent.** Le classifieur d'Adobe met `italy` sur
+18 photos de Tikal et 16 de Chichen Itza, `egypt` sur 30 photos du Maroc. Il
+voit des ruines de pierre monumentales et sort un nom de pays. Au moins 901
+photos du périmètre en portent un — `europe` 357, `italy` 141, `spain` 138,
+`asia` 125 — pour un bateau qui n'est allé dans aucun de ces endroits.
+
+Ce n'est pas une information de lieu dégradée, c'est une description
+d'apparence qui porte le nom d'un lieu. Le signal est vrai, l'étiquette ment.
+Donc : ces tags **ne nourrissent jamais le filtre par lieu**, ils **ne sont pas
+proposés** dans la liste des mots-clés, et si tu en cherches un, tu obtiens tes
+photos avec la mention que c'est une supposition de machine. Le lieu du corpus
+vient du nom d'album et du journal, jamais du classifieur.
+
 **Les légendes générées viennent ensuite, et c'est ton idée.** Décrire chaque
 image en une phrase, stocker la phrase, chercher dedans. Moins cher que les
 embeddings — pas tant en dollars qu'en infrastructure : la recherche plein texte
