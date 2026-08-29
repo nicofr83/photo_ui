@@ -307,9 +307,25 @@ Les périodes d'albums : les 25 albums suspects en tête de liste, avec leur
 période actuelle et son origine — saisie ou supposée. Tu édites deux dates.
 L'écran te montre ce que racontent les noms de fichiers de l'album et la plage
 des dates EXIF écartées, comme des indices, sans jamais pré-remplir les champs.
+Après enregistrement il te dit ce que ça a produit : « cette plage vient de
+redater 243 photos ».
 
 Les périodes des documents web : les vingt-cinq du périmètre, avec un extrait
 pour les reconnaître.
+
+Une chose va te surprendre, et c'est voulu. **Ces périodes que tu saisis
+toi-même s'affichent en ambre italique avec un `≈`** — comme un calcul, pas
+comme une décision. Ce n'est pas une erreur d'affichage.
+
+Ce qui classe une date n'est pas qui l'a tapée, c'est ce que le geste établit.
+Quand tu corriges la date d'une photo, tu *arbitres* : tu as vu l'EXIF à
+l'écran et tu as tapé autre chose. Quand tu bornes un album ou un document du
+site, tu *combles un vide* — aucun des 569 passages du site ne porte de date, et
+le nom d'album ne donne qu'un début. C'est une conjecture, même informée.
+
+L'application enregistre séparément qui a saisi la valeur et ce qu'elle vaut. La
+première information ne se perd pas ; c'est la seconde qui décide de la couleur.
+Corriger une date de photo reste la seule chose qui produit du violet.
 
 Les noms de pays, à fusionner quand ils font doublon — « Republique de Trinite
 et Tobago » et « Trinité-et-Tobago » désignent le même endroit.
@@ -398,10 +414,19 @@ plus tard ne casse rien.
 **Les 2 041 photos de 2003-2004 que le journal ne couvre pas.** On accepte
 qu'elles partent avec tes seules notes, ou tu dates les vingt-cinq documents web
 pour ouvrir un rapprochement grossier. *Je ferais les deux : la table est prévue
-et vide, la remplir est un geste, pas un prérequis.* Une troisième voie est en
-cours d'évaluation : les galeries du site de 2003 associent une légende à une
-image précise, et un appariement visuel donnerait un lien direct là où le
-journal manque. Rien n'est établi.
+et vide, la remplir est un geste, pas un prérequis.*
+
+Et une troisième voie, qui n'est plus une hypothèse. L'appariement visuel des
+galeries du site a été testé : **il marche**. Les images du site sont des copies
+recompressées de photos de la bibliothèque, et on les retrouve par empreinte
+perceptuelle. Sur les images de galerie qui portent une légende, six sur dix
+sont appariées — **209 liens**, dont **108 sur 2003-2004**.
+
+Ça ne couvre que 5 % des photos de ces deux années, mais ces légendes sont **la
+seule source de texte d'époque** pour la période : des phrases que tu as écrites
+sur le moment, qui nomment des lieux et des gens. *Je le ferais, avec une
+relecture visuelle des 209 liens avant de les tenir pour acquis.* Le coût est
+d'une demi-journée, plus deux minutes de recalcul d'empreintes.
 
 **Sélectionner un passage entier, ou seulement une portion surlignée ?** *Entier
 en V1 : 1 731 des 1 859 passages font moins de 400 caractères. Passer à la
@@ -440,12 +465,15 @@ défaut, réordonnable. Avec une réserve : un ordre calculé sur des dates
 faillibles se trompera visiblement, donc le réordonnancement manuel mérite
 d'arriver tôt.*
 
-Une dernière chose, moins une question qu'un préalable. Avant de lancer le
-légendage sur les 3 925 photos, il faut légender vingt photos avec deux ou trois
-modèles et comparer. Ça coûte moins d'un dollar et ça tranche le choix du modèle
-sur pièces plutôt qu'à l'aveugle — l'écart entre le moins cher et le plus cher
-est d'une quarantaine de dollars sur la passe complète, et la légende sert deux
-fois.
+Une dernière chose, moins une question qu'un préalable, et il est en cours.
+Avant de lancer le légendage sur les 3 925 photos, on légende une cinquantaine
+d'images avec deux ou trois modèles et on compare. Ça coûte moins d'un dollar et
+ça tranche le choix sur pièces plutôt qu'à l'aveugle — l'écart entre le moins
+cher et le plus cher est d'une quarantaine de dollars sur la passe complète, et
+la légende sert deux fois : elle indexe la photo et elle décrit la photo au LLM.
+
+L'échantillon est préparé mais **bloqué : la clé API de la machine est sans
+crédit**. C'est le seul point où une décision t'attend en dehors de ce document.
 
 ---
 
