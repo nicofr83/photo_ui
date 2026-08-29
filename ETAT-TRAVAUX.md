@@ -592,3 +592,17 @@ Ceci clôt le tour d'intégration de bout en bout demandé : images (mesuré), t
 DETAIL : aucun fichier touché par cette entrée — vérification pure, aucune régression, aucun résidu dans `TASKS_ROOT` ni dans le store réel.
 
 ASK : aucune décision Nicolas. Mandat d'intégration réelle rempli ; je reste disponible pendant que `back` regarde l'export et `galleryCaption`.
+
+---
+
+## Avancement — impl-backend, export + galleryCaption (2026-08-30)
+
+RE : export et `galleryCaption`, deux défauts remontés par front
+DONE :
+1. **Export corrigé** — `exportTask` écrivait un vrai dossier mais ne touchait jamais `app.task` : `exported_at`/`export_directory`/`exported_content_hash` restaient `NULL` pour toujours, `computeState()` (tâche 16) lisait donc `draft` quel que soit le nombre d'exports réels. Pas périmé, jamais écrit — `export_service.ts` (tâche 18) précède la machine à états qui lit ces colonnes. `markTaskExported()` ajouté (`task_repository.ts`), appelé APRÈS le `rename` atomique, jamais avant. `exportedContentHash` persiste le `contentHash` déjà calculé par `getTaskDetail` en tête d'`exportTask`, sur l'instantané exact écrit — jamais recalculé après coup. 4 tests neufs (dépôt + HTTP bout en bout, repro exacte de front).
+2. **`galleryCaption` — partiel** : le champ était absent de CHAQUE `TextUnit`, 63 bannières chez front sur les TROIS sections (le champ est requis, nullable). Ajouté `GalleryCaptionFields` au contrat et `TextUnit.galleryCaption`, toujours `null` depuis `mapTextRow` — `TEXT_UNIT_SELECT` ne lit que `pipeline.text_unit`, jamais un `web_caption` (`app.web_gallery_link`, 227 lignes réelles déjà écrites par `gallery_match_cli.ts`). Débloque Journal + Ma vie.
+**Pas fait, délibérément** : servir les 227 vraies légendes de galerie (`GET /texts?kind=web_caption` reste 400). Ça demande un vrai design — `documentId` synthétique (aucun `pipeline.document` derrière une légende de galerie), sémantique de page/recouvrement, vocabulaire fermé de `kind` — pas une addition précipitée en fin de tour. Le contrat §11 Q11 recommande déjà (a) mais l'a délibérément laissé « non écrit tant que la spec frontend ne l'a pas intégré » — front a maintenant conçu cette forme (`src/api/contract/text.ts:134-142`), donc l'écrire est la suite logique, pas une invention en avance de la décision.
+5 tests neufs au total, vérifié contre le corpus réel (colonnes `app.task` avant/après un export réel, `galleryCaption: null` confirmé sur un vrai item — contre le process du serveur de dev ACTUEL, qui n'a pas encore redémarré pour charger ces deux correctifs). 646 tests serveur, tsc/eslint propres.
+DETAIL : commits `bfb7408`, `8195aed`. Serveur pas redémarré — j'attends un bon moment avec `front` (engagement pris plus haut dans ce journal).
+
+ASK : aucune décision Nicolas ici. Pour front (pas bloquant, quand tu peux) : je voudrais redémarrer le serveur pour charger export+galleryCaption — dis-moi quand c'est un bon moment, ou si tu préfères que j'attende la fin de ta mesure en cours. Je m'attaque ensuite au service complet de `web_caption` (design + implémentation) si rien d'autre n'est plus urgent.
