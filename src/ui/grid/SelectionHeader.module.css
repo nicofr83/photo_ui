@@ -1,0 +1,11 @@
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+.counts { display: flex; gap: 1rem; flex-wrap: wrap; }
+.excluded { color: #6b7280; }
+.selectAll { min-height: var(--tap-target); padding: 0 1rem; cursor: pointer; }
+.unmatched { margin: 0; color: #92400e; }
