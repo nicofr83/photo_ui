@@ -36,7 +36,8 @@ c'est qu'elle soit sans perte et sans re-décision.
 | Plan frontend | `impl-frontend` | établi | **commité** — `docs/superpowers/plans/2026-08-28-frontend.md` |
 | Implémentation frontend T1 | `impl-frontend` | tâches 1.0 à 1.6 **faites** — socle, domaine, rendu, client, fixtures, MSW | **tout commité** (`d193a1a`) — 232 tests verts, rien en vol |
 | Échantillon de légendes | *(agent non nommé)* | en cours | `docs/echantillon-legendes.html` est commité |
-| Plan d'implémentation backend | *(agent à lancer)* | **pas commencé** | — |
+| Plan d'implémentation backend | `impl-backend` | **terminé** — 26 tâches, plan de tests, 11 décisions d'architecture | **commité** (`e349da7`) — `docs/superpowers/plans/2026-08-28-backend.md` |
+| Implémentation backend | `impl-backend` | **en cours** — tranche 0, tâche 1 | *(voir le plan pour l'état tâche par tâche)* |
 
 Dernier commit : `c107907 feat: the resolved-date domain and the capital rule`,
 2026-08-28 18:56, branche `test_dev`.
