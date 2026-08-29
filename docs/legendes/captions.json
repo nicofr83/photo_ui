@@ -843,5 +843,95 @@
    "pilier"
   ],
   "defauts": []
+ },
+ "55": {
+  "legende": "Un temple-pyramide de pierre sèche, à l'assise très large et au profil arrondi par l'érosion, occupe le centre du cadre dans une clairière de forêt sèche aux troncs fins et clairs. L'appareillage est fait de milliers de petites pierres plates ; un escalier central étroit monte vers un sommet en pain de sucre, et deux gradins ceinturent la base. Au pied de l'escalier, un abri de palmes tressées porté par quatre poteaux de bois protège une dalle ou une stèle sculptée, sombre et indistincte à cette distance. Le sol devant le monument est une aire de terre battue jonchée de feuilles ; le ciel est bleu avec de gros cumulus blancs et la lumière vient de la gauche. En bas à droite, une date incrustée par l'appareil se lit en chiffres rouges : « 2004 3 9 ».",
+  "mots_cles": [
+   "pyramide a degres",
+   "pierre seche",
+   "escalier",
+   "abri de palme",
+   "stele",
+   "clairiere",
+   "foret seche",
+   "horodatage"
+  ],
+  "defauts": []
+ },
+ "56": {
+  "legende": "Sous-bois de forêt sèche photographié en plongée depuis une berge, l'image entièrement occupée par un enchevêtrement de troncs fins et gris, de branches mortes et de feuillages, ce qui la rend difficile à lire. Au milieu, entre les troncs, on aperçoit un plan d'eau dormante entièrement recouvert d'un tapis de lentilles ou d'algues vert vif, encaissé au pied d'une paroi de roche claire couverte de végétation retombante. Au premier plan, de larges feuilles lancéolées et des touffes de palmier nain émergent d'un sol jonché de feuilles mortes brunes. Aucune présence humaine ni construction n'est visible ; la lumière est diffuse et le contraste faible.",
+  "mots_cles": [
+   "sous-bois",
+   "tronc",
+   "eau dormante",
+   "algue",
+   "paroi rocheuse",
+   "palmier nain",
+   "feuille morte",
+   "doline"
+  ],
+  "defauts": [
+   "cadrage"
+  ]
+ },
+ "57": {
+  "legende": "Place pavée déserte au pied d'un long rempart de pierre calcaire à gros blocs irréguliers, d'où poussent des touffes de végétation. Le mur est percé d'une porte en arc plein cintre entièrement murée de moellons plus clairs, encadrée de pierres de taille ; plus à droite, une porte de bois sombre à imposte reste ouverte dans la maçonnerie. Deux réverbères de fonte noire à lanterne carrée se dressent au premier plan et au second, une borne rouge et blanche et un panneau rond de sens interdit couvert d'un autocollant sont plantés devant le mur, avec une file de bornes basses le long du trottoir. À droite, une palme et des toits de tuiles dépassent du rempart ; le ciel est entièrement blanc. Quelques papiers traînent sur le pavage au premier plan.",
+  "mots_cles": [
+   "rempart",
+   "porte muree",
+   "reverbere",
+   "pave",
+   "borne",
+   "sens interdit",
+   "moellon",
+   "place deserte"
+  ],
+  "defauts": [
+   "surexpose"
+  ]
+ },
+ "58": {
+  "legende": "Dans un grand champ d'herbe rase, une personne — de gabarit d'enfant ou d'adolescent — pilote un char à cerf-volant à trois roues, assise très bas dans un siège de toile, casque clair sur la tête, les deux bras tendus sur une barre de contrôle. Les lignes de traction partent en diagonale vers la gauche et sortent du cadre : l'aile elle-même n'est pas visible dans l'image. L'engin est vu de trois quarts arrière, à une trentaine de mètres, et laisse voir son cadre tubulaire et ses trois roues à pneus ballon. Derrière s'étendent une bande de terre labourée, une parcelle de maïs sec, une ligne d'arbres, un pylône électrique et un versant boisé noyé de brume. Lumière de plein jour, image nette mais sujet petit dans le cadre.",
+  "mots_cles": [
+   "char a cerf-volant",
+   "buggy",
+   "casque",
+   "ligne de traction",
+   "champ",
+   "labour",
+   "pylone",
+   "mais"
+  ],
+  "defauts": []
+ },
+ "59": {
+  "legende": "Étendue plate et nue de sable et de limon brun-rosé, striée de faibles ondulations et de traces, qui occupe les deux tiers inférieurs du cadre sans le moindre premier plan marqué. À l'horizon, très bas, on distingue à gauche une falaise ou un promontoire pâle, au centre un liseré de débris sombres, et à droite une nappe d'eau claire suivie d'une bande de terre indistincte. Le ciel gris-bleu très pâle se fond dans l'horizon sans limite nette. L'image est voilée par une brume dense, son contraste est très faible et elle ne contient aucun sujet identifiable, ni personne, ni construction, ni végétation.",
+  "mots_cles": [
+   "estran",
+   "sable",
+   "limon",
+   "promontoire",
+   "brume",
+   "horizon bas",
+   "etendue nue"
+  ],
+  "defauts": [
+   "voile",
+   "cadrage"
+  ]
+ },
+ "60": {
+  "legende": "Paysage de montagne moyenne en plan large, pris depuis un versant. Deux croupes couvertes d'une forêt de conifères sombre et dense se referment au centre sur un vallon encaissé ; la crête de gauche se termine par un ressaut rocheux clair, et de larges coulées de pierraille grise entaillent les pentes. Un layon ou une piste se devine en travers du versant de droite. Au premier plan, une prairie d'herbes hautes montées en graine, deux jeunes feuillus et un grand pin sombre qui ferme le cadre à droite avec un arbre mort à ses pieds. Le ciel est couvert et blanc, la lumière plate et sans ombre portée.",
+  "mots_cles": [
+   "montagne",
+   "coniferes",
+   "vallon",
+   "crete",
+   "pierraille",
+   "prairie",
+   "pin",
+   "layon"
+  ],
+  "defauts": []
  }
 }
