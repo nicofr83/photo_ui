@@ -1,4 +1,6 @@
-import type { SelectionReason, TaskState } from '@shared/enums';
+import type { DateKind, DatePrecision, SelectionReason, TaskState } from '@shared/enums';
+import type { PhotoListItem } from './photo_interface.ts';
+import type { TextUnit } from './text_interface.ts';
 
 /** Transcrit de `docs/api-contract.md` §7. */
 export interface TaskPeriod {
@@ -168,4 +170,55 @@ export interface TaskNotePatchInput {
   readonly title?: string;
   readonly text?: string;
   readonly attachedTo?: { readonly images: readonly string[]; readonly texts: readonly TaskTextRef[] };
+}
+
+/**
+ * `GET /tasks/:slug/review` (contrat §7.3). Les huit compteurs sont calculés
+ * au serveur — jamais dérivés côté client, où ils dupliqueraient LE prédicat
+ * de recouvrement (`metier/overlap/overlap_sql.ts`) en TypeScript. La
+ * chronologie, elle, est de la mise en page : le client la recevrait de
+ * toute façon dérivable de `images`/`texts`, mais le contrat la fournit
+ * dans le même appel puisqu'elle y est déjà.
+ */
+export interface TaskReviewWarnings {
+  readonly undatedImages: number;
+  readonly inferredDateImages: number;
+  readonly uncertainTexts: number;
+  readonly textsWiderThan30Days: number;
+  readonly imagesWithoutText: number;
+  readonly orphanedImages: number;
+  readonly orphanedTexts: number;
+  readonly imagesOutOfPeriod: number;
+}
+
+export interface TaskTimelineEntry {
+  readonly kind: 'image' | 'text';
+  readonly id: string;
+  readonly start: string;
+  readonly end: string;
+  readonly precision: DatePrecision;
+  readonly dateKind: DateKind;
+}
+
+export interface TaskReview {
+  readonly task: TaskSummary;
+  /** Un item orphelin n'a pas de photo à joindre — compté dans `warnings.orphanedImages`, absent d'ici. */
+  readonly images: readonly (PhotoListItem & { readonly selection: TaskImageSelection })[];
+  /** Même règle : un texte orphelin est compté, jamais listé ici. */
+  readonly texts: readonly (TextUnit & { readonly selection: TaskTextSelection })[];
+  readonly notes: readonly TaskNote[];
+  readonly warnings: TaskReviewWarnings;
+  /** Bornes réelles — rien n'est aplati en un point. Trié par `start`. */
+  readonly timeline: readonly TaskTimelineEntry[];
+}
+
+export interface TaskDuplicateInput {
+  readonly title: string;
+  readonly slug: string;
+}
+
+export interface TaskDeleteResult {
+  readonly deleted: true;
+  /** Le dossier déjà exporté n'est jamais touché — nommé ici pour que la confirmation puisse le dire. */
+  readonly exportDirectoryKept: string | null;
 }

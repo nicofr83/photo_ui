@@ -1,4 +1,5 @@
-import { mkdtemp } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { mkdir, mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -8,7 +9,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest';
 import { runMigrations } from '../db/migrate.ts';
 import { createLog, LogLevel } from '../log/log.ts';
 import { closeTestPool, testPool } from '../../test/helpers/db.ts';
-import type { TaskDetail, TaskSummary } from '../contract/task_interface.ts';
+import type { TaskDeleteResult, TaskDetail, TaskReview, TaskSummary } from '../contract/task_interface.ts';
 import { bootstrap, type App } from '../runtime/bootstrap.ts';
 
 const MIGRATIONS = fileURLToPath(new URL('../../db/migrations', import.meta.url));
@@ -329,6 +330,130 @@ describe('DELETE /tasks/:slug/notes/:noteId', () => {
       method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null },
     });
     const response = await app.server.inject({ method: 'DELETE', url: '/tasks/x/notes/note_nowhere' });
+    expect(response.statusCode).toBe(404);
+  });
+});
+
+describe('GET /tasks/:slug/review', () => {
+  test('the timeline carries bounds, and the eight warning keys are all present, through the full HTTP path', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    const id = 'a'.repeat(32);
+    try {
+      await setup.query(`INSERT INTO pipeline.photo
+        (cloud_asset_id, sha256, relative_path, file_name, format, raw_date_source,
+         resolved_from, resolved_start, resolved_end, resolved_precision)
+        VALUES ($1, $2, 'x/a.jpg', 'a.jpg', 'jpg', 'exif', 'annotation', '2000-01-01', '2000-01-01', 'day')`,
+        [id, 'b'.repeat(64)]);
+      await app.server.inject({
+        method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null },
+      });
+      await app.server.inject({
+        method: 'POST', url: '/tasks/x/images', payload: { add: [{ cloudAssetId: id, selectedBecause: ['manual'] }] },
+      });
+
+      const response = await app.server.inject({ method: 'GET', url: '/tasks/x/review' });
+      expect(response.statusCode).toBe(200);
+      const review = response.json<TaskReview>();
+
+      expect(Object.keys(review.warnings).sort()).toEqual([
+        'imagesOutOfPeriod', 'imagesWithoutText', 'inferredDateImages', 'orphanedImages',
+        'orphanedTexts', 'textsWiderThan30Days', 'uncertainTexts', 'undatedImages',
+      ]);
+      expect(review.timeline).toHaveLength(1);
+      for (const entry of review.timeline) {
+        expect(typeof entry.start).toBe('string');
+        expect(typeof entry.end).toBe('string');
+        expect(typeof entry.precision).toBe('string');
+        expect(typeof entry.dateKind).toBe('string');
+      }
+    } finally {
+      await setup.query('DELETE FROM pipeline.photo');
+    }
+  });
+
+  test('an unknown slug is a named 404', async () => {
+    app = await bootstrap(await completeEnv());
+    const response = await app.server.inject({ method: 'GET', url: '/tasks/nowhere/review' });
+    expect(response.statusCode).toBe(404);
+  });
+});
+
+describe('POST /tasks/:slug/duplicate', () => {
+  test('duplicating copies the selection but not the export state', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    const id = 'a'.repeat(32);
+    try {
+      await setup.query(`INSERT INTO pipeline.photo
+        (cloud_asset_id, sha256, relative_path, file_name, format, raw_date_source)
+        VALUES ($1, $2, 'x/a.jpg', 'a.jpg', 'jpg', 'none')`, [id, 'b'.repeat(64)]);
+      await app.server.inject({
+        method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null },
+      });
+      await app.server.inject({
+        method: 'POST', url: '/tasks/x/images', payload: { add: [{ cloudAssetId: id, selectedBecause: ['manual'] }] },
+      });
+
+      const response = await app.server.inject({
+        method: 'POST', url: '/tasks/x/duplicate', payload: { title: 'x v2', slug: 'x-v2' },
+      });
+      expect(response.statusCode).toBe(201);
+      const copy = response.json<TaskDetail>();
+      expect(copy.images).toHaveLength(1);
+      expect(copy.state).toBe('draft');
+      expect(copy.exportedAt).toBeNull();
+    } finally {
+      await setup.query('DELETE FROM pipeline.photo');
+    }
+  });
+
+  test('an unknown source slug is a named 404', async () => {
+    app = await bootstrap(await completeEnv());
+    const response = await app.server.inject({
+      method: 'POST', url: '/tasks/nowhere/duplicate', payload: { title: 'x', slug: 'x' },
+    });
+    expect(response.statusCode).toBe(404);
+  });
+
+  test('a taken slug is a named 409', async () => {
+    app = await bootstrap(await completeEnv());
+    await app.server.inject({
+      method: 'POST', url: '/tasks', payload: { title: 'A', slug: 'a', brief: '', period: null },
+    });
+    await app.server.inject({
+      method: 'POST', url: '/tasks', payload: { title: 'B', slug: 'b', brief: '', period: null },
+    });
+    const response = await app.server.inject({
+      method: 'POST', url: '/tasks/a/duplicate', payload: { title: 'x', slug: 'b' },
+    });
+    expect(response.statusCode).toBe(409);
+    expect(response.json<{ error: { code: string } }>().error.code).toBe('SLUG_TAKEN');
+  });
+});
+
+describe('DELETE /tasks/:slug', () => {
+  test('never touches an already-exported folder, and the response names it', async () => {
+    app = await bootstrap(await completeEnv());
+    await app.server.inject({
+      method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null },
+    });
+
+    const exportDirectory = path.join(await mkdtemp(path.join(tmpdir(), 'already-exported-')), 'x');
+    await mkdir(exportDirectory, { recursive: true });
+    await testPool().query(
+      `UPDATE app.task SET exported_at = now(), export_directory = $1 WHERE slug = 'x'`, [exportDirectory]);
+
+    const response = await app.server.inject({ method: 'DELETE', url: '/tasks/x' });
+    expect(response.statusCode).toBe(200);
+    const body = response.json<TaskDeleteResult>();
+    expect(body.exportDirectoryKept).toBe(exportDirectory);
+    expect(existsSync(exportDirectory)).toBe(true);
+  });
+
+  test('an unknown slug is a named 404', async () => {
+    app = await bootstrap(await completeEnv());
+    const response = await app.server.inject({ method: 'DELETE', url: '/tasks/nowhere' });
     expect(response.statusCode).toBe(404);
   });
 });

@@ -1,13 +1,17 @@
 import { ulid } from 'ulid';
 
-import { SelectionReason, TaskState } from '@shared/enums';
+import { DateKind, SelectionReason, TaskState, TranscriptionConfidence } from '@shared/enums';
 import type { PoolClient } from '../db/pool.ts';
 import type {
-  TaskCreateInput, TaskDetail, TaskImageSelection, TaskImagesMutation, TaskImagesMutationResult, TaskNote,
-  TaskNoteCreateInput, TaskNotePatchInput, TaskPatchInput, TaskSummary, TaskTextRef, TaskTextSelection,
-  TaskTextsMutation, TaskTextsMutationResult,
+  TaskCreateInput, TaskDeleteResult, TaskDetail, TaskDuplicateInput, TaskImageSelection, TaskImagesMutation,
+  TaskImagesMutationResult, TaskNote, TaskNoteCreateInput, TaskNotePatchInput, TaskPatchInput, TaskReview,
+  TaskReviewWarnings, TaskSummary, TaskTextRef, TaskTextSelection, TaskTextsMutation, TaskTextsMutationResult,
+  TaskTimelineEntry,
 } from '../contract/task_interface.ts';
 import { contentHash, type TaskContent } from '../metier/tasks/content_hash.ts';
+import { EFFECTIVE_COVERS_END, EFFECTIVE_COVERS_START, overlapPredicate, WEB_SPAN_JOIN } from '../metier/overlap/overlap_sql.ts';
+import { listPhotos } from './photo_repository.ts';
+import { listTaskTexts } from './text_repository.ts';
 
 interface TaskRow {
   slug: string;
@@ -153,23 +157,35 @@ function toSummary(
   };
 }
 
+function toImageSelection(image: ImageRow): TaskImageSelection {
+  return {
+    cloudAssetId: image.cloud_asset_id, order: image.position, note: image.note,
+    selectedBecause: image.selected_because as TaskImageSelection['selectedBecause'],
+    selectedAt: image.selected_at, orphaned: image.orphaned, outOfPeriod: image.out_of_period,
+  };
+}
+
+function toTextSelection(text: TextRow): TaskTextSelection {
+  return {
+    ref: { kind: text.text_kind, id: text.text_id }, order: text.position, selectedAt: text.selected_at,
+    orphaned: text.orphaned, startOffset: text.start_offset, endOffset: text.end_offset,
+  };
+}
+
+function toTaskNote(note: NoteRow): TaskNote {
+  return {
+    id: note.id, title: note.title, text: note.body, createdAt: note.created_at, updatedAt: note.updated_at,
+    attachedTo: { images: note.image_ids, texts: note.text_refs },
+  };
+}
+
 function toDetail(
   row: TaskRow, content: TaskContent, images: readonly ImageRow[], texts: readonly TextRow[],
   notes: readonly NoteRow[],
 ): TaskDetail {
-  const imageSelections: TaskImageSelection[] = images.map((image) => ({
-    cloudAssetId: image.cloud_asset_id, order: image.position, note: image.note,
-    selectedBecause: image.selected_because as TaskImageSelection['selectedBecause'],
-    selectedAt: image.selected_at, orphaned: image.orphaned, outOfPeriod: image.out_of_period,
-  }));
-  const textSelections: TaskTextSelection[] = texts.map((text) => ({
-    ref: { kind: text.text_kind, id: text.text_id }, order: text.position, selectedAt: text.selected_at,
-    orphaned: text.orphaned, startOffset: text.start_offset, endOffset: text.end_offset,
-  }));
-  const taskNotes: TaskNote[] = notes.map((note) => ({
-    id: note.id, title: note.title, text: note.body, createdAt: note.created_at, updatedAt: note.updated_at,
-    attachedTo: { images: note.image_ids, texts: note.text_refs },
-  }));
+  const imageSelections = images.map(toImageSelection);
+  const textSelections = texts.map(toTextSelection);
+  const taskNotes = notes.map(toTaskNote);
   return {
     ...toSummary(row, content, images, texts, notes),
     brief: row.brief,
@@ -639,4 +655,178 @@ export async function deleteTaskNote(client: PoolClient, slug: string, noteId: s
   const { rowCount } = await client.query(
     `DELETE FROM app.task_note WHERE task_slug = $1 AND id = $2`, [slug, noteId]);
   return rowCount !== null && rowCount > 0;
+}
+
+/**
+ * Une photo sélectionnée dans la tâche qu'AUCUN texte ne recouvre — LE
+ * prédicat de recouvrement (`overlap_sql.ts`), une seule fois, jamais
+ * redéfini ici (contrat §4.1, §7.3). Une photo orpheline n'a pas de ligne
+ * `pipeline.photo` : la jointure l'exclut, elle compte ailleurs.
+ */
+async function countImagesWithoutText(client: PoolClient, slug: string): Promise<number> {
+  const { rows } = await client.query<{ n: number }>(`
+    SELECT count(*)::int AS n
+      FROM app.task_image ti
+      JOIN pipeline.photo p ON p.cloud_asset_id = ti.cloud_asset_id
+     WHERE ti.task_slug = $1
+       AND NOT EXISTS (
+         SELECT 1 FROM pipeline.text_unit t
+         ${WEB_SPAN_JOIN}
+         WHERE ${overlapPredicate('p')})`, [slug]);
+  return rows[0]?.n ?? 0;
+}
+
+/**
+ * Un texte dont la fenêtre de recouvrement EFFECTIVE (`covers_*`, comblée en
+ * direct par `ref.web_span` — même règle que §21) dépasse 30 jours : associer
+ * une photo à ce texte par recouvrement ne vaut alors plus grand-chose. Ce
+ * n'est PAS `TextUnit.date` — un texte affirme un jour ou rien (D11, `date_start
+ * = date_end` est une contrainte du schéma) — c'est la fenêtre CALCULÉE
+ * autour de lui, qu'aucun champ public de `TextUnit` n'expose : encore une
+ * raison pour laquelle ce compteur ne peut pas se dériver côté client.
+ */
+async function countTextsWiderThan30Days(client: PoolClient, slug: string): Promise<number> {
+  const { rows } = await client.query<{ n: number }>(`
+    SELECT count(*)::int AS n
+      FROM app.task_text tt
+      JOIN pipeline.text_unit t ON t.kind = tt.text_kind AND t.id = tt.text_id
+      ${WEB_SPAN_JOIN}
+     WHERE tt.task_slug = $1
+       AND ${EFFECTIVE_COVERS_START} IS NOT NULL AND ${EFFECTIVE_COVERS_END} IS NOT NULL
+       AND (${EFFECTIVE_COVERS_END} - ${EFFECTIVE_COVERS_START}) > 30`, [slug]);
+  return rows[0]?.n ?? 0;
+}
+
+/**
+ * `GET /tasks/:slug/review` (tâche 26, contrat §7.3). Les huit compteurs se
+ * calculent ici, jamais côté client — même raison que le prédicat de
+ * recouvrement : une seconde implémentation qui peut diverger de la
+ * première est pire qu'un endpoint de plus.
+ */
+export async function getTaskReview(client: PoolClient, slug: string): Promise<TaskReview | null> {
+  const row = await loadRow(client, slug);
+  if (row === null) return null;
+  const { images, texts, notes } = await loadParts(client, slug, row);
+  const task = toSummary(row, toContent(row, images, texts, notes), images, texts, notes);
+
+  const imageSelectionByCloudAssetId = new Map(images.map((image) => [image.cloud_asset_id, toImageSelection(image)]));
+  const { items: photos } = await listPhotos(client, { inTask: [slug], scope: 'all' });
+  const reviewImages = photos.map((photo) => {
+    const selection = imageSelectionByCloudAssetId.get(photo.cloudAssetId);
+    if (selection === undefined) throw new Error(`photo hors sélection renvoyée par inTask : ${photo.cloudAssetId}`);
+    return { ...photo, selection };
+  });
+
+  const textSelectionByRef = new Map(texts.map((text) => [`${text.text_kind}/${text.text_id}`, toTextSelection(text)]));
+  const taskTexts = await listTaskTexts(client, slug);
+  const reviewTexts = taskTexts.map((unit) => {
+    const selection = textSelectionByRef.get(`${unit.ref.kind}/${unit.ref.id}`);
+    if (selection === undefined) throw new Error(`texte hors sélection renvoyé par listTaskTexts : ${unit.ref.kind}/${unit.ref.id}`);
+    return { ...unit, selection };
+  });
+
+  const warnings: TaskReviewWarnings = {
+    undatedImages: reviewImages.filter((image) => image.date === null).length,
+    inferredDateImages: reviewImages.filter((image) => image.date?.kind === DateKind.INFERENCE).length,
+    uncertainTexts: reviewTexts.filter((text) => text.confidence === TranscriptionConfidence.UNCERTAIN).length,
+    textsWiderThan30Days: await countTextsWiderThan30Days(client, slug),
+    imagesWithoutText: await countImagesWithoutText(client, slug),
+    orphanedImages: images.filter((image) => image.orphaned).length,
+    orphanedTexts: texts.filter((text) => text.orphaned).length,
+    imagesOutOfPeriod: images.filter((image) => image.out_of_period).length,
+  };
+
+  const timeline: TaskTimelineEntry[] = [];
+  for (const image of reviewImages) {
+    if (image.date === null) continue;
+    timeline.push({
+      kind: 'image', id: image.cloudAssetId,
+      start: image.date.start, end: image.date.end, precision: image.date.precision, dateKind: image.date.kind,
+    });
+  }
+  for (const text of reviewTexts) {
+    if (text.date === null) continue;
+    timeline.push({
+      kind: 'text', id: `${text.ref.kind}/${text.ref.id}`,
+      start: text.date.start, end: text.date.end, precision: text.date.precision, dateKind: text.date.kind,
+    });
+  }
+  timeline.sort((a, b) => a.start.localeCompare(b.start));
+
+  return { task, images: reviewImages, texts: reviewTexts, notes: notes.map(toTaskNote), warnings, timeline };
+}
+
+/** `null` : la tâche n'existe pas. Le dossier déjà exporté n'est JAMAIS touché — nommé dans la réponse. */
+export async function deleteTask(client: PoolClient, slug: string): Promise<TaskDeleteResult | null> {
+  const { rows } = await client.query<{ export_directory: string | null }>(
+    `DELETE FROM app.task WHERE slug = $1 RETURNING export_directory`, [slug]);
+  const row = rows[0];
+  return row === undefined ? null : { deleted: true, exportDirectoryKept: row.export_directory };
+}
+
+export type DuplicateTaskResult =
+  | { readonly kind: 'created'; readonly task: TaskDetail }
+  | { readonly kind: 'slug_taken'; readonly existingTitle: string }
+  | { readonly kind: 'source_not_found' };
+
+/**
+ * Copie la sélection (images, textes, notes) et le `brief`/`period` — jamais
+ * l'état d'export : la copie naît `draft`, `exportedAt`/`exportDirectory`
+ * restent `null` (contrat §7.5 — c'est le point de la duplication, revoir un
+ * dossier déjà livré sans y toucher).
+ */
+export async function duplicateTask(
+  client: PoolClient, sourceSlug: string, input: TaskDuplicateInput,
+): Promise<DuplicateTaskResult> {
+  const sourceRow = await loadRow(client, sourceSlug);
+  if (sourceRow === null) return { kind: 'source_not_found' };
+
+  const { rows: dupRows } = await client.query<{ title: string }>(
+    `SELECT title FROM app.task WHERE slug = $1`, [input.slug]);
+  const dup = dupRows[0];
+  if (dup !== undefined) return { kind: 'slug_taken', existingTitle: dup.title };
+
+  await client.query(
+    `INSERT INTO app.task (slug, title, brief, period_from, period_to)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [input.slug, input.title, sourceRow.brief, sourceRow.period_from, sourceRow.period_to],
+  );
+  await client.query(
+    `INSERT INTO app.task_image (task_slug, cloud_asset_id, position, note, selected_because)
+       SELECT $1, cloud_asset_id, position, note, selected_because
+         FROM app.task_image WHERE task_slug = $2`,
+    [input.slug, sourceSlug],
+  );
+  await client.query(
+    `INSERT INTO app.task_text (task_slug, text_kind, text_id, position, start_offset, end_offset)
+       SELECT $1, text_kind, text_id, position, start_offset, end_offset
+         FROM app.task_text WHERE task_slug = $2`,
+    [input.slug, sourceSlug],
+  );
+
+  // Notes rejouées une à une : chaque copie a besoin d'un ULID neuf, un
+  // `INSERT ... SELECT` ne peut pas en générer un par ligne recopiée.
+  const { rows: sourceNotes } = await client.query<{ id: string; title: string; body: string }>(
+    `SELECT id, title, body FROM app.task_note WHERE task_slug = $1 ORDER BY created_at`, [sourceSlug]);
+  for (const note of sourceNotes) {
+    const newId = `note_${ulid()}`;
+    await client.query(
+      `INSERT INTO app.task_note (id, task_slug, title, body) VALUES ($1, $2, $3, $4)`,
+      [newId, input.slug, note.title, note.body],
+    );
+    await client.query(
+      `INSERT INTO app.task_note_image (note_id, cloud_asset_id)
+         SELECT $1, cloud_asset_id FROM app.task_note_image WHERE note_id = $2`,
+      [newId, note.id],
+    );
+    await client.query(
+      `INSERT INTO app.task_note_text (note_id, text_kind, text_id)
+         SELECT $1, text_kind, text_id FROM app.task_note_text WHERE note_id = $2`,
+      [newId, note.id],
+    );
+  }
+
+  const detail = await getTaskDetail(client, input.slug);
+  if (detail === null) throw new Error(`tâche disparue pendant sa propre duplication : ${input.slug}`);
+  return { kind: 'created', task: detail };
 }

@@ -225,6 +225,22 @@ async function getTextUnit(client: PoolClient, ref: { readonly kind: string; rea
   return row === undefined ? null : mapTextRow(row);
 }
 
+/**
+ * Les textes sélectionnés d'une tâche, pour `GET /tasks/:slug/review`
+ * (tâche 26) — même `TEXT_UNIT_SELECT` que partout ailleurs, jointe sur
+ * `app.task_text`. Une sélection orpheline (`text_id` disparu de `pipeline`)
+ * ne peut produire aucun `TextUnit` : la jointure l'exclut naturellement,
+ * elle compte dans `warnings.orphanedTexts`, jamais ici.
+ */
+export async function listTaskTexts(client: PoolClient, slug: string): Promise<readonly TextUnit[]> {
+  const { rows } = await client.query<TextRow>(
+    `${TEXT_UNIT_SELECT}
+     JOIN app.task_text tt ON tt.text_kind = t.kind AND tt.text_id = t.id
+     WHERE tt.task_slug = $1
+     ORDER BY tt.position`, [slug]);
+  return rows.map(mapTextRow);
+}
+
 export async function listTexts(client: PoolClient, filters: TextFilters): Promise<ListTextsResult> {
   const conditions: string[] = [];
   const values: unknown[] = [];

@@ -3,9 +3,9 @@ import type { FastifyInstance } from 'fastify';
 import { ErrorCode } from '@shared/enums';
 import { AppError } from '../contract/error_interface.ts';
 import type {
-  TaskCreateInput, TaskDetail, TaskExportInput, TaskImagesMutation, TaskImagesMutationResult, TaskNote,
-  TaskNoteCreateInput, TaskNotePatchInput, TaskPatchInput, TaskPeriod, TaskSummary, TaskTextRef, TaskTextsMutation,
-  TaskTextsMutationResult,
+  TaskCreateInput, TaskDeleteResult, TaskDetail, TaskDuplicateInput, TaskExportInput, TaskImagesMutation,
+  TaskImagesMutationResult, TaskNote, TaskNoteCreateInput, TaskNotePatchInput, TaskPatchInput, TaskPeriod,
+  TaskReview, TaskSummary, TaskTextRef, TaskTextsMutation, TaskTextsMutationResult,
 } from '../contract/task_interface.ts';
 import type { Pool } from '../db/pool.ts';
 import { withTransaction } from '../db/transaction.ts';
@@ -13,8 +13,8 @@ import type { ExportServiceDeps } from '../metier/export/export_service.ts';
 import { exportTask } from '../metier/export/export_service.ts';
 import type { Job, JobStore } from '../metier/jobs/job_service.ts';
 import {
-  createTask, createTaskNote, deleteTaskNote, getTaskDetail, listTasks, mutateTaskImages, mutateTaskTexts,
-  patchTask, patchTaskNote,
+  createTask, createTaskNote, deleteTask, deleteTaskNote, duplicateTask, getTaskDetail, getTaskReview, listTasks,
+  mutateTaskImages, mutateTaskTexts, patchTask, patchTaskNote,
 } from '../repository/task_repository.ts';
 
 /** Même expression que `app.task.task_slug_is_a_folder_name` — un refus nommé plutôt qu'une contrainte Postgres brute. */
@@ -210,6 +210,18 @@ function parseNotePatchInput(body: unknown): TaskNotePatchInput {
   return patch;
 }
 
+function parseDuplicateInput(body: unknown): TaskDuplicateInput {
+  if (typeof body !== 'object' || body === null) {
+    throw invalidParameter('body', JSON.stringify(body), 'corps de requête invalide');
+  }
+  const { title, slug } = body as Record<string, unknown>;
+  if (typeof title !== 'string' || title.trim() === '') {
+    throw invalidParameter('title', JSON.stringify(title), 'title doit être une chaîne non vide');
+  }
+  if (typeof slug !== 'string') throw invalidParameter('slug', JSON.stringify(slug), 'slug doit être une chaîne');
+  return { title, slug };
+}
+
 export function registerTasksRoutes(server: FastifyInstance, deps: TasksRoutesDeps): void {
   const { pool, jobStore, exportDeps } = deps;
 
@@ -349,5 +361,52 @@ export function registerTasksRoutes(server: FastifyInstance, deps: TasksRoutesDe
       throw new AppError(ErrorCode.NOT_FOUND, `note introuvable : ${noteId}`, 404, { resource: 'note', id: noteId });
     }
     void reply.code(204);
+  });
+
+  // Les huit compteurs du bandeau se calculent ici — jamais dérivés côté
+  // client, où ils dupliqueraient LE prédicat de recouvrement (contrat §7.3).
+  server.get('/tasks/:slug/review', async (request): Promise<TaskReview> => {
+    const { slug } = request.params as { slug: string };
+    const client = await pool.connect();
+    let review;
+    try {
+      review = await getTaskReview(client, slug);
+    } finally {
+      client.release();
+    }
+    if (review === null) {
+      throw new AppError(ErrorCode.NOT_FOUND, `tâche introuvable : ${slug}`, 404, { resource: 'task', id: slug });
+    }
+    return review;
+  });
+
+  // Copie la sélection et le brief/period — jamais l'état d'export : la
+  // copie naît `draft` (tâche 26).
+  server.post('/tasks/:slug/duplicate', async (request, reply): Promise<TaskDetail> => {
+    const { slug: sourceSlug } = request.params as { slug: string };
+    const input = parseDuplicateInput(request.body);
+    assertValidSlug(input.slug);
+
+    const result = await withTransaction(pool, (client) => duplicateTask(client, sourceSlug, input));
+    if (result.kind === 'source_not_found') {
+      throw new AppError(ErrorCode.NOT_FOUND, `tâche introuvable : ${sourceSlug}`, 404, { resource: 'task', id: sourceSlug });
+    }
+    if (result.kind === 'slug_taken') {
+      throw new AppError(ErrorCode.SLUG_TAKEN, `slug déjà pris : ${input.slug}`, 409,
+        { slug: input.slug, existingTaskTitle: result.existingTitle });
+    }
+    void reply.code(201);
+    return result.task;
+  });
+
+  // Ne touche JAMAIS au dossier déjà exporté — la réponse le nomme pour que
+  // la confirmation puisse le dire (contrat §7).
+  server.delete('/tasks/:slug', async (request): Promise<TaskDeleteResult> => {
+    const { slug } = request.params as { slug: string };
+    const result = await withTransaction(pool, (client) => deleteTask(client, slug));
+    if (result === null) {
+      throw new AppError(ErrorCode.NOT_FOUND, `tâche introuvable : ${slug}`, 404, { resource: 'task', id: slug });
+    }
+    return result;
   });
 }
