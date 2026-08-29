@@ -73,8 +73,8 @@ export interface ManifestText {
   readonly corrected: boolean;
   /** Ce que le texte AFFIRME — jamais 4 clés, voir le commentaire de fichier. */
   readonly date: ManifestResolvedDate | null;
-  /** La fenêtre COUVERTE — n'affirme rien, jamais présentée comme une date. */
-  readonly overlap: ManifestOverlap;
+  /** La fenêtre COUVERTE — n'affirme rien, jamais présentée comme une date. `null` : aucune fenêtre calculable (rare, ni date propre ni fenêtre de page). */
+  readonly overlap: ManifestOverlap | null;
   readonly covers_images: readonly string[];
   readonly user_note: string | null;
 }
@@ -158,7 +158,7 @@ export interface ManifestInputText {
   readonly textOriginal: string | null;
   readonly corrected: boolean;
   readonly date: ManifestInputResolvedDate | null;
-  readonly overlap: ManifestInputOverlap;
+  readonly overlap: ManifestInputOverlap | null;
   readonly coversImages: readonly string[];
   readonly userNote: string | null;
 }
@@ -202,8 +202,8 @@ function toManifestPosition(position: ManifestInputPosition | null): ManifestPos
   return position === null ? null : { lat: position.lat, lon: position.lon, kind: position.kind, source: position.source };
 }
 
-function toManifestOverlap(overlap: ManifestInputOverlap): ManifestOverlap {
-  return { from: overlap.from, to: overlap.to, rule: overlap.rule, span_source: overlap.spanSource };
+function toManifestOverlap(overlap: ManifestInputOverlap | null): ManifestOverlap | null {
+  return overlap === null ? null : { from: overlap.from, to: overlap.to, rule: overlap.rule, span_source: overlap.spanSource };
 }
 
 function toManifestCaption(caption: ManifestInputCaption | null): ManifestCaption | null {

@@ -74,6 +74,7 @@ export interface ExportText {
   readonly coversStart: string | null;
   readonly coversEnd: string | null;
   readonly coversRule: string | null;
+  readonly pageSpanSource: string | null;
 }
 
 const TEXT_KINDS_WITH_TABLE_SUPPORT = ['passage', 'log_entry'];
@@ -101,11 +102,12 @@ export async function loadExportTexts(
       corrected_text: string | null;
       date_source: string | null; date_start: string | null; date_end: string | null; date_kind: string | null;
       covers_start: string | null; covers_end: string | null; covers_rule: string | null;
+      page_span_source: string | null;
     }>(`
       SELECT t.kind, t.id, t.document_id, t.page_id, t.body,
              tc.corrected_text,
              t.date_source, t.date_start, t.date_end, t.date_kind,
-             t.covers_start, t.covers_end, t.covers_rule
+             t.covers_start, t.covers_end, t.covers_rule, t.page_span_source
         FROM pipeline.text_unit t
         LEFT JOIN app.text_correction tc ON tc.text_kind = t.kind AND tc.text_id = t.id
        WHERE t.kind = $1 AND t.id = ANY($2)`, [kind, ids]);
@@ -115,6 +117,7 @@ export async function loadExportTexts(
         correctedText: row.corrected_text,
         dateSource: row.date_source, dateStart: row.date_start, dateEnd: row.date_end, dateKind: row.date_kind,
         coversStart: row.covers_start, coversEnd: row.covers_end, coversRule: row.covers_rule,
+        pageSpanSource: row.page_span_source,
       });
     }
   }

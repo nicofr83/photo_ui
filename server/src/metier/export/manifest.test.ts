@@ -33,7 +33,7 @@ test('the manifest carries the contract vocabulary, snake_cased and nothing else
   const m = buildManifest(task);
   expect(m.images[0]?.date?.source).toBe('annotation');
   expect(m.images[0]?.selected_because).toEqual(['date_range']);
-  expect(m.texts[0]?.overlap.rule).toBe('passage');
+  expect(m.texts[0]?.overlap?.rule).toBe('passage');
 });
 
 test('a text date has the SAME six keys as an image date — start/end, and a precision', () => {
