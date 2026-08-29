@@ -346,8 +346,11 @@ CREATE TABLE pipeline.photo (
     resolved_precision IS NULL OR resolved_precision IN ('day','month','year')),
   CONSTRAINT photo_bounds_ordered CHECK (
     resolved_start IS NULL OR resolved_start <= resolved_end),
+  -- Même précaution que sur text_unit : les trois colonnes vont ensemble, sinon
+  -- une résolution sans bornes — ou des bornes sans résolution — passe.
   CONSTRAINT photo_bounds_complete CHECK (
-    (resolved_start IS NULL) = (resolved_end IS NULL)),
+    (resolved_from IS NULL) = (resolved_start IS NULL)
+    AND (resolved_start IS NULL) = (resolved_end IS NULL)),
   -- Les BORNES sont alignées sur le mois — la LARGEUR est libre.
   -- Teste l'alignement, jamais la largeur : voir l'encadré ci-dessous.
   CONSTRAINT photo_month_is_whole_month CHECK (
@@ -646,9 +649,14 @@ CREATE TABLE pipeline.text_unit (
   CONSTRAINT text_date_source_is_a_reading CHECK (
     date_source IS NULL OR date_source IN ('passage_date_from','log_entry_date')),
   -- Un texte affirme un JOUR ou rien. Pas d'intervalle affirmé.
+  -- Les deux bornes NULLES passent (NULL = NULL rend NULL, et un CHECK n'échoue
+  -- que sur FALSE) : c'est voulu, `text_date_complete` attrape l'incohérence.
   CONSTRAINT text_date_is_a_single_day CHECK (date_start = date_end),
+  -- Les TROIS colonnes vont ensemble. Sans le second membre, une ligne
+  -- `start` renseigné / `end` NULL passerait les deux autres contraintes.
   CONSTRAINT text_date_complete CHECK (
-    (date_source IS NULL) = (date_start IS NULL))
+    (date_source IS NULL) = (date_start IS NULL)
+    AND (date_start IS NULL) = (date_end IS NULL))
 );
 CREATE INDEX text_unit_range    ON pipeline.text_unit USING gist (covers_range);
 CREATE INDEX text_unit_document ON pipeline.text_unit (document_id, ordinal);

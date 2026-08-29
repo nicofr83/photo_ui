@@ -23,6 +23,7 @@ export default defineConfig({
             'src/api/**/*.test.ts',
             'src/ui/date/noBareDateRendering.test.ts',
             'fixtures/**/*.test.ts',
+            'mocks/**/*.test.ts',
           ],
         },
       },
