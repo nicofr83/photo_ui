@@ -83,6 +83,49 @@ describe('§5.1 — creating a task', () => {
   });
 });
 
+describe('contract §4.5 — duplicating a task', () => {
+  test('duplicating adds a new task to the list', async () => {
+    const user = userEvent.setup();
+    setup();
+    await screen.findByTestId('task-1999-transat');
+    await user.click(screen.getByRole('button', { name: /^Dupliquer/ }));
+    await user.click(screen.getByRole('button', { name: /confirmer la duplication/i }));
+    expect(await screen.findByTestId('task-1999-transat-copie')).toBeInTheDocument();
+  });
+
+  test('cancelling leaves the original untouched', async () => {
+    const user = userEvent.setup();
+    setup();
+    await screen.findByTestId('task-1999-transat');
+    await user.click(screen.getByRole('button', { name: /^Dupliquer/ }));
+    await user.click(screen.getByRole('button', { name: /^Annuler/ }));
+    expect(screen.queryByLabelText(/^Identifiant$/)).not.toBeInTheDocument();
+  });
+});
+
+describe('contract §4.5 — deleting a task requires a second, explicit gesture', () => {
+  test('a first click asks for confirmation, without deleting yet', async () => {
+    const user = userEvent.setup();
+    setup();
+    await screen.findByTestId('task-1999-transat');
+    await user.click(screen.getByRole('button', { name: /^Supprimer/ }));
+    expect(screen.getByTestId('task-1999-transat')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /confirmer la suppression/i })).toBeInTheDocument();
+  });
+
+  test('confirming removes the task, and never mentions a kept directory when there is none', async () => {
+    const user = userEvent.setup();
+    setup();
+    await screen.findByTestId('task-1999-transat');
+    await user.click(screen.getByRole('button', { name: /^Supprimer/ }));
+    await user.click(screen.getByRole('button', { name: /confirmer la suppression/i }));
+
+    const row = await screen.findByTestId('task-deleted-1999-transat');
+    expect(row).toHaveTextContent(/supprimée/i);
+    expect(row).not.toHaveTextContent(/conservé/i);
+  });
+});
+
 describe('§5.1 — an unreachable TASKS_ROOT blocks creation but not consultation', () => {
   test('the banner is shown, creation is disabled, the list still reads', async () => {
     const user = userEvent.setup();

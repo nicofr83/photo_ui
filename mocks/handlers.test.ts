@@ -1,10 +1,11 @@
 import { setupServer } from 'msw/node';
 
-import { apiDeleteWithBody, apiGet, apiPut, ApiError } from '../src/api/client';
+import { apiDeleteWithBody, apiGet, apiPost, apiPut, ApiError } from '../src/api/client';
 import { PhotoOverlapEnvelopeSchema, TextOverlapEnvelopeSchema } from '../src/api/contract/overlap';
 import { ListEnvelopeSchema, PhotoFacetsSchema, PhotoListItemSchema } from '../src/api/contract/photo';
 import { AlbumSpanUpdateResultSchema, WebDocumentListSchema } from '../src/api/contract/ref';
 import { TaskReviewSchema } from '../src/api/contract/review';
+import { TaskDeleteResultSchema, TaskDetailSchema } from '../src/api/contract/task';
 import { TextDocumentSchema } from '../src/api/contract/text';
 import { parseIsoDate, parseIsoTimestamp } from '../src/shared/date_interface';
 
@@ -418,5 +419,46 @@ describe('contract §7.3 — GET /tasks/:slug/review, the eight counters and the
 
     const page = await review('1999-transat');
     expect(page.warnings.imagesOutOfPeriod).toBe(1);
+  });
+});
+
+describe('contract §4.5 — duplicating and deleting a task', () => {
+  test('duplicating copies the brief and period, starts empty otherwise', async () => {
+    const created = await apiPost(
+      '/tasks/1999-transat/duplicate', { title: 'Copie', slug: '1999-transat-copie' }, TaskDetailSchema,
+    );
+    expect(created.title).toBe('Copie');
+    expect(created.imageCount).toBe(0);
+    expect(created.texts).toEqual([]);
+  });
+
+  test('duplicating onto a taken slug is refused', async () => {
+    const thrown = (await apiPost(
+      '/tasks/1999-transat/duplicate', { title: 'x', slug: '1999-transat' }, TaskDetailSchema,
+    ).catch((e: unknown) => e)) as ApiError;
+    expect(thrown.status).toBe(409);
+    expect(thrown.code).toBe('SLUG_TAKEN');
+  });
+
+  test('duplicating an unknown task is a 404', async () => {
+    const thrown = (await apiPost(
+      '/tasks/nope/duplicate', { title: 'x', slug: 'y' }, TaskDetailSchema,
+    ).catch((e: unknown) => e)) as ApiError;
+    expect(thrown.status).toBe(404);
+  });
+
+  test('deleting removes the task, and never touches an exported directory', async () => {
+    const task = store.tasks.get('1999-transat');
+    if (task !== undefined) task.exportDirectory = '/tasks/1999-transat';
+
+    const result = await apiDeleteWithBody('/tasks/1999-transat', {}, TaskDeleteResultSchema);
+    expect(result).toEqual({ deleted: true, exportDirectoryKept: '/tasks/1999-transat' });
+    expect(store.tasks.has('1999-transat')).toBe(false);
+  });
+
+  test('deleting an unknown task is a 404', async () => {
+    const thrown = (await apiDeleteWithBody('/tasks/nope', {}, TaskDeleteResultSchema)
+      .catch((e: unknown) => e)) as ApiError;
+    expect(thrown.status).toBe(404);
   });
 });

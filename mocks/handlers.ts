@@ -810,6 +810,51 @@ export const handlers = [
     return HttpResponse.json(created, { status: 201 });
   }),
 
+  // Contract §4.5: a shallow copy — fresh slug and title, everything else
+  // starts empty, same as creating a task from scratch.
+  http.post('*/tasks/:slug/duplicate', async ({ params, request }) => {
+    const source = store.tasks.get(String(params['slug']));
+    if (source === undefined) {
+      return error(404, ErrorCode.NOT_FOUND, 'Tâche introuvable.', {
+        resource: 'task', id: String(params['slug']),
+      });
+    }
+    const body = (await request.json()) as { title: string; slug: string };
+    const existing = store.tasks.get(body.slug);
+    if (existing !== undefined) {
+      return error(409, ErrorCode.SLUG_TAKEN, `Le slug « ${body.slug} » est déjà pris.`, {
+        slug: body.slug, existingTaskTitle: existing.title,
+      });
+    }
+
+    const duplicate: TaskDetail = {
+      slug: body.slug, title: body.title, brief: source.brief, period: source.period,
+      imageCount: 0, textCount: 0, noteCount: 0, orphanCount: 0,
+      state: TaskState.DRAFT,
+      createdAt: NOW, updatedAt: NOW, lastOpenedAt: NOW,
+      exportedAt: null, exportDirectory: null,
+      contentHash: `hash-${body.slug}`, exportedContentHash: null,
+      images: [], texts: [], notes: [],
+    };
+    store.tasks.set(body.slug, duplicate);
+    return HttpResponse.json(duplicate, { status: 201 });
+  }),
+
+  // Contract §4.5: NEVER touches an already-exported directory — the
+  // response names it so the confirmation can say so.
+  http.delete('*/tasks/:slug', ({ params }) => {
+    const slug = String(params['slug']);
+    const task = store.tasks.get(slug);
+    if (task === undefined) {
+      return error(404, ErrorCode.NOT_FOUND, 'Tâche introuvable.', { resource: 'task', id: slug });
+    }
+    store.tasks.delete(slug);
+    return HttpResponse.json({
+      deleted: true,
+      exportDirectoryKept: task.exportDirectory,
+    });
+  }),
+
   http.post('*/tasks/:slug/images', async ({ params, request }) => {
     const task = store.tasks.get(String(params['slug']));
     if (task === undefined) {
