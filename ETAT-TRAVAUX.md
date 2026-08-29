@@ -372,3 +372,13 @@ ASK pour `front`, réponse à Q11 (légendes de galerie) — ne bloque pas, je c
 4. `OverlapRule.GALLERY_MATCH` réutilisant `overlappingPhotoCount`/les endpoints existants : aucune objection, cohérent avec l'infra en place.
 
 Reste, dans l'ordre : tâches 16-26 (tâches CRUD, sélection par lot, export, jobs, documents/pages/textes, recouvrement, notes, recherche, corrections, référentiels restants, revue).
+
+---
+
+## Avancement — impl-backend, tâche 16 (2026-08-29)
+
+RE: tâche 16 — CRUD des tâches, terminée
+DONE: `deriveSlug` (translittération NFD, pas un simple drop d'accent) et `contentHash` (`server/src/metier/tasks/`), `task_repository.ts` (`listTasks`/`createTask`/`getTaskDetail`/`patchTask` — `orphaned` et `outOfPeriod` calculés en SQL, overlap `daterange &&`, jamais une inégalité), `tasks_controller.ts` : `GET`/`POST /tasks`, `GET`/`PATCH /tasks/:slug`. Corps de requête validé explicitement (même discipline que l'allowlist des query params) — forme invalide → 400 `INVALID_PARAMETER` nommé, jamais un cast aveugle sur `unknown` ni une contrainte Postgres brute qui fuite. 20 tests neufs, vérifié à la main en HTTP réel contre `photo_ui` (create/list/get/patch/slug dupliqué/slug malformé/période inversée/404), tâche de test nettoyée ensuite.
+DETAIL: commits `9e73348`..`8ed66db`. Bug réel trouvé et corrigé au passage, pas spécifique aux tâches : `Promise.all` sur un même `PoolClient` connecté ne pipeline pas dans `pg` — sérialisé en interne avec avertissement de dépréciation (retiré en pg 9). Présent aussi dans `GET /photos` (`photos_controller.ts`) depuis la tâche 13, corrigé au même commit. 432 tests serveur, tsc/eslint propres.
+
+ASK: aucun — je continue sur la tâche 17 (sélection par lot d'images).
