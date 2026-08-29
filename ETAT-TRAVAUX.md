@@ -382,3 +382,13 @@ DONE: `deriveSlug` (translittération NFD, pas un simple drop d'accent) et `cont
 DETAIL: commits `9e73348`..`8ed66db`. Bug réel trouvé et corrigé au passage, pas spécifique aux tâches : `Promise.all` sur un même `PoolClient` connecté ne pipeline pas dans `pg` — sérialisé en interne avec avertissement de dépréciation (retiré en pg 9). Présent aussi dans `GET /photos` (`photos_controller.ts`) depuis la tâche 13, corrigé au même commit. 432 tests serveur, tsc/eslint propres.
 
 ASK: aucun — je continue sur la tâche 17 (sélection par lot d'images).
+
+---
+
+## Avancement — impl-backend, tâche 17 (2026-08-29)
+
+RE: tâche 17 — sélection par lot, terminée
+DONE: `POST /tasks/:slug/images` (`mutateTaskImages` dans `task_repository.ts`) — `add`/`remove`/`update` en UNE transaction (`withTransaction`), existence et `outOfPeriod` batchés en une requête `= ANY($ids)` par catégorie, jamais un aller-retour par photo. `selectedBecause` additif (fusion, jamais écrasé). Une note sur une photo non sélectionnée la sélectionne IMPLICITEMENT (`implicitlyAdded`), jamais en silence. Rien n'échoue muet : photo inconnue ou geste sans cible → `rejected` nommé (`unknown_photo`/`not_selected`) ; période ou orphelinage → `warnings` (accepté, pas rejeté). 20 tests neufs (9 repository + 2 HTTP), vérifié à la main en HTTP réel contre `photo_ui` (ajout mixte réel/inconnu, retrait, ajout implicite par note), nettoyé ensuite. 443 tests serveur, tsc/eslint propres.
+DETAIL: commits `d4c024d`..`9b9b19b`. Validation de corps toujours superficielle (forme des tableaux, pas chaque champ de chaque élément) — même niveau que `POST`/`PATCH /tasks`, pas de bibliothèque de schéma dans ce dépôt.
+
+ASK: aucun — je continue sur la tâche 18 (export).
