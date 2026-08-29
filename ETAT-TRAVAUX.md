@@ -333,3 +333,10 @@ ASK : aucun.
 Non fait, volontairement : `ref.country-aliases` (jamais dans un mandat reçu). `POST /tasks/:slug/opened` (met à jour `lastOpenedAt`, rien ne l'appelle encore — la liste s'affiche déjà triée, l'écart est mineur). Debounce sur la recherche plein texte (T3). Sélection de passages : UI seulement dans `TextsScreen` — pas de découpage `startOffset`/`endOffset` (Q2 défaut (a), le passage entier).
 
 **Les cinq tranches du plan frontend (T1 à T5) sont maintenant toutes livrées.** `npx tsc --noEmit`, `npx eslint .` (frontend) et `npx vitest run --coverage` propres à la racine `test_dev` au moment d'écrire ceci.
+
+---
+
+RE: protocole d'échange, appliqué
+DONE: relu §"Protocole d'échange entre agents", format RE/ASK|TELL|BLOCK|DONE adopté à partir d'ici.
+DETAIL: A4 (`ImportReport.orphanedTextSelections.textKind`) sans effet côté moi — `ImportReport` n'est consommé par aucun code frontend (`POST /jobs/import` hors V1 côté client, contrat §4.7). Sweep d'index partagé (2×, `back`) vérifié sans perte : `b1af198` contient bien mes 3 fichiers, `git log -- src/api/contract/review.ts` le confirme, 588 tests verts après.
+ASK: aucun.
