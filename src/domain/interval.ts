@@ -38,3 +38,18 @@ export function widthDays(i: DayInterval): number {
   }
   return Math.round((end - start) / MS_PER_DAY) + 1;
 }
+
+/**
+ * Distance in days between the two intervals' midpoints — `OverlapInfo`'s
+ * `distanceToCentreDays`, the tiebreaker under the total-span sort (contract
+ * §2.7): two candidates with the same combined width still rank differently
+ * when one is centred on the photo and the other only brushes its edge.
+ */
+export function centreDistanceDays(a: DayInterval, b: DayInterval): number {
+  const centre = (i: DayInterval): number => {
+    const start = Date.parse(`${i.start}T00:00:00Z`);
+    const end = Date.parse(`${i.end}T00:00:00Z`);
+    return (start + end) / 2;
+  };
+  return Math.round(Math.abs(centre(a) - centre(b)) / MS_PER_DAY);
+}

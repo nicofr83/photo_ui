@@ -1,4 +1,5 @@
 import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import { renderWithProviders } from '../../test/renderWithProviders';
 
@@ -12,6 +13,7 @@ const PROPOSAL_PHOTO = '2b3c4d5e6f708192a3b4c5d6e7f80911';
 const NO_BRACKET_PHOTO = '3c4d5e6f708192a3b4c5d6e7f8091122';
 const UNDATED_PHOTO = '708192a3b4c5d6e7f809112233445566';
 const SCAN_PHOTO = '5e6f708192a3b4c5d6e7f80911223344';
+const CAPTIONED_PHOTO = '8192a3b4c5d6e7f80911223344556677';
 
 describe('the date is shown with its nature AND its detail', () => {
   test('an arbitrated EXIF states the measured gap to the album', async () => {
@@ -110,5 +112,36 @@ describe('album membership is multiple', () => {
   test('every album is listed, not just the principal one', async () => {
     open(EXIF_PHOTO);
     expect(await screen.findByTestId('albums')).toHaveTextContent('all pics');
+  });
+});
+
+describe('§7.1 third extension — a machine caption is its own register', () => {
+  test('a captioned photo shows the caption, distinct from tags and albums', async () => {
+    open(CAPTIONED_PHOTO);
+    expect(await screen.findByTestId('caption')).toHaveTextContent(
+      'Des ruines mayas émergent de la forêt.',
+    );
+  });
+
+  test('a photo the captioning pass has not reached shows no caption block', async () => {
+    open(EXIF_PHOTO);
+    await screen.findByTestId('main-date');
+    expect(screen.queryByTestId('caption')).not.toBeInTheDocument();
+  });
+});
+
+describe('contract §4.2 — the reverse overlap direction is reachable from the detail panel', () => {
+  test('a photo covered by texts offers to show them, and they render as text cards', async () => {
+    const user = userEvent.setup();
+    open(PROPOSAL_PHOTO);
+    const toggle = await screen.findByRole('button', { name: /textes/i });
+    await user.click(toggle);
+    expect(await screen.findByTestId('text-log_entry-logbook/p003/001')).toBeInTheDocument();
+  });
+
+  test('a photo with no date offers no such button', async () => {
+    open(UNDATED_PHOTO);
+    await screen.findByTestId('main-date');
+    expect(screen.queryByRole('button', { name: /textes/i })).not.toBeInTheDocument();
   });
 });

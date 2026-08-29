@@ -114,6 +114,28 @@ describe('INVARIANT §9.6.1 — a refused filter is an error, never an empty gri
   });
 });
 
+describe('contract §4.2 — the overlap axis says what the proposal is worth', () => {
+  test('a summary banner appears when the grid is pre-filtered on a text', async () => {
+    renderWithProviders(
+      <PhotoGrid
+        params={params({ overlapsTextKind: 'passage', overlapsTextId: 'logbook/p003/001' })}
+        selected={new Set()}
+        onToggle={() => undefined}
+        onSelectAll={() => undefined}
+      />,
+    );
+    expect(await screen.findByTestId('overlap-summary')).toHaveTextContent(/fenêtre de/i);
+  });
+
+  test('no banner without the overlap axis', async () => {
+    renderWithProviders(
+      <PhotoGrid params={params()} selected={new Set()} onToggle={() => undefined} onSelectAll={() => undefined} />,
+    );
+    await screen.findByTestId('selection-header');
+    expect(screen.queryByTestId('overlap-summary')).not.toBeInTheDocument();
+  });
+});
+
 describe('a contract breach is not confused with a server refusal', () => {
   test('a response outside the contract shows a drift error naming the field', async () => {
     server.use(

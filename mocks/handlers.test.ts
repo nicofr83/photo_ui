@@ -1,6 +1,7 @@
 import { setupServer } from 'msw/node';
 
 import { apiGet, ApiError } from '../src/api/client';
+import { PhotoOverlapEnvelopeSchema, TextOverlapEnvelopeSchema } from '../src/api/contract/overlap';
 import { ListEnvelopeSchema, PhotoListItemSchema } from '../src/api/contract/photo';
 
 import { handlers } from './handlers';
@@ -13,6 +14,9 @@ afterAll(() => { server.close(); });
 
 const Photos = ListEnvelopeSchema(PhotoListItemSchema);
 const photos = (query = '') => apiGet(`/photos${query}`, Photos);
+const photosWithOverlap = (query = '') => apiGet(`/photos${query}`, PhotoOverlapEnvelopeSchema);
+const overlappingTexts = (cloudAssetId: string) =>
+  apiGet(`/photos/${cloudAssetId}/texts`, TextOverlapEnvelopeSchema);
 
 describe('the envelope obeys the contract', () => {
   test('an unfiltered call returns the whole hierarchy scope', async () => {
@@ -93,5 +97,50 @@ describe('the mock shares the application\'s semantics, not its own', () => {
     if (firstUndated !== -1) {
       expect(page.items.slice(firstUndated).every((p) => p.date === null)).toBe(true);
     }
+  });
+});
+
+describe('contract §4.2/§4.3 — the recouvrement axis, both directions', () => {
+  test('"which photos does this text cover?" adds overlap to each item, and a summary', async () => {
+    // logbook/p003/001 (passage) asserts no date of its own; its window comes
+    // from the page (1999-12-08 → 1999-12-12), spanSource ENTRIES.
+    const page = await photosWithOverlap(
+      '?overlapsTextKind=passage&overlapsTextId=logbook%2Fp003%2F001',
+    );
+    expect(page.items.length).toBeGreaterThan(0);
+    expect(page.items.every((p) => p.overlap.rule === 'passage')).toBe(true);
+    expect(page.overlapSummary.matchCount).toBe(page.items.length);
+    expect(page.overlapSummary.windowDays).toBe(5); // 08..12 December, inclusive
+  });
+
+  test('an unknown text reference is a 404, never an empty result', async () => {
+    const thrown = (await photosWithOverlap(
+      '?overlapsTextKind=passage&overlapsTextId=nope',
+    ).catch((e: unknown) => e)) as ApiError;
+    expect(thrown).toBeInstanceOf(ApiError);
+    expect(thrown.status).toBe(404);
+  });
+
+  test('a text with no window at all matches nothing, without erroring', async () => {
+    // web/2003/2003_gal_1/001: no date, no page, and the fixture document's
+    // span is null.
+    const page = await photosWithOverlap(
+      '?overlapsTextKind=passage&overlapsTextId=web%2F2003%2F2003_gal_1%2F001',
+    );
+    expect(page.items).toEqual([]);
+    expect(page.overlapSummary.matchCount).toBe(0);
+  });
+
+  test('"which texts cover this photo?" is the SAME predicate, the other way round', async () => {
+    // Dated 1999-12-08, inside logbook/p003's window — the same pair the
+    // above test reaches from the text side.
+    const page = await overlappingTexts('2b3c4d5e6f708192a3b4c5d6e7f80911');
+    expect(page.items.some((t) => t.ref.id === 'logbook/p003/001')).toBe(true);
+  });
+
+  test('a photo with no date covers nothing, without erroring', async () => {
+    const page = await overlappingTexts('708192a3b4c5d6e7f809112233445566');
+    expect(page.items).toEqual([]);
+    expect(page.overlapSummary.matchCount).toBe(0);
   });
 });

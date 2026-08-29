@@ -1,4 +1,4 @@
-import { PhotoScope, PhotoSort } from '../shared/enums';
+import { PhotoScope, PhotoSort, TextKind } from '../shared/enums';
 
 import {
   EMPTY_FILTERS, activeFilterTokens, fromSearchParams, toSearchParams,
@@ -41,8 +41,31 @@ describe('the filter state round-trips through the URL without loss', () => {
       dateFrom: '1999-01-01', dateTo: '1999-12-31',
       albumPaths: ['1998-1999/1999-10 Lisboa Madere'],
       scope: PhotoScope.ALL, sort: PhotoSort.DATE_DESC, reliableDatesOnly: true,
+      overlapsText: { kind: TextKind.PASSAGE, id: 'logbook/p003/001' },
     };
     expect(roundTrip(state)).toEqual(state);
+  });
+});
+
+describe('the overlap axis — spec §4, "ouverture de la grille pré-filtrée"', () => {
+  test('a text reference survives the round trip', () => {
+    const state = {
+      ...EMPTY_FILTERS,
+      overlapsText: { kind: TextKind.LOG_ENTRY, id: 'logbook/p003/001' },
+    };
+    expect(roundTrip(state)).toEqual(state);
+  });
+
+  test('contract §4.2 — the two parameters travel together or not at all', () => {
+    const state = fromSearchParams(new URLSearchParams('overlapsTextKind=passage'));
+    expect(state.overlapsText).toBeNull();
+  });
+
+  test('an unknown kind is dropped rather than forwarded', () => {
+    const state = fromSearchParams(
+      new URLSearchParams('overlapsTextKind=web_gallery&overlapsTextId=x'),
+    );
+    expect(state.overlapsText).toBeNull();
   });
 });
 
@@ -73,6 +96,7 @@ describe('INVARIANT §9.6.1 — only names the contract accepts are ever emitted
       dateFrom: '1999-01-01', dateTo: '1999-12-31',
       albumPaths: ['a', 'b'], scope: PhotoScope.ALL,
       sort: PhotoSort.ALBUM, reliableDatesOnly: true,
+      overlapsText: { kind: TextKind.PASSAGE, id: 'logbook/p003/001' },
     });
     for (const key of params.keys()) expect(ACCEPTED).toContain(key);
   });
@@ -160,6 +184,17 @@ describe('every axis produces a token that removes exactly itself', () => {
   test('the reliable-dates token turns the toggle back off', () => {
     const state = { ...EMPTY_FILTERS, reliableDatesOnly: true };
     const [token] = activeFilterTokens(state);
+    expect(token?.remove(state)).toEqual(EMPTY_FILTERS);
+  });
+
+  test('the overlap token names the kind of text, and clears on removal', () => {
+    const state = {
+      ...EMPTY_FILTERS,
+      overlapsText: { kind: TextKind.LOG_ENTRY, id: 'logbook/p003/001' },
+    };
+    const [token] = activeFilterTokens(state);
+    expect(token?.axis).toBe('overlapsText');
+    expect(token?.label).toMatch(/entrée de journal/i);
     expect(token?.remove(state)).toEqual(EMPTY_FILTERS);
   });
 });

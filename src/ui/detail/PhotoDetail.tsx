@@ -1,7 +1,11 @@
+import { useState } from 'react';
+
+import { useOverlappingTexts } from '../../api/hooks/useOverlappingTexts';
 import { usePhoto } from '../../api/hooks/usePhoto';
 import type { PhotoDetail as Detail } from '../../api/contract/photo';
 import { ResolvedDateView } from '../date/ResolvedDate';
 import { ErrorBanner } from '../primitives/ErrorBanner';
+import { TextCard } from '../texts/TextCard';
 
 import styles from './PhotoDetail.module.css';
 
@@ -20,6 +24,7 @@ const RENDER_FAILURE: Record<string, string> = {
 
 export function PhotoDetail({ cloudAssetId, onClose }: Props): React.JSX.Element {
   const { data, error, isPending } = usePhoto(cloudAssetId);
+  const [showTexts, setShowTexts] = useState(false);
 
   if (error !== null) return <ErrorBanner error={error} />;
   if (isPending) return <p role="status">Chargement de la photo…</p>;
@@ -83,7 +88,65 @@ export function PhotoDetail({ cloudAssetId, onClose }: Props): React.JSX.Element
           </li>
         ))}
       </ul>
+
+      {/* Spec §7.1's third extension: a DEDUCTION from appearance, its own
+          register — never texts[] (period text) nor a human note. */}
+      {data.caption !== null ? (
+        <section className={block(styles['caption'])} data-testid="caption">
+          <h3 className={styles['heading']}>Légende (machine)</h3>
+          <p>{data.caption.text}</p>
+          <ul className={styles['tags']}>
+            {data.caption.keywords.map((keyword) => (
+              <li className={styles['tag']} key={keyword}>{keyword}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {/* Contract §4.2, the reverse direction of the same predicate TextsScreen
+          opens from a passage. Loaded on demand: most photos cover nothing. */}
+      {data.overlappingTextCount > 0 ? (
+        <OverlappingTexts
+          cloudAssetId={cloudAssetId}
+          count={data.overlappingTextCount}
+          expanded={showTexts}
+          onToggle={() => { setShowTexts((v) => !v); }}
+        />
+      ) : null}
     </aside>
+  );
+}
+
+function OverlappingTexts({
+  cloudAssetId, count, expanded, onToggle,
+}: {
+  readonly cloudAssetId: string;
+  readonly count: number;
+  readonly expanded: boolean;
+  readonly onToggle: () => void;
+}): React.JSX.Element {
+  return (
+    <section className={styles['overlap']}>
+      <button className={styles['toggle']} type="button" onClick={onToggle}>
+        {expanded ? 'Masquer' : 'Voir'} les {count} texte{count > 1 ? 's' : ''}
+      </button>
+      {expanded ? <OverlappingTextsList cloudAssetId={cloudAssetId} /> : null}
+    </section>
+  );
+}
+
+function OverlappingTextsList({ cloudAssetId }: { readonly cloudAssetId: string }): React.JSX.Element {
+  const texts = useOverlappingTexts(cloudAssetId);
+
+  if (texts.error !== null) return <ErrorBanner error={texts.error} />;
+  if (texts.isPending) return <p role="status">Chargement des textes…</p>;
+
+  return (
+    <>
+      {texts.data.items.map((unit) => (
+        <TextCard key={`${unit.ref.kind}:${unit.ref.id}`} unit={unit} />
+      ))}
+    </>
   );
 }
 

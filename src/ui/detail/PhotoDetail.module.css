@@ -4,6 +4,10 @@
 .block { padding: 0.75rem; border-left: 3px solid #d1d5db; }
 .proposal { border-left-color: var(--date-inference); }
 .doubt { border-left-color: #9ca3af; }
+/* A caption is a deduction from appearance, same register as an inference. */
+.caption { border-left-color: var(--date-inference); }
+.overlap { display: flex; flex-direction: column; gap: 0.5rem; }
+.toggle { min-height: var(--tap-target); align-self: flex-start; padding: 0 1rem; cursor: pointer; }
 .heading { margin: 0 0 0.35rem; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em; color: #6b7280; }
 .tags { display: flex; flex-wrap: wrap; gap: 0.35rem; padding: 0; margin: 0; list-style: none; }
 .tag { padding: 0 0.5rem; border: 1px solid #e5e7eb; border-radius: 999px; font-size: 0.8rem; }

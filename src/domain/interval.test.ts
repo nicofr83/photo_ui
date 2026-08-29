@@ -1,6 +1,6 @@
 import { parseIsoDate } from '../shared/date_interface';
 
-import { contains, overlaps, widthDays, type DayInterval } from './interval';
+import { centreDistanceDays, contains, overlaps, widthDays, type DayInterval } from './interval';
 
 const interval = (start: string, end: string): DayInterval => ({
   start: parseIsoDate(start),
@@ -88,6 +88,27 @@ describe('widthDays — inclusive', () => {
     // Europe/Paris springs forward on 2000-03-26. Counting in local time would
     // yield 30.958 days and round wrong; the logbook timezone is unknown anyway.
     expect(widthDays(interval('2000-03-01', '2000-03-31'))).toBe(31);
+  });
+});
+
+describe('centreDistanceDays — how OverlapInfo ranks candidates', () => {
+  test('two identical single days are zero apart', () => {
+    expect(centreDistanceDays(interval('1999-10-14', '1999-10-14'), interval('1999-10-14', '1999-10-14')))
+      .toBe(0);
+  });
+  test('two single days ten days apart', () => {
+    expect(centreDistanceDays(interval('1999-10-01', '1999-10-01'), interval('1999-10-11', '1999-10-11')))
+      .toBe(10);
+  });
+  test('is symmetric', () => {
+    const a = interval('1999-09-23', '1999-09-25');
+    const b = interval('1999-12-08', '1999-12-12');
+    expect(centreDistanceDays(a, b)).toBe(centreDistanceDays(b, a));
+  });
+  test('a photo dated within the text window is zero days from its centre only when centred', () => {
+    // Text window centred on 1999-12-10; a photo dated exactly there is 0 apart.
+    expect(centreDistanceDays(interval('1999-12-10', '1999-12-10'), interval('1999-12-08', '1999-12-12')))
+      .toBe(0);
   });
 });
 

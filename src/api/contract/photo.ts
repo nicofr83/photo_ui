@@ -1,9 +1,11 @@
 import { z } from 'zod';
 
+import { CaptionKind } from '../../shared/enums';
+
 import {
   CloudAssetIdSchema, DateArbitrationSchema, FieldMatchSchema, IsoDateSchema,
-  LocalDateTimeSchema, ResolvedDateSchema, ResolvedPositionSchema, Sha256Schema,
-  TextRangeSchema,
+  IsoTimestampSchema, LocalDateTimeSchema, ResolvedDateSchema, ResolvedPositionSchema,
+  Sha256Schema, TextRangeSchema,
 } from './common';
 
 /** Each field nullable independently: a city with no country exists, and vice versa. */
@@ -154,6 +156,29 @@ export const DatingDoubtSchema = z.strictObject({
   ),
 });
 
+/**
+ * A caption produced by a vision model. Spec §7.1's third extension: it is a
+ * DEDUCTION from appearance, never a reading — and it is its own register,
+ * never mixed with `texts[]` (period text) or a human note. `machineOriginal`
+ * survives a human edit; it is never destroyed, same rule as a transcription
+ * correction.
+ */
+export const MachineCaptionSchema = z.strictObject({
+  text: z.string(),
+  keywords: z.array(z.string()),
+  kind: z.enum(CaptionKind),
+  model: z.string(),
+  promptVersion: z.string(),
+  createdAt: IsoTimestampSchema,
+  machineOriginal: z.string().nullable(),
+});
+export type MachineCaption = z.infer<typeof MachineCaptionSchema>;
+
+export const CaptionEditInputSchema = z.strictObject({
+  text: z.string(),
+  keywords: z.array(z.string()).optional(),
+});
+
 export const PhotoDetailSchema = PhotoListItemSchema.extend({
   /** Album membership is multiple: 2 to 4 albums per photo. */
   albumPaths: z.array(z.string()),
@@ -167,6 +192,8 @@ export const PhotoDetailSchema = PhotoListItemSchema.extend({
   proposal: DatingProposalSchema.nullable(),
   doubt: DatingDoubtSchema.nullable(),
   overlappingTextCount: z.number().int(),
+  /** NULL until the captioning pass has covered this photo. Spec §7.1. */
+  caption: MachineCaptionSchema.nullable(),
   render: RenderAvailabilitySchema,
 });
 export type PhotoDetail = z.infer<typeof PhotoDetailSchema>;

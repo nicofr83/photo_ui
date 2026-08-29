@@ -1,4 +1,5 @@
 import { usePhotos } from '../../api/hooks/usePhotos';
+import { describeOverlap } from '../../domain/overlapSummary';
 import { ErrorBanner } from '../primitives/ErrorBanner';
 
 import { PhotoTile } from './PhotoTile';
@@ -37,6 +38,15 @@ export function PhotoGrid({
 
   return (
     <>
+      {/* Contract §4.2: only present when the overlap axis is active — a
+          different response shape, not a null placeholder. Spec §4.3: what
+          the proposal is worth AND where its weakness comes from. */}
+      {'overlapSummary' in data ? (
+        <p className={styles['overlapSummary']} data-testid="overlap-summary">
+          {describeOverlap(data.overlapSummary)}
+        </p>
+      ) : null}
+
       <SelectionHeader
         page={data}
         selectedCount={selected.size}

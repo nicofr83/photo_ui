@@ -9,3 +9,4 @@
 @media (min-width: 40rem) { .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (min-width: 64rem) { .grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
 .status { color: #6b7280; }
+.overlapSummary { padding: 0.5rem 0.75rem; background: #fffbeb; color: #92400e; }

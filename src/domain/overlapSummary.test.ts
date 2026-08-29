@@ -26,6 +26,11 @@ describe('§4.3 — the counter says what the proposal is worth AND where it is 
       .toBe('87 photos dans une fenêtre de 41 jours');
   });
 
+  test('a single coarsely-dated photo is not pluralised', () => {
+    expect(describeOverlap(summary({ datedToDayCount: 86, datedToMonthCount: 1 })))
+      .toContain('1 datée au mois seulement');
+  });
+
   test('year-precision photos are counted in the weakness too', () => {
     expect(describeOverlap(summary({ datedToMonthCount: 4, datedToYearCount: 2 })))
       .toContain('dont 6 datées au mois ou à l’année seulement');

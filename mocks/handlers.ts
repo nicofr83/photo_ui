@@ -7,10 +7,14 @@
  */
 import { http, HttpResponse } from 'msw';
 
-import { overlaps } from '../src/domain/interval';
+import { centreDistanceDays, overlaps, widthDays, type DayInterval } from '../src/domain/interval';
+import type { OverlapInfo, OverlapSummary, PhotoWithOverlap } from '../src/api/contract/overlap';
 import type { PhotoListItem } from '../src/api/contract/photo';
+import type { TextUnit } from '../src/api/contract/text';
 import { isIsoDate } from '../src/shared/date_interface';
-import { DateSource, ErrorCode, PhotoSort, SelectionReason, TaskState } from '../src/shared/enums';
+import {
+  DatePrecision, DateSource, ErrorCode, OverlapRule, PhotoSort, SelectionReason, TaskState,
+} from '../src/shared/enums';
 import type { TaskDetail } from '../src/api/contract/task';
 import type { Job } from '../src/api/contract/job';
 
@@ -32,6 +36,51 @@ function error(status: number, code: string, message: string, details: unknown):
   return HttpResponse.json({ error: { code, message, details } }, { status });
 }
 
+/**
+ * The window a text covers, and which rule produced it — contract §2.7.
+ * A text with neither a date of its own nor a page falls back to its
+ * document's `ref.web_span`; with none of the three it covers nothing, and
+ * that is a normal, common state (§5.3), not an error.
+ */
+function effectiveTextWindow(text: TextUnit): { window: DayInterval; rule: OverlapRule } | null {
+  if (text.date !== null) {
+    const rule = text.ref.kind === 'log_entry' ? OverlapRule.LOGBOOK_ENTRY : OverlapRule.PASSAGE;
+    return { window: { start: text.date.start, end: text.date.end }, rule };
+  }
+  if (text.pageId !== null) {
+    const page = INVARIANT_PAGES.find((p) => p.id === text.pageId);
+    return page?.window == null
+      ? null
+      : { window: { start: page.window.start, end: page.window.end }, rule: OverlapRule.PASSAGE };
+  }
+  const doc = INVARIANT_DOCUMENTS.find((d) => d.id === text.documentId);
+  return doc?.span == null
+    ? null
+    : { window: { start: doc.span.start, end: doc.span.end }, rule: OverlapRule.WEB_SPAN };
+}
+
+function overlapInfo(photo: DayInterval, text: DayInterval, rule: OverlapRule): OverlapInfo {
+  return {
+    rule,
+    photoSpanDays: widthDays(photo),
+    textSpanDays: widthDays(text),
+    totalSpanDays: widthDays(photo) + widthDays(text),
+    distanceToCentreDays: centreDistanceDays(photo, text),
+  };
+}
+
+/** Spec §4.3: says what the matched set is worth, and where it is weak. */
+function summarise(dates: ReadonlyArray<{ precision: string } | null>, windowDays: number): OverlapSummary {
+  return {
+    matchCount: dates.length,
+    windowDays,
+    datedToDayCount: dates.filter((d) => d?.precision === DatePrecision.DAY).length,
+    datedToMonthCount: dates.filter((d) => d?.precision === DatePrecision.MONTH).length,
+    datedToYearCount: dates.filter((d) => d?.precision === DatePrecision.YEAR).length,
+    undatedCount: dates.filter((d) => d === null).length,
+  };
+}
+
 interface UnmatchedValue {
   parameter: string;
   value: string;
@@ -50,6 +99,43 @@ export const handlers = [
     const documentId = new URL(request.url).searchParams.get('documentId');
     return HttpResponse.json({
       items: INVARIANT_PAGES.filter((p) => documentId === null || p.documentId === documentId),
+    });
+  }),
+
+  // Contract §4.2: "quels textes couvrent cette photo ?" — the other
+  // direction of the SAME predicate used by `/photos?overlapsTextKind…`.
+  // Declared BEFORE the generic `*/texts` handler below: MSW's leading `*`
+  // matches any prefix, so `*/texts` alone would also swallow this nested
+  // URL and win by registration order if it came first.
+  http.get('*/photos/:cloudAssetId/texts', ({ params }) => {
+    const photo = store.photos.find((p) => p.cloudAssetId === String(params['cloudAssetId']));
+    if (photo === undefined) {
+      return error(404, ErrorCode.NOT_FOUND, 'Photo introuvable.', {
+        resource: 'photo', id: String(params['cloudAssetId']),
+      });
+    }
+
+    const items = photo.date === null ? [] : INVARIANT_TEXTS
+      .map((text) => {
+        const effective = effectiveTextWindow(text);
+        if (effective === null || photo.date === null) return null;
+        if (!overlaps(photo.date, effective.window)) return null;
+        return { ...text, overlap: overlapInfo(photo.date, effective.window, effective.rule) };
+      })
+      .filter((t): t is NonNullable<typeof t> => t !== null)
+      .sort((a, b) => a.overlap.totalSpanDays - b.overlap.totalSpanDays);
+
+    return HttpResponse.json({
+      items,
+      total: items.length,
+      populationTotal: INVARIANT_TEXTS.length,
+      excludedCount: INVARIANT_TEXTS.length - items.length,
+      filters: { applied: [], unmatchedValues: [] },
+      importId: store.importId,
+      overlapSummary: summarise(
+        items.map((t) => (t.date === null ? null : { precision: t.date.precision })),
+        photo.date === null ? 0 : widthDays({ start: photo.date.start, end: photo.date.end }),
+      ),
     });
   }),
 
@@ -139,6 +225,11 @@ export const handlers = [
     return HttpResponse.json(job);
   }),
 
+  // Contract §4.2: "quels textes couvrent cette photo ?" — the other
+  // direction of the SAME predicate used by `/photos?overlapsTextKind…`.
+  // Declared BEFORE `/photos/:cloudAssetId`: MSW/path-to-regexp tries
+  // handlers in array order, and the plain `:cloudAssetId` pattern matches
+  // greedily enough to shadow this one if it comes first.
   http.get('*/photos/:cloudAssetId', ({ params }) => {
     const photo = store.photos.find((p) => p.cloudAssetId === String(params['cloudAssetId']));
     if (photo === undefined) {
@@ -303,7 +394,46 @@ export const handlers = [
       );
     }
 
-    kept = sortPhotos(kept, sort);
+    // Contract §4.2: "quelles photos ce texte couvre-t-il ?" — the two
+    // parameters travel together or not at all, same rule as the client side.
+    const overlapsTextKind = params.get('overlapsTextKind');
+    const overlapsTextId = params.get('overlapsTextId');
+    let overlapSummary: OverlapSummary | null = null;
+    let withOverlap: PhotoWithOverlap[] | null = null;
+
+    if (overlapsTextKind !== null && overlapsTextId !== null) {
+      const text = INVARIANT_TEXTS.find(
+        (t) => t.ref.kind === overlapsTextKind && t.ref.id === overlapsTextId,
+      );
+      if (text === undefined) {
+        return error(404, ErrorCode.NOT_FOUND, 'Texte introuvable.', {
+          resource: 'text', id: overlapsTextId,
+        });
+      }
+      const effective = effectiveTextWindow(text);
+      const dated = kept.filter(
+        (p): p is PhotoListItem & { date: NonNullable<PhotoListItem['date']> } => p.date !== null,
+      );
+      const matched = effective === null
+        ? []
+        : dated.filter((p) => overlaps(p.date, effective.window));
+
+      withOverlap = effective === null ? [] : matched.map((p) => ({
+        ...p, overlap: overlapInfo(p.date, effective.window, effective.rule),
+      }));
+      overlapSummary = summarise(
+        matched.map((p) => ({ precision: p.date.precision })),
+        effective === null ? 0 : widthDays(effective.window),
+      );
+      kept = withOverlap;
+    }
+
+    if (withOverlap !== null && sort === PhotoSort.OVERLAP) {
+      withOverlap = [...withOverlap].sort((a, b) => a.overlap.totalSpanDays - b.overlap.totalSpanDays);
+      kept = withOverlap;
+    } else if (withOverlap === null) {
+      kept = sortPhotos(kept, sort);
+    }
 
     // An OPEN vocabulary value that matches nothing is 200 with zero results —
     // it may exist after the next import. Contract §5.1.
@@ -331,6 +461,7 @@ export const handlers = [
       excludedCount: population.length - total,
       filters: { applied, unmatchedValues },
       importId: store.importId,
+      ...(overlapSummary === null ? {} : { overlapSummary }),
     });
   }),
 ];
@@ -402,6 +533,20 @@ function detailFor(photo: PhotoListItem) {
         }
       : null,
     overlappingTextCount: isProposal ? 7 : 0,
+    // Spec §7.1's third extension: a DEDUCTION from appearance, its own
+    // register — never the excerpt above, which only exists to explain a
+    // search hit. NULL until the captioning pass has covered this photo.
+    caption: photo.hasCaption
+      ? {
+          text: photo.captionExcerpt?.text ?? 'Photo sans description disponible.',
+          keywords: ['bateau', 'famille', 'voyage'],
+          kind: 'machine' as const,
+          model: 'claude-fable-5',
+          promptVersion: 'v3',
+          createdAt: NOW,
+          machineOriginal: null,
+        }
+      : null,
     render: missingFile
       ? { available: false, unavailableReason: 'source_file_missing' as const, cached: false }
       : { available: true, unavailableReason: null, cached: true },

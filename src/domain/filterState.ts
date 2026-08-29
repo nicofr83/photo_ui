@@ -1,5 +1,5 @@
 import { isIsoDate } from '../shared/date_interface';
-import { PhotoScope, PhotoSort } from '../shared/enums';
+import { PhotoScope, PhotoSort, TextKind } from '../shared/enums';
 
 /**
  * The selection axes of tranche 1.
@@ -17,6 +17,13 @@ export interface FilterState {
   readonly sort: PhotoSort;
   /** Spec §6.1: OFF by default. Doubt includes. */
   readonly reliableDatesOnly: boolean;
+  /**
+   * The "which photos does this text cover?" axis (contract §4.2). Set by
+   * TextsScreen's "show photos" action, never by the filter panel — but it
+   * lives in the URL like every other axis, for the same reason: a filter not
+   * in the URL can disappear without anyone noticing.
+   */
+  readonly overlapsText: { readonly kind: TextKind; readonly id: string } | null;
 }
 
 export const EMPTY_FILTERS: FilterState = {
@@ -26,6 +33,7 @@ export const EMPTY_FILTERS: FilterState = {
   scope: PhotoScope.HIERARCHY,
   sort: PhotoSort.DATE_ASC,
   reliableDatesOnly: false,
+  overlapsText: null,
 };
 
 /**
@@ -51,6 +59,13 @@ export function toSearchParams(state: FilterState): URLSearchParams {
   if (state.sort !== PhotoSort.DATE_ASC) params.set('sort', state.sort);
   if (state.reliableDatesOnly) params.set('reliableDatesOnly', 'true');
 
+  // Contract §4.2: "les deux ensemble ou aucun" — the state never holds one
+  // without the other, so there is nothing to guard here.
+  if (state.overlapsText !== null) {
+    params.set('overlapsTextKind', state.overlapsText.kind);
+    params.set('overlapsTextId', state.overlapsText.id);
+  }
+
   return params;
 }
 
@@ -63,6 +78,13 @@ export function fromSearchParams(params: URLSearchParams): FilterState {
   const scope = params.get('scope');
   const sort = params.get('sort');
 
+  const rawKind = params.get('overlapsTextKind');
+  const rawId = params.get('overlapsTextId');
+  const overlapsText =
+    rawKind !== null && rawId !== null && isMember(TextKind, rawKind)
+      ? { kind: rawKind, id: rawId }
+      : null;
+
   return {
     dateFrom: bothEnds ? rawFrom : null,
     dateTo: bothEnds ? rawTo : null,
@@ -70,6 +92,7 @@ export function fromSearchParams(params: URLSearchParams): FilterState {
     scope: isMember(PhotoScope, scope) ? scope : PhotoScope.HIERARCHY,
     sort: isMember(PhotoSort, sort) ? sort : PhotoSort.DATE_ASC,
     reliableDatesOnly: params.get('reliableDatesOnly') === 'true',
+    overlapsText,
   };
 }
 
@@ -80,7 +103,14 @@ function isMember<T extends Record<string, string>>(
   return value !== null && Object.values(vocabulary).includes(value);
 }
 
-export type FilterAxis = 'dates' | 'albumPath' | 'scope' | 'reliableDatesOnly';
+export type FilterAxis =
+  | 'dates' | 'albumPath' | 'scope' | 'reliableDatesOnly' | 'overlapsText';
+
+/** A label a person can read, without knowing the wire vocabulary. */
+const TEXT_KIND_LABEL: Record<TextKind, string> = {
+  [TextKind.PASSAGE]: 'passage',
+  [TextKind.LOG_ENTRY]: 'entrée de journal',
+};
 
 export interface FilterToken {
   readonly axis: FilterAxis;
@@ -121,6 +151,14 @@ export function activeFilterTokens(state: FilterState): FilterToken[] {
       axis: 'reliableDatesOnly',
       label: 'dates fiables seulement',
       remove: (s) => ({ ...s, reliableDatesOnly: false }),
+    });
+  }
+
+  if (state.overlapsText !== null) {
+    tokens.push({
+      axis: 'overlapsText',
+      label: `texte : ${TEXT_KIND_LABEL[state.overlapsText.kind]}`,
+      remove: (s) => ({ ...s, overlapsText: null }),
     });
   }
 
