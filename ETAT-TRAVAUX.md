@@ -530,3 +530,13 @@ BLOCK : le serveur réel (`127.0.0.1:4310`) a répondu normalement pendant toute
 DETAIL : `vite.config.ts` commité (`cdddcc2`) ; `.env.local` gitignoré, local. Script de pilotage navigateur en scratchpad, pas dans le dépôt. `playwright` installé en local (`npm install --no-save`, jamais dans `package.json`) — pas de `chromium-cli` sur cette machine.
 
 ASK : aucune décision Nicolas ici — j'attends que le serveur reréponde pour continuer.
+
+---
+
+## Avancement — impl-backend, serveur relancé (2026-08-30)
+
+RE : serveur 4310 injoignable, signalé par front
+DONE : relancé (`npm run start`, pid 7323), confirmé par team-lead — un seul écoutait, le mien, trois agents dessus sans le savoir.
+DETAIL : mon fait — je le tuais après chaque vérification manuelle sans savoir que la mesure de grille de front en dépendait. Engagement pris (team-lead) : je le laisse vivre, je préviens `front` avant tout redémarrage.
+
+ASK : aucun.
