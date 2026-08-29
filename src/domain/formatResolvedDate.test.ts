@@ -205,3 +205,88 @@ describe('a lying server fails loudly rather than rendering something plausible'
     expect(() => formatResolvedDate(impossible)).toThrow(/unmapped DatePrecision/);
   });
 });
+
+describe('INVARIANT — a wide range never displays as a narrow date', () => {
+  // The CHECK fix means `precision` qualifies each BOUND, not the width. A
+  // ref.album_span on `1998-02-Maison rose Algès` covers seventeen months at
+  // month precision. Rendering `start` alone would show "février 1998" and make
+  // seventeen months look like one -- the capital rule's fault applied to width
+  // instead of nature, on the 421 photos the spec calls the best value in the
+  // project.
+  const span = (start: string, end: string, precision: DatePrecision, source: DateSource) => ({
+    start: parseIsoDate(start), end: parseIsoDate(end), precision,
+    kind: expectedKindFor(source), source, bracketHours: null,
+  });
+
+  test('a seventeen-month album span renders both ends', () => {
+    expect(
+      formatResolvedDate(
+        span('1998-02-01', '1999-06-30', DatePrecision.MONTH, DateSource.ALBUM_MONTH),
+      ).text,
+    ).toBe('février 1998 – juin 1999');
+  });
+
+  test('a single month still renders as one month', () => {
+    expect(
+      formatResolvedDate(
+        span('1999-10-01', '1999-10-31', DatePrecision.MONTH, DateSource.ALBUM_MONTH),
+      ).text,
+    ).toBe('octobre 1999');
+  });
+
+  test('two months in the same year both appear', () => {
+    expect(
+      formatResolvedDate(
+        span('2000-12-01', '2001-02-28', DatePrecision.MONTH, DateSource.ALBUM_MONTH),
+      ).text,
+    ).toBe('décembre 2000 – février 2001');
+  });
+
+  test('a multi-year span renders both years', () => {
+    expect(
+      formatResolvedDate(
+        span('2000-01-01', '2001-12-31', DatePrecision.YEAR, DateSource.ALBUM_YEAR),
+      ).text,
+    ).toBe('2000 – 2001');
+  });
+
+  test('a single year still renders as one year', () => {
+    expect(
+      formatResolvedDate(
+        span('2000-01-01', '2000-12-31', DatePrecision.YEAR, DateSource.ALBUM_YEAR),
+      ).text,
+    ).toBe('2000');
+  });
+
+  test('a bracketed proposal spanning days renders both days', () => {
+    expect(
+      formatResolvedDate(
+        span('1999-12-08', '1999-12-12', DatePrecision.DAY, DateSource.LOGBOOK_BRACKET),
+      ).text,
+    ).toBe('1999-12-08 – 1999-12-12');
+  });
+
+  test('a span is still marked with the glyph of its nature', () => {
+    const out = formatResolvedDate(
+      span('1998-02-01', '1999-06-30', DatePrecision.MONTH, DateSource.ALBUM_MONTH),
+    );
+    expect(out.glyph).toBe('≈');
+    expect(out.kind).toBe(DateKind.INFERENCE);
+  });
+
+  test('the accessible label spells the range out rather than reading a dash', () => {
+    expect(
+      formatResolvedDate(
+        span('1998-02-01', '1999-06-30', DatePrecision.MONTH, DateSource.ALBUM_MONTH),
+      ).label,
+    ).toBe('date inférée : de février 1998 à juin 1999');
+  });
+
+  test('a point date keeps its simple label', () => {
+    expect(
+      formatResolvedDate(
+        span('1999-10-01', '1999-10-31', DatePrecision.MONTH, DateSource.ALBUM_MONTH),
+      ).label,
+    ).toBe('date inférée : octobre 1999');
+  });
+});

@@ -36,6 +36,11 @@ describe('expectedKindFor', () => {
     expect(covered).toEqual(Object.values(DateSource).sort());
   });
 
+  test('INVARIANT — `annotation` is the ONLY source of nature decision', () => {
+    const decisions = CANONICAL.filter(([, k]) => k === DateKind.DECISION).map(([s]) => s);
+    expect(decisions).toEqual([DateSource.ANNOTATION]);
+  });
+
   test('only EXIF and the two text readings are readings', () => {
     const readings = CANONICAL.filter(([, k]) => k === DateKind.READING).map(([s]) => s);
     expect(readings.sort()).toEqual(

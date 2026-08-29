@@ -37,25 +37,43 @@ const NATURE: Record<DateKind, string> = {
 
 const ABSENT = 'sans date';
 
-function renderText(date: ResolvedDate): string {
-  const year = date.start.slice(0, 4);
-  switch (date.precision) {
+/** One bound, rendered at the date's precision. */
+function renderBound(bound: string, precision: DatePrecision): string {
+  const year = bound.slice(0, 4);
+  switch (precision) {
     case DatePrecision.DAY:
-      return date.start;
+      return bound;
     case DatePrecision.MONTH: {
-      const name = MONTHS[Number(date.start.slice(5, 7)) - 1];
+      const name = MONTHS[Number(bound.slice(5, 7)) - 1];
       if (name === undefined) {
-        throw new Error(`malformed month in resolved start: ${date.start}`);
+        throw new Error(`malformed month in resolved bound: ${bound}`);
       }
       return `${name} ${year}`;
     }
     case DatePrecision.YEAR:
       return year;
     default: {
-      const unreachable: never = date.precision;
+      const unreachable: never = precision;
       throw new Error(`unmapped DatePrecision: ${String(unreachable)}`);
     }
   }
+}
+
+/**
+ * `precision` qualifies each BOUND, not the width of the interval. A
+ * `ref.album_span` at month precision can cover seventeen months — that is the
+ * measured case of `1998-02-Maison rose Algès`. Rendering `start` alone would
+ * show "février 1998" and make seventeen months look like one: the capital
+ * rule's fault applied to width instead of nature.
+ *
+ * So: render the point when both bounds coincide AT THAT PRECISION, and the
+ * range when they do not.
+ */
+function renderText(date: ResolvedDate): { text: string; spoken: string } {
+  const from = renderBound(date.start, date.precision);
+  const to = renderBound(date.end, date.precision);
+  if (from === to) return { text: from, spoken: from };
+  return { text: `${from} – ${to}`, spoken: `de ${from} à ${to}` };
 }
 
 function renderDetail(
@@ -95,12 +113,14 @@ export function formatResolvedDate(
 
   assertKindConsistent(date.source, date.kind);
 
-  const text = renderText(date);
+  const { text, spoken } = renderText(date);
   return {
     kind: date.kind,
     glyph: GLYPH[date.kind],
     text,
     detail: renderDetail(date, arbitration),
-    label: `${NATURE[date.kind]} : ${text}`,
+    // `spoken` rather than `text`: a screen reader should hear "de février 1998
+    // à juin 1999", not a dash it may or may not announce.
+    label: `${NATURE[date.kind]} : ${spoken}`,
   };
 }
