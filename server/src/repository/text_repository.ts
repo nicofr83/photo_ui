@@ -1,4 +1,4 @@
-import type { DateSource } from '@shared/enums';
+import { TextKind, TranscriptionConfidence, type DateSource } from '@shared/enums';
 import type { PoolClient } from '../db/pool.ts';
 import type {
   LogEntryFields, OverlapSummary, TextCorrection, TextDocument, TextPage, TextUnit, TextWithOverlap, WebDocumentRow,
@@ -244,7 +244,101 @@ export async function listTaskTexts(client: PoolClient, slug: string): Promise<r
   return rows.map(mapTextRow);
 }
 
+interface GalleryLinkRow {
+  sha256: string;
+  page: string;
+  image_path: string;
+  caption: string | null;
+  alt: string | null;
+  distance: number;
+  margin: number;
+  verified: boolean | null;
+  ordinal: number;
+  overlapping_photo_count: number;
+}
+
+/** `2003/2003_gal_11.htm` → `2003/2003_gal_11` — matches 26 of 27 real `pipeline.document` ids (kind html), one page (`Astro/misc/…`) never imported. */
+function stripHtmlExtension(page: string): string {
+  return page.replace(/\.html?$/i, '');
+}
+
+function mapGalleryLinkRow(row: GalleryLinkRow): TextUnit {
+  const text = row.caption ?? row.alt ?? '';
+  const verified = row.verified === true;
+  return {
+    ref: { kind: TextKind.WEB_CAPTION, id: `${row.sha256}:${row.image_path}` },
+    // Aucun `pipeline.page` derrière une légende de galerie — les pages scannées
+    // sont pour le journal manuscrit, pas pour le site web.
+    documentId: `web/${stripHtmlExtension(row.page)}`,
+    pageId: null,
+    ordinal: row.ordinal,
+    text, textOriginal: text,
+    // Pas de correction pour ce registre — `app.text_correction` cible
+    // `pipeline.text_unit` uniquement ; `verified` porte déjà le geste humain
+    // qui compte ici (confirmer l'appariement, pas réécrire le texte).
+    correction: null,
+    // `verified` REVIEWED, sinon UNCERTAIN — jamais TRANSCRIBED, qui suppose
+    // une lecture humaine du texte lui-même, pas une confirmation d'appariement.
+    confidence: verified ? TranscriptionConfidence.REVIEWED : TranscriptionConfidence.UNCERTAIN,
+    // Un texte affirme un jour ou rien (D11) — une légende de galerie n'affirme
+    // jamais de date, la sienne vient de la photo qu'elle légende, par lien
+    // DIRECT (règle GALLERY_MATCH), jamais par recouvrement de plage.
+    date: null,
+    pageSpanSource: null,
+    overlappingPhotoCount: row.overlapping_photo_count,
+    highlights: [],
+    logEntry: null,
+    galleryCaption: {
+      sha256: row.sha256, page: row.page, imagePath: row.image_path,
+      distance: row.distance, margin: row.margin, verified,
+    },
+  };
+}
+
+/**
+ * `GET /texts?kind=web_caption` — les légendes du site 2003-2004 appariées à
+ * leur photo par hash perceptuel (contrat §11 Q11, `app.web_gallery_link`,
+ * jamais `pipeline.text_unit` : une table entièrement différente, une
+ * requête entièrement séparée). Exclu : un lien sans AUCUN texte (ni
+ * `caption` ni `alt` — rien à lire), et un lien qu'un humain a explicitement
+ * rejeté (`verified = false` — jamais montré comme une légende, même
+ * ambrée). `verified IS NULL` (« pas encore relu ») reste montré, non vérifié.
+ *
+ * Portée DÉLIBÉRÉMENT réduite pour cette passe : `limit`/`offset` seuls parmi
+ * les filtres de `/texts` — `q`, `dateFrom`/`dateTo`, `confidence`,
+ * `hasCorrection`, `overlapsPhoto`, `documentId`, `pageId` ne s'appliquent
+ * pas encore à ce registre. Étendre `app.text_search` ou le prédicat de
+ * recouvrement à ces 205 lignes est un travail séparé, pas fait ici.
+ */
+async function listWebCaptionTexts(client: PoolClient, filters: TextFilters): Promise<ListTextsResult> {
+  const { rows: totalRows } = await client.query<{ n: number }>(`
+    SELECT count(*)::int AS n FROM app.web_gallery_link wgl
+     WHERE (wgl.caption IS NOT NULL OR wgl.alt IS NOT NULL) AND (wgl.verified IS NULL OR wgl.verified = true)`);
+  const total = totalRows[0]?.n ?? 0;
+
+  const values: unknown[] = [];
+  const param = (value: unknown): string => {
+    values.push(value);
+    return `$${String(values.length)}`;
+  };
+  const limitClause = filters.limit !== undefined ? ` LIMIT ${param(filters.limit)}` : '';
+  const offsetClause = filters.offset !== undefined ? ` OFFSET ${param(filters.offset)}` : '';
+
+  const { rows } = await client.query<GalleryLinkRow>(`
+    SELECT wgl.sha256, wgl.page, wgl.image_path, wgl.caption, wgl.alt, wgl.distance, wgl.margin, wgl.verified,
+           (row_number() OVER (ORDER BY wgl.page, wgl.image_path))::int AS ordinal,
+           (SELECT count(*)::int FROM pipeline.photo p WHERE p.sha256 = wgl.sha256) AS overlapping_photo_count
+      FROM app.web_gallery_link wgl
+     WHERE (wgl.caption IS NOT NULL OR wgl.alt IS NOT NULL) AND (wgl.verified IS NULL OR wgl.verified = true)
+     ORDER BY wgl.page, wgl.image_path
+     ${limitClause}${offsetClause}`, values);
+
+  return { items: rows.map(mapGalleryLinkRow), total };
+}
+
 export async function listTexts(client: PoolClient, filters: TextFilters): Promise<ListTextsResult> {
+  if (filters.kind === TextKind.WEB_CAPTION) return await listWebCaptionTexts(client, filters);
+
   const conditions: string[] = [];
   const values: unknown[] = [];
   const param = (value: unknown): string => {

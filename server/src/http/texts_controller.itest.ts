@@ -168,6 +168,26 @@ describe('GET /texts', () => {
       await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
     }
   });
+
+  test('kind=web_caption is accepted (front\'s real repro — used to 400), serves a real gallery match', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO app.web_gallery_link (sha256, page, image_path, caption, distance, margin, verified)
+        VALUES ($1, '2003/gal.htm', 'p01.jpg', 'Le port au matin', 4, 8, null)`, ['b'.repeat(64)]);
+
+      const response = await app.server.inject({ method: 'GET', url: '/texts?kind=web_caption' });
+      expect(response.statusCode).toBe(200);
+      const body = response.json<ListEnvelope<TextUnit>>();
+      expect(body.total).toBe(1);
+      expect(body.items[0]?.text).toBe('Le port au matin');
+      expect(body.items[0]?.galleryCaption).toEqual({
+        sha256: 'b'.repeat(64), page: '2003/gal.htm', imagePath: 'p01.jpg', distance: 4, margin: 8, verified: false,
+      });
+    } finally {
+      await setup.query(`DELETE FROM app.web_gallery_link WHERE sha256 = $1`, ['b'.repeat(64)]);
+    }
+  });
 });
 
 describe('PUT /corrections', () => {

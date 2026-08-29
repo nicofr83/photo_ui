@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url';
 
-import { afterAll, beforeAll, expect, test } from 'vitest';
+import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 
 import { runMigrations } from '../db/migrate.ts';
 import { createLog, LogLevel } from '../log/log.ts';
@@ -439,5 +439,77 @@ test('putWebSpan/deleteWebSpan round-trip, null for a non-html or unknown docume
 
     const deleted = await deleteWebSpan(client, 'web/1999/Transat');
     expect(deleted?.span).toBeNull();
+  });
+});
+
+describe('listTexts — kind: web_caption', () => {
+  test('shapes a real gallery match as a TextUnit — documentId derived from page, direct-link overlap', async () => {
+    await withRollback(async (client) => {
+      const id = 'a'.repeat(32);
+      await client.query(`INSERT INTO pipeline.photo (cloud_asset_id, sha256, relative_path, file_name, format, raw_date_source)
+        VALUES ($1, $2, 'x/p.jpg', 'p.jpg', 'jpg', 'none')`, [id, 'b'.repeat(64)]);
+      await client.query(`INSERT INTO app.web_gallery_link (sha256, page, image_path, caption, alt, distance, margin, verified)
+        VALUES ($1, '2003/2003_gal_11.htm', 'photos/p01.jpg', 'Le port au matin', null, 4, 8, null)`, ['b'.repeat(64)]);
+
+      const { items, total } = await listTexts(client, { kind: 'web_caption' });
+      expect(total).toBe(1);
+      expect(items).toHaveLength(1);
+      const unit = items[0];
+      expect(unit?.ref).toEqual({ kind: 'web_caption', id: `${'b'.repeat(64)}:photos/p01.jpg` });
+      expect(unit?.documentId).toBe('web/2003/2003_gal_11');
+      expect(unit?.pageId).toBeNull();
+      expect(unit?.text).toBe('Le port au matin');
+      expect(unit?.textOriginal).toBe('Le port au matin');
+      expect(unit?.date).toBeNull();
+      expect(unit?.confidence).toBe('uncertain');
+      expect(unit?.overlappingPhotoCount).toBe(1);
+      expect(unit?.galleryCaption).toEqual({
+        sha256: 'b'.repeat(64), page: '2003/2003_gal_11.htm', imagePath: 'photos/p01.jpg',
+        distance: 4, margin: 8, verified: false,
+      });
+    });
+  });
+
+  test('falls back to alt when caption is null; verified: true maps confidence to reviewed', async () => {
+    await withRollback(async (client) => {
+      await client.query(`INSERT INTO app.web_gallery_link (sha256, page, image_path, caption, alt, distance, margin, verified)
+        VALUES ($1, 'p.htm', 'i.jpg', null, 'texte alternatif', 2, 10, true)`, ['c'.repeat(64)]);
+
+      const { items } = await listTexts(client, { kind: 'web_caption' });
+      expect(items[0]?.text).toBe('texte alternatif');
+      expect(items[0]?.confidence).toBe('reviewed');
+      expect(items[0]?.galleryCaption?.verified).toBe(true);
+    });
+  });
+
+  test('a match with neither caption nor alt is excluded — nothing to read as a text', async () => {
+    await withRollback(async (client) => {
+      await client.query(`INSERT INTO app.web_gallery_link (sha256, page, image_path, distance, margin, verified)
+        VALUES ($1, 'p.htm', 'i.jpg', 3, 5, null)`, ['d'.repeat(64)]);
+
+      const { items, total } = await listTexts(client, { kind: 'web_caption' });
+      expect(items).toEqual([]);
+      expect(total).toBe(0);
+    });
+  });
+
+  test('a match a human explicitly rejected (verified: false) is excluded, never shown as a caption', async () => {
+    await withRollback(async (client) => {
+      await client.query(`INSERT INTO app.web_gallery_link (sha256, page, image_path, caption, distance, margin, verified)
+        VALUES ($1, 'p.htm', 'i.jpg', 'mauvais appariement', 20, 1, false)`, ['e'.repeat(64)]);
+
+      const { items } = await listTexts(client, { kind: 'web_caption' });
+      expect(items).toEqual([]);
+    });
+  });
+
+  test('a photo with no matching sha256 in pipeline.photo has overlappingPhotoCount 0, still a valid TextUnit', async () => {
+    await withRollback(async (client) => {
+      await client.query(`INSERT INTO app.web_gallery_link (sha256, page, image_path, caption, distance, margin, verified)
+        VALUES ($1, 'p.htm', 'i.jpg', 'texte', 3, 5, null)`, ['f'.repeat(64)]);
+
+      const { items } = await listTexts(client, { kind: 'web_caption' });
+      expect(items[0]?.overlappingPhotoCount).toBe(0);
+    });
   });
 });

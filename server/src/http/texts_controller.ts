@@ -23,7 +23,7 @@ export interface TextsRoutesDeps {
 const TEXTS_PARAM_SPEC: ParamSpec = {
   documentId: { kind: 'open' },
   pageId: { kind: 'open' },
-  kind: { kind: 'closed', values: [TextKind.PASSAGE, TextKind.LOG_ENTRY] },
+  kind: { kind: 'closed', values: [TextKind.PASSAGE, TextKind.LOG_ENTRY, TextKind.WEB_CAPTION] },
   dateFrom: { kind: 'isoDate' },
   dateTo: { kind: 'isoDate' },
   overlapsPhoto: { kind: 'open' },

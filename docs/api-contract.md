@@ -26,6 +26,66 @@ existants du projet.
 >
 ### Amendements depuis le gel
 
+### A5 — §11 Q11 écrit : `TextUnit.galleryCaption`, `TextKind.WEB_CAPTION` *(2026-08-30)*
+
+Écrit maintenant que `impl-frontend` a intégré la forme (§11 le disait
+explicitement : « non écrit tant que la spec frontend ne l'a pas intégré »).
+Option (a) retenue, comme recommandé : un troisième `TextKind`, jamais un champ
+séparé sur la photo.
+
+```ts
+export interface GalleryCaptionFields {
+  readonly sha256: string;
+  readonly page: string;
+  readonly imagePath: string;
+  readonly distance: number;
+  readonly margin: number;
+  readonly verified: boolean;
+}
+```
+
+`TextUnit.galleryCaption: GalleryCaptionFields | null` — `null` pour tout ce
+qui n'est pas `kind: 'web_caption'`, jamais un champ absent (c'est ce qui
+cassait les TROIS registres de `/texts`, pas seulement le troisième — un
+`strictObject` refuse une clé manquante autant qu'une clé en trop).
+
+`GET /texts?kind=web_caption` sert les légendes de galerie appariées à leur
+photo par hash perceptuel (`app.web_gallery_link`, jamais `pipeline.text_unit`
+— aucune contrainte de schéma ne permettrait `kind = 'web_caption'` là), 205
+lignes réelles sur `photo_ui` aujourd'hui (227 appariements, 22 sans texte —
+ni `caption` ni `alt` — exclus, rien à lire). Un appariement qu'un humain a
+explicitement rejeté (`verified = false` en base) est exclu, jamais montré
+— `verified` en sortie ne distingue donc que « relu et confirmé » de « pas
+encore relu », jamais un appariement faux.
+
+`documentId` dérive du chemin de page (`2003/2003_gal_11.htm` →
+`web/2003/2003_gal_11`) et résout vers un vrai `pipeline.document` dans 26 cas
+sur 27 sur le corpus réel — le 27e (`Astro/misc/meade/meade.htm`) n'a jamais
+été importé comme document, `documentId` reste dérivé quand même (déterministe,
+inoffensif : `GET /pages?documentId=…` répond juste une liste vide). `pageId`
+est toujours `null` — aucun `pipeline.page` derrière une légende de galerie,
+ces pages scannées sont pour le journal manuscrit. `date` est toujours `null`
+(D11 : un texte affirme un jour ou rien ; une légende de galerie n'affirme
+aucune date, la sienne vient de la photo par LIEN DIRECT, jamais par
+recouvrement de plage — c'est `OverlapRule.GALLERY_MATCH`, déjà réservé dans
+`enums.ts`). `overlappingPhotoCount` compte les photos réelles de même
+`sha256` (toujours 0 ou 1 en pratique) — encore le lien direct, jamais le
+prédicat `&&` de date. `confidence` vaut `reviewed` si `verified`, sinon
+`uncertain` — jamais `transcribed`, qui suppose une lecture du texte, pas une
+confirmation d'appariement.
+
+**Pas fait ici, portée délibérément réduite** : `q`/`dateFrom`/`dateTo`/
+`confidence`/`hasCorrection`/`overlapsPhoto` ne s'appliquent pas encore à ce
+registre (`limit`/`offset` seuls). `GET /photos/:cloudAssetId/texts` et
+`GET /photos?overlapsTextKind=web_caption&…` (le sens inverse) ne sont pas
+câblés — `OverlapRule.GALLERY_MATCH` n'existe encore que dans `enums.ts` et
+dans `galleryCaption`, pas dans le prédicat de recouvrement lui-même. Aucune
+correction (`PUT /corrections`) sur ce registre — `app.text_correction` ne
+cible que `pipeline.text_unit`.
+
+Trouvé par `front` en intégrant contre le serveur réel (63 bannières de
+validation, les trois registres du texte, pas seulement galerie).
+
 ### A4 — `ImportReport.orphanedTextSelections` porte `textKind` *(2026-08-29)*
 
 Le champ était `{taskSlug, textId}[]`, ce qui **contredisait la règle énoncée
@@ -2281,8 +2341,10 @@ source de texte d'époque pour cette période. Une légende de galerie est du te
 photo, hors de `texts[]`. (c) Hors V1.
 *Recommandation : (a)*, et c'est le seul point du contrat que le spike touche —
 mais il ajoute une valeur d'énumération, un `spanSource` et une règle de
-recouvrement. **Non écrit** tant que la spec frontend ne l'a pas intégré : je ne
-l'invente pas.
+recouvrement. **Écrit** — voir A5. La lecture (`GET /texts?kind=web_caption`)
+est servie ; le prédicat de recouvrement lui-même (`OverlapRule.GALLERY_MATCH`
+dans les DEUX sens, `GET /photos/:id/texts` et `GET /photos?overlapsTextKind=…`)
+et les corrections ne le sont pas encore.
 
 ---
 
