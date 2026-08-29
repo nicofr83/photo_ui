@@ -259,11 +259,48 @@ Le champ `source` dit déjà qu'un humain l'a tapée ; `kind` dit ce qu'elle vau
 
 `annotation` est donc la **seule** source de nature `decision`.
 
-État d'application au moment où c'est écrit :
-- `src/domain/dateKind.ts` — **conforme** (commit `be819a2`)
-- `docs/api-contract.md` — **à corriger**, il mappe encore `web_span` en `decision`
-- `docs/frontend-spec.md` §9.4 — **à corriger**, un agent l'avait retourné en
-  `decision` juste avant la décision de Nicolas
+État d'application — **tout est conforme au 2026-08-29** :
+- `src/domain/dateKind.ts` — conforme (commit `be819a2`)
+- `docs/api-contract.md` — conforme (§2.1, §4.8, amendement A2)
+- `docs/frontend-spec.md` §9.4 — corrigé par `contrat-api`, sur mandat du lead,
+  `spec-frontend` étant tombé juste après l'avoir retourné en `decision`
 
 Tout agent qui trouve un désaccord sur ce point corrige le document, il ne
 rouvre pas la question.
+
+---
+
+## Amendements au contrat gelé
+
+Le contrat est gelé sur la forme des types depuis le 2026-08-28. Un gel protège
+de la dérive, pas de la correction d'une erreur — mais **tout amendement est
+daté dans `docs/api-contract.md` et annoncé aux deux agents d'implémentation
+avant d'être écrit.** Un contrat gelé qui change en silence est pire qu'un
+contrat jamais gelé.
+
+Trois à ce jour, tous documentés en tête du contrat sous « Amendements depuis le
+gel » :
+
+| # | Objet | Type modifié ? |
+|:---|:---|:---|
+| **A1** | `TextUnit.pageSpanSource` ajouté — `carried` doit se voir dans un résultat où la page n'est pas chargée | oui, champ ajouté |
+| **A2** | `web_span` : `decision` → `inference` *(décision de Nicolas)* | non, valeur émise seulement |
+| **A3** | `TextUnit.date` est `null` quand le texte n'affirme rien — 1 031 unités sur 2 871 | non, `date` était déjà nullable |
+
+**A3 en une phrase**, parce que c'est celui qui change le plus de données : un
+passage placé par la fenêtre de sa page ne porte plus de date héritée, la
+fenêtre vit dans `overlap`, et **toute date de texte du système est désormais
+une lecture** — garanti par trois contraintes PostgreSQL, pas par relecture.
+
+## Une faute corrigée dans `backend-spec.md` *(2026-08-28)*
+
+`CONSTRAINT photo_month_is_whole_month` testait la **largeur** de l'intervalle
+alors que le contrat définit `precision` comme une propriété de **chaque
+borne**. Il rejetait l'exemple phare de la spécification —
+`1998-02-Maison rose Algès`, dix-sept mois — et n'offrait aucune précision
+jouable pour les 421 photos concernées : `month` et `year` refusés par la base,
+`day` faisant afficher un jour inventé.
+
+Trouvée et mesurée par `impl-backend`, corrigée en testant l'alignement des
+bornes. Le cas `[2004-09-14, 2004-09-14]` en `precision: 'month'` reste rejeté :
+rien de ce qui était protégé n'est perdu.

@@ -348,15 +348,18 @@ CREATE TABLE pipeline.photo (
     resolved_start IS NULL OR resolved_start <= resolved_end),
   CONSTRAINT photo_bounds_complete CHECK (
     (resolved_start IS NULL) = (resolved_end IS NULL)),
-  -- une date au mois EST le mois entier, jamais un jour arbitraire
+  -- Les BORNES sont alignées sur le mois — la LARGEUR est libre.
+  -- Teste l'alignement, jamais la largeur : voir l'encadré ci-dessous.
   CONSTRAINT photo_month_is_whole_month CHECK (
     resolved_precision <> 'month' OR (
       extract(day from resolved_start) = 1
-      AND resolved_end = (resolved_start + interval '1 month' - interval '1 day')::date)),
+      AND resolved_end = (date_trunc('month', resolved_end::timestamp)
+                          + interval '1 month' - interval '1 day')::date)),
   CONSTRAINT photo_year_is_whole_year CHECK (
     resolved_precision <> 'year' OR (
       extract(doy from resolved_start) = 1
-      AND resolved_end = (resolved_start + interval '1 year' - interval '1 day')::date)),
+      AND resolved_end = (date_trunc('year', resolved_end::timestamp)
+                          + interval '1 year' - interval '1 day')::date)),
   CONSTRAINT photo_bracket_only_rank3 CHECK (
     bracket_hours IS NULL OR resolved_from = 'logbook_bracket')
 );
@@ -389,6 +392,35 @@ l'insertion.
 Les deux `CHECK` de précision empêchent l'autre moitié de la faute : une date
 au mois transmise comme un jour arbitraire. `[2004-09-01, 2004-09-30]` passe ;
 `[2004-09-14, 2004-09-14]` avec `precision: 'month'` est rejeté.
+
+> **Ils testent l'ALIGNEMENT des bornes, pas la LARGEUR de l'intervalle** — et
+> la première version de ce document se trompait là-dessus. *(Faute trouvée et
+> mesurée par `impl-backend` le 2026-08-28.)*
+>
+> Elle exigeait `resolved_end = resolved_start + 1 mois − 1 jour`, donc un
+> intervalle d'exactement un mois. Ce `CHECK` **rejetait l'exemple phare de la
+> spécification** : `ref.album_span` sur `1998-02-Maison rose Algès` vaut
+> `[1998-02-01, 1999-06-30]` — dix-sept mois. Une photo de cet album au rang 5
+> ne pouvait alors prendre aucune précision jouable : `month` et `year` étaient
+> rejetés par la base, et `day` aurait fait afficher **`1998-02-01`**, un jour
+> inventé au backend et indétectable au frontend — la faute même que la règle 4
+> de « Besoins pour le backend » interdit.
+>
+> La cause est nette : le contrat définit `precision` comme une propriété de
+> **chaque borne**, et le `CHECK` mesurait la largeur. Il confondait les deux
+> notions que le contrat sépare. Pour un intervalle saisi à la main, les deux
+> bornes sont connues au mois — février 1998, juin 1999 — donc
+> `precision: 'month'` est la description juste, et la largeur est libre.
+>
+> **Le correctif ne perd rien de ce qui était protégé** *(vérifié sur la base)* :
+>
+> | Cas | Version stricte | Version alignée |
+> |:---|:---|:---|
+> | `[1998-02-01, 1999-06-30]` en `month` — le span saisi | rejeté | **accepté** |
+> | `[2000-12-01, 2000-12-31]` en `month` — le mois simple | accepté | accepté |
+> | `[2004-09-14, 2004-09-14]` en `month` — le jour arbitraire | rejeté | **rejeté** |
+>
+> La troisième ligne est celle qui compte : la faute visée reste impossible.
 
 **Recherche plein texte — colonnes séparées, et c'est délibéré.**
 
@@ -574,16 +606,16 @@ CREATE TABLE pipeline.text_unit (
   body          text NOT NULL,             -- la transcription AMONT, jamais corrigée ici
   confidence    text NOT NULL,             -- 'transcribed' | 'reviewed' | 'uncertain'
 
-  -- ---- (1) LA DATE QUE LE TEXTE AFFIRME. Ce que le contrat expose en `date`.
-  date_source   text,                      -- vocabulaire du contrat, à l'identique
+  -- ---- (1) LA DATE QUE LE TEXTE AFFIRME LUI-MÊME. NULL s'il n'affirme rien.
+  -- Une fenêtre de page ou un ref.web_span N'ENTRE PAS ICI : ce n'est pas ce
+  -- que le texte dit, c'est ce qu'on a calculé autour de lui. Voir (2).
+  date_source   text,                      -- 'passage_date_from' | 'log_entry_date' | NULL
   date_start    date,
   date_end      date,
   date_kind     text GENERATED ALWAYS AS (
     CASE date_source
       WHEN 'passage_date_from' THEN 'reading'
       WHEN 'log_entry_date'    THEN 'reading'
-      WHEN 'page_window'       THEN 'inference'
-      WHEN 'web_span'          THEN 'inference'   -- humaine, mais conjecturale : voir contrat §4.8
       ELSE NULL
     END) STORED,
 
@@ -608,9 +640,15 @@ CREATE TABLE pipeline.text_unit (
 
   PRIMARY KEY (kind, id),
   CONSTRAINT text_kind_known CHECK (kind IN ('passage','log_entry')),
-  CONSTRAINT text_date_source_known CHECK (
-    date_source IS NULL OR date_source IN
-      ('passage_date_from','log_entry_date','page_window','web_span'))
+  -- Le schéma REFUSE une date héritée sur un texte : seules les deux sources de
+  -- lecture sont admises. 'page_window' et 'web_span' restent des DateSource
+  -- valides du contrat, mais pour `page.window` et `document.span`, pas ici.
+  CONSTRAINT text_date_source_is_a_reading CHECK (
+    date_source IS NULL OR date_source IN ('passage_date_from','log_entry_date')),
+  -- Un texte affirme un JOUR ou rien. Pas d'intervalle affirmé.
+  CONSTRAINT text_date_is_a_single_day CHECK (date_start = date_end),
+  CONSTRAINT text_date_complete CHECK (
+    (date_source IS NULL) = (date_start IS NULL))
 );
 CREATE INDEX text_unit_range    ON pipeline.text_unit USING gist (covers_range);
 CREATE INDEX text_unit_document ON pipeline.text_unit (document_id, ordinal);
@@ -624,7 +662,30 @@ la page. Mais pour le recouvrement, la règle A lui fait **couvrir** jusqu'à la
 veille de la journée suivante renseignée, soit parfois 92 jours. Cette extension
 appartient au calcul du recouvrement, pas à la date du texte : l'écrire dans
 `date_end` transformerait une lecture exacte en une affirmation de trois mois.
-D'où deux intervalles, et `date_kind` dérivé du **premier** seulement.
+
+**La réciproque vaut, et c'est elle que la contrainte fait respecter.** Un
+passage qui ne nomme aucun jour n'en affirme aucun : sa `date_*` reste **NULL**,
+et la fenêtre de sa page vit dans `covers_*`. Lui donner une date héritée, même
+étiquetée `inference`, lui ferait dire ce qu'il ne dit pas.
+
+D'où trois contraintes qui rendent la règle structurelle plutôt que
+disciplinaire :
+
+- `text_date_source_is_a_reading` — seules les deux sources de lecture sont
+  admises dans `date_source`. La base **refuse** d'y écrire une fenêtre de page.
+- `text_date_is_a_single_day` — un texte affirme un jour ou rien, jamais un
+  intervalle.
+- `date_kind` généré ne produit donc que `reading` ou NULL.
+
+**Conséquence, et ce n'est pas un détail :** *toute date de texte du système est
+une lecture.* La phrase de la spécification — « les dates du journal et de
+« Ma vie » sont les seules dates certaines du corpus » et « l'incertitude est
+entièrement du côté des images » — cesse d'être une approximation pour devenir
+une propriété que le schéma garantit.
+
+*(Comptes mesurés, sur 2 871 unités : **1 840 affirment un jour** — 828 passages
+par leur `dateFrom` et les 1 012 entrées, toutes datées ; **1 031 n'affirment
+rien** — 462 passages placés par leur page, 569 du site web.)*
 
 Les vecteurs de recherche des textes portent sur le **texte effectif**, qui
 dépend de `app.text_correction` — ils ne peuvent donc pas être une colonne
@@ -832,8 +893,15 @@ Lit les quatre bases SQLite et `annotations.jsonl` **en lecture seule**, remplit
 ### 6.1 Ouverture des sources
 
 ```ts
-new Database(path, { readonly: true, fileMustExist: true });
+import { DatabaseSync } from 'node:sqlite';
+new DatabaseSync(path, { readOnly: true });
 ```
+
+**`node:sqlite` (Node 24.18) suffit — pas de `better-sqlite3`.** *(Vérifié par
+`impl-backend` sur `documents.db` : 1 859 passages lus en lecture seule.)* C'est
+une dépendance native de moins à compiler, ce qui compte pour la même raison que
+la réserve sur `sharp` en question ouverte n° 3 : le jour où l'application passe
+par Capacitor, chaque binaire natif est un portage.
 
 Les catalogues Lightroom ne sont **pas** ouverts : le pipeline en produit déjà
 des instantanés et `photo_ui` ne les lit pas.
@@ -1111,9 +1179,10 @@ partagé.
   **La `date` de l'entrée reste le jour écrit** ; seule sa `covers_range`
   s'étend.
 
-- **Règle B, passages.** `[dateFrom, dateFrom]` si daté, sinon la fenêtre de sa
-  page `[startAt, endAt]` — et dans ce second cas `date_source = 'page_window'`,
-  donc `date_kind = 'inference'` : une fenêtre de page n'est pas une lecture.
+- **Règle B, passages.** `covers_* = [dateFrom, dateFrom]` si daté, sinon la
+  fenêtre de sa page `[startAt, endAt]`. Dans ce second cas **`date_*` reste
+  NULL** : la fenêtre sert au recouvrement, elle n'est pas une date que le
+  passage affirme.
 
   *(Chiffres corrigés le 2026-08-28 par `spec-frontend`, qui a trouvé une
   confusion entre deux requêtes dans sa propre spec.)* **1 290 des 1 859
@@ -1446,6 +1515,13 @@ est fausse dès le deuxième export :
 3. **Formatage fixe** : indentation de 2, fins de ligne `\n`, saut de ligne
    final, pas de champ optionnel omis — `null` explicite.
 
+**La conversion est une conversion de casse, et rien d'autre.** Les valeurs
+sérialisées sont celles du module d'énumérations partagé, telles quelles :
+`passage_date_from`, `logbook_interpolated`, `date_range`, `passage`. Aucune
+table de correspondance de valeurs — voir contrat §1. `metier/export/` ne
+contient donc qu'une fonction de casse et l'ordre des clés, ce qui est
+exactement ce qu'un test d'idempotence peut couvrir.
+
 Les rendus JPEG sont déterministes à paramètres égaux : même `sips`, même source,
 même bord, même qualité.
 
@@ -1720,14 +1796,27 @@ une décision a été prise.
 
 Ce que je n'ai pas pu vérifier. Rien n'y est deviné.
 
-1. **Aucun DDL de ce document n'a été exécuté.** Les colonnes générées, les
-   `CHECK` sur les bornes de mois et d'année, et la configuration `fr_unaccent`
-   sont écrites d'après les règles de PostgreSQL, pas d'après un essai. Le point
-   le plus susceptible de résister est l'immutabilité exigée des expressions de
-   `CHECK` et de colonne générée : `extract`, `daterange` et
-   `to_tsvector(regconfig, text)` la satisfont à ma connaissance, mais **la
-   première migration est le vrai test** et il faut la lancer avant de bâtir
-   dessus.
+1. ~~**Aucun DDL de ce document n'a été exécuté.**~~ **LEVÉE le 2026-08-28 par
+   `impl-backend`**, qui a exécuté la migration sur la vraie base (PG 17.6,
+   conteneur `timescaledb`), en transaction, schéma jetable. Tout passe, y
+   compris les trois points que je signalais comme les plus susceptibles de
+   résister :
+   - `CREATE TEXT SEARCH CONFIGURATION fr_unaccent` et la colonne générée
+     `to_tsvector('fr_unaccent', …) STORED` — la forme à deux arguments suffit à
+     l'immutabilité, comme supposé ;
+   - `resolved_range daterange … STORED` et son index GiST ;
+   - les `CHECK` mois-entier et année-entière avec `extract`, qui **rejettent**
+     bien `[2004-09-14, 2004-09-14]` en `precision: 'month'`.
+
+   Et surtout : `UPDATE … SET resolved_kind = 'reading'` échoue avec
+   `ERROR: column "resolved_kind" can only be updated to DEFAULT`. **La règle
+   capitale tient structurellement — c'est vérifié, plus supposé.**
+
+   Vérifiés au passage sur les vraies bases : les **456 collisions** exactes
+   entre `passages.id` et `log_entries.id`, les **82 albums / 3 930 photos**, et
+   le fait que `U&'Alge\0300s' = 'Algès'` est **faux** en PostgreSQL (6
+   caractères contre 5) alors que `normalize(…, NFC)` répare — §6.3 est exacte
+   côté serveur aussi.
 
 2. **Je n'ai ouvert aucune des quatre bases SQLite ni aucun fichier du volume.**
    Tous les schémas, formats, comptes et coûts viennent de

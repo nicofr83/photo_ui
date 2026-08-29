@@ -1024,8 +1024,18 @@ rentable du projet : 25 saisies corrigent
 l'intervalle de 421 photos. Appliquée **avant tout le reste de la cascade** ;
 tout album absent est marqué `presumed`.
 
-**`ref.web_span`** (§4.2, règle C) — document web → intervalle, marqué comme
-inférence humaine.
+**`ref.web_span`** (§4.2, règle C) — document web → intervalle. Sa nature est
+**`inference`**, pas `decision` *(tranché par Nicolas le 2026-08-28)*.
+
+Ce qui distingue une décision d'une inférence n'est pas **qui** a agi mais **ce
+que le geste établit**. Une annotation de datation *arbitre* : quelqu'un a vu
+l'EXIF à l'écran et a tapé autre chose. Une plage `web_span` *comble un vide* :
+aucun des 569 passages du site ne porte de date, donc une plage posée par-dessus
+est une conjecture. `source` dit qu'un humain l'a saisie, `kind` dit ce qu'elle
+vaut — les deux faits voyagent séparément, et c'est la raison d'être des deux
+champs.
+
+Corollaire : **`annotation` est la seule source de nature `decision`** (§7.1).
 
 **Normalisation des noms de pays** (§6.2).
 

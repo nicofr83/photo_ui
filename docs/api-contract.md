@@ -24,12 +24,38 @@ existants du projet.
 > de contrat annoncé**, jamais un ajout discret. Le client valide en
 > `strictObject` et lèvera — c'est voulu.
 >
-> **Un seul ajout depuis le gel**, annoncé à `impl-frontend` :
-> `TextUnit.pageSpanSource` (§2.6). Motif : la spécification exige que le
-> `spanSource` d'une fenêtre accompagne le résultat, et `carried` — une
-> inférence sur une inférence — doit se voir ; or il n'était disponible que sur
-> `TextPage`, que le client ne charge pas dans un résultat de recouvrement ou de
-> recherche. C'était un manque du contrat face à la spec, pas un enrichissement.
+### Amendements depuis le gel
+
+Un gel protège de la dérive, pas de la correction d'une erreur. Chaque
+amendement est daté, motivé, et annoncé à `impl-frontend` **et** `impl-backend`
+avant d'être écrit — un contrat gelé qui change en silence est pire qu'un
+contrat jamais gelé, parce que deux agents codent alors contre une version
+qu'ils croient stable.
+
+**A1 · 2026-08-28 — `TextUnit.pageSpanSource` ajouté** (§2.6)
+La spécification exige que le `spanSource` d'une fenêtre accompagne le résultat,
+et `carried` — une inférence sur une inférence — doit se voir. Il n'était
+disponible que sur `TextPage`, que le client ne charge pas dans un résultat de
+recouvrement ou de recherche. Un manque face à la spec, pas un enrichissement.
+
+**A2 · 2026-08-28 — `DateSource.WEB_SPAN` passe de `decision` à `inference`**
+*(tranché par Nicolas)* — voir §4.8.
+Ce qui distingue une décision d'une inférence n'est pas **qui** a agi mais **ce
+que le geste établit**. Une annotation de datation *arbitre* ; une plage
+`web_span` *comble un vide*, puisqu'aucun des 569 passages du site ne porte de
+date. **Corollaire à retenir : `annotation` est la seule source de nature
+`decision`.** Aucun type ne change, seule la valeur émise.
+
+**A3 · 2026-08-28 — `TextUnit.date` est `null` quand le texte n'affirme rien**
+(§2.6, §7.4)
+Un passage placé par la fenêtre de sa page portait une date héritée étiquetée
+`inference` ; il porte désormais `null`, et la fenêtre vit dans `overlap`. Le
+type ne change pas — `date` était déjà nullable — mais **quand** il est `null`
+change, et cela concerne 1 031 unités sur 2 871. Motif : lui donner une date
+héritée lui fait dire ce qu'il ne dit pas, ce qui reboucle la séparation même
+entre « ce que le texte affirme » et « la fenêtre qu'il couvre ».
+Gain : **toute date de texte du système est désormais une lecture**, garanti par
+contrainte en base.
 
 ---
 
@@ -101,12 +127,41 @@ violer.
 | Surface | Convention | Pourquoi |
 |:---|:---|:---|
 | **API JSON** | **`camelCase`** | C'est du TypeScript des deux côtés ; les mêmes `*_interface.ts` servent au client et au serveur, et une conversion aux frontières est un endroit où se glisse une faute pour aucun bénéfice. |
-| **Manifeste exporté** | **`snake_case`** | Figé par l'annexe C de la spécification. C'est le format qui **voyage** — il est lu par un LLM et par des humains, hors de ce système. |
+| **Manifeste exporté** | **`snake_case`** | C'est le format qui **voyage** — lu par un LLM et par des humains, hors de ce système. |
 | **Colonnes PostgreSQL** | `snake_case` | Convention de la base. |
 
 La conversion n'existe donc **qu'à un seul endroit** : le sérialiseur du
 manifeste, dans `metier/export/`. Nulle part ailleurs. `docs/backend-spec.md`
 §12.3 en fait une propriété de la sérialisation canonique.
+
+**Et c'est une conversion de casse, rien d'autre.** L'annexe C de la
+spécification fait foi pour la **structure** du manifeste — quels blocs, quelles
+clés, quoi à côté de quoi. Ses **valeurs littérales**, elles, sont antérieures
+au gel et suivent le vocabulaire de §2.1 : `passage_date_from` et non
+`passage_date`, `logbook_interpolated` et non `logbook-interpolated`,
+`date_range` et non `date-range`, `passage` et non `"B"`.
+
+Deux raisons, dont une qui ne se rattrape pas plus tard :
+
+1. Une table de correspondance de **valeurs** entre la base et le manifeste
+   serait exactement ce que §4.3 refuse à propos de `human`/`annotation` — « un
+   endroit où se glisse une faute, pour un bénéfice nul ». On ne peut pas
+   unifier là et se diviser ici.
+2. **`"rule": "B"` trahit l'autosuffisance du manifeste.** « B » est un renvoi
+   vers une section de la spécification que le lecteur du dossier n'a pas. Le
+   dossier est déplaçable et envoyable tel quel : chacune de ses valeurs doit se
+   comprendre sans rien d'autre. `"passage"` se comprend, `"B"` non.
+
+**`{start, end}` et `{from, to}` ne sont pas la même chose, et la forme le dit.**
+
+| Forme | Sens | Où |
+|:---|:---|:---|
+| `{start, end, precision, kind, source, bracket_hours}` | un `ResolvedDate` — le système **affirme** quelque chose sur le monde | `images[].date`, `texts[].date` |
+| `{from, to}` | un intervalle simple — une **question** ou une fenêtre calculée, qui n'affirme rien | `task.period`, `texts[].overlap` |
+
+La forme des clés est donc un signal : voir `start` annonce qu'une nature et une
+précision accompagnent la date ; voir `from` annonce qu'il n'y en a pas et qu'il
+ne faut pas en inventer.
 
 **Compatibilité — un champ ajouté est un changement de contrat.**
 
@@ -869,18 +924,38 @@ export interface TextUnit {
   readonly correction: TextCorrection | null;
 
   readonly confidence: TranscriptionConfidence;
-  /** NULL = date indéterminée. Affichée « indéterminée », jamais devinée. */
-  readonly date: ResolvedDate | null;
+
   /**
-   * D'où vient la fenêtre de la page, quand c'est elle qui date ce texte
-   * (`date.source === 'page_window'`). NULL sinon.
+   * CE QUE LE TEXTE AFFIRME LUI-MÊME — et **`null` s'il n'affirme rien**.
+   *
+   * Un passage qui ne nomme aucun jour n'en affirme aucun. Lui donner une date
+   * héritée de la fenêtre de sa page, même étiquetée `inference`, c'est lui
+   * faire dire ce qu'il ne dit pas. La fenêtre existe, elle est utile, et elle
+   * vit dans `overlap` — pas ici.
+   *
+   * *(Mesuré, sur 2 871 unités.)* **1 840 affirment un jour** — 828 passages par
+   * leur `dateFrom`, 1 012 entrées de journal, toutes datées. **1 031
+   * n'affirment rien** — 462 passages placés par leur page, 569 du site web.
+   *
+   * Conséquence : quand elle n'est pas nulle, `precision` vaut **toujours**
+   * `day`, `start === end`, et `kind` vaut **toujours** `reading`. Les dates du
+   * journal et de « Ma vie » sont les seules dates certaines du corpus, écrites
+   * le jour même sur la page — et cette phrase de la spécification devient une
+   * propriété du schéma au lieu d'une approximation.
+   *
+   * L'interface affiche `indéterminée`, jamais une date devinée.
+   */
+  readonly date: ResolvedDate | null;
+
+  /**
+   * Qualifie la fenêtre de la PAGE, celle qui sert au recouvrement — jamais la
+   * date ci-dessus, qui ne vient jamais d'une page.
    *
    * **`carried` est une inférence sur une inférence** : la page ne nomme aucun
-   * jour et reprend celui de la précédente. 121 des 462 passages datés par leur
-   * page sont dans ce cas. La spécification n'admet que trois natures, donc
-   * `date.kind` reste `inference` — mais la nuance doit se voir, et elle ne peut
-   * pas se déduire d'une jointure côté client : dans un résultat de recouvrement
-   * ou de recherche, la page n'est pas chargée.
+   * jour et reprend celui de la précédente. 121 des 462 passages placés par leur
+   * page sont dans ce cas. La nuance ne peut pas se déduire d'une jointure côté
+   * client : dans un résultat de recouvrement ou de recherche, la page n'est pas
+   * chargée. NULL pour un texte sans page — les 569 du site web.
    */
   readonly pageSpanSource: PageSpanSource | null;
   readonly overlappingPhotoCount: number;
@@ -1377,11 +1452,11 @@ n'oblige à écrire T3 avant que T1 tourne.
 | **T4** — écrire | correction et référentiels | `/corrections*` · `/ref/*` |
 | **T5** — la revue en entier | **presque aucun endpoint nouveau** | `/tasks/:slug/review` · `/tasks/:slug/duplicate` · `DELETE /tasks/:slug` |
 
-La chronologie et le bandeau de contrôle de T5 se calculent **côté client** à
-partir de la sélection déjà chargée. `GET /tasks/:slug/review` reste offert
-parce qu'il évite huit agrégations dupliquées dans le client, mais il n'est pas
-sur le chemin critique : si `impl-frontend` préfère tout dériver,
-**il peut être retiré sans que rien d'autre bouge.**
+`GET /tasks/:slug/review` est **confirmé** *(tranché avec `impl-frontend`)* : la
+chronologie est de la mise en page et se dérive côté client, mais **les huit
+compteurs du bandeau ne se dérivent pas** — `imagesWithoutText` applique le
+prédicat de recouvrement, et le dupliquer côté client créerait deux vérités
+divergentes. Voir §7.3.
 
 ### 4.1 Système et vocabulaires
 
@@ -1897,8 +1972,24 @@ export interface TaskReview {
 }
 ```
 
-Un seul appel : l'écran affiche tout d'un coup et le calcul des huit compteurs
-sur quelques centaines de lignes ne mérite pas un aller-retour de plus.
+**Les compteurs sont au serveur, le rendu est au client** — et la raison n'est
+pas la latence.
+
+Le compteur `imagesWithoutText` applique **le prédicat de recouvrement** à une
+jointure N×M. Calculé côté client, il ferait exister **deux implémentations du
+recouvrement** dans le produit : celle du serveur, en SQL sur un index GiST, et
+celle du client, en TypeScript. Le jour où elles divergent, le bandeau annonce
+« 12 images non couvertes » pendant que `GET /photos?overlapsText…` en montre 9
+— et c'est précisément le compteur dont le rôle est d'avertir l'utilisateur de
+ce qui manque à son dossier. Un chiffre qui contredit le reste de l'application
+est pire qu'un endpoint de plus.
+
+C'est le même principe qui a fait supprimer le doublon de recouvrement (§4.3) :
+**le prédicat de §4.1 n'existe qu'une fois.** Il vaut pour les huit compteurs.
+
+La **chronologie**, elle, est bien de la mise en page : le client place des
+bornes qu'il a déjà. Le serveur les fournit dans le même appel parce qu'elles y
+sont de toute façon, mais rien ne dépendrait de leur retrait.
 
 ### 7.4 Export
 
@@ -1925,7 +2016,19 @@ Quatre propriétés que le contrat garantit et que le manifeste hérite
 directement des types de §2 :
 
 1. `date` est un `ResolvedDate` sérialisé — `kind` et `precision` **survivent à
-   la sortie du système**.
+   la sortie du système**. **Y compris sur les textes** : quand `texts[].date`
+   n'est pas `null`, il porte les mêmes clés que `images[].date`, et non quatre.
+   La propriété non négociable n° 1 est que la nature de chaque date voyage avec
+   elle « plus sa précision », sans qualificatif — donc pour les textes aussi.
+   Un lecteur qui peut compter sur « tout objet date a les mêmes clés » ne se
+   fait pas piéger ; un lecteur qui doit savoir que les textes sont différents,
+   si.
+
+   **`texts[].date` est `null` quand le texte n'affirme aucune date** — 1 031
+   unités sur 2 871. La fenêtre héritée de la page, ou saisie dans
+   `ref.web_span`, vit dans `overlap`, où son `span_source` la qualifie déjà.
+   C'est la même séparation que celle qui vaut en base : ce que le texte dit
+   n'est pas ce qu'on a calculé autour de lui.
 2. Trois emplacements distincts et jamais mélangés : `texts[]` (texte d'époque),
    `notes[]` (humain d'aujourd'hui), `images[].caption` (machine).
 3. `text` et `text_original` coexistent : une correction ne détruit jamais la
