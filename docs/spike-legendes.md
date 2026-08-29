@@ -204,9 +204,11 @@ images :
 | reste (44) | 21 | 23 |
 
 Le score mesure l'agrément, pas la réussite technique : la photo 27 (un homme à
-la barre, parfaitement nette) est notée 46, et la 41 (voilée et granuleuse) est
-hors décile. **Il n'existe donc aucun signal existant pour « photo ratée ».**
-C'est en soi un argument pour la légende, qui en produit un — voir §5.5.
+la barre, parfaitement nette) est notée 46, tandis que la 12 — de basse
+définition et au ciel entièrement brûlé — est notée **74**, la quatrième
+meilleure de l'échantillon. **Il n'existe donc aucun signal existant pour
+« photo ratée ».** C'est en soi un argument pour la légende, qui en produit
+un — voir §5.5.
 
 ---
 
@@ -217,9 +219,9 @@ Ouvrir `docs/echantillon-legendes.html` et regarder en priorité :
 | Regarder | Photos | Ce qui s'y joue |
 |:---|:---|:---|
 | **Le texte lu dans l'image** | 31, 46, 50, 55, 48, 05, 20 | une date ou un lieu écrits, que rien d'autre dans le système ne capte |
-| **Les intérieurs de bateau** | 03, 21, 32, 25 | les tags les lisent comme une maison |
-| **Les photos presque vides** | 28, 45, 59, 56 | la légende sait-elle dire qu'il n'y a presque rien ? |
-| **Les erreurs franches des tags** | 18, 27, 43, 30, 38 | sexe, activité, nature du lieu |
+| **Les intérieurs de bateau** | 03, 32 | les tags les lisent comme une maison |
+| **Les photos presque vides** | 28, 56, 59 | la légende sait-elle dire qu'il n'y a presque rien ? |
+| **Les erreurs franches des tags** | 18, 21, 25, 27, 30, 38, 43 | sujet, sexe, âge, activité, nature du lieu |
 | **Les lieux inventés par les tags** | 41, 46, 55, 09 | `chicago`, `london`, `asia`, `spain` — non marqués comme inférences |
 | **Les photos ratées** | 04, 12, 13, 15, 59 | le défaut est-il annoncé avant la description ? |
 
@@ -295,6 +297,19 @@ plan.
 Tags : `car, boat, water, blue, vehicle, outdoors, automobile, sea, travel,
 people, transportation, auto`. Quatre synonymes de voiture sur une photo de
 bateau.
+
+**Photo 21** — deux garçons jouent aux Lego de part et d'autre de la table du
+carré d'un voilier.
+Tags : `woman, man, couple, happy, caucasian, cafe, drink, girl, adult,
+women`. Les tags décrivent **un couple d'adultes au café**. Ni les enfants, ni
+les Lego, ni le bateau. C'est l'écart le plus large de l'échantillon.
+
+**Photo 25** — trois enfants et adolescents dans le carré d'un voilier, devant
+un porte-épices.
+Tags : `woman, beauty, beautiful, adult, female, attractive, girl, women,
+young, bathroom`. Aucun adulte, aucune femme et aucune salle de bains dans
+l'image. Sur un corpus familial, ce genre d'étiquette appliquée à des enfants
+est aussi une raison de ne pas exposer les tags seuls.
 
 **Photo 09** — un paysage volcanique, coulée de lave noire, cônes de scories.
 Tags : `desert, landscape, mountain, sky, mountains, beach, travel, sand,
@@ -400,6 +415,11 @@ prudente : sur la photo 28, `dolphin` est probablement la bonne réponse là où
 la légende hésite entre dauphin et tortue. Le prix de cette rapidité est
 qu'aucun tag ne dit son degré de certitude, et que `whale` et `fish` sont
 proposés à côté avec le même aplomb.
+
+Et il y a des photos où ils suffisent : la **45** (un vol d'oiseaux dans un
+ciel vide) est taguée `sky, bird, birds, flying, flock, nature` — c'est juste,
+c'est complet, et la légende n'ajoute guère que le nombre approximatif, la
+disposition en deux files et une réserve sur l'espèce.
 
 Ils restent aussi un bon **complément lexical anglais** dans un index plein
 texte : les deux axes cohabitent, comme la spec le dit, et il n'y a aucune
