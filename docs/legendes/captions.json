@@ -419,6 +419,21 @@
   ],
   "defauts": []
  },
+ "26": {
+  "legende": "Portrait très rapproché, cadre nettement incliné, d'un homme âgé au visage large, barbe et moustache grises fournies, cheveux gris courts, la peau du front et du nez rougie par le soleil. Il a la bouche ouverte et les yeux tournés vers l'objectif, dans une expression de parole ou de rire saisie au vol ; il porte un tee-shirt blanc et une cordelette au cou. L'éclairage frontal et dur, avec ombre portée nette derrière lui, indique un flash. Le fond est une cloison de bois verni et un plafond clair d'intérieur de bateau, où une petite vue imprimée de côte et de mer est fixée à droite.",
+  "mots_cles": [
+   "portrait",
+   "barbe",
+   "gros plan",
+   "flash",
+   "cloison",
+   "bois verni",
+   "cadre incline"
+  ],
+  "defauts": [
+   "cadrage"
+  ]
+ },
  "27": {
   "legende": "Un homme torse nu, en short de toile délavé et lunettes de soleil, tient à deux mains la barre à roue d'un voilier et regarde vers l'avant, au-delà du cadre. Il est cadré à mi-corps en contre-plongée sous un taud blanc tendu qui occupe tout le haut de l'image ; derrière lui on distingue une bouée fer à cheval orange, un winch et un enrouleur. La mer est d'un bleu soutenu sous un ciel de beau temps à cumulus, et une côte vallonnée couverte de végétation ferme l'arrière-plan à droite. Lumière de plein jour, très contrastée, ombres courtes.",
   "mots_cles": [
@@ -430,6 +445,34 @@
    "cote",
    "navigation",
    "lunettes de soleil"
+  ],
+  "defauts": []
+ },
+ "28": {
+  "legende": "Plan large sur une mer turquoise peu profonde, ridée par un clapot court et étincelante par endroits ; l'horizon et une mince bande de ciel gris occupent le tiers supérieur du cadre, sans aucune côte. Un peu à gauche du centre, une forme sombre allongée affleure juste sous la surface, avec une petite protubérance dorsale : il s'agit vraisemblablement d'un grand animal marin, dauphin ou tortue, mais ni la tête, ni les nageoires, ni la queue ne se distinguent assez pour trancher. Le reste de l'image est entièrement occupé par l'eau. La photographie est nette mais son sujet est minuscule et ambigu.",
+  "mots_cles": [
+   "animal marin",
+   "surface",
+   "eau turquoise",
+   "clapot",
+   "horizon",
+   "aileron"
+  ],
+  "defauts": [
+   "cadrage"
+  ]
+ },
+ "29": {
+  "legende": "Trois enfants sur une plage de sable blanc et de roche calcaire érodée, cadrés à mi-corps face à l'objectif. À gauche, un garçon d'une quinzaine d'années accroupi, casquette claire à petit logo, tee-shirt beige et montre noire, les avant-bras posés sur les genoux ; à droite, un garçon plus jeune en chemise blanche, accroupi lui aussi, le poing sous le menton et les sourcils froncés. Entre eux, au premier plan bas, une masse sombre et hirsute qu'on ne distingue pas nettement — chevelure d'un troisième enfant allongé, ou animal — et une main d'adolescent posée dessus. Derrière eux s'étend un lagon turquoise très clair, et un voilier est mouillé seul sur l'horizon sous un ciel voilé.",
+  "mots_cles": [
+   "plage",
+   "sable blanc",
+   "roche calcaire",
+   "lagon",
+   "voilier au mouillage",
+   "casquette",
+   "enfant",
+   "accroupi"
   ],
   "defauts": []
  },
@@ -462,6 +505,94 @@
   ],
   "defauts": []
  },
+ "32": {
+  "legende": "Cabine arrière d'un voilier, photographiée depuis le passage voûté qui y donne accès, boiseries vernies de bois clair sur toutes les faces. Au premier plan une couchette double garnie d'un couvre-lit à motif marbré mauve, rose et gris ; au-dessus et au fond, une couchette simple superposée habillée du même tissu, avec une main courante creusée dans son rebord. Le long de la cloison de gauche, deux portes de placard à poignée encastrée ; au plafond, un plafonnier rectangulaire allumé qui donne toute la lumière de la scène. Au fond à droite, un ciré jaune pendu à un cintre de bois. Une vasque de lavabo apparaît en bas à droite, hors de la cabine.",
+  "mots_cles": [
+   "cabine",
+   "couchette",
+   "couchette superposee",
+   "voilier",
+   "placard",
+   "cire",
+   "plafonnier",
+   "lavabo",
+   "boiserie vernie"
+  ],
+  "defauts": []
+ },
+ "33": {
+  "legende": "Scène d'intérieur en soirée, éclairée au flash, autour d'une table couverte d'une nappe bleue où l'on voit des assiettes blanches, des verres et une carafe. Trois adultes sont cadrés serré : au fond, une femme blonde en gilet gris sur un haut noir, un fin collier au cou, sourit en regardant vers la droite hors champ ; à droite, un homme aux cheveux gris en chemise à petits carreaux bleus, les yeux fermés, penché en avant ; au premier plan de dos et de profil, une femme aux cheveux bruns bouclés, en chemise bleue, porte à ses lèvres un verre à pied bleu. Derrière eux, un voilage blanc devant une fenêtre, une chaise de jardin en plastique blanc et un dracaena en pot dont les feuilles retombent dans le cadre.",
+  "mots_cles": [
+   "repas",
+   "nappe",
+   "verre a pied",
+   "voilage",
+   "chaise en plastique",
+   "plante en pot",
+   "flash",
+   "soiree"
+  ],
+  "defauts": []
+ },
+ "34": {
+  "legende": "Rive boisée vue depuis l'eau, en plan large et à hauteur de surface : une bande d'eau calme et sombre occupe le bas du cadre, puis un talus d'herbes hautes, puis un rideau serré de grands pins et de feuillus dont les troncs droits montent sur toute la hauteur de l'image. À travers les troncs, à mi-hauteur, on distingue une maison basse à bardage sombre, largement vitrée, prolongée d'une véranda et de terrasses, presque entièrement noyée dans les arbres. La lumière est basse et dorée, elle frappe les troncs et les cimes par la droite ; le ciel, entièrement brûlé, forme un fond blanc uniforme.",
+  "mots_cles": [
+   "rive",
+   "pin",
+   "tronc",
+   "maison",
+   "veranda",
+   "talus",
+   "eau calme",
+   "lumiere rasante"
+  ],
+  "defauts": [
+   "surexpose"
+  ]
+ },
+ "35": {
+  "legende": "Deux hommes posent debout côte à côte dans un jardin, cadrés en pied, à la tombée du jour. Celui de gauche, cheveux bruns bouclés et petites lunettes rondes, porte un tee-shirt et un pantalon écrus ; celui de droite, plus âgé, cheveux gris courts et barbe grise taillée, porte un tee-shirt noir où se lit la marque « Wanadoo », un jean, une ceinture et une montre. Derrière eux, le mur clair d'une maison basse ourlé d'une guirlande lumineuse à pendeloques, un auvent, une parabole et, dépassant du toit, le mât et le gréement d'un voilier. Des palmes et des arbustes ferment le cadre à gauche, le sol est fait de dalles et de gravier blanc, et le ciel est chargé de nuages roses. Tirage scanné, image un peu molle.",
+  "mots_cles": [
+   "jardin",
+   "guirlande lumineuse",
+   "parabole",
+   "mat",
+   "palme",
+   "gravier",
+   "crepuscule",
+   "portrait en pied"
+  ],
+  "defauts": [
+   "bord-scan"
+  ]
+ },
+ "36": {
+  "legende": "Portrait rapproché d'une femme d'âge mûr, cheveux bruns bouclés mi-longs, assise en arrière dans un canapé de cuir crème dont les coussins occupent tout le fond du cadre. Elle porte un haut noir sans manches et un gilet ou une écharpe de laine beige jetée sur les épaules ; elle tient à deux doigts une flûte remplie d'un liquide clair et pétillant, portée devant sa bouche, et regarde hors champ vers la gauche, le visage sérieux. Une alliance est visible à sa main droite. Le mur derrière est tendu d'un revêtement clair à rayures verticales. Éclairage de flash frontal, ombres portées nettes sur le cuir.",
+  "mots_cles": [
+   "portrait",
+   "canape de cuir",
+   "flute",
+   "boisson petillante",
+   "gilet",
+   "alliance",
+   "flash",
+   "interieur"
+  ],
+  "defauts": []
+ },
+ "37": {
+  "legende": "Portrait serré d'une femme âgée, cheveux gris courts et bouclés, cadrée du buste, tournée de trois quarts et regardant vivement vers la droite hors champ, la bouche ouverte en pleine parole. Elle porte un pull tricoté rouge à large encolure, un collier plat à maillons dorés et une boucle d'oreille brillante. Le fond est un mur clair où pend un petit cadre en haut à gauche ; on distingue aussi un coussin sombre à motifs et, à gauche, la masse floue d'un ballon doré. Lumière de flash directe, qui accuse le rouge du visage et détache le sujet du fond.",
+  "mots_cles": [
+   "portrait",
+   "pull rouge",
+   "collier",
+   "ballon",
+   "cadre",
+   "flash",
+   "parole"
+  ],
+  "defauts": []
+ },
  "38": {
   "legende": "Gros plan sur la tuyère d'un moteur-fusée exposé sous un hangar, vue de trois quarts arrière. La cloche métallique évasée, parcourue de centaines de tubes de refroidissement verticaux et cerclée d'anneaux de renfort, occupe le centre du cadre ; au-dessus et à gauche s'étage la plomberie du générateur et des turbopompes, avec conduites, vérins et faisceaux de câbles, contre une jupe blanche rivetée. Une seconde tuyère apparaît en coupe à gauche du cadre. L'ensemble repose sur une charpente tubulaire peinte en bleu vif, devant un bardage métallique gris ; en haut à droite, un écusson circulaire dont on lit « SCHIRRA » et une partie d'un globe vert. Éclairage artificiel, lumière froide.",
   "mots_cles": [
@@ -475,6 +606,52 @@
    "tube de refroidissement"
   ],
   "defauts": []
+ },
+ "39": {
+  "legende": "Une femme en tee-shirt rose, cheveux bruns bouclés, tient à deux mains un jeune crocodilien d'environ soixante centimètres, mâchoires maintenues fermées par une bande noire ; elle porte des bagues, des bretelles de sac à dos, et sa bouche entrouverte et ses sourcils relevés expriment une nette appréhension. L'animal est tenu horizontalement devant elle, pattes écartées, écailles brunes bien visibles. Autour d'eux, plusieurs enfants et adolescents : un garçon en tee-shirt rayé blanc et violet de dos à gauche, un autre en rayé bleu au fond, une main d'enfant qui touche la queue de l'animal au premier plan à gauche, et à droite une personne en veste camouflage tenant un second petit crocodilien. Le fond est une clôture en grillage losangé devant une végétation dense.",
+  "mots_cles": [
+   "crocodilien",
+   "caiman",
+   "grillage",
+   "enclos",
+   "enfant",
+   "sac a dos",
+   "museau ligature",
+   "reptile"
+  ],
+  "defauts": []
+ },
+ "40": {
+  "legende": "Une annexe pneumatique à flotteurs verts et beiges s'éloigne de l'objectif au moteur dans un chenal étroit, laissant un large sillage d'écume au premier plan. Un adolescent en tee-shirt bleu et short rouge est assis à l'arrière, la main sur la barre franche du hors-bord ; une glacière blanche et un jerrican vert sont calés entre les bancs. Sur la rive au fond, plusieurs bateaux sont amarrés le long d'appontements de bois : un motor-sailer à coque bleu foncé dont le tableau porte le nom « Islander », un grand voilier blanc à liston brun et hublots ronds, et une petite barque blanche et verte à hors-bord devant une clôture de bois où grimpe un bougainvillier. Lumière chaude et basse de fin d'après-midi.",
+  "mots_cles": [
+   "annexe pneumatique",
+   "hors-bord",
+   "sillage",
+   "chenal",
+   "appontement",
+   "glacier",
+   "jerrican",
+   "nom de bateau",
+   "bougainvillier"
+  ],
+  "defauts": []
+ },
+ "41": {
+  "legende": "Vue d'une ligne de gratte-ciel prise depuis l'eau, à travers une longue étendue de mer gris-bleu qui occupe la moitié basse du cadre ; une lisse blanche de garde-corps traverse le coin inférieur droit, ce qui situe la prise de vue depuis un bateau ou un pont. Une trentaine de tours de bureaux et d'habitation, de hauteurs très inégales, dont une à sommet cannelé et une autre en construction coiffée d'une grue, se découpent dans une brume de chaleur au-dessus d'un liseré de rive basse fait de maisons claires, de toits rouges et de palmiers. Le ciel bleu porte des cumulus épars. L'image est granuleuse et un peu voilée, caractéristique d'un tirage argentique scanné.",
+  "mots_cles": [
+   "gratte-ciel",
+   "tour",
+   "skyline",
+   "garde-corps",
+   "rive",
+   "brume de chaleur",
+   "grue",
+   "cumulus"
+  ],
+  "defauts": [
+   "voile",
+   "granuleux"
+  ]
  },
  "51": {
   "legende": "Sur le pont d'un catamaran à coque blanche, un homme torse nu en short violet est accroupi près du mât, penché en avant, les mains occupées à une manœuvre au ras du pont ; une femme en haut de maillot et paréo à motifs est assise plus haut sur le roof, jambes repliées, et regarde vers lui. La grand-voile est ferlée sous un lazy-bag vert vif le long de la bôme, des bouts sont lovés sur le roof, un guindeau chromé occupe l'avant et un petit pavillon claque à l'étrave. Ciel couvert de gros cumulus, eau plate et laiteuse, lumière douce et diffuse de fin de journée.",
