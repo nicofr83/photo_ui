@@ -16,6 +16,9 @@ import type { Job } from '../src/api/contract/job';
 
 import { store } from './store';
 import { INVARIANT_ALBUMS } from '../fixtures/invariants/albums';
+import {
+  INVARIANT_DOCUMENTS, INVARIANT_PAGES, INVARIANT_TEXTS,
+} from '../fixtures/invariants/texts';
 
 /** Contract §4.2. Anything outside this list is an UNKNOWN_PARAMETER. */
 const PHOTO_PARAMS = [
@@ -40,6 +43,47 @@ const NOW = '2026-08-29T10:00:00.000Z' as TaskDetail['createdAt'];
 export const handlers = [
   // Contract §4.2: the 82 albums fit in one response.
   http.get('*/albums', () => HttpResponse.json({ items: INVARIANT_ALBUMS })),
+
+  http.get('*/documents', () => HttpResponse.json({ items: INVARIANT_DOCUMENTS })),
+
+  http.get('*/pages', ({ request }) => {
+    const documentId = new URL(request.url).searchParams.get('documentId');
+    return HttpResponse.json({
+      items: INVARIANT_PAGES.filter((p) => documentId === null || p.documentId === documentId),
+    });
+  }),
+
+  http.get('*/texts', ({ request }) => {
+    const params = new URL(request.url).searchParams;
+    const documentId = params.get('documentId');
+    const pageId = params.get('pageId');
+    const query = params.get('q');
+
+    let kept = [...INVARIANT_TEXTS];
+    if (documentId !== null) kept = kept.filter((t) => t.documentId === documentId);
+    if (pageId !== null) kept = kept.filter((t) => t.pageId === pageId);
+    if (query !== null) {
+      const needle = query.toLowerCase();
+      // An empty needle returns zero results, never the whole corpus.
+      kept = needle.trim() === ''
+        ? []
+        : kept.filter((t) => t.text.toLowerCase().includes(needle));
+    }
+
+    return HttpResponse.json({
+      items: kept,
+      total: kept.length,
+      populationTotal: INVARIANT_TEXTS.length,
+      excludedCount: INVARIANT_TEXTS.length - kept.length,
+      filters: {
+        applied: [...params.keys()].map((parameter) => ({
+          parameter, values: params.getAll(parameter), broadened: false,
+        })),
+        unmatchedValues: [],
+      },
+      importId: store.importId,
+    });
+  }),
 
   http.post('*/tasks/:slug/export', async ({ params, request }) => {
     const slug = String(params['slug']);
