@@ -40,6 +40,18 @@ export const TaskImageSelectionSchema = z.strictObject({
 });
 export type TaskImageSelection = z.infer<typeof TaskImageSelectionSchema>;
 
+/** Q2, default (a): the whole passage, never an excerpt — nullable so (b)
+ * would not migrate anything if it is ever revisited. */
+export const TaskTextSelectionSchema = z.strictObject({
+  ref: TextRefSchema,
+  order: z.number().int(),
+  selectedAt: IsoTimestampSchema,
+  orphaned: z.boolean(),
+  startOffset: z.number().int().nullable(),
+  endOffset: z.number().int().nullable(),
+});
+export type TaskTextSelection = z.infer<typeof TaskTextSelectionSchema>;
+
 /**
  * Spec §5.5: a free note, per task. `attachedTo` empty on both sides is a
  * GENERAL note — a common case, never an error state ("celle-ci est floue",
@@ -77,6 +89,7 @@ export type TaskNotePatchInput = z.infer<typeof TaskNotePatchInputSchema>;
 export const TaskDetailSchema = TaskSummarySchema.extend({
   brief: z.string(),
   images: z.array(TaskImageSelectionSchema),
+  texts: z.array(TaskTextSelectionSchema),
   notes: z.array(TaskNoteSchema),
 });
 export type TaskDetail = z.infer<typeof TaskDetailSchema>;
@@ -122,3 +135,29 @@ export const TaskImagesMutationResultSchema = z.strictObject({
   imageCount: z.number().int(),
 });
 export type TaskImagesMutationResult = z.infer<typeof TaskImagesMutationResultSchema>;
+
+export const TaskTextsMutationSchema = z.strictObject({
+  add: z.array(TextRefSchema).optional(),
+  remove: z.array(TextRefSchema).optional(),
+  reorder: z.array(z.strictObject({ ref: TextRefSchema, order: z.number().int() })).optional(),
+});
+export type TaskTextsMutation = z.infer<typeof TaskTextsMutationSchema>;
+
+export const TaskTextsMutationResultSchema = z.strictObject({
+  added: z.array(TextRefSchema),
+  removed: z.array(TextRefSchema),
+  rejected: z.array(z.strictObject({ ref: TextRefSchema, reason: z.string() })),
+  textCount: z.number().int(),
+  contentHash: z.string(),
+});
+export type TaskTextsMutationResult = z.infer<typeof TaskTextsMutationResultSchema>;
+
+export const TaskDuplicateInputSchema = z.strictObject({ title: z.string(), slug: z.string() });
+
+export const TaskDeleteResultSchema = z.strictObject({
+  deleted: z.boolean(),
+  /** DELETE never touches an already-exported folder. Named so the
+   * confirmation can say so. */
+  exportDirectoryKept: z.string().nullable(),
+});
+export type TaskDeleteResult = z.infer<typeof TaskDeleteResultSchema>;

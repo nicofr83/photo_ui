@@ -1,6 +1,7 @@
 import { useNavigate, useParams } from 'react-router';
 
 import { useDocuments, useTexts, useTextsByKind } from '../api/hooks/useTexts';
+import { useTextSelection, type TextSelection } from '../api/hooks/useTextSelection';
 import type { TextDocument, TextRef } from '../api/contract/text';
 import { groupBySource, TextSource } from '../domain/textSource';
 import { TextKind } from '../shared/enums';
@@ -32,6 +33,10 @@ export function TextsScreen({ onShowPhotos }: Props): React.JSX.Element {
   const { slug = '' } = useParams();
   const navigate = useNavigate();
   const documents = useDocuments();
+  // Contract §4.5: the text equivalent of the grid's photo selection —
+  // closes the gap flagged in ETAT-TRAVAUX.md when the review chronology
+  // (T5) turned out to need it sooner than expected.
+  const selection = useTextSelection(slug);
 
   // Default: the grid pre-filtered on this text's overlap window, spec §4 —
   // "ouverture de la grille pré-filtrée sur la fenêtre d'un passage". Both
@@ -62,11 +67,16 @@ export function TextsScreen({ onShowPhotos }: Props): React.JSX.Element {
           ) : null}
 
           {group.documents.map((document) => (
-            <DocumentTexts key={document.id} document={document} onShowPhotos={showPhotos} />
+            <DocumentTexts
+              key={document.id}
+              document={document}
+              onShowPhotos={showPhotos}
+              selection={selection}
+            />
           ))}
 
           {group.source === TextSource.WEB ? (
-            <GalleryCaptions onShowPhotos={showPhotos} />
+            <GalleryCaptions onShowPhotos={showPhotos} selection={selection} />
           ) : null}
         </section>
       ))}
@@ -77,9 +87,11 @@ export function TextsScreen({ onShowPhotos }: Props): React.JSX.Element {
 function DocumentTexts({
   document,
   onShowPhotos,
+  selection,
 }: {
   readonly document: TextDocument;
   readonly onShowPhotos: (ref: TextRef) => void;
+  readonly selection: TextSelection;
 }): React.JSX.Element {
   const texts = useTexts(document.id);
 
@@ -93,7 +105,17 @@ function DocumentTexts({
       {texts.data?.items
         .filter((unit) => unit.ref.kind !== TextKind.WEB_CAPTION)
         .map((unit) => (
-          <TextCard key={`${unit.ref.kind}:${unit.ref.id}`} unit={unit} onShowPhotos={onShowPhotos} />
+          <TextCard
+            key={`${unit.ref.kind}:${unit.ref.id}`}
+            unit={unit}
+            onShowPhotos={onShowPhotos}
+            selected={selection.selected.has(`${unit.ref.kind}:${unit.ref.id}`)}
+            onToggleSelect={() => {
+              void (selection.selected.has(`${unit.ref.kind}:${unit.ref.id}`)
+                ? selection.remove([unit.ref])
+                : selection.add([unit.ref]));
+            }}
+          />
         ))}
     </>
   );
@@ -101,8 +123,10 @@ function DocumentTexts({
 
 function GalleryCaptions({
   onShowPhotos,
+  selection,
 }: {
   readonly onShowPhotos: (ref: TextRef) => void;
+  readonly selection: TextSelection;
 }): React.JSX.Element {
   const captions = useTextsByKind(TextKind.WEB_CAPTION);
 
@@ -114,7 +138,17 @@ function GalleryCaptions({
       {captions.isPending ? <p role="status">Chargement…</p> : null}
 
       {captions.data?.items.map((unit) => (
-        <TextCard key={`${unit.ref.kind}:${unit.ref.id}`} unit={unit} onShowPhotos={onShowPhotos} />
+        <TextCard
+          key={`${unit.ref.kind}:${unit.ref.id}`}
+          unit={unit}
+          onShowPhotos={onShowPhotos}
+          selected={selection.selected.has(`${unit.ref.kind}:${unit.ref.id}`)}
+          onToggleSelect={() => {
+            void (selection.selected.has(`${unit.ref.kind}:${unit.ref.id}`)
+              ? selection.remove([unit.ref])
+              : selection.add([unit.ref]));
+          }}
+        />
       ))}
     </section>
   );

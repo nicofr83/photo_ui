@@ -15,13 +15,15 @@ import {
   AlbumSpanDeleteInputSchema, AlbumSpanPutInputSchema, WebSpanDeleteInputSchema,
   WebSpanPutInputSchema, type AlbumSpanUpdateResult, type AlbumSpanWarning, type WebDocumentRow,
 } from '../src/api/contract/ref';
-import type { TextUnit } from '../src/api/contract/text';
+import type { TextRef, TextUnit } from '../src/api/contract/text';
 import { isIsoDate } from '../src/shared/date_interface';
 import {
   CorrectionStatus, DateKind, DatePrecision, DateSource, ErrorCode, MatchField, OverlapRule,
   PhotoSort, SelectionReason, TaskState,
 } from '../src/shared/enums';
-import { TaskNoteCreateInputSchema, type TaskDetail } from '../src/api/contract/task';
+import {
+  TaskNoteCreateInputSchema, TaskTextsMutationSchema, type TaskDetail,
+} from '../src/api/contract/task';
 import type { Album } from '../src/api/contract/album';
 import type { Job } from '../src/api/contract/job';
 
@@ -640,7 +642,7 @@ export const handlers = [
   http.get('*/tasks', () =>
     HttpResponse.json({
       items: [...store.tasks.values()]
-        .map(({ images: _images, brief: _brief, notes: _notes, ...summary }) => summary)
+        .map(({ images: _images, texts: _texts, brief: _brief, notes: _notes, ...summary }) => summary)
         // The most recently opened first. Spec §5.1.
         .sort((a, b) => (b.lastOpenedAt ?? '').localeCompare(a.lastOpenedAt ?? '')),
     }),
@@ -686,7 +688,7 @@ export const handlers = [
       exportedAt: null, exportDirectory: null,
       contentHash: `hash-${body.slug}`, exportedContentHash: null,
       images: [],
-      notes: [],
+      texts: [], notes: [],
     };
     store.tasks.set(body.slug, created);
     return HttpResponse.json(created, { status: 201 });
@@ -742,6 +744,57 @@ export const handlers = [
 
     return HttpResponse.json({
       added, removed, merged, rejected, warnings: [], imageCount: task.images.length,
+    });
+  }),
+
+  // Contract §4.5: the text equivalent of /tasks/:slug/images. Q2 default
+  // (a) — the whole passage, never an excerpt.
+  http.post('*/tasks/:slug/texts', async ({ params, request }) => {
+    const task = store.tasks.get(String(params['slug']));
+    if (task === undefined) {
+      return error(404, ErrorCode.NOT_FOUND, 'Tâche introuvable.', {
+        resource: 'task', id: String(params['slug']),
+      });
+    }
+    // Validated, not cast: `ref.kind` is a closed vocabulary, and a loose
+    // cast here would let the mock accept what the real server would refuse.
+    const body = TaskTextsMutationSchema.parse(await request.json());
+
+    const held = new Set(task.texts.map((t) => `${t.ref.kind}:${t.ref.id}`));
+    const added: TextRef[] = [];
+    const rejected: { ref: TextRef; reason: string }[] = [];
+
+    for (const ref of body.add ?? []) {
+      const known = store.texts.some((t) => t.ref.kind === ref.kind && t.ref.id === ref.id);
+      if (!known) { rejected.push({ ref, reason: 'unknown_text' }); continue; }
+      const k = `${ref.kind}:${ref.id}`;
+      if (held.has(k)) continue; // idempotent: already selected, not an error.
+      held.add(k);
+      added.push(ref);
+      task.texts.push({
+        ref, order: task.texts.length, selectedAt: NOW, orphaned: false,
+        startOffset: null, endOffset: null,
+      });
+    }
+
+    const removing = new Set((body.remove ?? []).map((r) => `${r.kind}:${r.id}`));
+    const removed = task.texts
+      .filter((t) => removing.has(`${t.ref.kind}:${t.ref.id}`))
+      .map((t) => t.ref);
+    task.texts = task.texts.filter((t) => !removing.has(`${t.ref.kind}:${t.ref.id}`));
+
+    for (const patch of body.reorder ?? []) {
+      const entry = task.texts.find(
+        (t) => t.ref.kind === patch.ref.kind && t.ref.id === patch.ref.id,
+      );
+      if (entry !== undefined) entry.order = patch.order;
+    }
+
+    task.textCount = task.texts.length;
+
+    return HttpResponse.json({
+      added, removed, rejected, textCount: task.texts.length,
+      contentHash: `hash-${String(params['slug'])}-${String(task.texts.length)}`,
     });
   }),
 

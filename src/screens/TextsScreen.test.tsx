@@ -167,6 +167,19 @@ describe('T2 — correcting a transcription, the original always stays reachable
   });
 });
 
+describe('contract §4.5 — a text can be selected into the task, closing the T2 gap', () => {
+  test('a text offers to be retained for the task, and reflects the state', async () => {
+    const user = userEvent.setup();
+    setup();
+    const card = await screen.findByTestId('text-passage-logbook/p003/001');
+    const toggle = within(card).getByRole('button', { name: /retenir pour la tâche/i });
+    await user.click(toggle);
+
+    expect(await within(card).findByRole('button', { name: /retirer de la tâche/i }))
+      .toBeInTheDocument();
+  });
+});
+
 describe('contract §11 Q11 — gallery captions are a subsection of the web source', () => {
   test('the web section has a "Légendes de galerie" subsection', async () => {
     setup();

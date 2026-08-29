@@ -48,7 +48,7 @@ function seedTask(): TaskDetail {
         order: 0, note: null, selectedBecause: ['manual'], selectedAt: NOW, orphaned: false,
       },
     ],
-    notes: [],
+    texts: [], notes: [],
   };
 }
 

@@ -13,6 +13,9 @@ import styles from './TextCard.module.css';
 interface Props {
   readonly unit: TextUnit;
   readonly onShowPhotos?: (ref: TextRef) => void;
+  /** Contract §4.5: whether this text is held in the current task. */
+  readonly selected?: boolean;
+  readonly onToggleSelect?: () => void;
 }
 
 const CONFIDENCE: Record<TranscriptionConfidence, string | null> = {
@@ -32,7 +35,7 @@ const SPAN_SOURCE: Record<PageSpanSource, string> = {
   [PageSpanSource.CARRIED]: 'fenêtre reportée de la page précédente',
 };
 
-export function TextCard({ unit, onShowPhotos }: Props): React.JSX.Element {
+export function TextCard({ unit, onShowPhotos, selected, onToggleSelect }: Props): React.JSX.Element {
   const confidence = CONFIDENCE[unit.confidence];
   const [showPage, setShowPage] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -127,6 +130,13 @@ export function TextCard({ unit, onShowPhotos }: Props): React.JSX.Element {
             Rétablir
           </button>
         ) : null}
+
+        {/* Contract §4.5: the text equivalent of the grid's photo checkbox. */}
+        {onToggleSelect === undefined ? null : (
+          <button className={styles['photos']} type="button" onClick={onToggleSelect}>
+            {selected === true ? 'Retirer de la tâche' : 'Retenir pour la tâche'}
+          </button>
+        )}
       </div>
 
       {correction.error !== null ? <ErrorBanner error={correction.error} /> : null}
