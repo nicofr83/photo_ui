@@ -51,6 +51,7 @@ describe('spec §5.6/Q6 — the manifest order is reorderable', () => {
       cloudAssetId: '05b9a4fac5df4dd28dcc1002d7ec0074',
       order: 1, note: null, selectedBecause: ['manual'],
       selectedAt: parseIsoTimestamp('2026-08-29T10:00:00.000Z'), orphaned: false,
+      outOfPeriod: false,
     });
 
     setup();
@@ -84,6 +85,7 @@ describe('§5.6 — exporting', () => {
       cloudAssetId: '708192a3b4c5d6e7f809112233445566',
       order: 1, note: null, selectedBecause: ['manual'],
       selectedAt: parseIsoTimestamp('2026-08-29T10:00:00.000Z'), orphaned: false,
+      outOfPeriod: false,
     });
 
     setup();
@@ -138,6 +140,7 @@ describe('spec §5.6 — the control banner and the chronology', () => {
       cloudAssetId: '2b3c4d5e6f708192a3b4c5d6e7f80911',
       order: 1, note: null, selectedBecause: ['manual'],
       selectedAt: parseIsoTimestamp('2026-08-29T10:00:00.000Z'), orphaned: false,
+      outOfPeriod: false,
     });
 
     setup();

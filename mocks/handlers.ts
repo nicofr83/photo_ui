@@ -162,6 +162,18 @@ function textIncludes(haystack: string | null, needle: string): boolean {
 }
 
 /**
+ * `TaskImageSelection.outOfPeriod`, task 26 (`server`): computed LIVE against
+ * the task's CURRENT period, never baked in at selection time — a period
+ * edited after the fact must never leave a stale flag behind, same reasoning
+ * as why the eight review counters are computed server-side rather than
+ * carried. Absent period or absent photo date: nothing to be out of.
+ */
+function imageOutOfPeriod(photo: PhotoListItem | undefined, period: TaskDetail['period']): boolean {
+  if (photo === undefined || photo.date === null || period === null) return false;
+  return !overlaps(photo.date, { start: period.from, end: period.to });
+}
+
+/**
  * Contract §7.3's timeline: layout, derived client-normally, but the mock
  * plays the server's part of naming each entry's OWN bounds and nature —
  * never flattened to a point, never guessed for a text that asserts none.
@@ -731,7 +743,8 @@ export const handlers = [
     const images = task.images
       .map((selection) => {
         const photo = store.photos.find((p) => p.cloudAssetId === selection.cloudAssetId);
-        return photo === undefined ? null : { ...photo, selection };
+        if (photo === undefined) return null;
+        return { ...photo, selection: { ...selection, outOfPeriod: imageOutOfPeriod(photo, task.period) } };
       })
       .filter((i): i is NonNullable<typeof i> => i !== null);
 
@@ -808,7 +821,16 @@ export const handlers = [
         resource: 'task', id: String(params['slug']),
       });
     }
-    return HttpResponse.json(task);
+    return HttpResponse.json({
+      ...task,
+      images: task.images.map((selection) => ({
+        ...selection,
+        outOfPeriod: imageOutOfPeriod(
+          store.photos.find((p) => p.cloudAssetId === selection.cloudAssetId),
+          task.period,
+        ),
+      })),
+    });
   }),
 
   http.post('*/tasks', async ({ request }) => {
@@ -922,6 +944,9 @@ export const handlers = [
         cloudAssetId: id, order: task.images.length, note: null,
         selectedBecause: body.selectedBecause ?? [SelectionReason.MANUAL],
         selectedAt: NOW, orphaned: false,
+        // Placeholder: both GET handlers recompute this live against the
+        // task's CURRENT period (imageOutOfPeriod) — never read from here.
+        outOfPeriod: false,
       });
     }
 

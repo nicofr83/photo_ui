@@ -37,6 +37,13 @@ export const TaskImageSelectionSchema = z.strictObject({
   selectedBecause: z.array(z.enum(SelectionReason)),
   selectedAt: IsoTimestampSchema,
   orphaned: z.boolean(),
+  /**
+   * The photo's date falls outside the task's declared period. Task 26
+   * (`server`): counted by `warnings.imagesOutOfPeriod` AND carried here
+   * per item, same shape as `orphaned` — the count and the per-image flag
+   * must never be able to disagree with each other.
+   */
+  outOfPeriod: z.boolean(),
 });
 export type TaskImageSelection = z.infer<typeof TaskImageSelectionSchema>;
 

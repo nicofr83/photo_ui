@@ -408,6 +408,7 @@ describe('contract §7.3 — GET /tasks/:slug/review, the eight counters and the
       cloudAssetId: 'ffffffffffffffffffffffffffffffff',
       order: 1, note: null, selectedBecause: ['manual'],
       selectedAt: parseIsoTimestamp('2026-08-29T10:00:00.000Z'), orphaned: false,
+      outOfPeriod: false,
     });
 
     const page = await review('1999-transat');

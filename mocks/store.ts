@@ -48,6 +48,7 @@ function seedTask(): TaskDetail {
       {
         cloudAssetId: 'e8bc80b75e254b7db2e1454222416813',
         order: 0, note: null, selectedBecause: ['manual'], selectedAt: NOW, orphaned: false,
+        outOfPeriod: false,
       },
     ],
     texts: [], notes: [],
