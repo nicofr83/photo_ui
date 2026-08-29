@@ -1070,6 +1070,7 @@ export interface ImportReport {
   readonly orphanedImageSelections: readonly { readonly taskSlug: string;
                                                readonly cloudAssetId: string }[];
   readonly orphanedTextSelections: readonly { readonly taskSlug: string;
+                                              readonly textKind: TextKind;
                                               readonly textId: string }[];
   readonly correctionsNeedingReview: readonly TextRef[];
   /** Répartition après cascade — l'écran de revue s'en sert. */

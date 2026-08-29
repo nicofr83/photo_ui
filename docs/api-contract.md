@@ -26,6 +26,26 @@ existants du projet.
 >
 ### Amendements depuis le gel
 
+### A4 — `ImportReport.orphanedTextSelections` porte `textKind` *(2026-08-29)*
+
+Le champ était `{taskSlug, textId}[]`, ce qui **contredisait la règle énoncée
+juste au-dessus de `TextRef`** dans ce même document : la clé d'un texte est le
+couple, jamais l'id seul, et `TextId` n'apparaît jamais seul dans une signature
+publique.
+
+La conséquence était réelle, pas théorique : **456 identifiants entrent en
+collision** entre passages et entrées de journal, et la clé primaire de
+`app.task_text` est `(task_slug, text_kind, text_id)`. Un rapport d'orphelins
+sans le `kind` ne peut pas dire lequel des deux textes a été orphelin.
+
+Ajout de `textKind`, donc un **sur-ensemble** — pas un renommage cassant. Un
+schéma `zod.strictObject()` côté client devra ajouter le champ, sinon il
+rejettera la clé supplémentaire.
+
+Trouvé par `back` en transcrivant `server/src/contract/job_interface.ts`.
+
+
+
 Un gel protège de la dérive, pas de la correction d'une erreur. Chaque
 amendement est daté, motivé, et annoncé à `impl-frontend` **et** `impl-backend`
 avant d'être écrit — un contrat gelé qui change en silence est pire qu'un
@@ -1311,6 +1331,7 @@ export interface ImportReport {
   readonly orphanedImageSelections: readonly { readonly taskSlug: string;
                                                readonly cloudAssetId: string }[];
   readonly orphanedTextSelections: readonly { readonly taskSlug: string;
+                                              readonly textKind: TextKind;
                                               readonly textId: string }[];
   readonly correctionsNeedingReview: readonly TextRef[];
   /** Répartition après cascade — l'écran de revue s'en sert. */
