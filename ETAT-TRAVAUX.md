@@ -259,3 +259,16 @@ DETAIL: commits `876b494`..`63080f4` sur `test_dev`. Bug fixture corrigé au pas
 ASK: aucun — je continue sur T3.
 
 Non fait, volontairement : « sélection de passages » (roadmap §5, pas dans le mandat T2 reçu) — ajouter un TextRef au manifeste d'une tâche (`POST /tasks/:slug/texts`). Pas de UI, pas de `TaskDetail.texts`. À trancher si T5 en a besoin plus tôt que prévu.
+
+---
+
+## Avancement — impl-frontend, T3 (2026-08-29)
+
+RE: chercher, T3 cœur terminé
+DONE: `PhotoFacetsSchema`/`usePhotoFacets` (appel séparé de `/photos`, mêmes paramètres). FilterState + FilterPanel : tags par sélectivité (42 > 500 photos non mis en avant, jamais masqués), personnes, lieu avec repli sur album/groupe (`matchedOn` recalculé pour dire quel champ a répondu), lieu désactivé + raison quand `positionedCount === 0`, hasPosition/hasOcr/hasCaption, plein texte `q`. `reliableDatesOnly` — accepté depuis T1 mais jamais appliqué par le mock — corrigé au passage. 510 tests verts, tsc/lint propres.
+DETAIL: commits `9dd910e`..`e0a8436`. Nouvelle fixture `fixtures/invariants/photoTags.ts` (tags/OCR par photo — absent de `PhotoListItem`, nécessaire pour facettes/recherche réalistes) ; porte le cas mesuré `italy` sur Tikal, exclu du vocabulaire proposé (`PLACE_TAG_NAMES` dans `mocks/handlers.ts`, jamais côté client) mais cherchable. Même bug de routage MSW que deux fois déjà (`/photos/facets` avalé par `/photos/:cloudAssetId` — réordonné).
+ASK: aucun.
+
+Non fait, volontairement : compte des écartés ventilé par axe (déjà tranché non, §11 Q4) — le global existant (`SelectionHeader`, T1) couvre les nouveaux axes sans travail supplémentaire. Pas de debounce sur la recherche plein texte. `tagMinConfidence` accepté par le contrat mais aucun contrôle UI (ETAT-TRAVAUX : « le filtrage par confiance ne marche pas — ne pas retenter »).
+
+Reste ouvert pour T4/T5 : `ref.album_span` (25 albums), `ref.web_span`, chronologie de revue, bandeau à 5 compteurs, gestion complète des tâches (dupliquer/supprimer).
