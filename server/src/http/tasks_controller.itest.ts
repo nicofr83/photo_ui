@@ -183,3 +183,29 @@ describe('POST /tasks/:slug/images', () => {
     expect(response.json<{ error: { code: string } }>().error.code).toBe('NOT_FOUND');
   });
 });
+
+describe('POST /tasks/:slug/export', () => {
+  test('202 with an export job; a task with no images settles fast, succeeded with a real report', async () => {
+    app = await bootstrap(await completeEnv());
+    await app.server.inject({
+      method: 'POST', url: '/tasks',
+      payload: { title: 'La transat', slug: 'la-transat', brief: '', period: null },
+    });
+
+    const response = await app.server.inject({ method: 'POST', url: '/tasks/la-transat/export' });
+    expect(response.statusCode).toBe(202);
+    const job = response.json<{ id: string; type: string; state: string }>();
+    expect(job.type).toBe('export');
+
+    const deadline = Date.now() + 2000;
+    let settled: { state: string; result: { report: { directory: string; imagesWritten: number } } } | undefined;
+    while (Date.now() < deadline) {
+      const poll = await app.server.inject({ method: 'GET', url: `/jobs/${job.id}` });
+      const polled = poll.json<{ state: string; result: { report: { directory: string; imagesWritten: number } } }>();
+      if (polled.state !== 'queued' && polled.state !== 'running') { settled = polled; break; }
+      await new Promise((resolve) => { setTimeout(resolve, 10); });
+    }
+    expect(settled?.state).toBe('succeeded');
+    expect(settled?.result.report.imagesWritten).toBe(0);
+  });
+});

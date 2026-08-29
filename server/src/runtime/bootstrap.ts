@@ -6,10 +6,15 @@ import { createLog } from '../log/log.ts';
 import { createPool, type Pool } from '../db/pool.ts';
 import { createSafeFs } from '../io/safe_fs.ts';
 import { registerImagesRoutes } from '../http/images_controller.ts';
+import { registerJobsRoutes } from '../http/jobs_controller.ts';
 import { registerPhotosRoutes } from '../http/photos_controller.ts';
 import { registerRefRoutes } from '../http/ref_controller.ts';
 import { registerSystemRoutes } from '../http/system_controller.ts';
 import { registerTasksRoutes } from '../http/tasks_controller.ts';
+import type { ExportServiceDeps } from '../metier/export/export_service.ts';
+import type { ImageServiceDeps } from '../metier/images/image_service.ts';
+import { InFlightRenders } from '../metier/images/in_flight_renders.ts';
+import { JobStore } from '../metier/jobs/job_service.ts';
 import { buildServer } from './server.ts';
 import { loadConfig } from './config.ts';
 
@@ -54,19 +59,31 @@ export async function bootstrap(env: NodeJS.ProcessEnv): Promise<App> {
 
   const safeFs = await createSafeFs(config.writableRoots, log);
 
-  const server = buildServer(log);
-  registerSystemRoutes(server, { pool, config });
-  registerPhotosRoutes(server, { pool, config });
-  registerRefRoutes(server, { pool });
-  registerTasksRoutes(server, { pool });
-  registerImagesRoutes(server, {
-    pool,
+  // UN SEUL `InFlightRenders` par processus (tâche 15) : les images à la
+  // volée, l'export et le pré-rendu partagent le même sémaphore et le même
+  // dédoublonnage — deux instances doubleraient silencieusement la
+  // concurrence effective sur `sips`.
+  const imageService: ImageServiceDeps = {
     thumbsRoot: config.thumbsRoot,
     originalsRoot: config.originalsRoot,
     renderCacheRoot: config.renderCacheRoot,
     safeFs,
-    renderConcurrency: config.renderConcurrency,
-  });
+    inFlight: new InFlightRenders(config.renderConcurrency),
+  };
+  const exportDeps: ExportServiceDeps = {
+    pool, safeFs, tasksRoot: config.tasksRoot, pagesRoot: config.pagesRoot, imageService,
+  };
+  // Un seul job mutant à la fois, TOUS TYPES CONFONDUS (§4.7) : une seule
+  // instance, partagée entre `/tasks/:slug/export` et `/jobs/*`.
+  const jobStore = new JobStore();
+
+  const server = buildServer(log);
+  registerSystemRoutes(server, { pool, config });
+  registerPhotosRoutes(server, { pool, config });
+  registerRefRoutes(server, { pool });
+  registerTasksRoutes(server, { pool, jobStore, exportDeps });
+  registerImagesRoutes(server, { pool, imageService });
+  registerJobsRoutes(server, { pool, jobStore, config, imageService });
   await server.ready();
 
   log.info('serveur prêt', { host: config.host, port: config.port });

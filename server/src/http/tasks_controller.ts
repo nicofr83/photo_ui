@@ -3,10 +3,14 @@ import type { FastifyInstance } from 'fastify';
 import { ErrorCode } from '@shared/enums';
 import { AppError } from '../contract/error_interface.ts';
 import type {
-  TaskCreateInput, TaskDetail, TaskImagesMutation, TaskImagesMutationResult, TaskPatchInput, TaskPeriod, TaskSummary,
+  TaskCreateInput, TaskDetail, TaskExportInput, TaskImagesMutation, TaskImagesMutationResult, TaskPatchInput,
+  TaskPeriod, TaskSummary,
 } from '../contract/task_interface.ts';
 import type { Pool } from '../db/pool.ts';
 import { withTransaction } from '../db/transaction.ts';
+import type { ExportServiceDeps } from '../metier/export/export_service.ts';
+import { exportTask } from '../metier/export/export_service.ts';
+import type { Job, JobStore } from '../metier/jobs/job_service.ts';
 import { createTask, getTaskDetail, listTasks, mutateTaskImages, patchTask } from '../repository/task_repository.ts';
 
 /** Même expression que `app.task.task_slug_is_a_folder_name` — un refus nommé plutôt qu'une contrainte Postgres brute. */
@@ -104,8 +108,36 @@ function parseImagesMutation(body: unknown): TaskImagesMutation {
   return mutation;
 }
 
-export function registerTasksRoutes(server: FastifyInstance, deps: { pool: Pool }): void {
-  const { pool } = deps;
+export interface TasksRoutesDeps {
+  readonly pool: Pool;
+  readonly jobStore: JobStore;
+  readonly exportDeps: ExportServiceDeps;
+}
+
+function parseExportInput(body: unknown): TaskExportInput {
+  if (body === undefined || body === null) return {};
+  if (typeof body !== 'object') {
+    throw invalidParameter('body', JSON.stringify(body), 'corps de requête invalide');
+  }
+  const { directory, overwrite } = body as Record<string, unknown>;
+  const input: Record<string, unknown> = {};
+  if (directory !== undefined) {
+    if (typeof directory !== 'string') {
+      throw invalidParameter('directory', JSON.stringify(directory), 'directory doit être une chaîne');
+    }
+    input.directory = directory;
+  }
+  if (overwrite !== undefined) {
+    if (typeof overwrite !== 'boolean') {
+      throw invalidParameter('overwrite', JSON.stringify(overwrite), 'overwrite doit être un booléen');
+    }
+    input.overwrite = overwrite;
+  }
+  return input;
+}
+
+export function registerTasksRoutes(server: FastifyInstance, deps: TasksRoutesDeps): void {
+  const { pool, jobStore, exportDeps } = deps;
 
   server.get('/tasks', async (): Promise<{ items: readonly TaskSummary[] }> => {
     const client = await pool.connect();
@@ -180,5 +212,24 @@ export function registerTasksRoutes(server: FastifyInstance, deps: { pool: Pool 
       throw new AppError(ErrorCode.NOT_FOUND, `tâche introuvable : ${slug}`, 404, { resource: 'task', id: slug });
     }
     return result;
+  });
+
+  // Le job fait le travail réel (`exportTask`, tâche 18) ; ici, on ne fait
+  // que le soumettre — 202 immédiatement, jamais une requête qui attend
+  // le rendu de 286 images (contrat §7.4).
+  server.post('/tasks/:slug/export', (request, reply): Job => {
+    const { slug } = request.params as { slug: string };
+    const input = parseExportInput(request.body);
+
+    // `job.result` respecte l'union `JobResult` du contrat — `{ type, report }`,
+    // jamais le rapport nu — pour que le client puisse discriminer sur `type`.
+    const result = jobStore.submit('export',
+      async () => ({ type: 'export' as const, report: await exportTask(exportDeps, slug, input) }));
+    if (result.kind === 'conflict') {
+      throw new AppError(ErrorCode.IMPORT_IN_PROGRESS,
+        `un job mutant est déjà en cours : ${result.runningJobId}`, 409, { jobId: result.runningJobId });
+    }
+    void reply.code(202);
+    return result.job;
   });
 }
