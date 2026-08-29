@@ -311,3 +311,25 @@ Reste, dans l'ordre où je compte l'attaquer : prédicat de tag de lieu (`ref.ta
 **Mise à jour la même session — prédicat de tag de lieu fait, données réelles écrites.** `ref.tag_kind` (migration `005_ref_tag_kind.sql` — table neuve, pas d'`ALTER` sur `003_ref.sql` : `photo_ui` porte déjà un import réel). `classifyTagName` — comparaison EXACTE (`turkey vulture` ne devient pas un lieu), 7 noms génuinement ambigus (pays ET mot courant : `turkey`/`china`/`jordan`/`nice`/`monaco`/`chad`/`georgia`) classés `unknown` plutôt que devinés. `npm run tags:classify` sur les 5 528 tags IA réels : **88 `place`, 5 `unknown`, 5 435 `descriptive`** — `italy` et `egypt`, les deux cas cités par `team-lead`, tombent bien en `place`. `ON CONFLICT DO NOTHING` : une correction humaine ne sera jamais écrasée par une reclassification. Commits `443992d`..`2e48716`. Même non-fait que les légendes de galerie : la donnée est en base, aucun endpoint ne la sert encore.
 
 Je continue maintenant sur la tâche 12 du plan (serveur, composition root, `GET /system/status`) — le début des endpoints HTTP.
+
+---
+
+## Avancement — impl-frontend, T5 (2026-08-29) — les cinq tranches terminées
+
+RE: la revue en entier, T5 terminé — T2 à T5 tous livrés cette session
+DONE :
+- **Chronologie** (`domain/chronology.layoutTimeline` + `ui/review/Chronology`) : images et textes sur un même axe, position/largeur calculées en `domain/` — jamais dans un fichier `ui`/`screens`, une entrée de chronologie n'a pas de `source` et ne peut donc jamais passer par `ResolvedDateView`. `src/ui/date/noBareDateRendering.test.ts` a mordu deux fois pendant l'écriture (une fois sur mon propre commentaire explicatif) — corrigé en reformulant, jamais en affaiblissant le garde-fou.
+- **Bandeau de contrôle** (`ui/review/ControlBanner`) : les huit compteurs de `GET /tasks/:slug/review` (pas cinq — `TaskReview.warnings` en contrat en porte huit, vérifié dans `types-extrait.ts`), tous cliquables, un zéro s'affiche comme les autres. Quatre des huit se traduisent en surbrillance exacte côté client (`undatedImages`, `inferredDateImages`, `imagesOutOfPeriod`, `uncertainTexts`) ; les quatre autres (`imagesWithoutText`, `orphanedImages`, `orphanedTexts`, `textsWiderThan30Days`) resteraient faux avec les seules données de la réponse — explication textuelle seulement, jamais une surbrillance qui mentirait.
+- **`GET /tasks/:slug/review`** : calculé côté mock, jamais par le client — évite une seconde implémentation du prédicat de recouvrement qui contredirait `GET /photos?overlapsText…`.
+- **Sélection de texte dans une tâche** (`POST /tasks/:slug/texts`) — comblait le trou signalé en T2, nécessaire pour que la chronologie ait des textes à placer.
+- **Gestion des tâches** : dupliquer (copie superficielle, brief/période conservés) et supprimer (deux clics explicites, ne touche jamais un dossier déjà exporté).
+- **Bannière volume démonté** : `GET /system/status`, un seul bandeau global (jamais un par écran), spécifiquement sur la racine `originals` — vignettes/sélections déjà chargées restent utilisables, seul l'export est bloqué et le dit.
+- 584 tests verts, tsc/lint propres, couverture domaine 100 %, globale ~93 %.
+
+DETAIL : commits `b1af198`..`af942e5`. Même bug de routage MSW une troisième fois (`/tasks/:slug/review` avalé par `/tasks/:slug` — réordonné, même remède que `/photos/facets` et `/photos/:cloudAssetId/texts` en T2/T3). Deux fois où un `git commit` de `back` a absorbé mes fichiers stagés entre mon `git add` et mon `git commit` (index partagé, mêmes minutes) — rien perdu, recommité proprement, signalé à `back` par message la première fois.
+
+ASK : aucun.
+
+Non fait, volontairement : `ref.country-aliases` (jamais dans un mandat reçu). `POST /tasks/:slug/opened` (met à jour `lastOpenedAt`, rien ne l'appelle encore — la liste s'affiche déjà triée, l'écart est mineur). Debounce sur la recherche plein texte (T3). Sélection de passages : UI seulement dans `TextsScreen` — pas de découpage `startOffset`/`endOffset` (Q2 défaut (a), le passage entier).
+
+**Les cinq tranches du plan frontend (T1 à T5) sont maintenant toutes livrées.** `npx tsc --noEmit`, `npx eslint .` (frontend) et `npx vitest run --coverage` propres à la racine `test_dev` au moment d'écrire ceci.
