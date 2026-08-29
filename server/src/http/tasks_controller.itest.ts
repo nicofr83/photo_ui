@@ -183,6 +183,29 @@ describe('POST /tasks/:slug/images', () => {
     expect(response.statusCode).toBe(404);
     expect(response.json<{ error: { code: string } }>().error.code).toBe('NOT_FOUND');
   });
+
+  test('a bare id string in add[] is a named 400 — never a silent unknown_photo', async () => {
+    app = await bootstrap(await completeEnv());
+    await app.server.inject({ method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null } });
+    const response = await app.server.inject({
+      method: 'POST', url: '/tasks/x/images', payload: { add: ['a'.repeat(32)] },
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json<{ error: { code: string } }>().error.code).toBe('INVALID_PARAMETER');
+  });
+
+  test('a genuinely unknown photo in add[] carries cloudAssetId in rejected[], never a dropped field', async () => {
+    app = await bootstrap(await completeEnv());
+    await app.server.inject({ method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null } });
+    const id = 'f'.repeat(32);
+    const response = await app.server.inject({
+      method: 'POST', url: '/tasks/x/images',
+      payload: { add: [{ cloudAssetId: id, selectedBecause: ['manual'] }] },
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.json<{ rejected: { cloudAssetId: string; reason: string }[] }>().rejected)
+      .toEqual([{ cloudAssetId: id, reason: 'unknown_photo' }]);
+  });
 });
 
 describe('POST /tasks/:slug/export', () => {
@@ -243,6 +266,16 @@ describe('POST /tasks/:slug/texts', () => {
     app = await bootstrap(await completeEnv());
     const response = await app.server.inject({ method: 'POST', url: '/tasks/nowhere/texts', payload: { add: [] } });
     expect(response.statusCode).toBe(404);
+  });
+
+  test('a bare id string in add[] is a named 400 — a TextRef needs both kind and id', async () => {
+    app = await bootstrap(await completeEnv());
+    await app.server.inject({ method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null } });
+    const response = await app.server.inject({
+      method: 'POST', url: '/tasks/x/texts', payload: { add: ['logbook/p001/001'] },
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json<{ error: { code: string } }>().error.code).toBe('INVALID_PARAMETER');
   });
 });
 

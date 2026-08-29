@@ -79,7 +79,7 @@ export async function bootstrap(env: NodeJS.ProcessEnv): Promise<App> {
   const jobStore = new JobStore();
 
   const server = buildServer(log);
-  registerSystemRoutes(server, { pool, config });
+  registerSystemRoutes(server, { pool, config, jobStore });
   registerPhotosRoutes(server, { pool, config });
   registerRefRoutes(server, { pool, annotationsDir: config.annotationsDir });
   registerTasksRoutes(server, { pool, jobStore, exportDeps });

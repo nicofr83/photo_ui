@@ -658,6 +658,24 @@ export async function deleteTaskNote(client: PoolClient, slug: string, noteId: s
 }
 
 /**
+ * GLOBAL, toutes tâches confondues — `SystemStatus.attention.orphanedSelections`
+ * (contrat §9). Même paire de jointures que `loadImages`/`loadTexts`
+ * (`p.cloud_asset_id IS NULL` / `t.id IS NULL`), agrégée plutôt que par tâche.
+ */
+export async function countOrphanedSelections(client: PoolClient): Promise<number> {
+  const { rows } = await client.query<{ n: number }>(`
+    SELECT
+      (SELECT count(*)::int FROM app.task_image ti
+         LEFT JOIN pipeline.photo p ON p.cloud_asset_id = ti.cloud_asset_id
+        WHERE p.cloud_asset_id IS NULL)
+      +
+      (SELECT count(*)::int FROM app.task_text tt
+         LEFT JOIN pipeline.text_unit t ON t.kind = tt.text_kind AND t.id = tt.text_id
+        WHERE t.id IS NULL) AS n`);
+  return rows[0]?.n ?? 0;
+}
+
+/**
  * Une photo sélectionnée dans la tâche qu'AUCUN texte ne recouvre — LE
  * prédicat de recouvrement (`overlap_sql.ts`), une seule fois, jamais
  * redéfini ici (contrat §4.1, §7.3). Une photo orpheline n'a pas de ligne

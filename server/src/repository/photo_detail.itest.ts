@@ -21,6 +21,23 @@ test('returns null for an id that does not exist, never throws', async () => {
   });
 });
 
+test('fileSize is a real number, not the string a bare bigint driver would give', async () => {
+  await withRollback(async (client) => {
+    const id = 'a'.repeat(32);
+    // Un vrai TIFF de 872 Mo (cf. `docs/superpowers/plans/2026-08-28-backend.md`,
+    // « Ce qui reste à faire ») : assez gros pour dépasser un `int32`, la
+    // raison même pour laquelle la colonne est `bigint`.
+    const fileSize = 872_000_000;
+    await client.query(`INSERT INTO pipeline.photo
+      (cloud_asset_id, sha256, relative_path, file_name, format, raw_date_source, file_size)
+      VALUES ($1, $2, 'x/p.tiff', 'p.tiff', 'tiff', 'none', $3)`, [id, 'b'.repeat(64), fileSize]);
+
+    const photo = await getPhotoDetail(client, id);
+    expect(photo?.fileSize).toBe(fileSize);
+    expect(typeof photo?.fileSize).toBe('number');
+  });
+});
+
 test('proposal and doubt are FIRST-LEVEL fields, never folded into the date', async () => {
   await withRollback(async (client) => {
     const id = 'a'.repeat(32);

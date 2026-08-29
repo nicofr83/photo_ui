@@ -542,3 +542,12 @@ export async function deleteWebSpan(client: PoolClient, documentId: string): Pro
   await client.query(`DELETE FROM ref.web_span WHERE document_id = $1`, [documentId]);
   return await getTextDocument(client, documentId);
 }
+
+/** `SystemStatus.attention.webDocumentsWithoutSpan` (contrat §9) — un document `html` qu'une saisie de `ref.web_span` daterait. */
+export async function countWebDocumentsWithoutSpan(client: PoolClient): Promise<number> {
+  const { rows } = await client.query<{ n: number }>(`
+    SELECT count(*)::int AS n
+      FROM pipeline.document d
+     WHERE d.kind = 'html' AND NOT EXISTS (SELECT 1 FROM ref.web_span ws WHERE ws.document_id = d.id)`);
+  return rows[0]?.n ?? 0;
+}

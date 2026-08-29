@@ -33,16 +33,24 @@ describe('mapPhotoRow', () => {
     });
   });
 
-  test('an accepted arbitration maps exifDate from capture_date_local', () => {
+  test('an accepted arbitration maps exifDate from capture_date_local, space turned into T', () => {
+    // `capture_date_local` est une vraie colonne `timestamp` Postgres (db/pool.ts
+    // ne la convertit JAMAIS en `Date`, mais le driver la rend telle quelle,
+    // séparateur espace) — jamais le `T` qu'écrirait un import déjà formaté.
     const item = mapPhotoRow({
-      ...BASE_ROW, capture_date_local: '2000-12-14T10:22:03', arbitration_outcome: 'accepted', arbitration_gap_months: 0,
+      ...BASE_ROW, capture_date_local: '2000-12-14 10:22:03', arbitration_outcome: 'accepted', arbitration_gap_months: 0,
     });
     expect(item.arbitration).toEqual({ exifDate: '2000-12-14T10:22:03', gapMonths: 0, outcome: 'accepted' });
   });
 
+  test('captureDateLocal itself gets the same space-to-T conversion', () => {
+    const item = mapPhotoRow({ ...BASE_ROW, capture_date_local: '2000-12-14 10:22:03' });
+    expect(item.captureDateLocal).toBe('2000-12-14T10:22:03');
+  });
+
   test('a rejected arbitration with a null gap defaults to 0, never undefined', () => {
     const item = mapPhotoRow({
-      ...BASE_ROW, capture_date_local: '2017-04-11T09:15:00', arbitration_outcome: 'rejected', arbitration_gap_months: null,
+      ...BASE_ROW, capture_date_local: '2017-04-11 09:15:00', arbitration_outcome: 'rejected', arbitration_gap_months: null,
     });
     expect(item.arbitration?.gapMonths).toBe(0);
   });

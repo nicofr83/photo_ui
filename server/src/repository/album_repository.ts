@@ -129,6 +129,19 @@ export async function putAlbumSpan(
   return await applyAlbumSpan(client, annotationsDir, input.albumPath, found.row.album_name, newInterval);
 }
 
+/**
+ * `SystemStatus.attention.albumsWithPresumedSpan` (contrat §9) — les ~25
+ * albums qu'une saisie de `ref.album_span` corrigerait. `pipeline.album.
+ * span_presumed` est tenu à jour EN DIRECT par `applyAlbumSpan` à chaque
+ * `PUT`/`DELETE /ref/album-span` (tâche 25) : jamais besoin de rejoindre
+ * `ref.album_span` ici pour un état déjà propagé.
+ */
+export async function countAlbumsWithPresumedSpan(client: PoolClient): Promise<number> {
+  const { rows } = await client.query<{ n: number }>(
+    `SELECT count(*)::int AS n FROM pipeline.album WHERE in_perimeter AND span_presumed`);
+  return rows[0]?.n ?? 0;
+}
+
 /** `null` : l'album n'existe pas dans le périmètre (404). Repasse en `presumed`, dérivé du préfixe. */
 export async function deleteAlbumSpan(
   client: PoolClient, annotationsDir: string, albumPath: string,

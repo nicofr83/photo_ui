@@ -35,4 +35,21 @@ export interface SystemStatus {
     readonly edited: number;
     readonly running: boolean;
   };
+  /**
+   * Ce que l'utilisateur doit voir sans le chercher — UN SEUL bandeau global
+   * (contrat §9). Le compte des écartés par le filtre courant n'est PAS ici :
+   * il est par requête, dans `ListEnvelope.excludedCount`.
+   */
+  readonly attention: {
+    readonly orphanedSelections: number;
+    readonly correctionsNeedingReview: number;
+    readonly correctionsOrphaned: number;
+    /** Les ~25 albums à plage présumée, cf. `ref.album_span`. */
+    readonly albumsWithPresumedSpan: number;
+    readonly webDocumentsWithoutSpan: number;
+  };
+  readonly features: {
+    /** Export d'annotations de datation (§8.1) — désactivé par défaut. */
+    readonly datingExport: boolean;
+  };
 }

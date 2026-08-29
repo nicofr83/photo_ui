@@ -118,6 +118,11 @@ export class JobStore {
     return { kind: 'started', job: snapshot(record), settled };
   }
 
+  /** Le job mutant en cours, le cas échéant — `SystemStatus.runningJobId` (contrat §9). */
+  runningJobId(): string | null {
+    return this.runningId;
+  }
+
   get(id: string): Job | null {
     const record = this.jobs.get(id);
     return record === undefined ? null : snapshot(record);

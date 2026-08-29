@@ -62,6 +62,21 @@ describe('JobStore', () => {
     expect(job?.error).toEqual({ code: 'INTERNAL', message: 'la base est verrouillée' });
   });
 
+  test('runningJobId names the one mutating job while it runs, and clears once it settles', async () => {
+    const store = new JobStore();
+    expect(store.runningJobId()).toBeNull();
+
+    let releaseFirst!: () => void;
+    const blocked = new Promise<void>((resolve) => { releaseFirst = resolve; });
+    const first = store.submit('import', async () => { await blocked; return { type: 'import', report: {} } as never; });
+    if (first.kind !== 'started') throw new Error('setup');
+    expect(store.runningJobId()).toBe(first.job.id);
+
+    releaseFirst();
+    await first.settled;
+    expect(store.runningJobId()).toBeNull();
+  });
+
   test('once a job settles, the lock frees and a new job can start', async () => {
     const store = new JobStore();
     const first = store.submit('import', () => Promise.resolve({ type: 'import', report: {} } as never));

@@ -48,6 +48,18 @@ const POSITION_KIND: Record<string, DateKind> = {
   [PositionSource.LOGBOOK_INTERPOLATED]: DateKind.INFERENCE,
 };
 
+/**
+ * `pipeline.photo.capture_date_local` est une vraie colonne `timestamp`
+ * Postgres — `db/pool.ts` ne la convertit jamais en `Date` (76 % des
+ * `captureDate` amont n'ont aucun fuseau), mais le driver la rend telle
+ * quelle, séparateur ESPACE (`2013-12-15 11:55:10`). `LocalDateTime` (contrat
+ * §2.5) exige un `T` : une conversion de format pur, jamais une conversion de
+ * fuseau — celle-là reste interdite (« on ne convertit jamais »).
+ */
+function toLocalDateTime(value: string): string {
+  return value.replace(' ', 'T');
+}
+
 export function mapPhotoRow(row: PhotoRow): PhotoListItem {
   const date = row.resolved_from === null || row.resolved_start === null || row.resolved_end === null
     || row.resolved_precision === null || row.resolved_kind === null
@@ -57,10 +69,11 @@ export function mapPhotoRow(row: PhotoRow): PhotoListItem {
         precision: row.resolved_precision as DatePrecision, kind: row.resolved_kind as DateKind,
         source: row.resolved_from as DateSource, bracketHours: row.bracket_hours,
       };
+  const captureDateLocal = row.capture_date_local === null ? null : toLocalDateTime(row.capture_date_local);
 
-  const arbitration = row.arbitration_outcome === null || row.capture_date_local === null
+  const arbitration = row.arbitration_outcome === null || captureDateLocal === null
     ? null
-    : { exifDate: row.capture_date_local, gapMonths: row.arbitration_gap_months ?? 0, outcome: row.arbitration_outcome };
+    : { exifDate: captureDateLocal, gapMonths: row.arbitration_gap_months ?? 0, outcome: row.arbitration_outcome };
 
   const position = row.lat === null || row.lon === null
     ? null
@@ -75,7 +88,7 @@ export function mapPhotoRow(row: PhotoRow): PhotoListItem {
     sha256: row.sha256,
     date, arbitration,
     rawDateSource: row.raw_date_source,
-    captureDateLocal: row.capture_date_local,
+    captureDateLocal,
     captureOffsetMin: row.capture_offset_min,
     captureDateRaw: row.capture_date_raw,
     position,

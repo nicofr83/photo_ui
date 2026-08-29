@@ -3,8 +3,12 @@ import { access } from 'node:fs/promises';
 import type { FastifyInstance } from 'fastify';
 
 import type { Pool } from '../db/pool.ts';
+import type { JobStore } from '../metier/jobs/job_service.ts';
 import type { Config } from '../runtime/config.ts';
 import type { RootStatus, SystemStatus } from '../contract/system_interface.ts';
+import { countAlbumsWithPresumedSpan } from '../repository/album_repository.ts';
+import { countOrphanedSelections } from '../repository/task_repository.ts';
+import { countWebDocumentsWithoutSpan, listCorrections } from '../repository/text_repository.ts';
 
 /**
  * Vérifiée EN DIRECT à chaque appel, jamais mise en cache depuis le démarrage :
@@ -15,8 +19,8 @@ async function checkRoot(name: RootStatus['name'], envVar: string, rootPath: str
   return { name, envVar, path: rootPath, available, checkedAt: new Date().toISOString() };
 }
 
-export function registerSystemRoutes(server: FastifyInstance, deps: { pool: Pool; config: Config }): void {
-  const { pool, config } = deps;
+export function registerSystemRoutes(server: FastifyInstance, deps: { pool: Pool; config: Config; jobStore: JobStore }): void {
+  const { pool, config, jobStore } = deps;
 
   server.get('/system/status', async (): Promise<SystemStatus> => {
     const roots = await Promise.all([
@@ -27,35 +31,56 @@ export function registerSystemRoutes(server: FastifyInstance, deps: { pool: Pool
       checkRoot('render_cache', 'RENDER_CACHE_ROOT', config.renderCacheRoot),
     ]);
 
-    const { rows: importRows } = await pool.query<{ import_id: string; finished_at: string }>(
-      `SELECT import_id, finished_at FROM pipeline.import_run
-        WHERE status = 'succeeded' ORDER BY finished_at DESC LIMIT 1`);
-    const lastImport = importRows[0];
+    const client = await pool.connect();
+    let importRows;
+    let countRows;
+    let orphanedSelections;
+    let correctionsNeedingReview;
+    let correctionsOrphaned;
+    let albumsWithPresumedSpan;
+    let webDocumentsWithoutSpan;
+    try {
+      ({ rows: importRows } = await client.query<{ import_id: string; finished_at: string }>(
+        `SELECT import_id, finished_at FROM pipeline.import_run
+          WHERE status = 'succeeded' ORDER BY finished_at DESC LIMIT 1`));
 
-    const { rows: countRows } = await pool.query<{
-      photos_in_hierarchy: number; photos_out_of_hierarchy: number; albums: number;
-      documents: number; passages: number; log_entries: number;
-    }>(`SELECT
-          (SELECT count(DISTINCT p.cloud_asset_id)::int FROM pipeline.photo p
-             JOIN pipeline.photo_album pa ON pa.cloud_asset_id = p.cloud_asset_id
-             JOIN pipeline.album a ON a.path = pa.album_path AND a.in_perimeter)
-            AS photos_in_hierarchy,
-          (SELECT count(*)::int FROM pipeline.photo p
-            WHERE NOT EXISTS (
-              SELECT 1 FROM pipeline.photo_album pa JOIN pipeline.album a
-                     ON a.path = pa.album_path AND a.in_perimeter
-               WHERE pa.cloud_asset_id = p.cloud_asset_id))
-            AS photos_out_of_hierarchy,
-          (SELECT count(*)::int FROM pipeline.album)     AS albums,
-          (SELECT count(*)::int FROM pipeline.document)  AS documents,
-          (SELECT count(*)::int FROM pipeline.text_unit WHERE kind = 'passage')   AS passages,
-          (SELECT count(*)::int FROM pipeline.text_unit WHERE kind = 'log_entry') AS log_entries`);
+      ({ rows: countRows } = await client.query<{
+        photos_in_hierarchy: number; photos_out_of_hierarchy: number; albums: number;
+        documents: number; passages: number; log_entries: number;
+      }>(`SELECT
+            (SELECT count(DISTINCT p.cloud_asset_id)::int FROM pipeline.photo p
+               JOIN pipeline.photo_album pa ON pa.cloud_asset_id = p.cloud_asset_id
+               JOIN pipeline.album a ON a.path = pa.album_path AND a.in_perimeter)
+              AS photos_in_hierarchy,
+            (SELECT count(*)::int FROM pipeline.photo p
+              WHERE NOT EXISTS (
+                SELECT 1 FROM pipeline.photo_album pa JOIN pipeline.album a
+                       ON a.path = pa.album_path AND a.in_perimeter
+                 WHERE pa.cloud_asset_id = p.cloud_asset_id))
+              AS photos_out_of_hierarchy,
+            (SELECT count(*)::int FROM pipeline.album)     AS albums,
+            (SELECT count(*)::int FROM pipeline.document)  AS documents,
+            (SELECT count(*)::int FROM pipeline.text_unit WHERE kind = 'passage')   AS passages,
+            (SELECT count(*)::int FROM pipeline.text_unit WHERE kind = 'log_entry') AS log_entries`));
+
+      // Le bandeau `attention` (contrat §9) : les mêmes requêtes que les
+      // écrans qui les traitent (tâche 24, tâche 25), jamais une seconde
+      // implémentation du statut « à revoir ».
+      orphanedSelections = await countOrphanedSelections(client);
+      correctionsNeedingReview = (await listCorrections(client, 'needs_review')).length;
+      correctionsOrphaned = (await listCorrections(client, 'orphaned')).length;
+      albumsWithPresumedSpan = await countAlbumsWithPresumedSpan(client);
+      webDocumentsWithoutSpan = await countWebDocumentsWithoutSpan(client);
+    } finally {
+      client.release();
+    }
+    const lastImport = importRows[0];
     const counts = countRows[0];
 
     return {
       importId: lastImport?.import_id ?? null,
       importedAt: lastImport?.finished_at ?? null,
-      runningJobId: null,   // pas de système de job avant la tâche 19
+      runningJobId: jobStore.runningJobId(),
       roots,
       counts: {
         photosInHierarchy: counts?.photos_in_hierarchy ?? 0,
@@ -68,6 +93,11 @@ export function registerSystemRoutes(server: FastifyInstance, deps: { pool: Pool
       // Ni la pré-construction ni le légendage n'existent encore (D9, hors plan actuel).
       prerender: { total: 0, done: 0, running: false },
       captions: { total: 0, done: 0, edited: 0, running: false },
+      attention: {
+        orphanedSelections, correctionsNeedingReview, correctionsOrphaned,
+        albumsWithPresumedSpan, webDocumentsWithoutSpan,
+      },
+      features: { datingExport: config.featureDatingExport },
     };
   });
 }

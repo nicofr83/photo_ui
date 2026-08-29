@@ -85,12 +85,76 @@ function parsePatchInput(body: unknown): TaskPatchInput {
   return patch;
 }
 
+type TaskImageAddItem = NonNullable<TaskImagesMutation['add']>[number];
+type TaskImageUpdateItem = NonNullable<TaskImagesMutation['update']>[number];
+
 /**
- * Validation SUPERFICIELLE, comme `parsePatchInput` — la forme des tableaux,
- * pas chaque champ de chaque élément. Un élément malformé plus profond
- * échouerait à l'écriture SQL, jamais en silence (INTERNAL journalisé, jamais
- * un 200 qui ment).
+ * Un `cloudAssetId` manquant ne doit JAMAIS ressembler à un refus métier
+ * (« photo inconnue ») — un élément mal formé est un défaut du CLIENT, pas de
+ * la donnée : un `add: [cloudAssetId, ...]` (chaîne nue, sans son enveloppe
+ * `{ cloudAssetId, selectedBecause }`) traverserait sinon toute la chaîne en
+ * silence — `item.cloudAssetId` vaut `undefined` en JS, jamais une erreur —
+ * jusqu'à un `rejected: [{ reason: 'unknown_photo' }]` qui ment sur la vraie
+ * cause, `cloudAssetId` disparu de la sérialisation JSON avec lui.
  */
+function parseImageAddItem(value: unknown, index: number): TaskImageAddItem {
+  if (typeof value !== 'object' || value === null) {
+    throw invalidParameter(`add[${String(index)}]`, JSON.stringify(value),
+      'chaque élément de add doit être { cloudAssetId, selectedBecause }, jamais un identifiant nu');
+  }
+  const { cloudAssetId, selectedBecause, note } = value as Record<string, unknown>;
+  if (typeof cloudAssetId !== 'string') {
+    throw invalidParameter(`add[${String(index)}].cloudAssetId`, JSON.stringify(cloudAssetId),
+      'cloudAssetId doit être une chaîne');
+  }
+  if (!Array.isArray(selectedBecause) || !selectedBecause.every((v) => typeof v === 'string')) {
+    throw invalidParameter(`add[${String(index)}].selectedBecause`, JSON.stringify(selectedBecause),
+      'selectedBecause doit être un tableau de chaînes');
+  }
+  const item: { cloudAssetId: string; selectedBecause: TaskImageAddItem['selectedBecause']; note?: string } =
+    { cloudAssetId, selectedBecause: selectedBecause as TaskImageAddItem['selectedBecause'] };
+  if (note !== undefined) {
+    if (typeof note !== 'string') {
+      throw invalidParameter(`add[${String(index)}].note`, JSON.stringify(note), 'note doit être une chaîne');
+    }
+    Object.assign(item, { note });
+  }
+  return item;
+}
+
+function parseImageUpdateItem(value: unknown, index: number): TaskImageUpdateItem {
+  if (typeof value !== 'object' || value === null) {
+    throw invalidParameter(`update[${String(index)}]`, JSON.stringify(value),
+      'chaque élément de update doit être { cloudAssetId, ... }, jamais un identifiant nu');
+  }
+  const { cloudAssetId, note, order } = value as Record<string, unknown>;
+  if (typeof cloudAssetId !== 'string') {
+    throw invalidParameter(`update[${String(index)}].cloudAssetId`, JSON.stringify(cloudAssetId),
+      'cloudAssetId doit être une chaîne');
+  }
+  const item: TaskImageUpdateItem = { cloudAssetId };
+  if (note !== undefined) {
+    if (note !== null && typeof note !== 'string') {
+      throw invalidParameter(`update[${String(index)}].note`, JSON.stringify(note), 'note doit être une chaîne ou null');
+    }
+    Object.assign(item, { note });
+  }
+  if (order !== undefined) {
+    if (typeof order !== 'number') {
+      throw invalidParameter(`update[${String(index)}].order`, JSON.stringify(order), 'order doit être un nombre');
+    }
+    Object.assign(item, { order });
+  }
+  return item;
+}
+
+function parseImageRemoveItem(value: unknown, index: number): string {
+  if (typeof value !== 'string') {
+    throw invalidParameter(`remove[${String(index)}]`, JSON.stringify(value), 'chaque élément de remove doit être une chaîne');
+  }
+  return value;
+}
+
 function parseImagesMutation(body: unknown): TaskImagesMutation {
   if (typeof body !== 'object' || body === null) {
     throw invalidParameter('body', JSON.stringify(body), 'corps de requête invalide');
@@ -99,15 +163,15 @@ function parseImagesMutation(body: unknown): TaskImagesMutation {
   const mutation: Record<string, unknown> = {};
   if (add !== undefined) {
     if (!Array.isArray(add)) throw invalidParameter('add', JSON.stringify(add), 'add doit être un tableau');
-    mutation.add = add;
+    mutation.add = add.map(parseImageAddItem);
   }
   if (remove !== undefined) {
     if (!Array.isArray(remove)) throw invalidParameter('remove', JSON.stringify(remove), 'remove doit être un tableau');
-    mutation.remove = remove;
+    mutation.remove = remove.map(parseImageRemoveItem);
   }
   if (update !== undefined) {
     if (!Array.isArray(update)) throw invalidParameter('update', JSON.stringify(update), 'update doit être un tableau');
-    mutation.update = update;
+    mutation.update = update.map(parseImageUpdateItem);
   }
   return mutation;
 }
@@ -147,6 +211,30 @@ function isTextRef(value: unknown): value is TaskTextRef {
 }
 
 /** Validation superficielle — la forme des tableaux, pas chaque `TextRef`. */
+/** Même raison que `parseImageAddItem` : un `TaskTextRef` nu (une chaîne) ne doit jamais se lire comme un texte inconnu. */
+function parseTaskTextRefItem(value: unknown, parameter: string): TaskTextRef {
+  if (typeof value !== 'object' || value === null) {
+    throw invalidParameter(parameter, JSON.stringify(value), `${parameter} doit être { kind, id }, jamais un identifiant nu`);
+  }
+  const { kind, id } = value as Record<string, unknown>;
+  if (typeof kind !== 'string' || typeof id !== 'string') {
+    throw invalidParameter(parameter, JSON.stringify(value), `${parameter} doit être { kind, id }`);
+  }
+  return { kind, id };
+}
+
+function parseReorderItem(value: unknown, index: number): { ref: TaskTextRef; order: number } {
+  if (typeof value !== 'object' || value === null) {
+    throw invalidParameter(`reorder[${String(index)}]`, JSON.stringify(value), 'chaque élément de reorder doit être { ref, order }');
+  }
+  const { ref, order } = value as Record<string, unknown>;
+  const parsedRef = parseTaskTextRefItem(ref, `reorder[${String(index)}].ref`);
+  if (typeof order !== 'number') {
+    throw invalidParameter(`reorder[${String(index)}].order`, JSON.stringify(order), 'order doit être un nombre');
+  }
+  return { ref: parsedRef, order };
+}
+
 function parseTextsMutation(body: unknown): TaskTextsMutation {
   if (typeof body !== 'object' || body === null) {
     throw invalidParameter('body', JSON.stringify(body), 'corps de requête invalide');
@@ -155,15 +243,15 @@ function parseTextsMutation(body: unknown): TaskTextsMutation {
   const mutation: Record<string, unknown> = {};
   if (add !== undefined) {
     if (!Array.isArray(add)) throw invalidParameter('add', JSON.stringify(add), 'add doit être un tableau');
-    mutation.add = add;
+    mutation.add = add.map((item: unknown, index: number) => parseTaskTextRefItem(item, `add[${String(index)}]`));
   }
   if (remove !== undefined) {
     if (!Array.isArray(remove)) throw invalidParameter('remove', JSON.stringify(remove), 'remove doit être un tableau');
-    mutation.remove = remove;
+    mutation.remove = remove.map((item: unknown, index: number) => parseTaskTextRefItem(item, `remove[${String(index)}]`));
   }
   if (reorder !== undefined) {
     if (!Array.isArray(reorder)) throw invalidParameter('reorder', JSON.stringify(reorder), 'reorder doit être un tableau');
-    mutation.reorder = reorder;
+    mutation.reorder = reorder.map(parseReorderItem);
   }
   return mutation;
 }

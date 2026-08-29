@@ -6,7 +6,9 @@ import { runMigrations } from '../db/migrate.ts';
 import { createLog, LogLevel } from '../log/log.ts';
 import { closeTestPool, testPool, withRollback } from '../../test/helpers/db.ts';
 import type { TaskReview } from '../contract/task_interface.ts';
-import { deleteTask, duplicateTask, getTaskReview } from './task_repository.ts';
+import { countAlbumsWithPresumedSpan } from './album_repository.ts';
+import { countWebDocumentsWithoutSpan } from './text_repository.ts';
+import { countOrphanedSelections, deleteTask, duplicateTask, getTaskReview } from './task_repository.ts';
 
 const MIGRATIONS = fileURLToPath(new URL('../../db/migrations', import.meta.url));
 
@@ -215,5 +217,51 @@ test('duplicateTask: copies brief/period/images/texts/notes, never the export st
     const { rows: sourceRows } = await client.query<{ exported_at: string | null }>(
       `SELECT exported_at FROM app.task WHERE slug = 'src'`);
     expect(sourceRows[0]?.exported_at).not.toBeNull();
+  });
+});
+
+test('countOrphanedSelections is GLOBAL — sums across every task, images and texts both', async () => {
+  await withRollback(async (client) => {
+    await client.query(`INSERT INTO app.task (slug, title, brief) VALUES ('t6', 'T6', ''), ('t7', 'T7', '')`);
+    // Deux images orphelines dans deux tâches différentes, une texte orpheline dans une troisième sélection.
+    await client.query(`INSERT INTO app.task_image (task_slug, cloud_asset_id, position, selected_because)
+      VALUES ('t6', '${'a'.repeat(32)}', 1, '{}'), ('t7', '${'b'.repeat(32)}', 1, '{}')`);
+    await client.query(`INSERT INTO app.task_text (task_slug, text_kind, text_id, position)
+      VALUES ('t6', 'passage', 'doc/nowhere', 1)`);
+
+    expect(await countOrphanedSelections(client)).toBe(3);
+  });
+});
+
+test('countOrphanedSelections is 0 when a selection resolves to a real photo/text', async () => {
+  await withRollback(async (client) => {
+    await client.query(`INSERT INTO app.task (slug, title, brief) VALUES ('t8', 'T8', '')`);
+    await client.query(`INSERT INTO pipeline.photo (cloud_asset_id, sha256, relative_path, file_name, format, raw_date_source)
+      VALUES ('${'a'.repeat(32)}', '${'1'.repeat(64)}', 'x/a.jpg', 'a.jpg', 'jpg', 'none')`);
+    await client.query(`INSERT INTO app.task_image (task_slug, cloud_asset_id, position, selected_because)
+      VALUES ('t8', '${'a'.repeat(32)}', 1, '{}')`);
+
+    expect(await countOrphanedSelections(client)).toBe(0);
+  });
+});
+
+test('countAlbumsWithPresumedSpan counts in-perimeter albums with a presumed span, and only those', async () => {
+  await withRollback(async (client) => {
+    await client.query(`INSERT INTO pipeline.album (path, album_name, in_perimeter, span_from, span_to, span_presumed)
+      VALUES ('set/presumed', 'x', true, '1999-01-01', '1999-01-31', true),
+             ('set/saisi', 'y', true, '1999-02-01', '1999-02-28', false),
+             ('set/out-of-perimeter', 'z', false, '1999-03-01', '1999-03-31', true)`);
+
+    expect(await countAlbumsWithPresumedSpan(client)).toBe(1);
+  });
+});
+
+test('countWebDocumentsWithoutSpan counts html documents missing a ref.web_span row, never handwritten ones', async () => {
+  await withRollback(async (client) => {
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES
+      ('site/no-span', 'html', 'x', false), ('site/has-span', 'html', 'y', false), ('logbook', 'handwritten', 'z', true)`);
+    await client.query(`INSERT INTO ref.web_span (document_id, date_from, date_to) VALUES ('site/has-span', '2003-01-01', '2003-01-31')`);
+
+    expect(await countWebDocumentsWithoutSpan(client)).toBe(1);
   });
 });

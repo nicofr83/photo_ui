@@ -2,8 +2,9 @@ import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { afterEach, describe, expect, test } from 'vitest';
+import { afterAll, afterEach, describe, expect, test } from 'vitest';
 
+import { closeTestPool, testPool } from '../../test/helpers/db.ts';
 import { bootstrap, type App } from '../runtime/bootstrap.ts';
 import type { RootStatus, SystemStatus } from '../contract/system_interface.ts';
 
@@ -13,6 +14,8 @@ afterEach(async () => {
   await app?.close();
   app = undefined;
 });
+
+afterAll(async () => { await closeTestPool(); });
 
 /** Un environnement complet, avec de vraies racines temporaires — bootstrap les vérifie. */
 async function completeEnv(): Promise<NodeJS.ProcessEnv> {
@@ -94,5 +97,64 @@ describe('bootstrap — the composition root', () => {
     expect(response.statusCode).toBe(500);
     expect(response.body).not.toContain('Funiculi');
     expect(response.json<ErrorEnvelope>().error.code).toBe('INTERNAL');
+  });
+
+  test('GET /system/status: attention counts real orphaned selections, corrections, and albums/documents needing a saisie', async () => {
+    const setup = testPool();
+    const env = await completeEnv();
+    app = await bootstrap(env);
+    try {
+      // Une sélection orpheline.
+      await setup.query(`INSERT INTO app.task (slug, title, brief) VALUES ('zz-status-t', 'T', '')`);
+      await setup.query(`INSERT INTO app.task_image (task_slug, cloud_asset_id, position, selected_because)
+        VALUES ('zz-status-t', '${'a'.repeat(32)}', 1, '{}')`);
+      // Une correction à revoir (l'amont a bougé depuis).
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('zz-doc', 'handwritten', 'x', false)`);
+      await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+        VALUES ('passage', 'zz-doc/p1', 'zz-doc', 1, 'texte actuel', 'transcribed')`);
+      await setup.query(`INSERT INTO app.text_correction (text_kind, text_id, corrected_text, original_at_correction, corrected_at)
+        VALUES ('passage', 'zz-doc/p1', 'corrigé', 'texte AMONT au moment de la correction', now())`);
+      // Un album présumé.
+      await setup.query(`INSERT INTO pipeline.album (path, album_name, in_perimeter, span_from, span_to, span_presumed)
+        VALUES ('zz-album', 'x', true, '1999-01-01', '1999-01-31', true)`);
+      // Un document web sans plage saisie.
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('zz-web', 'html', 'y', false)`);
+
+      const response = await app.server.inject({ method: 'GET', url: '/system/status' });
+      expect(response.statusCode).toBe(200);
+      const body = response.json<SystemStatus>();
+      expect(body.attention.orphanedSelections).toBeGreaterThanOrEqual(1);
+      expect(body.attention.correctionsNeedingReview).toBeGreaterThanOrEqual(1);
+      expect(body.attention.albumsWithPresumedSpan).toBeGreaterThanOrEqual(1);
+      expect(body.attention.webDocumentsWithoutSpan).toBeGreaterThanOrEqual(1);
+      expect(body.attention.correctionsOrphaned).toBeGreaterThanOrEqual(0);
+    } finally {
+      await setup.query(`DELETE FROM app.task WHERE slug = 'zz-status-t'`);
+      await setup.query(`DELETE FROM app.text_correction WHERE text_kind = 'passage' AND text_id = 'zz-doc/p1'`);
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'zz-doc'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id IN ('zz-doc', 'zz-web')`);
+      await setup.query(`DELETE FROM pipeline.album WHERE path = 'zz-album'`);
+    }
+  });
+
+  test('GET /system/status: features.datingExport reflects FEATURE_DATING_EXPORT', async () => {
+    const env = await completeEnv();
+    app = await bootstrap({ ...env, FEATURE_DATING_EXPORT: 'true' });
+    const response = await app.server.inject({ method: 'GET', url: '/system/status' });
+    expect(response.json<SystemStatus>().features).toEqual({ datingExport: true });
+  });
+
+  test('GET /system/status: features.datingExport is false by default', async () => {
+    const env = await completeEnv();
+    app = await bootstrap(env);
+    const response = await app.server.inject({ method: 'GET', url: '/system/status' });
+    expect(response.json<SystemStatus>().features).toEqual({ datingExport: false });
+  });
+
+  test('GET /system/status: runningJobId is null with nothing running', async () => {
+    const env = await completeEnv();
+    app = await bootstrap(env);
+    const response = await app.server.inject({ method: 'GET', url: '/system/status' });
+    expect(response.json<SystemStatus>().runningJobId).toBeNull();
   });
 });
