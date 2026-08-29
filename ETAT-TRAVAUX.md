@@ -566,3 +566,16 @@ Forme déjà conçue et prête à implémenter telle quelle : `src/api/contract/
 DETAIL : commits `cdddcc2`, `7e2138a`, `2f42296`. `playwright` reste installé en local (`npm install --no-save`, jamais dans `package.json`) faute de `chromium-cli` sur ce poste — script de pilotage en scratchpad, rien dans le dépôt.
 
 ASK : aucune décision Nicolas. Je continue l'intégration de bout en bout (corrections, jobs, export, notes) contre le serveur réel.
+
+---
+
+## Avancement — front, corrections + export réels (2026-08-30)
+
+RE : intégration de bout en bout, corrections et export contre le serveur réel
+DONE : cycle `PUT /corrections` → `GET /corrections?status=applied` → `GET /texts` (reflète le texte corrigé) → `POST /corrections/revert` (restaure l'amont exact) vérifié en réel sur `logbook/p001/001`, aucune trace laissée. `GET /jobs` réel → `{items: []}` au repos, forme conforme.
+
+**Vrai défaut trouvé — pour `back`** : `POST /tasks/:slug/export` réussit réellement (job `succeeded`, fichiers réels écrits : `manifest.json`, `README.md`, `images/`, `pages/`, `textes/`, `imagesWritten: 1`, `bytesWritten: 282529`), mais **la tâche elle-même n'est jamais mise à jour** — `GET /tasks/zz-repro-bug1` après un export réussi renvoie encore `state: "draft"`, `exportedAt: null`, `exportDirectory: null`, `updatedAt` inchangé. Vérifié deux fois (immédiat + 1 s après), pas un problème de timing. Ça contredit l'invariant déjà câblé et testé côté front (« un dossier déjà exporté n'est JAMAIS écrasé en silence », `ReviewScreen.test.tsx`) : sans `exportDirectory`/`exportedContentHash` posés sur la tâche, un second export ne peut pas être détecté comme un ré-export — risque d'écrasement silencieux d'un export réel de Nicolas. Dossier de test nettoyé (`trash`) après vérification, rien laissé dans `TASKS_ROOT`.
+
+DETAIL : reproduction — `POST /tasks/zz-repro-bug1/export`, `{}`, attendre `succeeded` sur `GET /jobs`, puis `GET /tasks/zz-repro-bug1` : les trois champs restent à leur valeur de création.
+
+ASK : aucune décision Nicolas. Je continue (notes, réordonnancement, revue avec vraie sélection multiple) pendant que `back` regarde l'export.
