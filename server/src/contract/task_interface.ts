@@ -142,3 +142,30 @@ export interface TaskExportReport {
   readonly partial: boolean;
   readonly exportedAt: string;
 }
+
+/** `add`/`remove`/`reorder` par `TextRef` — jamais un `id` seul, ambigu (contrat §7.2, tâche 22). */
+export interface TaskTextsMutation {
+  readonly add?: readonly TaskTextRef[];
+  readonly remove?: readonly TaskTextRef[];
+  readonly reorder?: readonly { readonly ref: TaskTextRef; readonly order: number }[];
+}
+
+export interface TaskTextsMutationResult {
+  readonly added: number;
+  readonly removed: number;
+  readonly rejected: readonly { readonly ref: TaskTextRef; readonly reason: 'unknown_text' | 'not_selected' }[];
+  readonly textCount: number;
+  readonly contentHash: string;
+}
+
+export interface TaskNoteCreateInput {
+  readonly title: string;
+  readonly text: string;
+  readonly attachedTo: { readonly images: readonly string[]; readonly texts: readonly TaskTextRef[] };
+}
+
+export interface TaskNotePatchInput {
+  readonly title?: string;
+  readonly text?: string;
+  readonly attachedTo?: { readonly images: readonly string[]; readonly texts: readonly TaskTextRef[] };
+}

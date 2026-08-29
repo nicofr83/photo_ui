@@ -1,8 +1,11 @@
+import { ulid } from 'ulid';
+
 import { SelectionReason, TaskState } from '@shared/enums';
 import type { PoolClient } from '../db/pool.ts';
 import type {
   TaskCreateInput, TaskDetail, TaskImageSelection, TaskImagesMutation, TaskImagesMutationResult, TaskNote,
-  TaskPatchInput, TaskSummary, TaskTextSelection,
+  TaskNoteCreateInput, TaskNotePatchInput, TaskPatchInput, TaskSummary, TaskTextRef, TaskTextSelection,
+  TaskTextsMutation, TaskTextsMutationResult,
 } from '../contract/task_interface.ts';
 import { contentHash, type TaskContent } from '../metier/tasks/content_hash.ts';
 
@@ -459,4 +462,181 @@ export async function mutateTaskImages(
     added, merged, removed, updated, implicitlyAdded, rejected, warnings,
     imageCount: summary.imageCount, contentHash: summary.contentHash, state: summary.state,
   };
+}
+
+const SUPPORTED_TEXT_KINDS = new Set(['passage', 'log_entry']);
+
+async function loadExistingTextExistence(
+  client: PoolClient, refs: readonly TaskTextRef[],
+): Promise<Set<string>> {
+  const existing = new Set<string>();
+  const byKind = new Map<string, string[]>();
+  for (const ref of refs) {
+    if (!SUPPORTED_TEXT_KINDS.has(ref.kind)) continue;
+    const ids = byKind.get(ref.kind) ?? [];
+    ids.push(ref.id);
+    byKind.set(ref.kind, ids);
+  }
+  for (const [kind, ids] of byKind) {
+    const { rows } = await client.query<{ id: string }>(
+      `SELECT id FROM pipeline.text_unit WHERE kind = $1 AND id = ANY($2)`, [kind, ids]);
+    for (const row of rows) existing.add(`${kind}/${row.id}`);
+  }
+  return existing;
+}
+
+/**
+ * `add`/`remove`/`reorder` par `TextRef`, jamais un `id` seul (tâche 22) —
+ * même clé composite que partout ailleurs, `(kind, id)`.
+ */
+export async function mutateTaskTexts(
+  client: PoolClient, slug: string, mutation: TaskTextsMutation,
+): Promise<TaskTextsMutationResult | null> {
+  const row = await loadRow(client, slug);
+  if (row === null) return null;
+
+  const addRefs = mutation.add ?? [];
+  const existing = await loadExistingTextExistence(client, addRefs);
+
+  const { rows: maxRows } = await client.query<{ max_position: number | null }>(
+    `SELECT max(position) AS max_position FROM app.task_text WHERE task_slug = $1`, [slug]);
+  let nextPosition = (maxRows[0]?.max_position ?? -1) + 1;
+
+  let added = 0;
+  let removed = 0;
+  const rejected: TaskTextsMutationResult['rejected'][number][] = [];
+
+  for (const ref of addRefs) {
+    if (!existing.has(`${ref.kind}/${ref.id}`)) {
+      rejected.push({ ref, reason: 'unknown_text' });
+      continue;
+    }
+    const { rowCount } = await client.query(
+      `INSERT INTO app.task_text (task_slug, text_kind, text_id, position)
+       VALUES ($1, $2, $3, $4) ON CONFLICT (task_slug, text_kind, text_id) DO NOTHING`,
+      [slug, ref.kind, ref.id, nextPosition],
+    );
+    if (rowCount !== null && rowCount > 0) {
+      added++;
+      nextPosition++;
+    }
+  }
+
+  for (const ref of mutation.remove ?? []) {
+    const { rowCount } = await client.query(
+      `DELETE FROM app.task_text WHERE task_slug = $1 AND text_kind = $2 AND text_id = $3`,
+      [slug, ref.kind, ref.id],
+    );
+    if (rowCount !== null && rowCount > 0) removed++;
+    else rejected.push({ ref, reason: 'not_selected' });
+  }
+
+  for (const item of mutation.reorder ?? []) {
+    const { rowCount } = await client.query(
+      `UPDATE app.task_text SET position = $4 WHERE task_slug = $1 AND text_kind = $2 AND text_id = $3`,
+      [slug, item.ref.kind, item.ref.id, item.order],
+    );
+    if (rowCount === null || rowCount === 0) rejected.push({ ref: item.ref, reason: 'not_selected' });
+  }
+
+  const finalRow = await loadRow(client, slug);
+  if (finalRow === null) {
+    throw new Error(`tâche disparue pendant sa propre mutation : ${slug}`);
+  }
+  const { images, texts, notes } = await loadParts(client, slug, finalRow);
+  const summary = toSummary(finalRow, toContent(finalRow, images, texts, notes), images, texts, notes);
+
+  return { added, removed, rejected, textCount: summary.textCount, contentHash: summary.contentHash };
+}
+
+export async function createTaskNote(
+  client: PoolClient, slug: string, input: TaskNoteCreateInput,
+): Promise<TaskNote | null> {
+  const row = await loadRow(client, slug);
+  if (row === null) return null;
+
+  const id = `note_${ulid()}`;
+  await client.query(
+    `INSERT INTO app.task_note (id, task_slug, title, body) VALUES ($1, $2, $3, $4)`,
+    [id, slug, input.title, input.text],
+  );
+  for (const cloudAssetId of input.attachedTo.images) {
+    await client.query(
+      `INSERT INTO app.task_note_image (note_id, cloud_asset_id) VALUES ($1, $2)`, [id, cloudAssetId]);
+  }
+  for (const ref of input.attachedTo.texts) {
+    await client.query(
+      `INSERT INTO app.task_note_text (note_id, text_kind, text_id) VALUES ($1, $2, $3)`,
+      [id, ref.kind, ref.id],
+    );
+  }
+  return await loadNoteById(client, id);
+}
+
+async function loadNoteById(client: PoolClient, noteId: string): Promise<TaskNote | null> {
+  const { rows } = await client.query<NoteRow>(`
+    SELECT n.id, n.title, n.body, n.created_at, n.updated_at,
+           coalesce(array_agg(DISTINCT ni.cloud_asset_id) FILTER (WHERE ni.cloud_asset_id IS NOT NULL), '{}')
+             AS image_ids,
+           coalesce(jsonb_agg(DISTINCT jsonb_build_object('kind', nt.text_kind, 'id', nt.text_id))
+                      FILTER (WHERE nt.text_kind IS NOT NULL), '[]') AS text_refs
+      FROM app.task_note n
+      LEFT JOIN app.task_note_image ni ON ni.note_id = n.id
+      LEFT JOIN app.task_note_text nt ON nt.note_id = n.id
+     WHERE n.id = $1
+     GROUP BY n.id`, [noteId]);
+  const row = rows[0];
+  if (row === undefined) return null;
+  return {
+    id: row.id, title: row.title, text: row.body, createdAt: row.created_at, updatedAt: row.updated_at,
+    attachedTo: { images: row.image_ids, texts: row.text_refs },
+  };
+}
+
+export async function patchTaskNote(
+  client: PoolClient, slug: string, noteId: string, patch: TaskNotePatchInput,
+): Promise<TaskNote | null> {
+  const sets: string[] = [];
+  const values: unknown[] = [];
+  if (patch.title !== undefined) {
+    values.push(patch.title);
+    sets.push(`title = $${String(values.length)}`);
+  }
+  if (patch.text !== undefined) {
+    values.push(patch.text);
+    sets.push(`body = $${String(values.length)}`);
+  }
+  if (sets.length > 0) {
+    sets.push(`updated_at = now()`);
+    values.push(slug, noteId);
+    const { rowCount } = await client.query(
+      `UPDATE app.task_note SET ${sets.join(', ')}
+        WHERE task_slug = $${String(values.length - 1)} AND id = $${String(values.length)}`, values);
+    if (rowCount === 0) return null;
+  }
+  if (patch.attachedTo !== undefined) {
+    await client.query(`DELETE FROM app.task_note_image WHERE note_id = $1`, [noteId]);
+    await client.query(`DELETE FROM app.task_note_text WHERE note_id = $1`, [noteId]);
+    for (const cloudAssetId of patch.attachedTo.images) {
+      await client.query(
+        `INSERT INTO app.task_note_image (note_id, cloud_asset_id) VALUES ($1, $2)`, [noteId, cloudAssetId]);
+    }
+    for (const ref of patch.attachedTo.texts) {
+      await client.query(
+        `INSERT INTO app.task_note_text (note_id, text_kind, text_id) VALUES ($1, $2, $3)`,
+        [noteId, ref.kind, ref.id],
+      );
+    }
+  }
+  return await loadNoteById(client, noteId);
+}
+
+/**
+ * Supprimer une note ne touche JAMAIS aux images/textes rattachés — seule la
+ * note et ses lignes de rattachement (`ON DELETE CASCADE`) disparaissent.
+ */
+export async function deleteTaskNote(client: PoolClient, slug: string, noteId: string): Promise<boolean> {
+  const { rowCount } = await client.query(
+    `DELETE FROM app.task_note WHERE task_slug = $1 AND id = $2`, [slug, noteId]);
+  return rowCount !== null && rowCount > 0;
 }
