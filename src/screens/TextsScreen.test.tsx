@@ -167,6 +167,47 @@ describe('T2 — correcting a transcription, the original always stays reachable
   });
 });
 
+describe('contract §11 Q11 — gallery captions are a subsection of the web source', () => {
+  test('the web section has a "Légendes de galerie" subsection', async () => {
+    setup();
+    const web = await screen.findByRole('region', { name: /site web/i });
+    expect(within(web).getByRole('heading', { name: /légendes de galerie/i })).toBeInTheDocument();
+  });
+
+  test('a gallery caption renders as its own card, distinct from a passage', async () => {
+    setup();
+    const web = await screen.findByRole('region', { name: /site web/i });
+    expect(
+      await within(web).findByTestId('text-web_caption-web/2003/2003_gal_1/caption/000a86651c47'),
+    ).toBeInTheDocument();
+  });
+
+  test('a gallery caption does NOT also appear in the flat per-document listing', async () => {
+    setup();
+    const web = await screen.findByRole('region', { name: /site web/i });
+    await within(web).findByTestId('text-web_caption-web/2003/2003_gal_1/caption/000a86651c47');
+    // Exactly one card for this ref, not duplicated by the per-document pass.
+    expect(within(web).getAllByTestId('text-web_caption-web/2003/2003_gal_1/caption/000a86651c47'))
+      .toHaveLength(1);
+  });
+
+  test('an unverified match is marked as a supposition, never confused with a certain one', async () => {
+    setup();
+    const card = await screen.findByTestId(
+      'text-web_caption-web/2003/2003_gal_1/caption/000b44bd55d0',
+    );
+    expect(within(card).getByTestId('gallery-match')).toHaveTextContent(/non vérifiée/i);
+  });
+
+  test('a verified match is not flagged as a supposition', async () => {
+    setup();
+    const card = await screen.findByTestId(
+      'text-web_caption-web/2003/2003_gal_1/caption/000a86651c47',
+    );
+    expect(within(card).queryByTestId('gallery-match')).not.toBeInTheDocument();
+  });
+});
+
 describe('spec §5.4 — the scanned page is reachable in regard, and only when there is one', () => {
   test('a text with a page offers to show it, collapsed by default', async () => {
     setup();

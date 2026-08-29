@@ -19,6 +19,7 @@ const unit = (over: Record<string, unknown> = {}) => ({
   overlappingPhotoCount: 3,
   highlights: [],
   logEntry: null,
+  galleryCaption: null,
   ...over,
 });
 

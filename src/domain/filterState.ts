@@ -110,6 +110,7 @@ export type FilterAxis =
 const TEXT_KIND_LABEL: Record<TextKind, string> = {
   [TextKind.PASSAGE]: 'passage',
   [TextKind.LOG_ENTRY]: 'entrée de journal',
+  [TextKind.WEB_CAPTION]: 'légende de galerie',
 };
 
 export interface FilterToken {

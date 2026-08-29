@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { apiGet } from '../client';
 import { TextDocumentListSchema, TextUnitSchema } from '../contract/text';
 import { ListEnvelopeSchema } from '../contract/photo';
+import type { TextKind } from '../../shared/enums';
 
 const TextPageEnvelope = ListEnvelopeSchema(TextUnitSchema);
 type TextEnvelope = z.infer<typeof TextPageEnvelope>;
@@ -28,5 +29,19 @@ export function useTexts(documentId: string): UseQueryResult<TextEnvelope> {
     queryKey: ['texts', documentId],
     queryFn: ({ signal }) =>
       apiGet(`/texts?documentId=${encodeURIComponent(documentId)}`, TextPageEnvelope, signal),
+  });
+}
+
+/**
+ * Cross-document, unlike `useTexts` — gallery captions belong to many
+ * different web documents (one per gallery page), and the subsection they
+ * render in (spec: "sous-section de la source web") is ONE list for the
+ * whole web source, not one more per-document listing.
+ */
+export function useTextsByKind(kind: TextKind): UseQueryResult<TextEnvelope> {
+  return useQuery({
+    queryKey: ['texts', 'kind', kind],
+    queryFn: ({ signal }) =>
+      apiGet(`/texts?kind=${encodeURIComponent(kind)}`, TextPageEnvelope, signal),
   });
 }

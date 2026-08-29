@@ -6,7 +6,7 @@ import {
 } from '../../shared/enums';
 
 import {
-  IsoTimestampSchema, ResolvedDateSchema, TextRangeSchema,
+  IsoTimestampSchema, ResolvedDateSchema, Sha256Schema, TextRangeSchema,
 } from './common';
 
 /**
@@ -121,6 +121,26 @@ export const LogEntryFieldsSchema = z.strictObject({
   remarkConfidence: z.enum(TranscriptionConfidence),
 });
 
+/**
+ * Gallery captions only (`ref.kind === 'web_caption'`). Contract §11 Q11,
+ * recommendation (a) — proposed to `back`, not yet frozen in
+ * `docs/api-contract.md`. The link is a DIRECT image match
+ * (docs/spike-dhash-galeries.md §9), never a date window: `sha256` names
+ * the library photo, `page`/`imagePath` keep the source attributable and
+ * reversible, `distance`/`margin` are the match's own traceability, and
+ * `verified` — false for anything not yet reviewed by a human — renders as
+ * an inference-grade signal, same register as a `carried` page window.
+ */
+export const GalleryCaptionFieldsSchema = z.strictObject({
+  sha256: Sha256Schema,
+  page: z.string(),
+  imagePath: z.string(),
+  distance: z.number().int(),
+  margin: z.number().int(),
+  verified: z.boolean(),
+});
+export type GalleryCaptionFields = z.infer<typeof GalleryCaptionFieldsSchema>;
+
 export const TextUnitSchema = z.strictObject({
   ref: TextRefSchema,
   documentId: z.string(),
@@ -149,6 +169,8 @@ export const TextUnitSchema = z.strictObject({
   /** Filled only by `GET /texts?q=…`. Offsets in `text`, UTF-16 units. */
   highlights: z.array(TextRangeSchema),
   logEntry: LogEntryFieldsSchema.nullable(),
+  /** `ref.kind === 'web_caption'` only. NULL for every passage and entry. */
+  galleryCaption: GalleryCaptionFieldsSchema.nullable(),
 });
 export type TextUnit = z.infer<typeof TextUnitSchema>;
 

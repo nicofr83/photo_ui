@@ -144,3 +144,33 @@ describe('contract §4.2/§4.3 — the recouvrement axis, both directions', () =
     expect(page.overlapSummary.matchCount).toBe(0);
   });
 });
+
+describe('contract §11 Q11 — a gallery caption matches its photo DIRECTLY, never by date', () => {
+  const TIKAL_PHOTO = '8192a3b4c5d6e7f80911223344556677';
+  const TIKAL_CAPTION = 'web/2003/2003_gal_1/caption/000a86651c47';
+
+  test('"which photos does this caption cover?" returns exactly the one matched photo', async () => {
+    const page = await photosWithOverlap(
+      `?overlapsTextKind=web_caption&overlapsTextId=${encodeURIComponent(TIKAL_CAPTION)}`,
+    );
+    expect(page.items.map((p) => p.cloudAssetId)).toEqual([TIKAL_PHOTO]);
+    expect(page.items[0]?.overlap).toEqual({
+      rule: 'gallery_match', photoSpanDays: 0, textSpanDays: 0,
+      totalSpanDays: 0, distanceToCentreDays: 0,
+    });
+  });
+
+  test('"which texts cover this photo?" finds the caption by sha256, alongside any date overlap', async () => {
+    const page = await overlappingTexts(TIKAL_PHOTO);
+    const caption = page.items.find((t) => t.ref.id === TIKAL_CAPTION);
+    expect(caption?.overlap.rule).toBe('gallery_match');
+  });
+
+  test('a caption whose match falls outside the current filter matches nothing', async () => {
+    const page = await photosWithOverlap(
+      `?overlapsTextKind=web_caption&overlapsTextId=${encodeURIComponent(TIKAL_CAPTION)}` +
+      '&albumPath=1998-1999%2F1999-10 Lisboa Madere',
+    );
+    expect(page.items).toEqual([]);
+  });
+});

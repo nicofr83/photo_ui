@@ -53,19 +53,32 @@ export const PageSpanSource = {
 } as const;
 export type PageSpanSource = (typeof PageSpanSource)[keyof typeof PageSpanSource];
 
-/** The three overlap rules. */
+/**
+ * The overlap rules. `GALLERY_MATCH` is not a date-window overlap at all —
+ * it is a DIRECT image match (spike: docs/spike-dhash-galeries.md) — but it
+ * travels through the exact same `OverlapInfo`/`overlappingPhotoCount`
+ * machinery as the other three, with every span reported as zero. Contract
+ * §11 Q11, recommendation (a): reuse rather than invent a second mechanism.
+ */
 export const OverlapRule = {
   LOGBOOK_ENTRY: 'logbook_entry',
   PASSAGE: 'passage',
   WEB_SPAN: 'web_span',
+  GALLERY_MATCH: 'gallery_match',
 } as const;
 export type OverlapRule = (typeof OverlapRule)[keyof typeof OverlapRule];
 
 /**
  * A text's namespace. It is PART OF ITS KEY: 456 identifiers exist in both
- * `passages` and `log_entries`.
+ * `passages` and `log_entries`. `WEB_CAPTION` is the third: a caption of
+ * the 2003-2004 site's photo galleries, written by Nicolas at the time —
+ * period text, but linked to its photo directly rather than by date
+ * (contract §11 Q11). It is never a `passage`: it has no page, and its date
+ * — when the photo's does — comes from the DIRECT link, not from parsing.
  */
-export const TextKind = { PASSAGE: 'passage', LOG_ENTRY: 'log_entry' } as const;
+export const TextKind = {
+  PASSAGE: 'passage', LOG_ENTRY: 'log_entry', WEB_CAPTION: 'web_caption',
+} as const;
 export type TextKind = (typeof TextKind)[keyof typeof TextKind];
 
 /** documents.confidence, as it stands upstream. */

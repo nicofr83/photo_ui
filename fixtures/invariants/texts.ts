@@ -85,6 +85,7 @@ export const INVARIANT_TEXTS: readonly TextUnit[] = [
     pageSpanSource: PageSpanSource.ENTRIES,
     overlappingPhotoCount: 3,
     highlights: [],
+    galleryCaption: null,
     logEntry: {
       time: '14:30', lat: 10.95, lon: -63.85, rawPosition: '10.57.0N 63.51.0W',
       placeName: null, heading: '270', wind: 'E 15', baro: 1013,
@@ -107,6 +108,7 @@ export const INVARIANT_TEXTS: readonly TextUnit[] = [
     overlappingPhotoCount: 11,
     highlights: [],
     logEntry: null,
+    galleryCaption: null,
   },
   {
     ref: { kind: TextKind.PASSAGE, id: 'ma-vie/p007/002' },
@@ -120,6 +122,7 @@ export const INVARIANT_TEXTS: readonly TextUnit[] = [
     overlappingPhotoCount: 5,
     highlights: [],
     logEntry: null,
+    galleryCaption: null,
   },
   {
     // A correction whose upstream text moved: kept and flagged, never applied
@@ -141,6 +144,7 @@ export const INVARIANT_TEXTS: readonly TextUnit[] = [
     overlappingPhotoCount: 0,
     highlights: [],
     logEntry: null,
+    galleryCaption: null,
   },
   {
     // The web: no date, no page. The facing panel is explicitly empty.
@@ -155,5 +159,55 @@ export const INVARIANT_TEXTS: readonly TextUnit[] = [
     overlappingPhotoCount: 0,
     highlights: [],
     logEntry: null,
+    galleryCaption: null,
+  },
+  {
+    // Gallery captions (contract §11 Q11, recommendation (a), proposed to
+    // `back`): a DIRECT image match, never a date window — no date, no page,
+    // same as the web passage above, but linked to a specific photo.
+    ref: { kind: TextKind.WEB_CAPTION, id: 'web/2003/2003_gal_1/caption/000a86651c47' },
+    documentId: 'web/2003/2003_gal_1', pageId: null, ordinal: 2,
+    text: 'Les ruines mayas de Tikal, au petit matin.',
+    textOriginal: 'Les ruines mayas de Tikal, au petit matin.',
+    correction: null,
+    confidence: TranscriptionConfidence.TRANSCRIBED,
+    date: null,
+    pageSpanSource: null,
+    // The one directly-matched photo. Never a count of many: see
+    // GALLERY_MATCH in mocks/handlers.ts.
+    overlappingPhotoCount: 1,
+    highlights: [],
+    logEntry: null,
+    galleryCaption: {
+      sha256: '000a86651c4788e727de62d6fc893f21341f4c2173b1d6e6d80a1ca402e81333',
+      page: '2003/2003_gal_11.htm',
+      imagePath: '2003/images/tikal01.jpg',
+      distance: 2,
+      margin: 9,
+      verified: true,
+    },
+  },
+  {
+    // Unverified: below the review pass, rendered as a supposition — same
+    // register as `carried`, never confused with a verified match.
+    ref: { kind: TextKind.WEB_CAPTION, id: 'web/2003/2003_gal_1/caption/000b44bd55d0' },
+    documentId: 'web/2003/2003_gal_1', pageId: null, ordinal: 3,
+    text: 'Sorel et Beaufort, escale avant Fort Lauderdale.',
+    textOriginal: 'Sorel et Beaufort, escale avant Fort Lauderdale.',
+    correction: null,
+    confidence: TranscriptionConfidence.TRANSCRIBED,
+    date: null,
+    pageSpanSource: null,
+    overlappingPhotoCount: 1,
+    highlights: [],
+    logEntry: null,
+    galleryCaption: {
+      sha256: '000b44bd55d0c913520cbf1800c02af776853770d2f4ba85b0761209cdb99214',
+      page: '2003/2003_gal_11.htm',
+      imagePath: '2003/images/sorel03.jpg',
+      distance: 5,
+      margin: 3,
+      verified: false,
+    },
   },
 ] as const;

@@ -75,6 +75,20 @@ export function TextCard({ unit, onShowPhotos }: Props): React.JSX.Element {
           </span>
         ) : null}
 
+        {/* Contract §11 Q11: a direct image match, its own register. An
+            unverified one is a supposition — same treatment as `carried`,
+            never shown as though a human had confirmed it. */}
+        {unit.galleryCaption !== null ? (
+          <span className={styles['spanSource']} data-testid="gallery-source">
+            {unit.galleryCaption.page}
+          </span>
+        ) : null}
+        {unit.galleryCaption !== null && !unit.galleryCaption.verified ? (
+          <span className={styles['uncertain']} data-testid="gallery-match">
+            correspondance non vérifiée
+          </span>
+        ) : null}
+
         {unit.overlappingPhotoCount > 0 && onShowPhotos !== undefined ? (
           <button
             className={styles['photos']}

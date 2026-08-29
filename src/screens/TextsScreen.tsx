@@ -1,8 +1,9 @@
 import { useNavigate, useParams } from 'react-router';
 
-import { useDocuments, useTexts } from '../api/hooks/useTexts';
+import { useDocuments, useTexts, useTextsByKind } from '../api/hooks/useTexts';
 import type { TextDocument, TextRef } from '../api/contract/text';
-import { groupBySource } from '../domain/textSource';
+import { groupBySource, TextSource } from '../domain/textSource';
+import { TextKind } from '../shared/enums';
 import { ErrorBanner } from '../ui/primitives/ErrorBanner';
 import { TaskNav } from '../ui/primitives/TaskNav';
 import { TextCard } from '../ui/texts/TextCard';
@@ -19,10 +20,13 @@ interface Props {
  * same date granularity nor the same standing, and merging them would let a
  * web caption borrow the certainty of a logbook entry.
  *
- * A fourth section is coming — the 2003 gallery captions, whose link to a photo
- * is direct rather than computed from dates. It is not stubbed here: its
- * contract is still open (api-contract §11 question 11), and inventing its
- * shape now would be a guess the rest of the code would inherit.
+ * A fourth kind lives inside the web section, as its own subsection — the
+ * 2003-2004 gallery captions, whose link to a photo is DIRECT rather than
+ * computed from dates (contract §11 Q11, recommendation (a), proposed to
+ * `back`, not yet frozen in docs/api-contract.md). `DocumentTexts` below
+ * excludes them from the flat per-document listing; `GalleryCaptions`
+ * renders them once, across every web document, since they do not belong to
+ * any one document's page-by-page reading the way a passage does.
  */
 export function TextsScreen({ onShowPhotos }: Props): React.JSX.Element {
   const { slug = '' } = useParams();
@@ -60,6 +64,10 @@ export function TextsScreen({ onShowPhotos }: Props): React.JSX.Element {
           {group.documents.map((document) => (
             <DocumentTexts key={document.id} document={document} onShowPhotos={showPhotos} />
           ))}
+
+          {group.source === TextSource.WEB ? (
+            <GalleryCaptions onShowPhotos={showPhotos} />
+          ) : null}
         </section>
       ))}
     </div>
@@ -80,9 +88,34 @@ function DocumentTexts({
       {texts.error !== null ? <ErrorBanner error={texts.error} /> : null}
       {texts.isPending ? <p role="status">Chargement…</p> : null}
 
-      {texts.data?.items.map((unit) => (
+      {/* Gallery captions render once for the whole source, in
+          GalleryCaptions below — never mixed into a document's own passages. */}
+      {texts.data?.items
+        .filter((unit) => unit.ref.kind !== TextKind.WEB_CAPTION)
+        .map((unit) => (
+          <TextCard key={`${unit.ref.kind}:${unit.ref.id}`} unit={unit} onShowPhotos={onShowPhotos} />
+        ))}
+    </>
+  );
+}
+
+function GalleryCaptions({
+  onShowPhotos,
+}: {
+  readonly onShowPhotos: (ref: TextRef) => void;
+}): React.JSX.Element {
+  const captions = useTextsByKind(TextKind.WEB_CAPTION);
+
+  return (
+    <section className={styles['section']} aria-label="Légendes de galerie">
+      <h3>Légendes de galerie</h3>
+
+      {captions.error !== null ? <ErrorBanner error={captions.error} /> : null}
+      {captions.isPending ? <p role="status">Chargement…</p> : null}
+
+      {captions.data?.items.map((unit) => (
         <TextCard key={`${unit.ref.kind}:${unit.ref.id}`} unit={unit} onShowPhotos={onShowPhotos} />
       ))}
-    </>
+    </section>
   );
 }

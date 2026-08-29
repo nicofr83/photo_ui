@@ -68,6 +68,21 @@ function overlapInfo(photo: DayInterval, text: DayInterval, rule: OverlapRule): 
   };
 }
 
+/**
+ * A gallery caption's "overlap" is a DIRECT image match, never a date
+ * window (contract §11 Q11) — every span reported as zero rather than
+ * computed, so a caller cannot mistake it for a measured proximity.
+ */
+const GALLERY_MATCH_OVERLAP: OverlapInfo = {
+  rule: OverlapRule.GALLERY_MATCH,
+  photoSpanDays: 0, textSpanDays: 0, totalSpanDays: 0, distanceToCentreDays: 0,
+};
+
+function galleryMatchedPhoto(text: TextUnit): PhotoListItem | null {
+  if (text.galleryCaption === null) return null;
+  return store.photos.find((p) => p.sha256 === text.galleryCaption?.sha256) ?? null;
+}
+
 /** Spec §4.3: says what the matched set is worth, and where it is weak. */
 function summarise(dates: ReadonlyArray<{ precision: string } | null>, windowDays: number): OverlapSummary {
   return {
@@ -114,14 +129,24 @@ export const handlers = [
       });
     }
 
-    const items = photo.date === null ? [] : store.texts
+    // Gallery captions match by sha256, never by date — computed BEFORE the
+    // date-window branch below, and independent of whether the photo even
+    // has a date at all.
+    const galleryMatches = store.texts
+      .filter((text) => text.galleryCaption?.sha256 === photo.sha256)
+      .map((text) => ({ ...text, overlap: GALLERY_MATCH_OVERLAP }));
+
+    const dateMatches = photo.date === null ? [] : store.texts
       .map((text) => {
+        if (text.ref.kind === 'web_caption') return null; // handled above
         const effective = effectiveTextWindow(text);
         if (effective === null || photo.date === null) return null;
         if (!overlaps(photo.date, effective.window)) return null;
         return { ...text, overlap: overlapInfo(photo.date, effective.window, effective.rule) };
       })
-      .filter((t): t is NonNullable<typeof t> => t !== null)
+      .filter((t): t is NonNullable<typeof t> => t !== null);
+
+    const items = [...galleryMatches, ...dateMatches]
       .sort((a, b) => a.overlap.totalSpanDays - b.overlap.totalSpanDays);
 
     return HttpResponse.json({
@@ -142,11 +167,13 @@ export const handlers = [
     const params = new URL(request.url).searchParams;
     const documentId = params.get('documentId');
     const pageId = params.get('pageId');
+    const kind = params.get('kind');
     const query = params.get('q');
 
     let kept = [...store.texts];
     if (documentId !== null) kept = kept.filter((t) => t.documentId === documentId);
     if (pageId !== null) kept = kept.filter((t) => t.pageId === pageId);
+    if (kind !== null) kept = kept.filter((t) => t.ref.kind === kind);
     if (query !== null) {
       const needle = query.toLowerCase();
       // An empty needle returns zero results, never the whole corpus.
@@ -520,21 +547,34 @@ export const handlers = [
           resource: 'text', id: overlapsTextId,
         });
       }
-      const effective = effectiveTextWindow(text);
-      const dated = kept.filter(
-        (p): p is PhotoListItem & { date: NonNullable<PhotoListItem['date']> } => p.date !== null,
-      );
-      const matched = effective === null
-        ? []
-        : dated.filter((p) => overlaps(p.date, effective.window));
 
-      withOverlap = effective === null ? [] : matched.map((p) => ({
-        ...p, overlap: overlapInfo(p.date, effective.window, effective.rule),
-      }));
-      overlapSummary = summarise(
-        matched.map((p) => ({ precision: p.date.precision })),
-        effective === null ? 0 : widthDays(effective.window),
-      );
+      if (text.ref.kind === 'web_caption') {
+        // Direct match, never a window: the one photo this caption names,
+        // if it is still in the current filter.
+        const photo = galleryMatchedPhoto(text);
+        const matched = photo === null ? [] : kept.filter((p) => p.cloudAssetId === photo.cloudAssetId);
+        withOverlap = matched.map((p) => ({ ...p, overlap: GALLERY_MATCH_OVERLAP }));
+        overlapSummary = summarise(
+          matched.map((p) => (p.date === null ? null : { precision: p.date.precision })),
+          0,
+        );
+      } else {
+        const effective = effectiveTextWindow(text);
+        const dated = kept.filter(
+          (p): p is PhotoListItem & { date: NonNullable<PhotoListItem['date']> } => p.date !== null,
+        );
+        const matched = effective === null
+          ? []
+          : dated.filter((p) => overlaps(p.date, effective.window));
+
+        withOverlap = effective === null ? [] : matched.map((p) => ({
+          ...p, overlap: overlapInfo(p.date, effective.window, effective.rule),
+        }));
+        overlapSummary = summarise(
+          matched.map((p) => ({ precision: p.date.precision })),
+          effective === null ? 0 : widthDays(effective.window),
+        );
+      }
       kept = withOverlap;
     }
 
