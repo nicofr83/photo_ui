@@ -11,6 +11,7 @@ import { registerPhotosRoutes } from '../http/photos_controller.ts';
 import { registerRefRoutes } from '../http/ref_controller.ts';
 import { registerSystemRoutes } from '../http/system_controller.ts';
 import { registerTasksRoutes } from '../http/tasks_controller.ts';
+import { registerTextsRoutes } from '../http/texts_controller.ts';
 import type { ExportServiceDeps } from '../metier/export/export_service.ts';
 import type { ImageServiceDeps } from '../metier/images/image_service.ts';
 import { InFlightRenders } from '../metier/images/in_flight_renders.ts';
@@ -84,6 +85,7 @@ export async function bootstrap(env: NodeJS.ProcessEnv): Promise<App> {
   registerTasksRoutes(server, { pool, jobStore, exportDeps });
   registerImagesRoutes(server, { pool, imageService });
   registerJobsRoutes(server, { pool, jobStore, config, imageService });
+  registerTextsRoutes(server, { pool, pagesRoot: config.pagesRoot });
   await server.ready();
 
   log.info('serveur prêt', { host: config.host, port: config.port });
