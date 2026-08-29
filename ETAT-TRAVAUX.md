@@ -404,3 +404,17 @@ DETAIL: commits `0818c66`..`015ecc6`. Deux écarts trouvés et corrigés avant q
 Non fait, volontairement : `POST /tasks/:slug/export` (l'endpoint HTTP). Le contrat dit `202` + un `Job` — `exportTask()` est prêt à être appelé par le système de jobs, tâche 19, prochaine.
 
 ASK: aucun — je continue sur la tâche 19 (opérations longues), qui expose `exportTask` en HTTP.
+
+---
+
+## Avancement — impl-backend, tâche 19 (2026-08-29)
+
+RE: tâche 19 — opérations longues, terminée. Tranche T1 (serveur) complète.
+DONE: `JobStore` en mémoire (jamais en base — un seul processus Mac, contrat §4.7), un seul job mutant à la fois TOUS TYPES CONFONDUS (import/export/pré-rendu se bloquent mutuellement), `cancellable` intrinsèque au type (seul le pré-rendu a un point d'arrêt sûr entre deux rendus ; annuler un import ou un export laisserait un état incertain). `runPrerender` : un rendu par `sha256` distinct (949 groupes partagés), parallèle via le pool existant. Câblé : `GET/POST /jobs*`, `POST /jobs/import`, `POST /jobs/prerender`, et **`POST /tasks/:slug/export`** (tâche 18 enfin exposée en HTTP). `images_controller` refactoré pour recevoir un `ImageServiceDeps` déjà construit plutôt qu'un `renderConcurrency` — il fabriquait son propre `InFlightRenders`, un second sémaphore non coordonné avec celui de l'export/pré-rendu. Une seule instance, construite une fois dans `bootstrap.ts`, partagée partout. 21 tests neufs, vérifié à la main en HTTP réel (export via job, poll, `GET /jobs`), nettoyé ensuite. 494 tests serveur, tsc/eslint propres.
+DETAIL: commits `13e5859`..`e9ab5bf`. Vrai bug trouvé en testant à la main AVANT de commiter : `job.result` doit respecter l'union `JobResult` du contrat (`{type, report}`), jamais le rapport nu — l'export et l'import renvoyaient tous deux le rapport sans l'enveloppe, ce qui aurait cassé tout client discriminant sur `result.type`. Corrigé aux deux endroits (le pré-rendu était déjà correct, construit dans cette forme dès le départ).
+
+Non fait, volontairement : `POST /jobs/caption` (aucune passe de légendage n'existe — « la passe ne l'est pas », contrat §4.9, aucun écran en V1) et `POST /jobs/dating-export` (écrit dans `adobe_mcp` derrière un drapeau désactivé par défaut — hors périmètre, consigne explicite de ne jamais y écrire).
+
+**La Tranche T1 (serveur) est maintenant complète : tâches 12 à 19, tous les endpoints de base + images + tâches + export + jobs tournent en réel.**
+
+ASK: aucun — je continue sur la Tranche T2 (le texte), tâche 20 : documents, pages, textes.
