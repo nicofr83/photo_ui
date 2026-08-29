@@ -85,7 +85,10 @@ export function registerPhotosRoutes(server: FastifyInstance, deps: { pool: Pool
 
     const client = await pool.connect();
     try {
-      const [result, importId] = await Promise.all([listPhotos(client, filters), getLatestImportId(client)]);
+      // Séquentiel : le même `client` connecté ne pipeline pas deux requêtes
+      // concurrentes (`pg` les sérialise avec un avertissement de dépréciation).
+      const result = await listPhotos(client, filters);
+      const importId = await getLatestImportId(client);
       return {
         items: result.items,
         total: result.total,
