@@ -68,6 +68,54 @@ export type OverlapRule = (typeof OverlapRule)[keyof typeof OverlapRule];
 export const TextKind = { PASSAGE: 'passage', LOG_ENTRY: 'log_entry' } as const;
 export type TextKind = (typeof TextKind)[keyof typeof TextKind];
 
+/** documents.confidence, as it stands upstream. */
+export const TranscriptionConfidence = {
+  TRANSCRIBED: 'transcribed',
+  REVIEWED: 'reviewed',
+  UNCERTAIN: 'uncertain',
+} as const;
+export type TranscriptionConfidence =
+  (typeof TranscriptionConfidence)[keyof typeof TranscriptionConfidence];
+
+/** A transcription correction against the current upstream text. */
+export const CorrectionStatus = {
+  APPLIED: 'applied',
+  /** The upstream text moved: kept, marked, never applied in silence. */
+  NEEDS_REVIEW: 'needs_review',
+  /** The target no longer exists in `pipeline` at all. */
+  ORPHANED: 'orphaned',
+} as const;
+export type CorrectionStatus = (typeof CorrectionStatus)[keyof typeof CorrectionStatus];
+
+/** The nature of a caption. A machine does not write a memory. */
+export const CaptionKind = {
+  MACHINE: 'machine',
+  HUMAN_EDITED: 'human-edited',
+} as const;
+export type CaptionKind = (typeof CaptionKind)[keyof typeof CaptionKind];
+
+export const JobType = {
+  IMPORT: 'import',
+  EXPORT: 'export',
+  PRERENDER: 'prerender',
+  CAPTION: 'caption',
+  DATING_EXPORT: 'dating_export',
+} as const;
+export type JobType = (typeof JobType)[keyof typeof JobType];
+
+export const JobState = {
+  QUEUED: 'queued',
+  RUNNING: 'running',
+  SUCCEEDED: 'succeeded',
+  FAILED: 'failed',
+  CANCELLED: 'cancelled',
+} as const;
+export type JobState = (typeof JobState)[keyof typeof JobState];
+
+/** Width of the on-demand render. CLOSED: an unknown value is a 400. */
+export const RenderEdge = { DETAIL: 1400 } as const;
+export type RenderEdge = (typeof RenderEdge)[keyof typeof RenderEdge];
+
 export const PhotoScope = {
   HIERARCHY: 'hierarchy',
   OUT_OF_HIERARCHY: 'out_of_hierarchy',
