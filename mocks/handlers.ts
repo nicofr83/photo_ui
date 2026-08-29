@@ -16,7 +16,7 @@ import {
   WebSpanPutInputSchema, type AlbumSpanUpdateResult, type AlbumSpanWarning, type WebDocumentRow,
 } from '../src/api/contract/ref';
 import type { TextRef, TextUnit } from '../src/api/contract/text';
-import { isIsoDate } from '../src/shared/date_interface';
+import { isIsoDate, type IsoDate } from '../src/shared/date_interface';
 import {
   CorrectionStatus, DateKind, DatePrecision, DateSource, ErrorCode, MatchField, OverlapRule,
   PhotoSort, SelectionReason, TaskState,
@@ -159,6 +159,35 @@ function albumSpanWarnings(album: Album, dateFrom: string, dateTo: string): Albu
 
 function textIncludes(haystack: string | null, needle: string): boolean {
   return haystack !== null && haystack.toLowerCase().includes(needle.toLowerCase());
+}
+
+/**
+ * Contract §7.3's timeline: layout, derived client-normally, but the mock
+ * plays the server's part of naming each entry's OWN bounds and nature —
+ * never flattened to a point, never guessed for a text that asserts none.
+ * A gallery caption (no date, no page, no document span) contributes none.
+ */
+function timelineEntryFor(
+  text: TextUnit,
+): { start: IsoDate; end: IsoDate; precision: string; kind: string } | null {
+  if (text.date !== null) {
+    return {
+      start: text.date.start, end: text.date.end,
+      precision: text.date.precision, kind: text.date.kind,
+    };
+  }
+  if (text.pageId !== null) {
+    const page = INVARIANT_PAGES.find((p) => p.id === text.pageId);
+    return page?.window == null ? null : {
+      start: page.window.start, end: page.window.end,
+      precision: page.window.precision, kind: page.window.kind,
+    };
+  }
+  const doc = store.documents.find((d) => d.id === text.documentId);
+  return doc?.span == null ? null : {
+    start: doc.span.start, end: doc.span.end,
+    precision: doc.span.precision, kind: doc.span.kind,
+  };
 }
 
 /**
@@ -647,6 +676,93 @@ export const handlers = [
         .sort((a, b) => (b.lastOpenedAt ?? '').localeCompare(a.lastOpenedAt ?? '')),
     }),
   ),
+
+  // Contract §7.3, "tranché avec `impl-frontend`": the chronology is layout
+  // and is derived client-side, but the EIGHT counters are NOT — computed
+  // here so the frontend never risks a second implementation of the
+  // recouvrement predicate that could disagree with GET /photos?overlapsText…
+  // Declared BEFORE the plain /tasks/:slug below, same shadow-avoidance
+  // reason as every other nested route in this file.
+  http.get('*/tasks/:slug/review', ({ params }) => {
+    const task = store.tasks.get(String(params['slug']));
+    if (task === undefined) {
+      return error(404, ErrorCode.NOT_FOUND, 'Tâche introuvable.', {
+        resource: 'task', id: String(params['slug']),
+      });
+    }
+
+    const images = task.images
+      .map((selection) => {
+        const photo = store.photos.find((p) => p.cloudAssetId === selection.cloudAssetId);
+        return photo === undefined ? null : { ...photo, selection };
+      })
+      .filter((i): i is NonNullable<typeof i> => i !== null);
+
+    const texts = task.texts
+      .map((selection) => {
+        const unit = store.texts.find(
+          (t) => t.ref.kind === selection.ref.kind && t.ref.id === selection.ref.id,
+        );
+        return unit === undefined ? null : { ...unit, selection };
+      })
+      .filter((t): t is NonNullable<typeof t> => t !== null);
+
+    const hasCoveringText = (photoDate: PhotoListItem['date']): boolean => {
+      if (photoDate === null) return false;
+      return store.texts.some((t) => {
+        const entry = timelineEntryFor(t);
+        return entry !== null && overlaps(photoDate, { start: entry.start, end: entry.end });
+      });
+    };
+
+    const warnings = {
+      undatedImages: images.filter((i) => i.date === null).length,
+      inferredDateImages: images.filter((i) => i.date?.kind === DateKind.INFERENCE).length,
+      uncertainTexts: texts.filter((t) => t.confidence === 'uncertain').length,
+      textsWiderThan30Days: texts.filter((t) => {
+        const entry = timelineEntryFor(t);
+        return entry !== null && widthDays({ start: entry.start, end: entry.end }) > 30;
+      }).length,
+      imagesWithoutText: images.filter((i) => !hasCoveringText(i.date)).length,
+      orphanedImages: task.images.filter(
+        (i) => !store.photos.some((p) => p.cloudAssetId === i.cloudAssetId),
+      ).length,
+      orphanedTexts: task.texts.filter(
+        (t) => !store.texts.some((u) => u.ref.kind === t.ref.kind && u.ref.id === t.ref.id),
+      ).length,
+      imagesOutOfPeriod: (() => {
+        const period = task.period;
+        return period === null ? 0 : images.filter(
+          (i) => i.date !== null && !overlaps(i.date, { start: period.from, end: period.to }),
+        ).length;
+      })(),
+    };
+
+    const timeline = [
+      ...images
+        .filter((i) => i.date !== null)
+        .map((i) => ({
+          kind: 'image' as const, id: i.cloudAssetId,
+          start: i.date?.start ?? '', end: i.date?.end ?? '',
+          precision: i.date?.precision ?? DatePrecision.DAY, dateKind: i.date?.kind ?? DateKind.READING,
+        })),
+      ...texts
+        .map((t) => {
+          const entry = timelineEntryFor(t);
+          return entry === null ? null : {
+            kind: 'text' as const, id: `${t.ref.kind}:${t.ref.id}`,
+            start: entry.start, end: entry.end, precision: entry.precision, dateKind: entry.kind,
+          };
+        })
+        .filter((e): e is NonNullable<typeof e> => e !== null),
+    ].sort((a, b) => a.start.localeCompare(b.start));
+
+    const { images: _images, texts: _texts, brief: _brief, notes: taskNotes, ...summary } = task;
+
+    return HttpResponse.json({
+      task: summary, images, texts, notes: taskNotes, warnings, timeline,
+    });
+  }),
 
   http.get('*/tasks/:slug', ({ params }) => {
     const task = store.tasks.get(String(params['slug']));

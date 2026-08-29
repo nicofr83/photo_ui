@@ -4,11 +4,12 @@ import { apiDeleteWithBody, apiGet, apiPut, ApiError } from '../src/api/client';
 import { PhotoOverlapEnvelopeSchema, TextOverlapEnvelopeSchema } from '../src/api/contract/overlap';
 import { ListEnvelopeSchema, PhotoFacetsSchema, PhotoListItemSchema } from '../src/api/contract/photo';
 import { AlbumSpanUpdateResultSchema, WebDocumentListSchema } from '../src/api/contract/ref';
+import { TaskReviewSchema } from '../src/api/contract/review';
 import { TextDocumentSchema } from '../src/api/contract/text';
-import { parseIsoDate } from '../src/shared/date_interface';
+import { parseIsoDate, parseIsoTimestamp } from '../src/shared/date_interface';
 
 import { handlers } from './handlers';
-import { resetStore } from './store';
+import { store, resetStore } from './store';
 
 const server = setupServer(...handlers);
 beforeAll(() => { server.listen({ onUnhandledRequest: 'error' }); });
@@ -36,6 +37,7 @@ const putWebSpan = (input: {
   apiPut('/ref/web-span', {
     ...input, dateFrom: parseIsoDate(input.dateFrom), dateTo: parseIsoDate(input.dateTo),
   }, TextDocumentSchema);
+const review = (slug: string) => apiGet(`/tasks/${slug}/review`, TaskReviewSchema);
 
 describe('the envelope obeys the contract', () => {
   test('an unfiltered call returns the whole hierarchy scope', async () => {
@@ -359,5 +361,62 @@ describe('contract §4.8 — /ref/web-documents and PUT/DELETE /ref/web-span', (
       documentId: 'nope', dateFrom: '2003-01-01', dateTo: '2003-12-31', note: null,
     }).catch((e: unknown) => e)) as ApiError;
     expect(thrown.status).toBe(404);
+  });
+});
+
+describe('contract §7.3 — GET /tasks/:slug/review, the eight counters and the timeline', () => {
+  test('an unknown task is a 404', async () => {
+    const thrown = (await review('nope').catch((e: unknown) => e)) as ApiError;
+    expect(thrown.status).toBe(404);
+  });
+
+  test('the seed task: one dated image, no text covers it, no text selected yet', async () => {
+    const page = await review('1999-transat');
+    expect(page.images).toHaveLength(1);
+    expect(page.images[0]?.selection.cloudAssetId).toBe('e8bc80b75e254b7db2e1454222416813');
+    expect(page.texts).toEqual([]);
+    expect(page.warnings.imagesWithoutText).toBe(1);
+    expect(page.warnings.undatedImages).toBe(0);
+  });
+
+  test('the timeline carries the image, with its own bounds and nature', async () => {
+    const page = await review('1999-transat');
+    expect(page.timeline).toEqual([
+      { kind: 'image', id: 'e8bc80b75e254b7db2e1454222416813', start: '1999-03-02', end: '1999-03-02', precision: 'day', dateKind: 'decision' },
+    ]);
+  });
+
+  test('selecting a text adds it to the review and its own timeline entry', async () => {
+    const task = store.tasks.get('1999-transat');
+    task?.texts.push({
+      ref: { kind: 'log_entry', id: 'logbook/p003/001' },
+      order: 0, selectedAt: parseIsoTimestamp('2026-08-29T10:00:00.000Z'), orphaned: false,
+      startOffset: null, endOffset: null,
+    });
+
+    const page = await review('1999-transat');
+    expect(page.texts).toHaveLength(1);
+    expect(page.timeline.some((e) => e.kind === 'text' && e.start === '1999-12-08')).toBe(true);
+  });
+
+  test('an orphaned image selection is counted and excluded from the enriched list', async () => {
+    const task = store.tasks.get('1999-transat');
+    task?.images.push({
+      cloudAssetId: 'ffffffffffffffffffffffffffffffff',
+      order: 1, note: null, selectedBecause: ['manual'],
+      selectedAt: parseIsoTimestamp('2026-08-29T10:00:00.000Z'), orphaned: false,
+    });
+
+    const page = await review('1999-transat');
+    expect(page.warnings.orphanedImages).toBe(1);
+    expect(page.images.some((i) => i.cloudAssetId === 'ffffffffffffffffffffffffffffffff')).toBe(false);
+  });
+
+  test('imagesOutOfPeriod counts against the task period, when one is set', async () => {
+    const task = store.tasks.get('1999-transat');
+    if (task !== undefined) task.period = { from: parseIsoDate('2000-01-01'), to: parseIsoDate('2000-12-31') };
+
+    const page = await review('1999-transat');
+    expect(page.warnings.imagesOutOfPeriod).toBe(1);
   });
 });
