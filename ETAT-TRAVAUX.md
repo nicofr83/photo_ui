@@ -392,3 +392,15 @@ DONE: `POST /tasks/:slug/images` (`mutateTaskImages` dans `task_repository.ts`) 
 DETAIL: commits `d4c024d`..`9b9b19b`. Validation de corps toujours superficielle (forme des tableaux, pas chaque champ de chaque élément) — même niveau que `POST`/`PATCH /tasks`, pas de bibliothèque de schéma dans ce dépôt.
 
 ASK: aucun — je continue sur la tâche 18 (export).
+
+---
+
+## Avancement — impl-backend, tâche 18 (2026-08-29)
+
+RE: tâche 18 — export, terminée (sauf l'endpoint HTTP, qui attend la tâche 19)
+DONE: `canonical.ts` (snake_case mécanique + tri des seuls tableaux de primitives — `images`/`texts`/`notes` restent des séquences, jamais triées), `manifest.ts` (`buildManifest`, forme annexe C), `export_repository.ts` (lectures batchées), `export_service.ts` (`exportTask` — dossier temporaire → rendus/pages/textes/README/manifest → `rename` en dernier geste, 409 `TARGET_DIRECTORY_EXISTS` sans `overwrite`). Réutilise `image_service.getRender` pour les images (même cache 1400px que `/images/:sha256/render`) — dédoublonnage et écriture atomique hérités gratuitement. Invariant 7 vérifié avec un vrai rendu `sips` partagé entre deux exports. 20 tests neufs (dont 7 en intégration réelle DB+FS+sips), 474 tests serveur au total, tsc/eslint propres.
+DETAIL: commits `0818c66`..`015ecc6`. Deux écarts trouvés et corrigés avant qu'ils partent : (1) l'exemple JSON de l'annexe C donne `texts[].date` à 4 clés, mais §7.4 point 1 du contrat (la prose) exige explicitement les mêmes 6 clés que `images[].date` — suivi la prose ; (2) `overlap.span_source` vient de `page_span_source` (dénormalisé sur `text_unit`), pas de `covers_rule` (qui alimente `overlap.rule`) — deux colonnes différentes, conflaté dans mon premier jet. `overlap` est nullable (une fenêtre peut n'exister nulle part — ni date propre, ni fenêtre de page — les colonnes le permettent). Les textes/pages sont testés en réel en insérant directement dans `app.task_text` (aucun endpoint de sélection de texte n'existe encore, tâches 20-22) — même technique déjà utilisée pour `web_gallery_link`/`ref.tag_kind`.
+
+Non fait, volontairement : `POST /tasks/:slug/export` (l'endpoint HTTP). Le contrat dit `202` + un `Job` — `exportTask()` est prêt à être appelé par le système de jobs, tâche 19, prochaine.
+
+ASK: aucun — je continue sur la tâche 19 (opérations longues), qui expose `exportTask` en HTTP.
