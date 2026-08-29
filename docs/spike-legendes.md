@@ -322,31 +322,61 @@ un hameau de terre battue.
 
 ### 5.3 bis Les tags affirment des lieux, et se trompent
 
-C'est le point le plus grave, parce qu'il touche directement la règle
-invariante §7.1. **883 photos du périmètre — 22,5 % — portent au moins un tag
-de lieu nommé**, et ces tags sont indiscernables d'une lecture : rien ne les
-marque comme des inférences.
+C'est le point le plus grave, et il dépasse la question des légendes : les tags
+sont un **axe de sélection de la V1**. **946 photos du périmètre — 24 % —
+portent au moins un tag de lieu nommé**, tirés d'un vocabulaire de **46 lieux**,
+et rien ne les marque comme des inférences. Versés tels quels dans l'interface
+ou dans le dossier remis au scénariste, ils produisent exactement ce que §7.1
+interdit : **une affirmation de lieu, faite par une machine, indiscernable
+d'une lecture**.
 
-Ils sont souvent faux. Le recoupement ci-dessous utilise le nom d'album comme
-témoin — une information dont l'analyste dispose mais que le modèle de
-légendage n'a jamais vue :
+**Le problème n'est pas qu'ils soient tous faux, c'est qu'on ne peut pas savoir
+lesquels le sont.** Le recoupement ci-dessous utilise le nom d'album comme
+témoin — une information dont l'analyste dispose, mais que le modèle de
+légendage n'a jamais vue.
 
-| Photo | Album | Tags de lieu portés |
+*Certains tags portent un vrai signal.* `mexico` (109 photos) ne sort que de
+2004 et se concentre sur trois albums de sites mésoaméricains : 65 photos dans
+`2004-06-visite de Chichen Itza`, 24 dans `Tikal`, 20 dans `Tulum`.
+
+*D'autres sont du pur bruit*, et se reconnaissent à ce qu'ils sont **dispersés
+sur les cinq ensembles** au lieu de se concentrer :
+
+| Tag | photos | ensembles | où il tombe en réalité |
+|:---|---:|---:|:---|
+| `egypt` | 61 | 4 / 5 | 30 dans `2004-09-maroc avec Hugo`, 14 dans `1999-03 Maldives`, 12 à Chichén Itzá |
+| `asia` | 125 | 5 / 5 | 21 dans `2001-02-Trinidad Carnaval`, 20 à Chichén Itzá, 12 au Maroc |
+| `china` | 32 | 4 / 5 | 20 dans `2001-02-Trinidad Carnaval` |
+| `italy` | 141 | 5 / 5 | 18 à Tikal, 16 à Chichén Itzá, 13 à Tulum |
+| `greece` | 47 | 5 / 5 | 10 à Chichén Itzá, 10 à Tulum |
+| `russia` | 25 | 5 / 5 | 8 dans les deux albums `2003-10-Sorel` (Québec) |
+| `thailand` | 23 | 5 / 5 | 4 dans `2001-02-Trinidad Carnaval` |
+
+Le mécanisme se lit à l'œil nu : devant une ruine de pierre le tagueur émet
+**tous les pays à ruines de son vocabulaire** — `italy`, `greece`, `egypt`,
+`asia`, `mexico` — et devant un carnaval il émet `china`, `asia`, `thailand`.
+C'est le même arrosage que sur la photo 28, où `dolphin`, `whale` et `fish`
+étaient proposés ensemble.
+
+**Le cas qui devrait décider.** `chichen itza` est un tag de site archéologique
+nommé, porté par 51 photos. **41 tombent bien dans l'album Chichén Itzá — mais
+8 tombent dans `2004-03- visite de Tikal` et 2 dans `2004-05-visite de Tulum`.**
+Tikal est au Guatemala, Chichén Itzá au Mexique, 500 km et une frontière les
+séparent. Un tag de lieu nommé se trompe donc sur **un cinquième** de ses
+assignations, et c'est le tag le plus spécifique du lot.
+
+Les quatre exemples de l'échantillon, à voir sur la page :
+
+| Photo | Album témoin | Tags de lieu portés |
 |:---|:---|:---|
 | 41 | `2003-05 Keys Stephane` | **`chicago`** |
 | 46 | `2003-10-Sorel 2 - Laurentides` | **`europe`, `london`** |
 | 55 | `2004-05-visite de Tulum` | `mexico`, **`chichen itza`**, **`asia`** |
 | 09 | `1999-11 Mad CapVert` | **`spain`** |
 
-Et sur l'ensemble du périmètre, le vocabulaire de lieu comprend `egypt` (61
-photos), `asia` (125), `china` (32), `thailand` (23), `india` (12), `japan` (8)
-— sur un corpus qui va du Portugal aux Caraïbes.
-
-Un tag `chicago` sur une photo de Floride, versé tel quel dans le dossier remis
-au scénariste, produit exactement ce que §7.1 interdit : **une inférence de
-machine qu'on ne peut pas distinguer d'une lecture**. La consigne de légendage
-interdit explicitement ce geste, et aucune des 60 légendes ne nomme un lieu
-autrement qu'en citant un texte lu dans l'image.
+La consigne de légendage interdit explicitement ce geste, et **aucune des 60
+légendes ne nomme un lieu** autrement qu'en citant entre guillemets un texte lu
+dans l'image.
 
 ### 5.4 Ce que seule la légende capte : le texte inscrit dans l'image
 
@@ -442,11 +472,13 @@ autre question.** Trois raisons, par ordre de force :
    inscrit dans l'image (22/60, dont des dates et des positions sur un corpus
    dont c'est la faiblesse principale) et l'état technique de la photo (27/60,
    là où le score esthétique d'Adobe ne prédit rien).
-4. **Les tags violent la règle invariante §7.1**, la légende non. 883 photos
-   du périmètre portent un tag de lieu nommé, souvent faux (`chicago` en
-   Floride, `london` au Québec, `asia` au Yucatán), et rien ne les marque comme
-   des inférences. Si les tags partent dans le dossier remis au scénariste, ils
-   y portent des affirmations de lieu que personne n'a faites.
+4. **Les tags violent la règle invariante §7.1**, la légende non. 946 photos
+   du périmètre (24 %) portent un tag de lieu nommé tiré d'un vocabulaire de
+   46 lieux, et rien ne les marque comme des inférences. Le tag le plus
+   spécifique du lot, `chichen itza`, se trompe sur un cinquième de ses
+   assignations. Si les tags partent dans le dossier remis au scénariste, ils y
+   portent des affirmations de lieu que personne n'a faites — voir §5.3 bis,
+   qui concerne aussi l'exposition des tags comme axe de sélection de la V1.
 
 **Avec quel modèle : indéterminé, et c'est la seule question qui reste.** La
 comparaison n'a pas pu être faite. Ce que le spike permet de dire, c'est que la
