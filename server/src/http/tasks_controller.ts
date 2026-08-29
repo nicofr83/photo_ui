@@ -3,15 +3,19 @@ import type { FastifyInstance } from 'fastify';
 import { ErrorCode } from '@shared/enums';
 import { AppError } from '../contract/error_interface.ts';
 import type {
-  TaskCreateInput, TaskDetail, TaskExportInput, TaskImagesMutation, TaskImagesMutationResult, TaskPatchInput,
-  TaskPeriod, TaskSummary,
+  TaskCreateInput, TaskDetail, TaskExportInput, TaskImagesMutation, TaskImagesMutationResult, TaskNote,
+  TaskNoteCreateInput, TaskNotePatchInput, TaskPatchInput, TaskPeriod, TaskSummary, TaskTextRef, TaskTextsMutation,
+  TaskTextsMutationResult,
 } from '../contract/task_interface.ts';
 import type { Pool } from '../db/pool.ts';
 import { withTransaction } from '../db/transaction.ts';
 import type { ExportServiceDeps } from '../metier/export/export_service.ts';
 import { exportTask } from '../metier/export/export_service.ts';
 import type { Job, JobStore } from '../metier/jobs/job_service.ts';
-import { createTask, getTaskDetail, listTasks, mutateTaskImages, patchTask } from '../repository/task_repository.ts';
+import {
+  createTask, createTaskNote, deleteTaskNote, getTaskDetail, listTasks, mutateTaskImages, mutateTaskTexts,
+  patchTask, patchTaskNote,
+} from '../repository/task_repository.ts';
 
 /** Même expression que `app.task.task_slug_is_a_folder_name` — un refus nommé plutôt qu'une contrainte Postgres brute. */
 const SLUG = /^[a-z0-9][a-z0-9-]*$/;
@@ -136,6 +140,76 @@ function parseExportInput(body: unknown): TaskExportInput {
   return input;
 }
 
+function isTextRef(value: unknown): value is TaskTextRef {
+  return typeof value === 'object' && value !== null
+    && typeof (value as { kind?: unknown }).kind === 'string'
+    && typeof (value as { id?: unknown }).id === 'string';
+}
+
+/** Validation superficielle — la forme des tableaux, pas chaque `TextRef`. */
+function parseTextsMutation(body: unknown): TaskTextsMutation {
+  if (typeof body !== 'object' || body === null) {
+    throw invalidParameter('body', JSON.stringify(body), 'corps de requête invalide');
+  }
+  const { add, remove, reorder } = body as Record<string, unknown>;
+  const mutation: Record<string, unknown> = {};
+  if (add !== undefined) {
+    if (!Array.isArray(add)) throw invalidParameter('add', JSON.stringify(add), 'add doit être un tableau');
+    mutation.add = add;
+  }
+  if (remove !== undefined) {
+    if (!Array.isArray(remove)) throw invalidParameter('remove', JSON.stringify(remove), 'remove doit être un tableau');
+    mutation.remove = remove;
+  }
+  if (reorder !== undefined) {
+    if (!Array.isArray(reorder)) throw invalidParameter('reorder', JSON.stringify(reorder), 'reorder doit être un tableau');
+    mutation.reorder = reorder;
+  }
+  return mutation;
+}
+
+function parseAttachedTo(value: unknown): { images: readonly string[]; texts: readonly TaskTextRef[] } {
+  if (typeof value !== 'object' || value === null) {
+    throw invalidParameter('attachedTo', JSON.stringify(value), 'attachedTo doit être { images, texts }');
+  }
+  const { images, texts } = value as Record<string, unknown>;
+  if (!Array.isArray(images) || !images.every((v) => typeof v === 'string')) {
+    throw invalidParameter('attachedTo.images', JSON.stringify(images), 'attachedTo.images doit être un tableau de chaînes');
+  }
+  if (!Array.isArray(texts) || !texts.every(isTextRef)) {
+    throw invalidParameter('attachedTo.texts', JSON.stringify(texts), 'attachedTo.texts doit être un tableau de TextRef');
+  }
+  return { images, texts };
+}
+
+function parseNoteCreateInput(body: unknown): TaskNoteCreateInput {
+  if (typeof body !== 'object' || body === null) {
+    throw invalidParameter('body', JSON.stringify(body), 'corps de requête invalide');
+  }
+  const { title, text, attachedTo } = body as Record<string, unknown>;
+  if (typeof title !== 'string') throw invalidParameter('title', JSON.stringify(title), 'title doit être une chaîne');
+  if (typeof text !== 'string') throw invalidParameter('text', JSON.stringify(text), 'text doit être une chaîne');
+  return { title, text, attachedTo: parseAttachedTo(attachedTo) };
+}
+
+function parseNotePatchInput(body: unknown): TaskNotePatchInput {
+  if (typeof body !== 'object' || body === null) {
+    throw invalidParameter('body', JSON.stringify(body), 'corps de requête invalide');
+  }
+  const { title, text, attachedTo } = body as Record<string, unknown>;
+  const patch: TaskNotePatchInput = {};
+  if (title !== undefined) {
+    if (typeof title !== 'string') throw invalidParameter('title', JSON.stringify(title), 'title doit être une chaîne');
+    Object.assign(patch, { title });
+  }
+  if (text !== undefined) {
+    if (typeof text !== 'string') throw invalidParameter('text', JSON.stringify(text), 'text doit être une chaîne');
+    Object.assign(patch, { text });
+  }
+  if (attachedTo !== undefined) Object.assign(patch, { attachedTo: parseAttachedTo(attachedTo) });
+  return patch;
+}
+
 export function registerTasksRoutes(server: FastifyInstance, deps: TasksRoutesDeps): void {
   const { pool, jobStore, exportDeps } = deps;
 
@@ -231,5 +305,49 @@ export function registerTasksRoutes(server: FastifyInstance, deps: TasksRoutesDe
     }
     void reply.code(202);
     return result.job;
+  });
+
+  server.post('/tasks/:slug/texts', async (request): Promise<TaskTextsMutationResult> => {
+    const { slug } = request.params as { slug: string };
+    const mutation = parseTextsMutation(request.body);
+
+    const result = await withTransaction(pool, (client) => mutateTaskTexts(client, slug, mutation));
+    if (result === null) {
+      throw new AppError(ErrorCode.NOT_FOUND, `tâche introuvable : ${slug}`, 404, { resource: 'task', id: slug });
+    }
+    return result;
+  });
+
+  server.post('/tasks/:slug/notes', async (request, reply): Promise<TaskNote> => {
+    const { slug } = request.params as { slug: string };
+    const input = parseNoteCreateInput(request.body);
+
+    const note = await withTransaction(pool, (client) => createTaskNote(client, slug, input));
+    if (note === null) {
+      throw new AppError(ErrorCode.NOT_FOUND, `tâche introuvable : ${slug}`, 404, { resource: 'task', id: slug });
+    }
+    void reply.code(201);
+    return note;
+  });
+
+  server.patch('/tasks/:slug/notes/:noteId', async (request): Promise<TaskNote> => {
+    const { slug, noteId } = request.params as { slug: string; noteId: string };
+    const patch = parseNotePatchInput(request.body);
+
+    const note = await withTransaction(pool, (client) => patchTaskNote(client, slug, noteId, patch));
+    if (note === null) {
+      throw new AppError(ErrorCode.NOT_FOUND, `note introuvable : ${noteId}`, 404, { resource: 'note', id: noteId });
+    }
+    return note;
+  });
+
+  server.delete('/tasks/:slug/notes/:noteId', async (request, reply): Promise<void> => {
+    const { slug, noteId } = request.params as { slug: string; noteId: string };
+
+    const deleted = await withTransaction(pool, (client) => deleteTaskNote(client, slug, noteId));
+    if (!deleted) {
+      throw new AppError(ErrorCode.NOT_FOUND, `note introuvable : ${noteId}`, 404, { resource: 'note', id: noteId });
+    }
+    void reply.code(204);
   });
 }

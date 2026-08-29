@@ -209,3 +209,126 @@ describe('POST /tasks/:slug/export', () => {
     expect(settled?.result.report.imagesWritten).toBe(0);
   });
 });
+
+describe('POST /tasks/:slug/texts', () => {
+  test('adds a real text by (kind, id), through the full HTTP path', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                         VALUES ('logbook', 'handwritten', 'Journal', true)`);
+      await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+                         VALUES ('passage', 'logbook/p001/001', 'logbook', 1, 'x', 'transcribed')`);
+      await app.server.inject({
+        method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null },
+      });
+
+      const response = await app.server.inject({
+        method: 'POST', url: '/tasks/x/texts',
+        payload: { add: [{ kind: 'passage', id: 'logbook/p001/001' }] },
+      });
+      expect(response.statusCode).toBe(200);
+      const body = response.json<{ added: number; textCount: number }>();
+      expect(body.added).toBe(1);
+      expect(body.textCount).toBe(1);
+    } finally {
+      await setup.query(`DELETE FROM app.task_text WHERE task_slug = 'x'`);
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'logbook'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
+    }
+  });
+
+  test('an unknown task slug is a named 404', async () => {
+    app = await bootstrap(await completeEnv());
+    const response = await app.server.inject({ method: 'POST', url: '/tasks/nowhere/texts', payload: { add: [] } });
+    expect(response.statusCode).toBe(404);
+  });
+});
+
+describe('POST /tasks/:slug/notes', () => {
+  test('creates a general note, 201, empty attachedTo arrays never null', async () => {
+    app = await bootstrap(await completeEnv());
+    await app.server.inject({
+      method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null },
+    });
+
+    const response = await app.server.inject({
+      method: 'POST', url: '/tasks/x/notes',
+      payload: { title: 'Ce que le journal ne dit pas', text: 'x', attachedTo: { images: [], texts: [] } },
+    });
+    expect(response.statusCode).toBe(201);
+    const body = response.json<{ id: string; attachedTo: { images: string[]; texts: unknown[] } }>();
+    expect(body.attachedTo).toEqual({ images: [], texts: [] });
+  });
+
+  test('an unknown task slug is a named 404', async () => {
+    app = await bootstrap(await completeEnv());
+    const response = await app.server.inject({
+      method: 'POST', url: '/tasks/nowhere/notes',
+      payload: { title: 'x', text: 'x', attachedTo: { images: [], texts: [] } },
+    });
+    expect(response.statusCode).toBe(404);
+  });
+});
+
+describe('PATCH /tasks/:slug/notes/:noteId', () => {
+  test('updates only the provided fields', async () => {
+    app = await bootstrap(await completeEnv());
+    await app.server.inject({
+      method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null },
+    });
+    const created = await app.server.inject({
+      method: 'POST', url: '/tasks/x/notes',
+      payload: { title: 'Avant', text: 'brief initial', attachedTo: { images: [], texts: [] } },
+    });
+    const noteId = created.json<{ id: string }>().id;
+
+    const response = await app.server.inject({
+      method: 'PATCH', url: `/tasks/x/notes/${noteId}`, payload: { title: 'Après' },
+    });
+    expect(response.statusCode).toBe(200);
+    const body = response.json<{ title: string; text: string }>();
+    expect(body.title).toBe('Après');
+    expect(body.text).toBe('brief initial');
+  });
+
+  test('an unknown note is a named 404', async () => {
+    app = await bootstrap(await completeEnv());
+    await app.server.inject({
+      method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null },
+    });
+    const response = await app.server.inject({
+      method: 'PATCH', url: '/tasks/x/notes/note_nowhere', payload: { title: 'x' },
+    });
+    expect(response.statusCode).toBe(404);
+  });
+});
+
+describe('DELETE /tasks/:slug/notes/:noteId', () => {
+  test('204, and the note is gone', async () => {
+    app = await bootstrap(await completeEnv());
+    await app.server.inject({
+      method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null },
+    });
+    const created = await app.server.inject({
+      method: 'POST', url: '/tasks/x/notes',
+      payload: { title: 'x', text: 'x', attachedTo: { images: [], texts: [] } },
+    });
+    const noteId = created.json<{ id: string }>().id;
+
+    const response = await app.server.inject({ method: 'DELETE', url: `/tasks/x/notes/${noteId}` });
+    expect(response.statusCode).toBe(204);
+
+    const detail = await app.server.inject({ method: 'GET', url: '/tasks/x' });
+    expect(detail.json<{ notes: unknown[] }>().notes).toEqual([]);
+  });
+
+  test('an unknown note is a named 404', async () => {
+    app = await bootstrap(await completeEnv());
+    await app.server.inject({
+      method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null },
+    });
+    const response = await app.server.inject({ method: 'DELETE', url: '/tasks/x/notes/note_nowhere' });
+    expect(response.statusCode).toBe(404);
+  });
+});
