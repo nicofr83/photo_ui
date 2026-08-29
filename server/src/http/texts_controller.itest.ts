@@ -169,3 +169,94 @@ describe('GET /texts', () => {
     }
   });
 });
+
+describe('PUT /corrections', () => {
+  test('an empty or blank correction is refused — 422 EMPTY_CORRECTION', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                         VALUES ('logbook', 'handwritten', 'Journal', true)`);
+      await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+                         VALUES ('log_entry', 'logbook/p001/001', 'logbook', 1, 'amont', 'transcribed')`);
+
+      const response = await app.server.inject({
+        method: 'PUT', url: '/corrections',
+        payload: { ref: { kind: 'log_entry', id: 'logbook/p001/001' }, text: '   ' },
+      });
+      expect(response.statusCode).toBe(422);
+      expect(response.json<{ error: { code: string } }>().error.code).toBe('EMPTY_CORRECTION');
+    } finally {
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'logbook'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
+    }
+  });
+
+  test('a real correction round-trips, search finds it, revert restores the upstream body', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                         VALUES ('logbook', 'handwritten', 'Journal', true)`);
+      await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+                         VALUES ('log_entry', 'logbook/p001/001', 'logbook', 1, 'amont', 'transcribed')`);
+
+      const put = await app.server.inject({
+        method: 'PUT', url: '/corrections',
+        payload: { ref: { kind: 'log_entry', id: 'logbook/p001/001' }, text: 'xylophone introuvable ailleurs' },
+      });
+      expect(put.statusCode).toBe(200);
+      expect(put.json<TextUnit>().text).toBe('xylophone introuvable ailleurs');
+
+      const searched = await app.server.inject({ method: 'GET', url: '/texts?q=xylophone' });
+      expect(searched.json<ListEnvelope<TextUnit>>().total).toBe(1);
+
+      const reverted = await app.server.inject({
+        method: 'POST', url: '/corrections/revert',
+        payload: { ref: { kind: 'log_entry', id: 'logbook/p001/001' } },
+      });
+      expect(reverted.statusCode).toBe(200);
+      expect(reverted.json<TextUnit>().text).toBe('amont');
+      expect(reverted.json<TextUnit>().correction).toBeNull();
+    } finally {
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'logbook'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
+    }
+  });
+
+  test('an unknown text ref is a named 404', async () => {
+    app = await bootstrap(await completeEnv());
+    const response = await app.server.inject({
+      method: 'PUT', url: '/corrections',
+      payload: { ref: { kind: 'log_entry', id: 'nowhere/001' }, text: 'x' },
+    });
+    expect(response.statusCode).toBe(404);
+  });
+});
+
+describe('GET /corrections', () => {
+  test('lists corrections, filterable by status', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                         VALUES ('logbook', 'handwritten', 'Journal', true)`);
+      await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+                         VALUES ('log_entry', 'logbook/p001/001', 'logbook', 1, 'amont', 'transcribed')`);
+      await app.server.inject({
+        method: 'PUT', url: '/corrections',
+        payload: { ref: { kind: 'log_entry', id: 'logbook/p001/001' }, text: 'corrigé' },
+      });
+
+      const response = await app.server.inject({ method: 'GET', url: '/corrections?status=applied' });
+      expect(response.statusCode).toBe(200);
+      const body = response.json<{ items: { status: string }[] }>();
+      expect(body.items).toHaveLength(1);
+      expect(body.items[0]?.status).toBe('applied');
+    } finally {
+      await setup.query(`DELETE FROM app.text_correction`);
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'logbook'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
+    }
+  });
+});

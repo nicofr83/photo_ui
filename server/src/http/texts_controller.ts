@@ -3,13 +3,15 @@ import path from 'node:path';
 
 import type { FastifyInstance } from 'fastify';
 
-import { ErrorCode, TextKind, TranscriptionConfidence } from '@shared/enums';
+import { CorrectionStatus, ErrorCode, TextKind, TranscriptionConfidence } from '@shared/enums';
 import { AppError } from '../contract/error_interface.ts';
 import type { ListEnvelope } from '../contract/filter_interface.ts';
-import type { TextDocument, TextPage, TextUnit } from '../contract/text_interface.ts';
+import type { TextCorrection, TextDocument, TextPage, TextUnit } from '../contract/text_interface.ts';
 import type { Pool } from '../db/pool.ts';
+import { withTransaction } from '../db/transaction.ts';
 import {
-  getPageImageRelpath, listDocuments, listPages, listTexts, type TextFilters,
+  getPageImageRelpath, listCorrections, listDocuments, listPages, listTexts, putCorrection, revertCorrection,
+  type TextCorrectionInput, type TextFilters,
 } from '../repository/text_repository.ts';
 import { parseQueryParams, type ParamSpec } from './query_params.ts';
 
@@ -56,6 +58,30 @@ async function pathExists(target: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+function invalidParameter(parameter: string, received: string, message: string): AppError {
+  return new AppError(ErrorCode.INVALID_PARAMETER, message, 400, { parameter, received, accepted: null });
+}
+
+function parseTextRef(value: unknown, parameter: string): { kind: string; id: string } {
+  if (typeof value !== 'object' || value === null) {
+    throw invalidParameter(parameter, JSON.stringify(value), `${parameter} doit être { kind, id }`);
+  }
+  const { kind, id } = value as Record<string, unknown>;
+  if (typeof kind !== 'string' || typeof id !== 'string') {
+    throw invalidParameter(parameter, JSON.stringify(value), `${parameter} doit être { kind, id }`);
+  }
+  return { kind, id };
+}
+
+function parseCorrectionInput(body: unknown): TextCorrectionInput {
+  if (typeof body !== 'object' || body === null) {
+    throw invalidParameter('body', JSON.stringify(body), 'corps de requête invalide');
+  }
+  const { ref, text } = body as Record<string, unknown>;
+  if (typeof text !== 'string') throw invalidParameter('text', JSON.stringify(text), 'text doit être une chaîne');
+  return { ref: parseTextRef(ref, 'ref'), text };
 }
 
 export function registerTextsRoutes(server: FastifyInstance, deps: TextsRoutesDeps): void {
@@ -125,6 +151,51 @@ export function registerTextsRoutes(server: FastifyInstance, deps: TextsRoutesDe
         filters: { applied: parsed.applied, unmatchedValues: [] },
         importId: '',
       };
+    } finally {
+      client.release();
+    }
+  });
+
+  server.put('/corrections', async (request): Promise<TextUnit> => {
+    const input = parseCorrectionInput(request.body);
+    // Effacer un texte n'est pas le corriger (contrat §4.4).
+    if (input.text.trim() === '') {
+      throw new AppError(ErrorCode.EMPTY_CORRECTION, 'une correction vide ou blanche est refusée', 422,
+        { targetId: input.ref.id });
+    }
+
+    const unit = await withTransaction(pool, (client) => putCorrection(client, input));
+    if (unit === null) {
+      throw new AppError(ErrorCode.NOT_FOUND, `texte introuvable : ${input.ref.kind}/${input.ref.id}`, 404,
+        { resource: 'text', id: input.ref.id });
+    }
+    return unit;
+  });
+
+  server.post('/corrections/revert', async (request): Promise<TextUnit> => {
+    if (typeof request.body !== 'object' || request.body === null) {
+      throw invalidParameter('body', JSON.stringify(request.body), 'corps de requête invalide');
+    }
+    const { ref } = request.body as Record<string, unknown>;
+    const parsedRef = parseTextRef(ref, 'ref');
+
+    const unit = await withTransaction(pool, (client) => revertCorrection(client, parsedRef));
+    if (unit === null) {
+      throw new AppError(ErrorCode.NOT_FOUND, `texte introuvable : ${parsedRef.kind}/${parsedRef.id}`, 404,
+        { resource: 'text', id: parsedRef.id });
+    }
+    return unit;
+  });
+
+  server.get('/corrections', async (request): Promise<{ items: readonly TextCorrection[] }> => {
+    const parsed = parseQueryParams(request.query as Record<string, unknown>, {
+      status: { kind: 'closed', values: [CorrectionStatus.APPLIED, CorrectionStatus.NEEDS_REVIEW, CorrectionStatus.ORPHANED] },
+    });
+    const status = parsed.status as 'applied' | 'needs_review' | 'orphaned' | undefined;
+
+    const client = await pool.connect();
+    try {
+      return { items: await listCorrections(client, status) };
     } finally {
       client.release();
     }
