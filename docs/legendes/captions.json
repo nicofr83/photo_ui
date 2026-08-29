@@ -653,6 +653,139 @@
    "granuleux"
   ]
  },
+ "42": {
+  "legende": "Spectacle en plein air vu depuis une tribune couverte, dont le bord de toiture et deux poteaux verticaux barrent le cadre. La scène est un décor de canyon en rocher artificiel, aux strates ocre trop régulières pour être naturelles, avec une passerelle métallique et une citerne rouillée à gauche. Au centre, un camion-citerne noir est en feu : de hautes flammes orange sortent du flanc de la citerne et de l'arrière du châssis à double essieu, tandis qu'une pluie d'eau tombe en gouttes sur toute la largeur de l'image. Sur la citerne se lisent des lettres peintes dont il ne reste que « MABL » et un mot en écriture cursive, illisible. Au premier plan en bas à gauche, la nuque et la visière blanche d'un spectateur.",
+  "mots_cles": [
+   "cascade",
+   "decor",
+   "rocher artificiel",
+   "camion-citerne",
+   "flamme",
+   "tribune",
+   "visiere",
+   "spectacle"
+  ],
+  "defauts": [
+   "cadrage"
+  ]
+ },
+ "43": {
+  "legende": "Une femme adulte se tient debout devant la façade crépie d'une maison, en plein soleil de midi qui creuse des ombres très dures. Elle porte un tee-shirt à fines rayures bleues et blanches et un pantalon sombre, a les cheveux bruns mi-longs, une cigarette allumée au coin des lèvres, une paire de lunettes de soleil pendue à un cordon sur la poitrine et plusieurs bracelets fins au poignet droit. Les deux mains sont ouvertes paumes en l'air, dans un geste d'explication ou de dénégation, et elle regarde vers le bas. Derrière elle s'ouvre une porte-fenêtre entièrement noire d'ombre ; à droite grimpe un jasmin en fleur le long du mur, et une ombelle sèche se dresse au premier plan à droite.",
+  "mots_cles": [
+   "cigarette",
+   "crepi",
+   "porte-fenetre",
+   "jasmin",
+   "bracelet",
+   "lunettes au cou",
+   "geste",
+   "ombre dure"
+  ],
+  "defauts": []
+ },
+ "44": {
+  "legende": "Un navire roulier transporteur de voitures fait route de profil sur une mer grise et courte, photographié de loin depuis un autre bateau. Sa coque sombre et haute est surmontée d'une superstructure blanche en forme de caisson percée de rangées d'aérations, avec le château et la cheminée à l'arrière et un mât de charge à l'avant ; une vague d'étrave blanche court le long de la coque. Le ciel et l'horizon se confondent dans une brume dense qui efface toute limite et donne à l'image un contraste très faible. Au premier plan en bas, une pièce d'accastillage blanche et floue, hors de la profondeur de champ.",
+  "mots_cles": [
+   "navire roulier",
+   "transporteur de voitures",
+   "cargo",
+   "brume",
+   "mer grise",
+   "vague d'etrave",
+   "chateau",
+   "cheminee"
+  ],
+  "defauts": [
+   "voile"
+  ]
+ },
+ "45": {
+  "legende": "Un ciel bleu uni, sans nuage ni repère, occupe la totalité du cadre ; il n'y a ni horizon, ni sol, ni construction. Une quarantaine de grands oiseaux le traversent en deux longues files obliques, régulièrement espacées, la file du haut plus courte et celle du bas décrivant une courbe qui plonge vers la droite. Les silhouettes, vues de dessous et à contre-jour, montrent une grande envergure, un cou court replié et un bec allongé : il s'agit vraisemblablement de pélicans, mais l'éloignement ne permet pas d'en être certain. Aucun détail de plumage n'est lisible.",
+  "mots_cles": [
+   "oiseau",
+   "vol en file",
+   "pelican",
+   "ciel",
+   "envergure",
+   "silhouette",
+   "migration"
+  ],
+  "defauts": []
+ },
+ "46": {
+  "legende": "Rue piétonne en pente douce d'un village-station, cadrée en plan large depuis le haut. De part et d'autre s'alignent des immeubles de quatre à cinq niveaux aux façades ocre, crème et orangées, coiffés de hautes toitures de tôle vert d'eau, bleues et rouges, avec balcons de bois, auvents et lucarnes. Une quarantaine de personnes, en vestes et manteaux, montent et descendent la voie pavée ; des bacs à fleurs, des parasols repliés et des terrasses bordent le passage, et les arbres portent un feuillage jaunissant. À droite, une grande bannière verticale annonce « TREMBLANT — FÊTE DU GIBIER ET DES VINS / WINE & GAME FESTIVAL », avec les dates « 11 12 13 18 19 OCTOBRE 2003 » ; un panneau voisin porte « LUGE » et un poteau directionnel indique « Place Saint-Ber… », « Rue des Remparts » et « Promenade Deslauriers ».",
+  "mots_cles": [
+   "rue pietonne",
+   "station",
+   "toiture de tole",
+   "balcon",
+   "banniere",
+   "panneau directionnel",
+   "bac a fleurs",
+   "feuillage d'automne",
+   "foule"
+  ],
+  "defauts": []
+ },
+ "47": {
+  "legende": "Sur le pont extérieur d'un navire à passagers, un homme adulte se tient debout derrière un garçon d'une dizaine d'années et lui tient les épaules ; tous deux regardent vers l'objectif. L'homme porte des lunettes de soleil rondes, une veste sombre à col blanc relevé ; l'enfant, blond, une parka rouge et noire, et tient un objet devant lui. Le pont est éclairé à contre-jour par un ciel blanc, si bien que leurs visages restent sombres. Derrière eux, le pavois blanc porte au pochoir « …E RASSEMBLEMENT / …STATION » ; deux conteneurs cylindriques de radeaux de survie sont arrimés à côté, marqués « 75 PERS », avec un glène d'aussière lovée, une bouée couronne orange et une lisse rouge. Au-delà du bastingage, une pointe rocheuse boisée aux teintes d'automne plonge dans une mer bleu sombre.",
+  "mots_cles": [
+   "navire a passagers",
+   "radeau de survie",
+   "bouee couronne",
+   "aussiere",
+   "pavois",
+   "pochoir",
+   "pointe rocheuse",
+   "contre-jour",
+   "parka"
+  ],
+  "defauts": [
+   "sous-expose"
+  ]
+ },
+ "48": {
+  "legende": "Gros plan sur un panneau d'information en tôle blanche à bord supérieur cintré, vissé sur une cloison peinte en rose vif, au-dessus d'un socle de bois sombre et vernis. Tout le texte, peint en lettres rouges d'un style gothique arrondi, est parfaitement lisible : « ELBOW REEF LIGHTHOUSE / Built in 1864 / Re-Built in 1934 / Candle Power 325000 / Visibility 17 miles / Height Above Sea Level 120 feet / Height Above Ground Level 89 feet / 101 Steps to Lantern », puis « Please Be Careful, Watch Your Step, Please Do Not Touch Equipment » et « Enjoy Your Visit / Lighthouse Keepers ». Derrière le panneau on devine une pièce sombre et une structure triangulaire claire. La photographie n'a pas d'autre sujet que ce panneau.",
+  "mots_cles": [
+   "panneau",
+   "phare",
+   "inscription",
+   "tole peinte",
+   "cloison rose",
+   "notice",
+   "visite"
+  ],
+  "defauts": []
+ },
+ "49": {
+  "legende": "Un grand catamaran blanc navigue de trois quarts avant sous génois seul, la grand-voile restée ferlée dans un lazy-bag vert le long de la bôme ; la voile d'avant est bien pleine et le bateau avance sur une mer bleue à peine ridée. Sur le roof on distingue une éolienne de charge, des panneaux solaires posés à plat sur le bimini, un annexe ou un objet rouge sur le pont avant et une bouée fer à cheval orange au balcon arrière ; un petit pavillon sombre est frappé sous la barre de flèche. Une ligne de côte basse et sombre ferme l'horizon derrière lui, et le ciel bleu porte de gros cumulus de beau temps. Lumière franche de plein jour, image nette et bien exposée.",
+  "mots_cles": [
+   "catamaran",
+   "genois",
+   "lazy-bag",
+   "eolienne",
+   "panneau solaire",
+   "bimini",
+   "bouee fer a cheval",
+   "cumulus"
+  ],
+  "defauts": []
+ },
+ "50": {
+  "legende": "Sur la jupe arrière d'un voilier qui fait route, un homme aux cheveux gris et à la barbe grise, torse nu, en short de bain sombre et montre au poignet, est penché sur un poisson de belle taille au dos bleu-noir et au ventre argenté, de type thonidé, qu'il maintient dans un linge clair et travaille au couteau. Du sang a coulé en large traînée sur le pont blanc à ses pieds ; le sillage bouillonne juste derrière lui. À droite flotte un pavillon bleu à couronne d'étoiles jaunes ; à gauche, la ferrure de portique, un winch et un cordage vert lové. En bas à droite, une date incrustée par l'appareil se lit en chiffres orange : « 2004 1 24 ».",
+  "mots_cles": [
+   "poisson",
+   "thon",
+   "jupe arriere",
+   "couteau",
+   "sang",
+   "sillage",
+   "pavillon",
+   "winch",
+   "horodatage"
+  ],
+  "defauts": []
+ },
  "51": {
   "legende": "Sur le pont d'un catamaran à coque blanche, un homme torse nu en short violet est accroupi près du mât, penché en avant, les mains occupées à une manœuvre au ras du pont ; une femme en haut de maillot et paréo à motifs est assise plus haut sur le roof, jambes repliées, et regarde vers lui. La grand-voile est ferlée sous un lazy-bag vert vif le long de la bôme, des bouts sont lovés sur le roof, un guindeau chromé occupe l'avant et un petit pavillon claque à l'étrave. Ciel couvert de gros cumulus, eau plate et laiteuse, lumière douce et diffuse de fin de journée.",
   "mots_cles": [
@@ -664,6 +797,50 @@
    "pavillon",
    "bout love",
    "pare-brise"
+  ],
+  "defauts": []
+ },
+ "52": {
+  "legende": "Un temple-pyramide de pierre à degrés émerge seul au-dessus d'une canopée dense, cadré en plan large depuis un point de vue situé à la même hauteur que la cime des arbres. La construction, très haute et étroite, présente un large escalier frontal, un corps de temple percé d'une porte rectangulaire sombre et, au-dessus, une crête faîtière massive aux pierres disjointes ; deux tiges métalliques dépassent du sommet. À la base de l'escalier, une quinzaine de silhouettes minuscules donnent l'échelle du monument. Le soleil bas frappe la façade par la droite et la teinte d'ocre orangé, tandis que la forêt reste dans l'ombre et que le ciel se dégrade du bleu au gris rosé.",
+  "mots_cles": [
+   "pyramide a degres",
+   "temple",
+   "crete faitiere",
+   "escalier",
+   "ruine",
+   "canopee",
+   "foret",
+   "lumiere rasante"
+  ],
+  "defauts": []
+ },
+ "53": {
+  "legende": "Un voilier monocoque à coque claire et liston rouge fait route au portant dans une mer formée, photographié de trois quarts arrière depuis un autre bateau. Il porte un génois seul, bien établi, la bôme et la grand-voile restant ferlées ; on distingue une capote rouge sur la descente, une éolienne de charge sur un portique arrière, un pavillon vert frappé dans les haubans et un petit pavillon rouge à l'arrière. La mer est courte et creuse, moutonnante, et le bateau enfourne en soulevant de l'écume sous l'étrave. Le ciel est uniformément gris et l'horizon très haut dans le cadre. Un nom est peint sur le tableau arrière mais reste difficilement lisible, quelque chose comme « GROYABADA ».",
+  "mots_cles": [
+   "voilier",
+   "genois",
+   "mer formee",
+   "moutonnement",
+   "capote",
+   "eolienne",
+   "portique",
+   "pavillon",
+   "nom de bateau"
+  ],
+  "defauts": [
+   "illisible"
+  ]
+ },
+ "54": {
+  "legende": "Vue plongeante sur une grande raie posée au fond, dans une eau peu profonde et claire, le long d'un quai. Le disque de l'animal, gris clair marbré de larges taches sombres, occupe le centre du cadre, une aile relevée contre le mur ; la queue fine part vers le haut à gauche et se perd dans l'ombre. Le fond est fait de blocs de pierre et de dalles couvertes d'algues brunes, et quelques ronds sur la surface trahissent des gouttes ou des remous. À droite se dressent un pilier de béton clair et rugueux et une planche de bois délavée, et l'ombre du quai assombrit le tiers droit de l'image.",
+  "mots_cles": [
+   "raie",
+   "quai",
+   "fond rocheux",
+   "algue",
+   "eau peu profonde",
+   "dalle",
+   "pilier"
   ],
   "defauts": []
  }
