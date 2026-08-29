@@ -61,19 +61,20 @@ function renderBound(bound: string, precision: DatePrecision): string {
 
 /**
  * `precision` qualifies each BOUND, not the width of the interval. A
- * `ref.album_span` at month precision can cover seventeen months — that is the
- * measured case of `1998-02-Maison rose Algès`. Rendering `start` alone would
- * show "février 1998" and make seventeen months look like one: the capital
- * rule's fault applied to width instead of nature.
+ * `ref.album_span` at month precision can cover seventeen months — the measured
+ * case of `1998-02-Maison rose Algès`. Rendering `start` alone would show
+ * "février 1998" and make seventeen months look like one: the capital rule's
+ * fault applied to width instead of nature.
  *
- * So: render the point when both bounds coincide AT THAT PRECISION, and the
- * range when they do not.
+ * Spec §3.6 names this the FOURTH display form, alongside the day, the month
+ * and the year: an interval wider than its precision renders as an interval,
+ * "entre février 1998 et juin 1999". A photo never displays a date tighter than
+ * what is known about it.
  */
-function renderText(date: ResolvedDate): { text: string; spoken: string } {
+function renderText(date: ResolvedDate): string {
   const from = renderBound(date.start, date.precision);
   const to = renderBound(date.end, date.precision);
-  if (from === to) return { text: from, spoken: from };
-  return { text: `${from} – ${to}`, spoken: `de ${from} à ${to}` };
+  return from === to ? from : `entre ${from} et ${to}`;
 }
 
 function renderDetail(
@@ -113,14 +114,12 @@ export function formatResolvedDate(
 
   assertKindConsistent(date.source, date.kind);
 
-  const { text, spoken } = renderText(date);
+  const text = renderText(date);
   return {
     kind: date.kind,
     glyph: GLYPH[date.kind],
     text,
     detail: renderDetail(date, arbitration),
-    // `spoken` rather than `text`: a screen reader should hear "de février 1998
-    // à juin 1999", not a dash it may or may not announce.
-    label: `${NATURE[date.kind]} : ${spoken}`,
+    label: `${NATURE[date.kind]} : ${text}`,
   };
 }

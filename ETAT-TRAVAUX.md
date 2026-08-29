@@ -54,11 +54,23 @@ survivre à une coupure :
    `strictTypeChecked` compte plus que le compilateur le plus neuf : c'est lui
    qui fait respecter la règle « pas de `any` ». Ne pas « moderniser » ce
    choix sans vérifier d'abord le peer range du linter.
-2. **`ResolvedDateView` est le seul composant autorisé à transformer une date en
-   texte** (§7.1). `src/ui/date/noBareDateRendering.test.ts` fait échouer la
+2. **« Aucune date nue » est tenu à trois couches, et il faut les trois.**
+   *(a)* Le type marqué `IsoDate` se propage à travers Zod — `.refine()` avec un
+   prédicat de type narrowe la sortie du schéma — donc **le compilateur** refuse
+   qu'une chaîne littérale serve de date nulle part dans le contrat.
+   *(b)* `ResolvedDateSchema` refuse **à l'analyse de la réponse HTTP** une date
+   dont le `kind` contredit sa `source` : elle ne devient jamais un objet
+   JavaScript, donc aucun composant ne peut en recevoir une.
+   *(c)* `ResolvedDateView` est le seul composant autorisé à transformer une
+   date en texte, et `src/ui/date/noBareDateRendering.test.ts` fait échouer la
    suite si un fichier de `src/ui/` ou `src/screens/` formate une date lui-même.
-   C'est la traduction mécanique de la règle capitale : ne pas la contourner,
-   la corriger.
+   Un successeur casserait (a) sans le savoir en remplaçant un `.refine(guard)`
+   par un `.regex()` : c'est le même contrôle, mais il perd le type marqué.
+
+2 bis. **Quatre formes d'affichage d'une date, pas trois** (spec §3.6) :
+   `1999-10-14`, `octobre 1999`, `2000`, et **« entre février 1998 et juin
+   1999 »** quand l'intervalle est plus large que sa précision. `precision`
+   qualifie **chaque borne**, jamais la largeur — la largeur se calcule.
 3. **`web_span` est une `inference`** — divergence close le 2026-08-28 dans le
    sens de la spec, les trois documents disent maintenant la même chose.
    Le critère retenu, et il vaut pour toute source future : ce qui sépare

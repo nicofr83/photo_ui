@@ -223,7 +223,7 @@ describe('INVARIANT — a wide range never displays as a narrow date', () => {
       formatResolvedDate(
         span('1998-02-01', '1999-06-30', DatePrecision.MONTH, DateSource.ALBUM_MONTH),
       ).text,
-    ).toBe('février 1998 – juin 1999');
+    ).toBe('entre février 1998 et juin 1999');
   });
 
   test('a single month still renders as one month', () => {
@@ -239,7 +239,7 @@ describe('INVARIANT — a wide range never displays as a narrow date', () => {
       formatResolvedDate(
         span('2000-12-01', '2001-02-28', DatePrecision.MONTH, DateSource.ALBUM_MONTH),
       ).text,
-    ).toBe('décembre 2000 – février 2001');
+    ).toBe('entre décembre 2000 et février 2001');
   });
 
   test('a multi-year span renders both years', () => {
@@ -247,7 +247,7 @@ describe('INVARIANT — a wide range never displays as a narrow date', () => {
       formatResolvedDate(
         span('2000-01-01', '2001-12-31', DatePrecision.YEAR, DateSource.ALBUM_YEAR),
       ).text,
-    ).toBe('2000 – 2001');
+    ).toBe('entre 2000 et 2001');
   });
 
   test('a single year still renders as one year', () => {
@@ -263,7 +263,7 @@ describe('INVARIANT — a wide range never displays as a narrow date', () => {
       formatResolvedDate(
         span('1999-12-08', '1999-12-12', DatePrecision.DAY, DateSource.LOGBOOK_BRACKET),
       ).text,
-    ).toBe('1999-12-08 – 1999-12-12');
+    ).toBe('entre 1999-12-08 et 1999-12-12');
   });
 
   test('a span is still marked with the glyph of its nature', () => {
@@ -274,12 +274,12 @@ describe('INVARIANT — a wide range never displays as a narrow date', () => {
     expect(out.kind).toBe(DateKind.INFERENCE);
   });
 
-  test('the accessible label spells the range out rather than reading a dash', () => {
+  test('the label carries the same prose, with the nature in front', () => {
     expect(
       formatResolvedDate(
         span('1998-02-01', '1999-06-30', DatePrecision.MONTH, DateSource.ALBUM_MONTH),
       ).label,
-    ).toBe('date inférée : de février 1998 à juin 1999');
+    ).toBe('date inférée : entre février 1998 et juin 1999');
   });
 
   test('a point date keeps its simple label', () => {
