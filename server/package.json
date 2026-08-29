@@ -1,0 +1,30 @@
+{
+  "name": "photo-ui-server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/runtime/main.ts",
+    "start": "tsx src/runtime/main.ts",
+    "test": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "test:all": "vitest run",
+    "test:coverage": "vitest run --project unit --coverage",
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "tsx src/db/migrate_cli.ts",
+    "db:import": "tsx src/import/import_cli.ts"
+  },
+  "dependencies": {
+    "fastify": "^5.2.1",
+    "pg": "^8.13.1",
+    "pg-copy-streams": "^6.0.6",
+    "ulid": "^2.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "@types/pg": "^8.11.10",
+    "@vitest/coverage-v8": "^4.1.11",
+    "tsx": "^4.19.2",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.11"
+  }
+}
