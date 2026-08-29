@@ -177,6 +177,93 @@
    "tache"
   ]
  },
+ "11": {
+  "legende": "Négatif couleur scanné, avec l'amorce noire de la pellicule visible en bande verticale sur le bord droit et une dominante verdâtre ; le ciel est laiteux. Un voilier monocoque à coque sombre et pont clair passe de profil devant une digue de gros enrochements, grand-voile ferlée sur la bôme et bout-dehors à l'avant. Un homme torse nu, en short clair, se tient debout dans le cockpit près d'un portique arrière qui porte une éolienne, un panneau et des antennes ; une bouée fer à cheval blanche est fixée au balcon. Le nom « DEUXIÈME VIE » est peint en capitales blanches sur le flanc arrière de la coque, un pavillon tricolore bleu-blanc-rouge flotte en tête de mât et un pavillon à feuille d'érable au portique. Derrière la digue, une route, des voitures, des bâtiments bas et des palmiers, puis une colline verte en pain de sucre.",
+  "mots_cles": [
+   "voilier",
+   "monocoque",
+   "digue",
+   "enrochement",
+   "eolienne",
+   "portique",
+   "bouee fer a cheval",
+   "nom de coque",
+   "pavillon",
+   "colline"
+  ],
+  "defauts": [
+   "bord-scan",
+   "dominante-couleur"
+  ]
+ },
+ "12": {
+  "legende": "Vue plongeante sur une baie, prise depuis une hauteur à travers un premier plan de feuillages qui encadre le cadre à gauche et à droite. Un village aux maisons blanches et aux toits de tuiles rouges s'étage au pied d'un morne boisé très vert ; l'eau est turquoise et translucide près du rivage. Le long d'un appontement en T sont accostés trois ou quatre navires blancs de taille moyenne, de type vedettes à passagers, et une dizaine de voiliers sont mouillés au large sur coffres ou sur ancre. Le ciel est entièrement brûlé, sans détail. Image de basse définition, empâtée, qui semble tirée d'une source vidéo.",
+  "mots_cles": [
+   "baie",
+   "village",
+   "toit de tuile",
+   "morne",
+   "appontement",
+   "vedette a passagers",
+   "mouillage",
+   "voilier",
+   "eau turquoise"
+  ],
+  "defauts": [
+   "basse-definition",
+   "surexpose"
+  ]
+ },
+ "13": {
+  "legende": "Image de basse définition, aux contours empâtés, qui semble tirée d'une source vidéo. Un grand catamaran à coque blanche soulignée d'un bandeau bleu est vu de profil, mouillé ou amarré au milieu d'autres voiliers ; une grande bâche claire tendue au-dessus du cockpit sert de taud de soleil, un panneau solaire est posé sur la traverse arrière et une annexe pneumatique grise est accostée à la coque de droite. Un homme en tee-shirt blanc et short sombre se tient debout à l'arrière, les mains ramenées devant le visage, tourné vers l'objectif ; un petit pavillon tricolore pend près de lui, des gilets et des bidons jaunes et rouges sont arrimés le long des filières. Un nom est peint à l'avant de la coque gauche mais reste illisible. Derrière, un front de mer bâti puis un versant couvert de maisons colorées et une tour en treillis rouge et blanche.",
+  "mots_cles": [
+   "catamaran",
+   "taud",
+   "annexe pneumatique",
+   "panneau solaire",
+   "mouillage",
+   "filiere",
+   "bidon",
+   "pavillon",
+   "front de mer"
+  ],
+  "defauts": [
+   "basse-definition",
+   "illisible"
+  ]
+ },
+ "14": {
+  "legende": "Une douzaine de personnes, adultes et enfants mêlés, sont assises côte à côte sur les marches de brique et sur le trottoir devant une boutique, toutes dans la bande d'ombre portée par l'auvent tandis que le pavage devant elles est en plein soleil. Deux enseignes peintes sur la façade se lisent « GREENWITH GALLERIES » et « OPEN 10~6 [—] Sat », et un masque sculpté à visage barbu est accroché au-dessus de la porte. La devanture est peinte en violet et en turquoise ; à droite, une vitrine expose des cadres colorés. Plusieurs adultes portent chapeaux de toile, casquettes et lunettes de soleil ; au premier plan, trois enfants d'une dizaine d'années en tee-shirts blancs et clairs sont assis sur la bordure, jambes allongées, l'un souriant vers l'objectif. Lumière dure de milieu de journée, ombres tranchées.",
+  "mots_cles": [
+   "enseigne",
+   "boutique",
+   "marche",
+   "trottoir",
+   "groupe",
+   "enfant",
+   "chapeau",
+   "auvent",
+   "vitrine",
+   "masque sculpte"
+  ],
+  "defauts": []
+ },
+ "15": {
+  "legende": "Une personne nage en surface, vue de trois quarts arrière et de près, dans une eau vert pâle légèrement ridée. Elle porte un maillot de bain une pièce rouge, un masque de plongée sombre et un tuba vert à embout rouge dressé hors de l'eau ; la tête est immergée face vers le fond, les cheveux bruns plaqués, les bras le long du corps. Une palme bleue portant une étiquette claire émerge au premier plan en bas à gauche, appartenant à une seconde personne hors champ. L'image est de basse définition, avec une forte dominante verte et aucun horizon ni repère de lieu.",
+  "mots_cles": [
+   "nage",
+   "tuba",
+   "masque de plongee",
+   "palme",
+   "maillot de bain",
+   "surface",
+   "eau claire"
+  ],
+  "defauts": [
+   "basse-definition",
+   "dominante-couleur"
+  ]
+ },
  "16": {
   "legende": "Gros plan d'un enfant d'une dizaine d'années, cheveux blonds coupés au bol, vêtu d'un polo rouge, assis devant un banc ou un bardage de bois gris. Il est cadré de trois quarts, la tête tournée vers la gauche du cadre, la bouche entrouverte, le regard porté hors champ. La lumière est douce et frontale ; le fond est réduit à quelques plans horizontaux de bois et à une masse sombre floue derrière son épaule. L'image est de basse définition, un peu molle, avec un léger effet de lignes horizontales qui évoque une capture vidéo.",
   "mots_cles": [
@@ -191,6 +278,20 @@
   "defauts": [
    "basse-definition"
   ]
+ },
+ "17": {
+  "legende": "Contre-plongée sur un grand arbre à racines aériennes, du type figuier étrangleur, dont un faisceau de troncs et de racines fusionnées descend en nappe sur un chaos de gros blocs de pierre moussus. Les racines s'étalent en toile sur les rochers du premier plan, lisses et grises, tandis que le houppier occupe tout le haut du cadre en un feuillage vert clair traversé par la lumière. Le ciel n'apparaît qu'en éclats blancs entre les feuilles, ce qui brûle les hautes lumières ; le sol est jonché de feuilles sèches. Lumière diffuse de sous-bois, sans ombre portée marquée.",
+  "mots_cles": [
+   "racine aerienne",
+   "figuier",
+   "tronc",
+   "rocher",
+   "mousse",
+   "sous-bois",
+   "feuillage",
+   "contre-plongee"
+  ],
+  "defauts": []
  },
  "18": {
   "legende": "Tirage argentique scanné, reconnaissable à sa large bordure blanche et à quelques poussières claires en haut du cadre ; les couleurs ont viré au rose et le ciel est presque blanc. Un homme torse nu en short rouge se tient debout dans le cockpit d'un voilier, en plein soleil, et brandit de la main droite un grand poisson allongé au corps argenté et à la mâchoire pointue, tenu par la queue et qui lui descend jusqu'aux genoux ; de la main gauche il se retient à un hauban. Derrière lui, la barre à roue, un taud bleu foncé, un coussin de cockpit et un chiffon blanc ; l'horizon marin est plat et dégagé.",
@@ -209,6 +310,23 @@
    "surexpose"
   ]
  },
+ "19": {
+  "legende": "Repas sous une paillote à toit de palmes, charpente de bois rond peinte en rouge et muret de pierre servant de dossier à une banquette maçonnée. Trois adultes sont attablés autour d'une large table de pierre : une femme blonde debout à gauche tenant un objet enveloppé dans une serviette, un homme en polo rayé bleu et blanc avec des lunettes de soleil au cou, et à droite un homme en tee-shirt blanc, barbiche grise et lunettes relevées sur le front, assis de trois quarts. La table porte un panier à pain, une bouteille de vin couchée dans un panier d'osier, une bouteille d'eau plate, un bouquet de fleurs roses, des verres de vin rouge et d'eau, des assiettes de frites et de salade, un plat fermé de papier aluminium, une salière et une poivrière ; un vêtement jaune, un étui d'appareil photo et un sac sont posés au premier plan. Au-delà de la paillote, la lumière du dehors est complètement brûlée, on devine des palmes et du sable.",
+  "mots_cles": [
+   "paillote",
+   "toit de palme",
+   "repas",
+   "table de pierre",
+   "banquette",
+   "panier a pain",
+   "bouteille de vin",
+   "fleur",
+   "assiette"
+  ],
+  "defauts": [
+   "surexpose"
+  ]
+ },
  "20": {
   "legende": "Rue en terre d'un village rural, bordée à gauche par une file de maisons basses aux murs de torchis blanchi et aux toits de tuiles portés par de gros piliers de bois bruts, qui forment une galerie couverte. Sept personnes environ occupent la scène : quatre adultes assis sur un banc maçonné sous la galerie, en polaires et lunettes de soleil, un homme debout en tee-shirt blanc et casquette appuyé à un pilier, une femme en veste bleue qui marche vers l'objectif un vêtement à la main, un homme en bleu qui s'éloigne au fond, et au premier plan à gauche un homme assis coiffé d'un chapeau de paille clair. Un petit chien noir traverse la rue. Une enseigne peinte à la main sur la façade se lit « BODEGA MOSNANDA », à côté d'une affiche bleue. Caniveau pavé, collines vertes et arbres au fond, plein soleil et ombres dures.",
   "mots_cles": [
@@ -221,6 +339,83 @@
    "chapeau de paille",
    "rue en terre",
    "banc"
+  ],
+  "defauts": []
+ },
+ "21": {
+  "legende": "Intérieur de voilier : deux garçons d'une dizaine à une quinzaine d'années, torse nu, jouent avec des Lego de part et d'autre de la table du carré, boiseries vernies de bois clair et banquettes bleu marine. Celui de gauche, brun, assemble une pièce au-dessus de la table où s'étale une construction jaune, rouge et noire ; celui de droite, blond, penché sur le dossier de la banquette opposée, tient un élément rouge entre les dents. Au-dessus court la rangée de hublots allongés du roof avec des rideaux à motifs de voiliers ; une étagère porte des livres serrés dont l'un s'intitule « Météorologie Marine », et une lampe-tempête à réservoir de laiton est suspendue à la cloison. Des bacs plastiques bleus remplis de briques occupent la banquette de droite, l'un dans un carton où se lit « Caixa Multi-usos ».",
+  "mots_cles": [
+   "carre",
+   "voilier",
+   "lego",
+   "banquette",
+   "hublot",
+   "rideau",
+   "etagere",
+   "livre",
+   "lampe-tempete",
+   "bac"
+  ],
+  "defauts": []
+ },
+ "22": {
+  "legende": "Tirage scanné à bordure blanche. Deux adultes au sommet d'une croupe de terre et de caillasse rouge orangé, cadrés en pied et vus légèrement en contre-plongée. Une femme en débardeur bleu et short blanc, lunettes de soleil, est assise sur la roche et tend les mains vers une grande bouteille d'eau en plastique ; face à elle un homme debout, en tee-shirt vert clair portant l'inscription « SURFWEAR », short sombre, chaussures de marche montantes, sac à dos et chapeau de toile bariolé où se lit « CANADA », la regarde. Derrière eux s'ouvre une baie d'un bleu-vert soutenu semée d'îlots, bordée de collines arides brun-rouge, et l'horizon marin se perd dans la brume de chaleur.",
+  "mots_cles": [
+   "sommet",
+   "terre rouge",
+   "bouteille d'eau",
+   "sac a dos",
+   "chapeau",
+   "baie",
+   "ilot",
+   "colline aride",
+   "randonnee"
+  ],
+  "defauts": [
+   "bord-scan"
+  ]
+ },
+ "23": {
+  "legende": "Paysage de savane sèche vu en plan large, hérissé de cactus cierges et d'arbustes épineux presque dépouillés, dont un grand au premier plan à gauche porte des touffes de plantes accrochées à ses branches. Au milieu du cadre, une personne en chemise rose est accroupie ou penchée derrière un affleurement rocheux, petite dans l'image et de dos, occupée à quelque chose qu'on ne distingue pas. Le sol est de terre rouge caillouteuse couverte de branches mortes et de broussailles basses. Des collines pelées brun-rose s'étagent au fond et se perdent dans une brume de chaleur qui efface l'horizon et blanchit le ciel.",
+  "mots_cles": [
+   "cactus",
+   "cierge",
+   "savane seche",
+   "epineux",
+   "broussaille",
+   "colline",
+   "terre rouge",
+   "brume de chaleur"
+  ],
+  "defauts": [
+   "surexpose"
+  ]
+ },
+ "24": {
+  "legende": "Vue plongeante par-dessus le bord d'un bateau en marche : cinq ou six dauphins nagent en formation juste sous la surface, dans une eau vert bouteille très claire, leurs corps striés par les ondulations de la lumière ; l'un d'eux est presque affleurant au centre gauche. Une filière et un chandelier d'inox barrent le cadre en diagonale, et l'étrave lève à droite une gerbe d'écume blanche et de bulles. Au premier plan en bas à droite, la jambe d'une personne en jean et une chaussure sombre posée sur le pont blanc. Lumière de plein jour, contraste fort entre l'eau sombre et l'écume.",
+  "mots_cles": [
+   "dauphin",
+   "etrave",
+   "ecume",
+   "filiere",
+   "chandelier",
+   "pont",
+   "banc",
+   "eau claire"
+  ],
+  "defauts": []
+ },
+ "25": {
+  "legende": "Intérieur de voilier, boiseries vernies de bois clair, cadré sur le passage voûté qui ouvre vers l'avant. Un adolescent blond aux cheveux longs et bouclés, torse nu, se tient de profil dans l'ouverture et tourne la tête vers l'objectif ; derrière lui, un garçon brun d'une douzaine d'années en débardeur bleu portant un motif de pirate et l'inscription « LE PIRATE » regarde aussi l'objectif, et un enfant plus jeune apparaît à demi caché entre eux. À droite, un porte-épices d'angle en bois retient deux flacons à couvercle rouge dont l'étiquette porte la marque « ducros » et la mention « HERBES DE… », le reste étant illisible. À gauche, un rideau à motifs de voiliers et le dossier d'une banquette. Lumière chaude et rasante venant de la gauche.",
+  "mots_cles": [
+   "carre",
+   "passage",
+   "adolescent",
+   "debardeur",
+   "porte-epices",
+   "flacon",
+   "rideau",
+   "boiserie vernie"
   ],
   "defauts": []
  },
