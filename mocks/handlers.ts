@@ -314,6 +314,43 @@ function bucketize(
 const NOW = '2026-08-29T10:00:00.000Z' as TaskDetail['createdAt'];
 
 export const handlers = [
+  // Contract §4.1/§9: consulted at startup, polled during long operations.
+  // Only `originals`/`tasks` vary in this mock — thumbs/pages/render_cache
+  // are always available, since nothing here simulates them failing.
+  http.get('*/system/status', () => {
+    const now = NOW;
+    return HttpResponse.json({
+      importId: store.importId,
+      importedAt: now,
+      runningJobId: null,
+      roots: [
+        { name: 'originals', envVar: 'ORIGINALS_ROOT', path: '/Volumes/OWC Envoy Ultra', available: store.originalsAvailable, checkedAt: now },
+        { name: 'thumbs', envVar: 'THUMBS_ROOT', path: '/var/photo_ui/thumbs', available: true, checkedAt: now },
+        { name: 'pages', envVar: 'PAGES_ROOT', path: '/var/photo_ui/pages', available: true, checkedAt: now },
+        { name: 'tasks', envVar: 'TASKS_ROOT', path: '/var/photo_ui/tasks', available: store.tasksRootAvailable, checkedAt: now },
+        { name: 'render_cache', envVar: 'RENDER_CACHE_ROOT', path: '/var/photo_ui/render_cache', available: true, checkedAt: now },
+      ],
+      counts: {
+        photosInHierarchy: store.photos.length, photosOutOfHierarchy: 0,
+        albums: store.albums.length, documents: store.documents.length,
+        passages: store.texts.filter((t) => t.ref.kind === 'passage').length,
+        logEntries: store.texts.filter((t) => t.ref.kind === 'log_entry').length,
+      },
+      prerender: { total: store.photos.length, done: store.photos.length, running: false },
+      captions: {
+        total: store.photos.length,
+        done: store.photos.filter((p) => p.hasCaption).length,
+        edited: 0, running: false,
+      },
+      attention: {
+        orphanedSelections: 0, correctionsNeedingReview: 0, correctionsOrphaned: 0,
+        albumsWithPresumedSpan: store.albums.filter((a) => a.span.presumed).length,
+        webDocumentsWithoutSpan: store.documents.filter((d) => d.kind === 'html' && d.span === null).length,
+      },
+      features: { datingExport: false },
+    });
+  }),
+
   // Contract §4.2: the 82 albums fit in one response.
   http.get('*/albums', () => HttpResponse.json({ items: store.albums })),
 

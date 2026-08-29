@@ -130,6 +130,21 @@ describe('spec §5.6 — the control banner and the chronology', () => {
   });
 });
 
+describe('spec §5.1/§9 — the export is blocked while the originals volume is unmounted', () => {
+  test('export stays enabled while the volume is available', async () => {
+    setup();
+    expect(await screen.findByRole('button', { name: /^Exporter/ })).toBeEnabled();
+    expect(screen.queryByTestId('export-blocked')).not.toBeInTheDocument();
+  });
+
+  test('export is disabled, with a stated reason, once it is unmounted', async () => {
+    store.originalsAvailable = false;
+    setup();
+    expect(await screen.findByTestId('export-blocked')).toHaveTextContent(/absent/i);
+    expect(screen.getByRole('button', { name: /^Exporter/ })).toBeDisabled();
+  });
+});
+
 describe('§5.6 — the brief travels with the task', () => {
   test('the brief is editable', async () => {
     const user = userEvent.setup();

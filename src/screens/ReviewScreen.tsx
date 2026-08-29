@@ -6,8 +6,10 @@ import type { TaskReview, TaskReviewWarnings } from '../api/contract/review';
 import { TaskDetailSchema } from '../api/contract/task';
 import { useExport } from '../api/hooks/useExport';
 import { useSelection } from '../api/hooks/useSelection';
+import { useSystemStatus } from '../api/hooks/useSystemStatus';
 import { useTaskReview } from '../api/hooks/useTaskReview';
 import { overlaps } from '../domain/interval';
+import { originalsUnavailable } from '../domain/systemStatus';
 import { NotesPanel } from '../ui/notes/NotesPanel';
 import { ErrorBanner } from '../ui/primitives/ErrorBanner';
 import { TaskNav } from '../ui/primitives/TaskNav';
@@ -70,6 +72,8 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
   const selection = useSelection(slug);
   const exportTask = useExport(slug);
   const review = useTaskReview(slug);
+  const systemStatus = useSystemStatus();
+  const volumeUnavailable = systemStatus.data !== undefined && originalsUnavailable(systemStatus.data);
   const [brief, setBrief] = useState('');
   const [activeWarning, setActiveWarning] = useState<keyof TaskReviewWarnings | null>(null);
 
@@ -161,9 +165,19 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
         </>
       ) : null}
 
+      {/* Spec §5.1/§9: vignettes and selections stay usable while the volume
+          is unmounted; only the export, which needs the originals, is
+          blocked — and says so, rather than failing opaquely. */}
+      {volumeUnavailable ? (
+        <p className={styles['note']} data-testid="export-blocked">
+          Export bloqué : le volume des originaux est absent.
+        </p>
+      ) : null}
+
       <button
         className={styles['export']}
         type="button"
+        disabled={volumeUnavailable}
         onClick={() => { exportTask.mutate({ overwrite: false }); }}
       >
         Exporter la tâche

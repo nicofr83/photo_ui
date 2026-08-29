@@ -28,6 +28,8 @@ export interface Store {
   tasksRootAvailable: boolean;
   /** Set by a test to make the export find an existing directory. Spec §5.6. */
   exportDirectoryExists: boolean;
+  /** Set by a test to simulate the originals volume being unmounted mid-session. */
+  originalsAvailable: boolean;
   jobs: Map<string, Job>;
 }
 
@@ -62,6 +64,7 @@ function seed(): Store {
     importId: 'import_mock',
     tasksRootAvailable: true,
     exportDirectoryExists: false,
+    originalsAvailable: true,
     jobs: new Map(),
   };
 }

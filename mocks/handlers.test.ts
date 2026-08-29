@@ -7,6 +7,7 @@ import { AlbumSpanUpdateResultSchema, WebDocumentListSchema } from '../src/api/c
 import { TaskReviewSchema } from '../src/api/contract/review';
 import { TaskDeleteResultSchema, TaskDetailSchema } from '../src/api/contract/task';
 import { TextDocumentSchema } from '../src/api/contract/text';
+import { SystemStatusSchema } from '../src/api/contract/system';
 import { parseIsoDate, parseIsoTimestamp } from '../src/shared/date_interface';
 
 import { handlers } from './handlers';
@@ -39,6 +40,7 @@ const putWebSpan = (input: {
     ...input, dateFrom: parseIsoDate(input.dateFrom), dateTo: parseIsoDate(input.dateTo),
   }, TextDocumentSchema);
 const review = (slug: string) => apiGet(`/tasks/${slug}/review`, TaskReviewSchema);
+const systemStatus = () => apiGet('/system/status', SystemStatusSchema);
 
 describe('the envelope obeys the contract', () => {
   test('an unfiltered call returns the whole hierarchy scope', async () => {
@@ -460,5 +462,25 @@ describe('contract §4.5 — duplicating and deleting a task', () => {
     const thrown = (await apiDeleteWithBody('/tasks/nope', {}, TaskDeleteResultSchema)
       .catch((e: unknown) => e)) as ApiError;
     expect(thrown.status).toBe(404);
+  });
+});
+
+describe('contract §4.1/§9 — GET /system/status, the ONE global banner', () => {
+  test('originals available by default', async () => {
+    const status = await systemStatus();
+    expect(status.roots.find((r) => r.name === 'originals')?.available).toBe(true);
+  });
+
+  test('a simulated unmount is reflected', async () => {
+    store.originalsAvailable = false;
+    const status = await systemStatus();
+    expect(status.roots.find((r) => r.name === 'originals')?.available).toBe(false);
+  });
+
+  test('attention.albumsWithPresumedSpan counts the still-presumed albums', async () => {
+    const status = await systemStatus();
+    // Fixture: 4 of the 5 albums are still presumed (not yet typed) —
+    // "Maison rose Algès" is the only one with a saisi span.
+    expect(status.attention.albumsWithPresumedSpan).toBe(4);
   });
 });
