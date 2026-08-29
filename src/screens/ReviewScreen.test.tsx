@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 
 import { store } from '../../mocks/store';
-import { parseIsoTimestamp } from '../shared/date_interface';
+import { parseIsoDate, parseIsoTimestamp } from '../shared/date_interface';
 import { renderWithProviders } from '../test/renderWithProviders';
 
 import { ReviewScreen } from './ReviewScreen';
@@ -127,6 +127,71 @@ describe('spec §5.6 — the control banner and the chronology', () => {
     setup();
     expect(await screen.findByTestId('chronology-e8bc80b75e254b7db2e1454222416813'))
       .toBeInTheDocument();
+  });
+
+  test('clicking a counter highlights only the matching chronology entries', async () => {
+    const user = userEvent.setup();
+    // 2b3c4d… is dated by a rank-3 LOGBOOK_BRACKET proposal — an inference.
+    // The seed image (e8bc…) is an ANNOTATION — a decision, not an inference.
+    const task = store.tasks.get('1999-transat');
+    task?.images.push({
+      cloudAssetId: '2b3c4d5e6f708192a3b4c5d6e7f80911',
+      order: 1, note: null, selectedBecause: ['manual'],
+      selectedAt: parseIsoTimestamp('2026-08-29T10:00:00.000Z'), orphaned: false,
+    });
+
+    setup();
+    await screen.findByTestId('chronology-2b3c4d5e6f708192a3b4c5d6e7f80911');
+    await user.click(screen.getByRole('button', { name: /photos à date déduite/i }));
+
+    expect(screen.getByTestId('chronology-2b3c4d5e6f708192a3b4c5d6e7f80911').className)
+      .not.toMatch(/dimmed/);
+    expect(screen.getByTestId('chronology-e8bc80b75e254b7db2e1454222416813').className)
+      .toMatch(/dimmed/);
+  });
+
+  test('clicking again clears the highlight', async () => {
+    const user = userEvent.setup();
+    setup();
+    await screen.findByTestId('chronology-e8bc80b75e254b7db2e1454222416813');
+    const button = screen.getByRole('button', { name: /photos sans date/i });
+    await user.click(button);
+    await user.click(button);
+    expect(screen.getByTestId('chronology-e8bc80b75e254b7db2e1454222416813').className)
+      .not.toMatch(/dimmed/);
+  });
+
+  test('imagesOutOfPeriod highlights only images dated outside the declared period', async () => {
+    const user = userEvent.setup();
+    const task = store.tasks.get('1999-transat');
+    if (task !== undefined) {
+      task.period = { from: parseIsoDate('2005-01-01'), to: parseIsoDate('2005-12-31') };
+    }
+
+    setup();
+    await screen.findByTestId('chronology-e8bc80b75e254b7db2e1454222416813');
+    await user.click(screen.getByRole('button', { name: /photos hors période/i }));
+
+    // The seed image is dated 1999-03-02 — outside the 2005 period.
+    expect(screen.getByTestId('chronology-e8bc80b75e254b7db2e1454222416813').className)
+      .not.toMatch(/dimmed/);
+  });
+
+  test('uncertainTexts highlights only texts marked uncertain', async () => {
+    const user = userEvent.setup();
+    const task = store.tasks.get('1999-transat');
+    task?.texts.push({
+      ref: { kind: 'passage', id: 'logbook/p003/001' }, // TranscriptionConfidence.UNCERTAIN
+      order: 0, selectedAt: parseIsoTimestamp('2026-08-29T10:00:00.000Z'), orphaned: false,
+      startOffset: null, endOffset: null,
+    });
+
+    setup();
+    await screen.findByTestId('chronology-e8bc80b75e254b7db2e1454222416813');
+    await user.click(screen.getByRole('button', { name: /textes incertains/i }));
+
+    expect(screen.getByTestId('chronology-passage:logbook/p003/001').className)
+      .not.toMatch(/dimmed/);
   });
 });
 
