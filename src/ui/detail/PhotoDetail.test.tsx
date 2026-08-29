@@ -99,12 +99,12 @@ describe('§5.2 — the three render failures are never confused', () => {
 describe('§6.3 — tags are shown with their confidence, and a tag without one is not dropped', () => {
   test('a tag with no confidence is still listed', async () => {
     open(EXIF_PHOTO);
-    expect(await screen.findByTestId('tag-famille')).toBeInTheDocument();
+    expect(await screen.findByTestId('tag-souvenir')).toBeInTheDocument();
   });
 
   test('a confidence is displayed when present', async () => {
     open(EXIF_PHOTO);
-    expect(await screen.findByTestId('tag-boat')).toHaveTextContent('71');
+    expect(await screen.findByTestId('tag-famille')).toHaveTextContent('74');
   });
 });
 

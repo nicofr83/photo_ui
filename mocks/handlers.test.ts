@@ -2,7 +2,7 @@ import { setupServer } from 'msw/node';
 
 import { apiGet, ApiError } from '../src/api/client';
 import { PhotoOverlapEnvelopeSchema, TextOverlapEnvelopeSchema } from '../src/api/contract/overlap';
-import { ListEnvelopeSchema, PhotoListItemSchema } from '../src/api/contract/photo';
+import { ListEnvelopeSchema, PhotoFacetsSchema, PhotoListItemSchema } from '../src/api/contract/photo';
 
 import { handlers } from './handlers';
 import { resetStore } from './store';
@@ -17,6 +17,7 @@ const photos = (query = '') => apiGet(`/photos${query}`, Photos);
 const photosWithOverlap = (query = '') => apiGet(`/photos${query}`, PhotoOverlapEnvelopeSchema);
 const overlappingTexts = (cloudAssetId: string) =>
   apiGet(`/photos/${cloudAssetId}/texts`, TextOverlapEnvelopeSchema);
+const facets = (query = '') => apiGet(`/photos/facets${query}`, PhotoFacetsSchema);
 
 describe('the envelope obeys the contract', () => {
   test('an unfiltered call returns the whole hierarchy scope', async () => {
@@ -172,5 +173,96 @@ describe('contract §11 Q11 — a gallery caption matches its photo DIRECTLY, ne
       '&albumPath=1998-1999%2F1999-10 Lisboa Madere',
     );
     expect(page.items).toEqual([]);
+  });
+});
+
+describe('T3 — the content axes: tag, person, place, hasPosition/OCR/caption, q', () => {
+  test('tag filters to photos carrying it', async () => {
+    const page = await photos('?tag=ruines');
+    expect(page.items.map((p) => p.fileName)).toEqual(['DSCN2201.jpg']);
+  });
+
+  test('a tag with no confidence still matches — it is never excluded', async () => {
+    const page = await photos('?tag=souvenir');
+    expect(page.items).toHaveLength(1);
+  });
+
+  test('person filters to photos naming them', async () => {
+    const page = await photos('?person=Ghislaine');
+    expect(page.items.map((p) => p.fileName)).toEqual(['PICT0107.jpg']);
+  });
+
+  test('country matches the EXIF place directly', async () => {
+    const page = await photos('?country=Portugal');
+    expect(page.items.map((p) => p.fileName)).toContain('PICT0042.jpg');
+  });
+
+  test('§5.3 generous reading — a photo with no EXIF place still answers by album name', async () => {
+    // Maison rose Algès carries no place.country; the album name does.
+    const page = await photos('?country=Alg%C3%A8s');
+    const match = page.items.find((p) => p.fileName === '98-99 maison rose Lisbonne (N).jpg');
+    expect(match).toBeDefined();
+    expect(match?.matchedOn.some((m) => m.field === 'album_path')).toBe(true);
+  });
+
+  test('hasPosition keeps only photos carrying one', async () => {
+    const page = await photos('?hasPosition=true');
+    expect(page.items.every((p) => p.position !== null)).toBe(true);
+    expect(page.items.length).toBeGreaterThan(0);
+  });
+
+  test('hasOcr keeps only photos with text printed in the image', async () => {
+    const page = await photos('?hasOcr=true');
+    expect(page.items.map((p) => p.fileName)).toEqual(['PICT0233.jpg']);
+  });
+
+  test('hasCaption keeps only photos a machine caption covers', async () => {
+    const page = await photos('?hasCaption=true');
+    expect(page.items.map((p) => p.fileName)).toEqual(['DSCN2201.jpg']);
+  });
+
+  test('q searches broadly — file name, album, people, tags, caption', async () => {
+    const page = await photos('?q=ruines');
+    expect(page.items.map((p) => p.fileName)).toEqual(['DSCN2201.jpg']);
+  });
+
+  test('an empty q is zero results, never the whole corpus', async () => {
+    const page = await photos('?q=');
+    expect(page.items).toEqual([]);
+  });
+
+  test('reliableDatesOnly restricts to day-precision dates', async () => {
+    const page = await photos('?reliableDatesOnly=true');
+    expect(page.items.every((p) => p.date?.precision === 'day')).toBe(true);
+    expect(page.items.length).toBeGreaterThan(0);
+  });
+});
+
+describe('T3 — /photos/facets, contextual counts against the current filter', () => {
+  test('tags are sorted by selectivity ascending — the rarest first', async () => {
+    const page = await facets();
+    const counts = page.tags.map((t) => t.count);
+    expect(counts).toEqual([...counts].sort((a, b) => a - b));
+  });
+
+  test('a lying place tag never enters the offered vocabulary', async () => {
+    const page = await facets();
+    expect(page.tags.some((t) => t.value === 'italy')).toBe(false);
+  });
+
+  test('the lying tag is still searchable directly, marked or not', async () => {
+    const page = await photos('?tag=italy');
+    expect(page.items.map((p) => p.fileName)).toEqual(['DSCN2201.jpg']);
+  });
+
+  test('facets are recomputed against the current filter, not the whole population', async () => {
+    const all = await facets();
+    const filtered = await facets('?albumPath=1998-1999%2F1999-12 Capvert Guadeloupe');
+    expect(filtered.tags.length).toBeLessThan(all.tags.length);
+  });
+
+  test('positionedCount is 0 when nothing in the filter has a position', async () => {
+    const page = await facets('?albumPath=1998-1999%2F1999-10 Lisboa Madere');
+    expect(page.positionedCount).toBe(0);
   });
 });

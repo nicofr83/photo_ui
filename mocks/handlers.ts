@@ -9,11 +9,11 @@ import { http, HttpResponse } from 'msw';
 
 import { centreDistanceDays, overlaps, widthDays, type DayInterval } from '../src/domain/interval';
 import type { OverlapInfo, OverlapSummary, PhotoWithOverlap } from '../src/api/contract/overlap';
-import type { PhotoListItem } from '../src/api/contract/photo';
+import type { FacetBucket, PhotoFacets, PhotoListItem } from '../src/api/contract/photo';
 import type { TextUnit } from '../src/api/contract/text';
 import { isIsoDate } from '../src/shared/date_interface';
 import {
-  CorrectionStatus, DatePrecision, DateSource, ErrorCode, OverlapRule, PhotoSort,
+  CorrectionStatus, DatePrecision, DateSource, ErrorCode, MatchField, OverlapRule, PhotoSort,
   SelectionReason, TaskState,
 } from '../src/shared/enums';
 import { TaskNoteCreateInputSchema, type TaskDetail } from '../src/api/contract/task';
@@ -21,7 +21,17 @@ import type { Job } from '../src/api/contract/job';
 
 import { store } from './store';
 import { INVARIANT_ALBUMS } from '../fixtures/invariants/albums';
+import { PHOTO_OCR, PHOTO_TAGS } from '../fixtures/invariants/photoTags';
 import { INVARIANT_DOCUMENTS, INVARIANT_PAGES } from '../fixtures/invariants/texts';
+
+/**
+ * The mock's own knowledge of which tags name a place — standing in for
+ * `ref.tag_kind`, never for the frontend to hold. Measured cases from
+ * ETAT-TRAVAUX.md: `italy` hits 18 real Tikal photos, `egypt` 30 of Morocco.
+ * Excluded from the vocabulary `PhotoFacets.tags` offers; still matchable by
+ * `tag=`, since spec §7.1/§7.3 says searchable, never hidden from results.
+ */
+const PLACE_TAG_NAMES: ReadonlySet<string> = new Set(['italy', 'egypt']);
 
 /** Contract §4.2. Anything outside this list is an UNKNOWN_PARAMETER. */
 const PHOTO_PARAMS = [
@@ -99,6 +109,131 @@ interface UnmatchedValue {
   parameter: string;
   value: string;
   nearest: string[];
+}
+
+function textIncludes(haystack: string | null, needle: string): boolean {
+  return haystack !== null && haystack.toLowerCase().includes(needle.toLowerCase());
+}
+
+/**
+ * Spec §5.3: a generous reading of place — a photo with no EXIF place still
+ * answers `country`/`city` if its album or group name names it, and the
+ * result says WHICH field actually answered, never pretending it was the
+ * place field. `matchField`/`groupOrAlbum` are the two ends of that fallback.
+ */
+function placeMatch(
+  photo: PhotoListItem,
+  placeField: string | null,
+  matchField: 'country' | 'city',
+  needle: string,
+): { field: MatchField; value: string } | null {
+  if (textIncludes(placeField, needle)) {
+    return {
+      field: matchField === 'country' ? MatchField.PLACE_COUNTRY : MatchField.PLACE_CITY,
+      value: placeField ?? needle,
+    };
+  }
+  if (textIncludes(photo.albumPath, needle)) {
+    return { field: MatchField.ALBUM_PATH, value: photo.albumPath ?? needle };
+  }
+  if (textIncludes(photo.groupName, needle)) {
+    return { field: MatchField.GROUP_NAME, value: photo.groupName ?? needle };
+  }
+  return null;
+}
+
+/**
+ * Contract §4.2's content axes, shared between `/photos` and
+ * `/photos/facets` so the two never drift into two different definitions of
+ * "matches". Returns the kept photos WITH `matchedOn` recomputed for the
+ * place axes — the rest of `matchedOn` (tag, caption, file name…) is
+ * whatever the fixture already carries, since a full plein-texte match
+ * report is not the point of this mock.
+ */
+function applyContentFilters(
+  population: readonly PhotoListItem[],
+  params: URLSearchParams,
+): PhotoListItem[] {
+  let kept: PhotoListItem[] = [...population];
+
+  if (params.get('reliableDatesOnly') === 'true') {
+    kept = kept.filter((p) => p.date?.precision === DatePrecision.DAY);
+  }
+
+  const tags = params.getAll('tag');
+  if (tags.length > 0) {
+    kept = kept.filter((p) =>
+      tags.some((t) => (PHOTO_TAGS[p.cloudAssetId] ?? []).some((pt) => pt.name === t)));
+  }
+
+  const people = params.getAll('person');
+  if (people.length > 0) {
+    kept = kept.filter((p) => people.some((person) => p.people.includes(person)));
+  }
+
+  const countries = params.getAll('country');
+  if (countries.length > 0) {
+    kept = kept
+      .filter((p) => countries.some((c) => placeMatch(p, p.place.country, 'country', c) !== null))
+      .map((p) => {
+        const match = countries.map((c) => placeMatch(p, p.place.country, 'country', c))
+          .find((m) => m !== null);
+        return match === undefined ? p : { ...p, matchedOn: [...p.matchedOn, match] };
+      });
+  }
+
+  const cities = params.getAll('city');
+  if (cities.length > 0) {
+    kept = kept
+      .filter((p) => cities.some((c) => placeMatch(p, p.place.city, 'city', c) !== null))
+      .map((p) => {
+        const match = cities.map((c) => placeMatch(p, p.place.city, 'city', c)).find((m) => m !== null);
+        return match === undefined ? p : { ...p, matchedOn: [...p.matchedOn, match] };
+      });
+  }
+
+  if (params.get('hasPosition') === 'true') kept = kept.filter((p) => p.position !== null);
+  if (params.get('hasOcr') === 'true') {
+    kept = kept.filter((p) => (PHOTO_OCR[p.cloudAssetId] ?? null) !== null);
+  }
+  if (params.get('hasCaption') === 'true') kept = kept.filter((p) => p.hasCaption);
+
+  const q = params.get('q');
+  if (q !== null) {
+    // An empty needle returns zero results, never the whole corpus — same
+    // rule as /texts?q=.
+    const needle = q.trim().toLowerCase();
+    kept = needle === '' ? [] : kept.filter((p) => {
+      const photoTags = PHOTO_TAGS[p.cloudAssetId] ?? [];
+      return textIncludes(p.fileName, needle)
+        || textIncludes(p.albumPath, needle)
+        || textIncludes(p.groupName, needle)
+        || p.people.some((person) => textIncludes(person, needle))
+        || textIncludes(p.place.country, needle)
+        || textIncludes(p.place.city, needle)
+        || photoTags.some((t) => textIncludes(t.name, needle))
+        || textIncludes(p.captionExcerpt?.text ?? null, needle);
+    });
+  }
+
+  return kept;
+}
+
+/** Contract §5.4: FacetBucket[], sorted by selectivity — fewest photos first. */
+function bucketize(
+  values: ReadonlyArray<string | null>,
+  tooBroadNames: ReadonlySet<string> = new Set(),
+): FacetBucket[] {
+  const counts = new Map<string, number>();
+  for (const value of values) {
+    if (value === null) continue;
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([value, count]) => ({
+      value, count, ...(tooBroadNames.has(value) ? { tooBroad: true } : {}),
+    }))
+    .sort((a, b) => a.count - b.count || a.value.localeCompare(b.value, 'fr'));
 }
 
 const NOW = '2026-08-29T10:00:00.000Z' as TaskDetail['createdAt'];
@@ -301,6 +436,51 @@ export const handlers = [
   // Declared BEFORE `/photos/:cloudAssetId`: MSW/path-to-regexp tries
   // handlers in array order, and the plain `:cloudAssetId` pattern matches
   // greedily enough to shadow this one if it comes first.
+
+  // Contract §5.4: a SEPARATE call from /photos — depends on neither sort
+  // nor offset (contract §11 Q1, tranché). Same content axes, computed by
+  // the SAME applyContentFilters, never a second definition of "matches".
+  // ALSO declared before `/photos/:cloudAssetId`, same reason: `facets`
+  // would otherwise be read as a (nonexistent) cloudAssetId.
+  http.get('*/photos/facets', ({ request }) => {
+    const params = new URL(request.url).searchParams;
+    const population = store.photos;
+
+    let kept = population;
+    const albumPaths = params.getAll('albumPath');
+    if (albumPaths.length > 0) {
+      const wanted = albumPaths.map((a) => a.normalize('NFC'));
+      kept = kept.filter((p) => p.albumPath !== null && wanted.includes(p.albumPath.normalize('NFC')));
+    }
+    const dateFrom = params.get('dateFrom');
+    const dateTo = params.get('dateTo');
+    if (dateFrom !== null && isIsoDate(dateFrom) && dateTo !== null && isIsoDate(dateTo)) {
+      kept = kept.filter((p) => p.date !== null && overlaps(p.date, { start: dateFrom, end: dateTo }));
+    }
+    kept = applyContentFilters(kept, params);
+
+    const allTagNames = kept.flatMap((p) => (PHOTO_TAGS[p.cloudAssetId] ?? []).map((t) => t.name));
+    const tooBroad = new Set(
+      [...new Set(allTagNames)].filter((name) => allTagNames.filter((n) => n === name).length > 500),
+    );
+
+    const facets: PhotoFacets = {
+      albums: bucketize(kept.map((p) => p.albumPath)),
+      // The place-lying tags never enter the offered vocabulary — the ONE
+      // client-visible effect of PLACE_TAG_NAMES, which never governs
+      // filtering or search results, only what is proposed.
+      tags: bucketize(allTagNames.filter((n) => !PLACE_TAG_NAMES.has(n)), tooBroad),
+      people: bucketize(kept.flatMap((p) => p.people)),
+      countries: bucketize(kept.map((p) => p.place.country)),
+      cities: bucketize(kept.map((p) => p.place.city)),
+      years: bucketize(kept.map((p) => (p.date === null ? null : p.date.start.slice(0, 4)))),
+      positionedCount: kept.filter((p) => p.position !== null).length,
+      withOcrCount: kept.filter((p) => (PHOTO_OCR[p.cloudAssetId] ?? null) !== null).length,
+      datedToDayCount: kept.filter((p) => p.date?.precision === DatePrecision.DAY).length,
+    };
+    return HttpResponse.json(facets);
+  }),
+
   http.get('*/photos/:cloudAssetId', ({ params }) => {
     const photo = store.photos.find((p) => p.cloudAssetId === String(params['cloudAssetId']));
     if (photo === undefined) {
@@ -531,6 +711,11 @@ export const handlers = [
       );
     }
 
+    // T3's content axes — tag, person, country, city, hasPosition, hasOcr,
+    // hasCaption, q, reliableDatesOnly. Shared with /photos/facets so the
+    // two never compute "matches" differently.
+    kept = applyContentFilters(kept, params);
+
     // Contract §4.2: "quelles photos ce texte couvre-t-il ?" — the two
     // parameters travel together or not at all, same rule as the client side.
     const overlapsTextKind = params.get('overlapsTextKind');
@@ -655,16 +840,12 @@ function detailFor(photo: PhotoListItem) {
   return {
     ...photo,
     albumPaths: photo.albumPath === null ? [] : [photo.albumPath, 'all pics'],
-    tags: [
-      { name: 'boat', confidence: 71 },
-      { name: 'maya', confidence: 58 },
-      { name: 'famille', confidence: null },
-    ],
+    tags: [...(PHOTO_TAGS[photo.cloudAssetId] ?? [])],
     exif: {
       cameraMake: 'NIKON', cameraModel: 'E5700', lens: null, iso: 100,
       aperture: 4.5, shutter: '1/350', focalLength: 8.9, altitude: null,
     },
-    ocrText: null,
+    ocrText: PHOTO_OCR[photo.cloudAssetId] ?? null,
     fileSize: 778_000,
     relativePath: `${photo.albumPath ?? 'racine'}/${photo.fileName}`,
     proposal: isProposal && photo.date !== null

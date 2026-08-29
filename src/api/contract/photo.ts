@@ -120,6 +120,7 @@ export const PhotoTagSchema = z.strictObject({
   /** NULL for a `user` keyword. NULL never excludes a tag. Spec §6.3. */
   confidence: z.number().nullable(),
 });
+export type PhotoTag = z.infer<typeof PhotoTagSchema>;
 
 export const PhotoExifSchema = z.strictObject({
   cameraMake: z.string().nullable(),
