@@ -527,6 +527,6 @@ Vérifié après coup : `/images/zz-repro-bug1` (SPA) → 200, `/photos` (API) �
 
 BLOCK : le serveur réel (`127.0.0.1:4310`) a répondu normalement pendant toute la mise au point ci-dessus, puis a cessé de répondre (`ECONNREFUSED`, aucun processus correspondant en vie) juste avant que je lance la mesure de tenue de grille sur les 3930 tuiles. Rien côté front n'a changé entre les deux — je n'ai pas touché au serveur. Je ne peux pas exécuter le mandat (faire tourner l'app réelle, mesurer la grille) sans lui.
 
-DETAIL : `vite.config.ts`, `.env.local` sont les seuls fichiers touchés pour la bascule ; pas encore commités (je veux d'abord confirmer avec `back` que le proxy est la bonne direction avant de figer). Script de pilotage navigateur en scratchpad, pas dans le dépôt.
+DETAIL : `vite.config.ts` commité (`cdddcc2`) ; `.env.local` gitignoré, local. Script de pilotage navigateur en scratchpad, pas dans le dépôt. `playwright` installé en local (`npm install --no-save`, jamais dans `package.json`) — pas de `chromium-cli` sur cette machine.
 
 ASK : aucune décision Nicolas ici — j'attends que le serveur reréponde pour continuer.
