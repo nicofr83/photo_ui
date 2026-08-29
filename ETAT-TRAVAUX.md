@@ -486,3 +486,16 @@ DONE : `PUT`/`DELETE /ref/album-span`, `GET /ref/web-documents`, `PUT`/`DELETE /
 DETAIL : commits `4e9a458`, `25a72cd`. Écarté délibérément, hors mandat T4 reçu de front : `GET /ref/countries`, `PUT /ref/country-aliases`.
 
 ASK: aucun — je continue sur la tâche 26 (revue, duplication, suppression d'une tâche).
+
+---
+
+## Avancement — impl-backend, tâche 26 (2026-08-30) — plan complet
+
+RE : tâche 26 — revue, duplication, suppression, terminée. `docs/superpowers/plans/2026-08-28-backend.md` est complet : les 26 tâches, tranches T1 à T5.
+DONE : `GET /tasks/:slug/review`, `POST /tasks/:slug/duplicate`, `DELETE /tasks/:slug`. Les huit compteurs du bandeau se calculent au serveur — même raison que la suppression du doublon de recouvrement tâche 21 : une seconde implémentation qui peut diverger est pire qu'un endpoint de plus. Deux compteurs ont demandé d'y réfléchir, pas une simple réutilisation :
+- `textsWiderThan30Days` n'est PAS `TextUnit.date` — un texte affirme un jour ou rien, `date_start = date_end` est une CONTRAINTE du schéma (D11) — ce compteur serait perpétuellement à zéro. C'est la fenêtre EFFECTIVE `covers_*` (comblée en direct par `ref.web_span`, même expression que le prédicat de recouvrement) qui compte, et qu'aucun champ public de `TextUnit` n'expose.
+- `imagesWithoutText` réutilise `overlapPredicate('p')` telle quelle, un site d'appel de plus pour LE prédicat, jamais un second.
+`orphanedImages`/`orphanedTexts`/`imagesOutOfPeriod` ne coûtent aucun SQL neuf : ce sont exactement `TaskImageSelection.orphaned`/`.outOfPeriod` et `TaskTextSelection.orphaned`, déjà calculés par `loadImages`/`loadTexts` depuis la tâche 16. Une sélection orpheline est comptée, jamais listée dans `images[]`/`texts[]` (aucun `PhotoListItem`/`TextUnit` constructible pour une cible disparue). `getTaskReview` réutilise `listPhotos(inTask, scope: 'all')` pour le `PhotoListItem` complet — `scope: 'all'` délibéré, jamais le défaut `hierarchy`, pour que la sélection d'une tâche ne soit jamais masquée par un filtre de navigation. `duplicateTask` copie `brief`/`period`/images/textes/notes (ULID neuf par note, jamais l'id de la source) mais jamais `exportedAt`/`exportDirectory`/`exportedContentHash` — la copie naît `draft` par construction, pas par une remise à zéro de champ. `deleteTask` est un `DELETE ... RETURNING` unique, `ON DELETE CASCADE` fait le reste — le dossier déjà exporté, lui, n'est jamais touché. 28 tests neufs (10 dépôt, 18 HTTP), vérifié en réel contre `photo_ui` (une vraie tâche, une vraie photo 1998-02 datée par son album : `inferredDateImages`/`imagesWithoutText` à 1 comme attendu, dupliquée en `draft`, les deux tâches supprimées, confirmées disparues). 628 tests serveur, tsc/eslint propres.
+DETAIL : commit `76f5653`. `POST /tasks/:slug/opened` reste non fait — déjà consigné comme un écart mineur volontaire plus haut dans ce journal, pas une régression de cette tâche.
+
+ASK : aucun. Le plan backend est intégralement déroulé — 26 tâches, T1 à T5. Je reste disponible si Nicolas ou une autre tâche apparaît, mais il n'y a plus d'étape suivante prévue par `docs/superpowers/plans/2026-08-28-backend.md`.
