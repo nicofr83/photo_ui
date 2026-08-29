@@ -188,3 +188,45 @@ test('log entry fields travel for log_entry, are null for passage', async () => 
     expect(passage?.logEntry).toBeNull();
   });
 });
+
+test('a web passage with no ref.web_span covers nothing, and no photo overlaps it', async () => {
+  await withRollback(async (client) => {
+    const photo = 'a'.repeat(32);
+    await client.query(`INSERT INTO pipeline.photo
+      (cloud_asset_id, sha256, relative_path, file_name, format, raw_date_source,
+       resolved_from, resolved_start, resolved_end, resolved_precision)
+      VALUES ($1, $2, 'x/p.jpg', 'p.jpg', 'jpg', 'folder-month', 'album_month', '1999-10-01', '1999-10-01', 'day')`,
+      [photo, 'b'.repeat(64)]);
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                        VALUES ('web/1999/Transat', 'html', 'La transat', false)`);
+    await client.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+                        VALUES ('passage', 'web/1999/Transat/001', 'web/1999/Transat', 1, 'x', 'transcribed')`);
+
+    expect((await listTexts(client, { overlapsPhoto: photo })).items).toEqual([]);
+  });
+});
+
+test('RULE C — ref.web_span entered AFTER import still makes the overlap appear, live, no re-import', async () => {
+  await withRollback(async (client) => {
+    const photo = 'a'.repeat(32);
+    await client.query(`INSERT INTO pipeline.photo
+      (cloud_asset_id, sha256, relative_path, file_name, format, raw_date_source,
+       resolved_from, resolved_start, resolved_end, resolved_precision)
+      VALUES ($1, $2, 'x/p.jpg', 'p.jpg', 'jpg', 'folder-month', 'album_month', '1999-10-01', '1999-10-01', 'day')`,
+      [photo, 'b'.repeat(64)]);
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                        VALUES ('web/1999/Transat', 'html', 'La transat', false)`);
+    // `covers_start`/`covers_end`/`covers_rule` restent NULL — importés AVANT toute saisie de span.
+    await client.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+                        VALUES ('passage', 'web/1999/Transat/001', 'web/1999/Transat', 1, 'x', 'transcribed')`);
+
+    expect((await listTexts(client, { overlapsPhoto: photo })).items).toEqual([]);
+
+    await client.query(`INSERT INTO ref.web_span (document_id, date_from, date_to)
+                        VALUES ('web/1999/Transat', '1999-09-01', '1999-11-30')`);
+
+    const { items } = await listTexts(client, { overlapsPhoto: photo });
+    expect(items).toHaveLength(1);
+    expect(items[0]?.overlappingPhotoCount).toBe(1);
+  });
+});

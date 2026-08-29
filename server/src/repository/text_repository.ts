@@ -1,7 +1,7 @@
 import type { DateSource } from '@shared/enums';
 import type { PoolClient } from '../db/pool.ts';
 import type { LogEntryFields, TextCorrection, TextDocument, TextPage, TextUnit } from '../contract/text_interface.ts';
-import { overlapPredicate } from '../metier/overlap/overlap_sql.ts';
+import { overlapPredicate, WEB_SPAN_JOIN } from '../metier/overlap/overlap_sql.ts';
 
 interface DocumentRow {
   id: string;
@@ -204,7 +204,7 @@ export async function listTexts(client: PoolClient, filters: TextFilters): Promi
   }
   if (filters.overlapsPhoto !== undefined) {
     conditions.push(`EXISTS (SELECT 1 FROM pipeline.photo p WHERE p.cloud_asset_id = ${param(filters.overlapsPhoto)} `
-      + `AND ${overlapPredicate('p', 't')})`);
+      + `AND ${overlapPredicate('p')})`);
   }
 
   const whereClause = conditions.length === 0 ? '' : `WHERE ${conditions.join(' AND ')}`;
@@ -214,6 +214,7 @@ export async function listTexts(client: PoolClient, filters: TextFilters): Promi
     `SELECT count(*)::int AS n
        FROM pipeline.text_unit t
        JOIN pipeline.document d ON d.id = t.document_id
+       ${WEB_SPAN_JOIN}
       ${whereClause}`, values);
   const total = totalRows[0]?.n ?? 0;
 
@@ -225,13 +226,14 @@ export async function listTexts(client: PoolClient, filters: TextFilters): Promi
            tc.corrected_text, tc.original_at_correction, tc.corrected_at,
            t.confidence, t.date_source, t.date_start, t.date_end, t.date_kind, t.page_span_source,
            (SELECT count(*)::int FROM pipeline.photo p
-             WHERE ${overlapPredicate('p', 't')}) AS overlapping_photo_count,
+             WHERE ${overlapPredicate('p')}) AS overlapping_photo_count,
            t.entry_time, ST_Y(t.entry_position::geometry) AS entry_lat, ST_X(t.entry_position::geometry) AS entry_lon,
            t.raw_position, t.place_name, t.heading, t.wind, t.baro, t.engine_hours,
            t.fix_confidence, t.remark_confidence
       FROM pipeline.text_unit t
       JOIN pipeline.document d ON d.id = t.document_id
       LEFT JOIN app.text_correction tc ON tc.text_kind = t.kind AND tc.text_id = t.id
+      ${WEB_SPAN_JOIN}
      ${whereClause}
      ORDER BY ${sortSql}
      ${limitClause}${offsetClause}`, values);
