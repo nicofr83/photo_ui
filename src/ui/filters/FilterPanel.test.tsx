@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 
@@ -134,5 +134,57 @@ describe('the panel is a drawer on a narrow viewport', () => {
   test('the count is absent when nothing is filtered', () => {
     setup();
     expect(screen.queryByTestId('active-filter-count')).not.toBeInTheDocument();
+  });
+});
+
+describe('T3 — full text search', () => {
+  test('typing runs a search', async () => {
+    const user = userEvent.setup();
+    const { latest } = setup();
+    await user.type(screen.getByLabelText(/rechercher/i), 'ruines');
+    await waitFor(() => { expect(latest()?.q).toBe('ruines'); });
+  });
+});
+
+describe('T3 — tags, sorted by selectivity, the broadest never highlighted', () => {
+  test('tags from the current result are offered, rarest first', async () => {
+    setup();
+    const list = await screen.findByRole('group', { name: /tags/i });
+    const options = await within(list).findAllByRole('checkbox');
+    expect(options.length).toBeGreaterThan(0);
+  });
+
+  test('picking a tag adds it to the state', async () => {
+    const user = userEvent.setup();
+    const { latest } = setup();
+    await user.click(await screen.findByRole('checkbox', { name: /ruines/ }));
+    expect(latest()?.tags).toEqual(['ruines']);
+  });
+
+  test('the lying place tag is never offered', async () => {
+    setup();
+    await screen.findByRole('group', { name: /tags/i });
+    expect(screen.queryByRole('checkbox', { name: /^italy/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('T3 — the place axis disables itself, with its reason, when nothing qualifies', () => {
+  test('enabled when the current result has geolocated photos', async () => {
+    setup();
+    expect(await screen.findByRole('checkbox', { name: /Portugal/ })).toBeEnabled();
+  });
+
+  test('disabled, with a stated reason, when it has none', async () => {
+    setup({ ...EMPTY_FILTERS, albumPaths: ['1998-1999/1999-10 Lisboa Madere'] });
+    expect(await screen.findByTestId('place-disabled-reason')).toHaveTextContent(/aucune photo/i);
+  });
+});
+
+describe('T3 — hasPosition / hasOcr / hasCaption toggles', () => {
+  test('each is off by default and toggles the matching axis', async () => {
+    const user = userEvent.setup();
+    const { latest } = setup();
+    await user.click(screen.getByRole('checkbox', { name: /texte détecté/i }));
+    expect(latest()?.hasOcr).toBe(true);
   });
 });

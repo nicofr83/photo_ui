@@ -1,6 +1,8 @@
 import { useAlbums } from '../../api/hooks/useAlbums';
+import { usePhotoFacets } from '../../api/hooks/usePhotoFacets';
+import type { FacetBucket } from '../../api/contract/photo';
 import {
-  activeFilterTokens, type FilterState,
+  activeFilterTokens, toSearchParams, type FilterState,
 } from '../../domain/filterState';
 import { firstDayOfMonth, lastDayOfMonth, toMonthInput } from '../../domain/monthRange';
 import { PhotoSort } from '../../shared/enums';
@@ -20,8 +22,15 @@ const SORT_LABELS: Record<PhotoSort, string> = {
   [PhotoSort.OVERLAP]: 'Recouvrement le plus serré',
 };
 
+/** Toggles `value` in one of the array axes — tags, people, countries, cities. */
+function toggled(list: readonly string[], value: string): string[] {
+  return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+}
+
 export function FilterPanel({ filters, onChange }: Props): React.JSX.Element {
   const albums = useAlbums();
+  // Contract §5.4: same filter parameters as /photos, a separate call.
+  const facets = usePhotoFacets(toSearchParams(filters));
   const tokens = activeFilterTokens(filters);
 
   const setMonth = (edge: 'from' | 'to') => (value: string) => {
@@ -35,6 +44,9 @@ export function FilterPanel({ filters, onChange }: Props): React.JSX.Element {
       : [...filters.albumPaths, path];
     onChange({ ...filters, albumPaths: next });
   };
+
+  // 0 ⇒ the place axis is disabled, with its reason — spec §5.4/T3.
+  const placeDisabled = (facets.data?.positionedCount ?? 1) === 0;
 
   return (
     <div className={styles['panel']}>
@@ -65,6 +77,16 @@ export function FilterPanel({ filters, onChange }: Props): React.JSX.Element {
           ))}
         </ul>
       ) : null}
+
+      <label className={styles['field']}>
+        Rechercher
+        <input
+          className={styles['control']}
+          type="search"
+          value={filters.q ?? ''}
+          onChange={(e) => { onChange({ ...filters, q: e.target.value === '' ? null : e.target.value }); }}
+        />
+      </label>
 
       <fieldset className={styles['group']}>
         <legend className={styles['legend']}>Période</legend>
@@ -152,6 +174,121 @@ export function FilterPanel({ filters, onChange }: Props): React.JSX.Element {
           ))}
         </div>
       </fieldset>
+
+      {/* Contract §5.4: sorted by selectivity — the rarest tag first. The 42
+          over 500 photos are never hidden, only de-emphasised (spec §7.3). */}
+      <fieldset className={styles['group']}>
+        <legend className={styles['legend']}>Tags</legend>
+        <div className={styles['albums']}>
+          {facets.data?.tags.map((bucket) => (
+            <BucketCheckbox
+              key={bucket.value}
+              bucket={bucket}
+              checked={filters.tags.includes(bucket.value)}
+              deemphasised={bucket.tooBroad === true}
+              onToggle={() => { onChange({ ...filters, tags: toggled(filters.tags, bucket.value) }); }}
+            />
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset className={styles['group']}>
+        <legend className={styles['legend']}>Personnes</legend>
+        <div className={styles['albums']}>
+          {facets.data?.people.map((bucket) => (
+            <BucketCheckbox
+              key={bucket.value}
+              bucket={bucket}
+              checked={filters.people.includes(bucket.value)}
+              onToggle={() => { onChange({ ...filters, people: toggled(filters.people, bucket.value) }); }}
+            />
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset className={styles['group']} disabled={placeDisabled}>
+        <legend className={styles['legend']}>Lieu</legend>
+        {placeDisabled ? (
+          <p className={styles['note']} data-testid="place-disabled-reason">
+            Aucune photo du filtre courant n’a de position.
+          </p>
+        ) : (
+          <p className={styles['note']}>
+            Repli sur le nom d’album ou de groupe quand la photo n’a pas de lieu EXIF.
+          </p>
+        )}
+        <div className={styles['albums']}>
+          {facets.data?.countries.map((bucket) => (
+            <BucketCheckbox
+              key={bucket.value}
+              bucket={bucket}
+              checked={filters.countries.includes(bucket.value)}
+              disabled={placeDisabled}
+              onToggle={() => {
+                onChange({ ...filters, countries: toggled(filters.countries, bucket.value) });
+              }}
+            />
+          ))}
+          {facets.data?.cities.map((bucket) => (
+            <BucketCheckbox
+              key={bucket.value}
+              bucket={bucket}
+              checked={filters.cities.includes(bucket.value)}
+              disabled={placeDisabled}
+              onToggle={() => { onChange({ ...filters, cities: toggled(filters.cities, bucket.value) }); }}
+            />
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset className={styles['group']}>
+        <legend className={styles['legend']}>Autres critères</legend>
+        <label className={styles['album']}>
+          <input
+            type="checkbox"
+            checked={filters.hasPosition}
+            onChange={(e) => { onChange({ ...filters, hasPosition: e.target.checked }); }}
+          />
+          Avec position
+        </label>
+        <label className={styles['album']}>
+          <input
+            type="checkbox"
+            checked={filters.hasOcr}
+            onChange={(e) => { onChange({ ...filters, hasOcr: e.target.checked }); }}
+          />
+          Avec texte détecté dans l’image
+          {facets.data === undefined ? null : ` (${String(facets.data.withOcrCount)})`}
+        </label>
+        <label className={styles['album']}>
+          <input
+            type="checkbox"
+            checked={filters.hasCaption}
+            onChange={(e) => { onChange({ ...filters, hasCaption: e.target.checked }); }}
+          />
+          Avec légende
+        </label>
+      </fieldset>
     </div>
+  );
+}
+
+function BucketCheckbox({
+  bucket, checked, onToggle, deemphasised = false, disabled = false,
+}: {
+  readonly bucket: FacetBucket;
+  readonly checked: boolean;
+  readonly onToggle: () => void;
+  readonly deemphasised?: boolean;
+  readonly disabled?: boolean;
+}): React.JSX.Element {
+  return (
+    <label
+      className={[styles['album'], deemphasised ? styles['broad'] : null].filter(Boolean).join(' ')}
+    >
+      <input type="checkbox" checked={checked} disabled={disabled} onChange={onToggle} />
+      <span>{bucket.value}</span>
+      <span className={styles['count']}>({bucket.count})</span>
+    </label>
   );
 }
