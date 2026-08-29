@@ -356,3 +356,19 @@ DONE:
 DETAIL: commits `8a09a1a`..`9ed4c47`. Pas de nouveau contrat cassé cette fois.
 
 ASK: aucun — je continue sur les tâches 15+ (images, tâches, export, recherche, revue). `front` a fini ses 5 tranches (T1-T5) : chaque endpoint réel que je pose remplace un mock MSW, dans l'ordre du plan backend.
+
+---
+
+## Avancement — impl-backend, tâche 15 (2026-08-29)
+
+RE: tâche 15 — service d'images, terminée
+DONE: `thumb_path.ts` (validation sha256 avant toute concaténation), `in_flight_renders.ts` (dédoublonnage par clé + sémaphore `renderConcurrency`), `image_service.ts` (`getThumb` : servi tel quel depuis `THUMBS_ROOT`, lecture seule ; `getRender` : cache-ou-rend, écriture atomique temp+`rename` via `SafeFs`, jamais `fs` en direct), `images_controller.ts` (`GET /images/:sha256/thumb`, `GET /images/:sha256/render?edge=1400`), câblé dans `bootstrap.ts` (un seul `InFlightRenders` par process). Invariant 8 : `src/invariants/never_writes_outside.itest.ts` — empreinte sha256 de `ORIGINALS_ROOT` avant/après un vrai rendu `sips`, identique dans les trois échecs comme dans le succès. 30 tests neufs, tous contre du réel (vrai `sips`, vraies vignettes de `THUMBS_ROOT`), tsc/eslint propres, 402 tests serveur au total.
+DETAIL: commits `cb685ab`..`410b13f`. Écart trouvé en cours de route : le plan proposait un seul classifieur à 3 échecs partagé thumb+render, mais `docs/api-contract.md:1849-1852` (§6.1) n'en liste que 2 pour `/thumb` — `SOURCE_FILE_MISSING`/`VOLUME_UNAVAILABLE`, jamais `NOT_RENDERABLE` : une vignette pré-générée est déjà un JPEG plat, le format de la photo source n'entre pas en jeu. `getThumb()` n'a donc pas de paramètre `format`. `ETag` diffère aussi : `"<sha256>"` pour `/thumb`, `"<sha256>-1400"` pour `/render` (§6.2).
+
+ASK pour `front`, réponse à Q11 (légendes de galerie) — ne bloque pas, je continue sur la tâche 16 :
+1. `app.web_gallery_link` (`server/db/migrations/004_app.sql:125`) confirme ta forme exactement : `sha256`/`page`/`imagePath`/`caption`/`alt`/`distance`/`margin`/`verified`.
+2. Correction : `verified` est booléen **nullable**, pas `false` par défaut — `NULL` = jamais relu, `true`/`false` = décision humaine explicite. Le badge « non vérifié » doit tester `verified === null`, pas `!verified`, sinon un rejet humain explicite (`false`) s'affiche à tort comme « pas encore vérifié ».
+3. Le document web réutilisé (`web/2003/2003_gal_1`) n'existe pas en base : `pipeline.document.kind` n'autorise que `'handwritten'|'html'` (`002_pipeline.sql:254`), aucune ligne document/text_unit n'a jamais été créée pour une page de galerie, et le `TRUNCATE` à chaque import interdirait d'y stocker `verified` de toute façon. La synthèse `TextRef.id`/`documentId` pour `web_caption` reste à faire à l'endpoint `/texts` (tâches 20-21) — fige la forme des champs si besoin, pas encore l'`id`/`documentId` exact.
+4. `OverlapRule.GALLERY_MATCH` réutilisant `overlappingPhotoCount`/les endpoints existants : aucune objection, cohérent avec l'infra en place.
+
+Reste, dans l'ordre : tâches 16-26 (tâches CRUD, sélection par lot, export, jobs, documents/pages/textes, recouvrement, notes, recherche, corrections, référentiels restants, revue).
