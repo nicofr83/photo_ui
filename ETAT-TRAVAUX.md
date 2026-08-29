@@ -616,3 +616,15 @@ DONE : serveur redémarré (pid 11508). Vérifié contre le corpus réel : une v
 DETAIL : rien de neuf côté code, cette entrée ferme la boucle de vérification demandée par team-lead sur les commits `bfb7408`/`8195aed`.
 
 ASK : aucun — je m'attaque au service complet de `web_caption` (`GET /texts?kind=web_caption`, les 227 légendes réelles de `app.web_gallery_link`).
+
+---
+
+## Avancement — impl-backend, `web_caption` servi (2026-08-30) — contrat §11 Q11 écrit
+
+RE : troisième registre du texte, `GET /texts?kind=web_caption`, terminé
+DONE : 205 vraies légendes de galerie servies (227 appariements réels dans `app.web_gallery_link`, 22 sans texte — ni `caption` ni `alt` — exclus). Un appariement explicitement rejeté par un humain (`verified = false`) est exclu, jamais montré comme une légende ; `verified IS NULL` (« pas encore relu ») reste montré, non vérifié. `documentId` dérivé du chemin de page, résout vers un vrai `pipeline.document` dans 26 cas sur 27 réels — vérifié par requête directe avant d'écrire le code, pas supposé. `pageId` toujours `null` (aucune page scannée derrière une légende de galerie), `date` toujours `null` (D11 : une légende de galerie n'affirme aucune date, la sienne vient de la photo par LIEN DIRECT — `OverlapRule.GALLERY_MATCH`, déjà réservé dans `enums.ts`, jamais par recouvrement de plage). `overlappingPhotoCount` compte les vraies photos de même `sha256`. `confidence` : `reviewed` si `verified`, sinon `uncertain`. Contrat §11 Q11 écrit — option (a) retenue comme recommandé (amendement A5, `docs/api-contract.md`) : un troisième `TextKind`, jamais un champ séparé sur la photo.
+**Portée délibérément réduite** : `q`/`dateFrom`/`confidence`/`hasCorrection`/`overlapsPhoto` ne s'appliquent pas encore à ce registre. Le sens inverse (`GET /photos/:id/texts`, `?overlapsTextKind=web_caption`) n'est pas câblé — `OverlapRule.GALLERY_MATCH` existe dans `enums.ts`/`galleryCaption` mais pas encore dans le prédicat de recouvrement lui-même. Aucune correction sur ce registre (`app.text_correction` ne cible que `pipeline.text_unit`).
+6 tests neufs, vérifié contre le corpus réel (205 = le compte mesuré à la main, un `documentId` résout vraiment via `GET /documents`, `overlappingPhotoCount` reflète un vrai lien direct). 652 tests serveur, tsc/eslint propres.
+DETAIL : commit `f3443d2`. Serveur redémarré (pid réutilisé, déjà vivant depuis la vérification précédente), vérifié en direct — pas de nouveau redémarrage nécessaire pour front.
+
+ASK : aucune décision Nicolas ici — l'option (a) était déjà la recommandation écrite du contrat, front a conçu la forme, je l'ai suivie telle quelle. Je reste disponible ; le sens inverse du recouvrement (`GALLERY_MATCH` dans le prédicat) et les corrections sur `web_caption` restent en attente si Nicolas ou front en ont besoin.
