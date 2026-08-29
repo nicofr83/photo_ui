@@ -514,3 +514,19 @@ DONE :
 DETAIL : commit `dc44729`. `vite.config.ts` modifié dans l'arbre partagé (front) — jamais touché, jamais ajouté au commit.
 
 ASK : aucun — j'ai répondu directement à front (forme correcte de `add[]`, confirmation des 3 correctifs). Je reste disponible.
+
+---
+
+## Avancement — front, bascule MSW → API réelle (2026-08-30)
+
+RE : intégration réelle front — bascule faite, mesure de grille bloquée par le serveur injoignable
+DONE : MSW n'a jamais été câblé dans le runtime navigateur (seulement `mocks/node.ts` pour les tests) — rien à retirer côté bascule elle-même. `.env.local` créé (`VITE_API_BASE_URL`), puis vidé : `thumbUrl`/`renderUrl` viennent du backend en chemin RELATIF et sont utilisés tels quels en `<img src>` (`PhotoTile.tsx:39`, `PhotoDetail.tsx:39`), jamais préfixés par `baseUrl()` — une base absolue aurait cassé les vignettes même une fois le CORS réglé. Deux défauts trouvés en pilotant un vrai Chromium (`playwright`, installé en local via `npm install --no-save`, jamais ajouté à `package.json`) :
+1. **CORS** : le vrai backend n'envoie aucun `Access-Control-Allow-Origin` — toute requête cross-origin (5173 → 4310) est bloquée par le navigateur (curl ne le voit jamais, c'est une règle du navigateur, pas du serveur). Résolu côté front : proxy Vite (`vite.config.ts`) vers `127.0.0.1:4310` pour chaque préfixe du contrat, origine unique.
+2. **Collision de route** : `/images/:slug` est À LA FOIS une route de CETTE app (l'écran images d'une tâche, `router.tsx`) ET le préfixe des actifs backend (`/images/:sha256/thumb|render`). Un proxy générique sur `/images` avalait la navigation SPA elle-même (404 `route inconnue`). Corrigé par une clé regex Vite (`^/images/[0-9a-f]{64}/(thumb|render)`) qui ne cible que la forme sha256 — mais la collision de préfixe reste réelle si un jour front et back sont servis en same-origin en production sans ce proxy taillé sur-mesure ; à garder en tête, pas bloquant aujourd'hui.
+Vérifié après coup : `/images/zz-repro-bug1` (SPA) → 200, `/photos` (API) → 200 (3930 items, aucune pagination — c'est bien le cas non filtré qu'il fallait mesurer), vignette réelle → 200 `image/jpeg`.
+
+BLOCK : le serveur réel (`127.0.0.1:4310`) a répondu normalement pendant toute la mise au point ci-dessus, puis a cessé de répondre (`ECONNREFUSED`, aucun processus correspondant en vie) juste avant que je lance la mesure de tenue de grille sur les 3930 tuiles. Rien côté front n'a changé entre les deux — je n'ai pas touché au serveur. Je ne peux pas exécuter le mandat (faire tourner l'app réelle, mesurer la grille) sans lui.
+
+DETAIL : `vite.config.ts`, `.env.local` sont les seuls fichiers touchés pour la bascule ; pas encore commités (je veux d'abord confirmer avec `back` que le proxy est la bonne direction avant de figer). Script de pilotage navigateur en scratchpad, pas dans le dépôt.
+
+ASK : aucune décision Nicolas ici — j'attends que le serveur reréponde pour continuer.
