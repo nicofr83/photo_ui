@@ -1,5 +1,5 @@
 import {
-  EMPTY_TEXT_FILTERS, fromSearchParams, toSearchParams, withRange, withYears,
+  dateRangeFor, EMPTY_TEXT_FILTERS, fromSearchParams, toSearchParams, withRange, withYears,
 } from './textFilterState';
 
 const vide = EMPTY_TEXT_FILTERS;
@@ -33,5 +33,26 @@ describe('v1.5, Task 10 — years and a range are mutually exclusive', () => {
   test('q is dropped when empty, never sent as an empty string', () => {
     expect(toSearchParams({ ...vide, q: '' }).get('q')).toBeNull();
     expect(toSearchParams({ ...vide, q: 'mouillage' }).get('q')).toBe('mouillage');
+  });
+});
+
+describe('dateRangeFor — collapsing the filter into GET /pages\'s one dateFrom/dateTo', () => {
+  test('a range passes through unchanged', () => {
+    expect(dateRangeFor({ ...vide, from: '1999-08-01', to: '1999-09-30' }))
+      .toEqual({ dateFrom: '1999-08-01', dateTo: '1999-09-30' });
+  });
+
+  test('a single year becomes its own Jan 1 – Dec 31 span', () => {
+    expect(dateRangeFor({ ...vide, years: ['1999'] }))
+      .toEqual({ dateFrom: '1999-01-01', dateTo: '1999-12-31' });
+  });
+
+  test('several years collapse to the earliest through the latest', () => {
+    expect(dateRangeFor({ ...vide, years: ['2000', '1998'] }))
+      .toEqual({ dateFrom: '1998-01-01', dateTo: '2000-12-31' });
+  });
+
+  test('no active date filter is null, never an accidental everything-range', () => {
+    expect(dateRangeFor(vide)).toBeNull();
   });
 });

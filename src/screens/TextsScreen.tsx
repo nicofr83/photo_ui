@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router';
 
 import { useTextsByKind } from '../api/hooks/useTexts';
 import type { TextRef } from '../api/contract/text';
+import { fromSearchParams, toSearchParams, type TextFilterState } from '../domain/textFilterState';
 import { TextSource } from '../domain/textSource';
 import { TextKind } from '../shared/enums';
 import { ErrorBanner } from '../ui/primitives/ErrorBanner';
@@ -13,9 +14,14 @@ import { PageDetail } from '../ui/texts/PageDetail';
 import { PageList } from '../ui/texts/PageList';
 import { SourcePicker } from '../ui/texts/SourcePicker';
 import { TextCard } from '../ui/texts/TextCard';
+import { TextFilterPanel } from '../ui/texts/TextFilterPanel';
 import styles from '../ui/texts/TextCard.module.css';
 
 import screenStyles from './TextsScreen.module.css';
+
+/** The keys `textFilterState.ts`'s own `toSearchParams` owns — cleared and
+ * rewritten together, `source` and `openPageId` untouched. */
+const FILTER_PARAM_KEYS = ['year', 'dateFrom', 'dateTo', 'q'];
 
 interface Props {
   /** Overridable for tests. Defaults to opening the grid pre-filtered on this
@@ -41,12 +47,29 @@ export function TextsScreen({ onShowPhotos }: Props): React.JSX.Element {
 
   const rawSource = searchParams.get('source');
   const source = isTextSource(rawSource) ? rawSource : TextSource.LOGBOOK;
+  const filters = fromSearchParams(searchParams);
 
   const setSource = (next: TextSource): void => {
     setOpenPageId(null);
     setSearchParams((prev) => {
       const params = new URLSearchParams(prev);
       params.set('source', next);
+      // A year list (or facets) from one source rarely means anything for
+      // another — carrying it across a source switch would silently filter
+      // on a value the new source may not even contain.
+      for (const key of FILTER_PARAM_KEYS) params.delete(key);
+      return params;
+    });
+  };
+
+  // Same discipline as the images filter panel (domain/filterState.ts): the
+  // URL is the single source of truth, never a local `useState` a reload
+  // would silently drop.
+  const setFilters = (next: TextFilterState): void => {
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev);
+      for (const key of FILTER_PARAM_KEYS) params.delete(key);
+      for (const [key, value] of toSearchParams(next)) params.append(key, value);
       return params;
     });
   };
@@ -68,25 +91,32 @@ export function TextsScreen({ onShowPhotos }: Props): React.JSX.Element {
         <SourcePicker value={source} onChange={setSource} />
       </FixedHeader>
       <div className={scrollStyles['scrolls']}>
-        {openPageId === null ? (
-          <>
-            <PageList source={source} onOpen={setOpenPageId} />
-            {source === TextSource.WEB ? (
-              <GalleryCaptions onShowPhotos={showPhotos} />
-            ) : null}
-          </>
-        ) : (
-          <>
-            <button
-              className={screenStyles['back']}
-              type="button"
-              onClick={() => { setOpenPageId(null); }}
-            >
-              ← Retour à la liste
-            </button>
-            <PageDetail pageId={openPageId} slug={slug} onShowPhotos={showPhotos} />
-          </>
-        )}
+        <div className={screenStyles['layout']}>
+          <aside className={screenStyles['aside']}>
+            <TextFilterPanel source={source} filters={filters} onChange={setFilters} />
+          </aside>
+          <main>
+            {openPageId === null ? (
+              <>
+                <PageList source={source} onOpen={setOpenPageId} filters={filters} />
+                {source === TextSource.WEB ? (
+                  <GalleryCaptions onShowPhotos={showPhotos} />
+                ) : null}
+              </>
+            ) : (
+              <>
+                <button
+                  className={screenStyles['back']}
+                  type="button"
+                  onClick={() => { setOpenPageId(null); }}
+                >
+                  ← Retour à la liste
+                </button>
+                <PageDetail pageId={openPageId} slug={slug} onShowPhotos={showPhotos} />
+              </>
+            )}
+          </main>
+        </div>
       </div>
     </div>
   );

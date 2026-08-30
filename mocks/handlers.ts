@@ -520,11 +520,37 @@ export const handlers = [
     return HttpResponse.json(doc);
   }),
 
+  // Wiring (v1.5, post-plan, backend Task 14): `dateFrom`/`dateTo`/`q` — a
+  // page is retained as soon as ONE of its texts satisfies the filter,
+  // never a page-level date (spec/contract §4.3). `matchCount` (Task 14)
+  // is filled only when `q` is present, `null` otherwise — same convention
+  // as `TextUnit.highlights`.
   http.get('*/pages', ({ request }) => {
-    const documentId = new URL(request.url).searchParams.get('documentId');
-    return HttpResponse.json({
-      items: INVARIANT_PAGES.filter((p) => documentId === null || p.documentId === documentId),
-    });
+    const params = new URL(request.url).searchParams;
+    const documentId = params.get('documentId');
+    const dateFrom = params.get('dateFrom');
+    const dateTo = params.get('dateTo');
+    const q = params.get('q');
+
+    let items = INVARIANT_PAGES.filter((p) => documentId === null || p.documentId === documentId);
+
+    if (dateFrom !== null && dateTo !== null) {
+      items = items.filter((p) => store.texts.some((t) =>
+        t.pageId === p.id && t.date !== null && t.date.start >= dateFrom && t.date.start <= dateTo));
+    }
+
+    if (q !== null) {
+      const needle = q.toLowerCase();
+      items = items
+        .map((p) => ({
+          ...p,
+          matchCount: needle.trim() === '' ? 0 : store.texts.filter((t) =>
+            t.pageId === p.id && t.text.toLowerCase().includes(needle)).length,
+        }))
+        .filter((p) => p.matchCount > 0);
+    }
+
+    return HttpResponse.json({ items });
   }),
 
   // Contract §4.2: "quels textes couvrent cette photo ?" — the other

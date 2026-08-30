@@ -5,6 +5,7 @@ import type { TextRef } from '../../api/contract/text';
 import { TextKind } from '../../shared/enums';
 import { ErrorBanner } from '../primitives/ErrorBanner';
 
+import { NoteFromTextButton } from './NoteFromTextButton';
 import { PageViewer } from './PageViewer';
 import styles from './PageDetail.module.css';
 import { TextCard } from './TextCard';
@@ -44,6 +45,14 @@ export function PageDetail({ pageId, slug, onShowPhotos }: Props): React.JSX.Ele
   // beside a lone, oddly-named section.
   const notes = forThisPage.filter((t) => t.ref.kind !== TextKind.LOG_ENTRY);
 
+  // Wiring (v1.5, post-plan): "on coche un ou plusieurs textes" (spec) reuses
+  // the SAME checkbox as task selection above — there is only ever one
+  // checkbox per text (contract §4.5's "sa coche de sélection"), never a
+  // second, note-only one. Checking a text for the task and gathering it
+  // into a note are the same gesture; NoteFromTextButton never calls the
+  // text-selection mutation itself either way.
+  const checked = forThisPage.filter((t) => selection.selected.has(key(t.ref)));
+
   const renderText = (unit: (typeof forThisPage)[number]): React.JSX.Element => (
     <TextCard
       key={key(unit.ref)}
@@ -78,6 +87,8 @@ export function PageDetail({ pageId, slug, onShowPhotos }: Props): React.JSX.Ele
           {registre.length > 0 ? <h2>Notes de bord</h2> : null}
           {notes.map(renderText)}
         </section>
+
+        {checked.length === 0 ? null : <NoteFromTextButton slug={slug} selected={checked} />}
       </div>
     </div>
   );

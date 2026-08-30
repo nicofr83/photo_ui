@@ -2,6 +2,8 @@ import { useState } from 'react';
 
 import { usePages } from '../../api/hooks/usePages';
 import { useDocuments } from '../../api/hooks/useTexts';
+import { dateRangeFor, EMPTY_TEXT_FILTERS, type TextFilterState } from '../../domain/textFilterState';
+import { matchesSearch } from '../../domain/searchFold';
 import { sortPagesByDate, sortPagesByOrdinal } from '../../domain/pageOrder';
 import { sourceOf, TextSource } from '../../domain/textSource';
 import { ResolvedDateView } from '../date/ResolvedDate';
@@ -13,6 +15,9 @@ import styles from './PageList.module.css';
 interface Props {
   readonly source: TextSource;
   readonly onOpen: (pageId: string) => void;
+  /** Wiring (v1.5, post-plan): optional so every existing caller/test that
+   * only cares about source/onOpen keeps working unfiltered. */
+  readonly filters?: TextFilterState;
 }
 
 type Order = 'date' | 'ordinal';
@@ -43,19 +48,24 @@ function writeOrder(source: TextSource, order: Order): void {
  * has 60 documents instead, and no scan at all, so it lists documents rather
  * than pages (spec §5.3).
  */
-export function PageList({ source, onOpen }: Props): React.JSX.Element {
-  if (source === TextSource.WEB) return <WebDocuments />;
-  return <DocumentPages documentId={source} source={source} onOpen={onOpen} />;
+export function PageList({ source, onOpen, filters = EMPTY_TEXT_FILTERS }: Props): React.JSX.Element {
+  if (source === TextSource.WEB) return <WebDocuments q={filters.q} />;
+  return <DocumentPages documentId={source} source={source} onOpen={onOpen} filters={filters} />;
 }
 
 function DocumentPages({
-  documentId, source, onOpen,
+  documentId, source, onOpen, filters,
 }: {
   readonly documentId: string;
   readonly source: TextSource;
   readonly onOpen: (pageId: string) => void;
+  readonly filters: TextFilterState;
 }): React.JSX.Element {
-  const pages = usePages(documentId);
+  const range = dateRangeFor(filters);
+  const pages = usePages(documentId, {
+    ...(range === null ? {} : range),
+    ...(filters.q === null || filters.q === '' ? {} : { q: filters.q }),
+  });
   const [order, setOrder] = useState<Order>(() => readOrder(source));
 
   if (pages.error !== null) return <ErrorBanner error={pages.error} />;
@@ -87,13 +97,19 @@ function DocumentPages({
   );
 }
 
-function WebDocuments(): React.JSX.Element {
+function WebDocuments({ q }: { readonly q: string | null }): React.JSX.Element {
   const documents = useDocuments();
 
   if (documents.error !== null) return <ErrorBanner error={documents.error} />;
   if (documents.isPending) return <p role="status">Chargement des documents…</p>;
 
-  const webDocs = documents.data.items.filter((d) => sourceOf(d.id) === TextSource.WEB);
+  // Wiring (v1.5, post-plan): the web source has no per-passage list (Task
+  // 8's own scope, spec: a document is a "page" here) — `q` narrows the
+  // DOCUMENT list by title, the data already in hand, rather than a full
+  // passage search with no results surface to render into yet.
+  const webDocs = documents.data.items
+    .filter((d) => sourceOf(d.id) === TextSource.WEB)
+    .filter((d) => q === null || q === '' || matchesSearch(d.title, q));
 
   return (
     <div>

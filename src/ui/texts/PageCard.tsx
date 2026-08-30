@@ -45,6 +45,13 @@ export function PageCard({ page, onOpen }: Props): React.JSX.Element {
         />
         <span className={styles['label']}>page {page.ordinal}</span>
         <ResolvedDateView date={page.date} />
+        {/* Filled only under `q` (contract, back's Task 14) — never `0`
+            standing in for "no search active". */}
+        {page.matchCount === null ? null : (
+          <span className={styles['matches']} data-testid="match-count">
+            {page.matchCount} correspondance{page.matchCount > 1 ? 's' : ''}
+          </span>
+        )}
         {isSuspectWindow(page) ? (
           <span
             className={styles['suspect']}

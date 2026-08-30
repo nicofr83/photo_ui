@@ -30,3 +30,9 @@
   flex: none;
   color: #b45309;
 }
+
+.matches {
+  flex: none;
+  font-size: 0.8rem;
+  color: #6b7280;
+}

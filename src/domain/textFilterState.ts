@@ -64,3 +64,25 @@ export function fromSearchParams(params: URLSearchParams): TextFilterState {
     q: params.get('q'),
   };
 }
+
+/**
+ * Wiring (v1.5, post-plan): `GET /pages` only ever takes ONE `dateFrom`/
+ * `dateTo` pair (contract, Task 14) — no repeated `year`. A range collapses
+ * straight through; a set of years collapses to its own SPAN (earliest
+ * selected year's Jan 1 through the latest's Dec 31), never one server call
+ * per year — "plusieurs plages simultanées" is explicitly out of the v1.5
+ * plan's perimeter, and the real corpus's own years are contiguous runs
+ * (logbook 1998-2002, ma-vie a single year), so this is exact for every
+ * case the picker can actually produce, not just an approximation.
+ */
+export function dateRangeFor(state: TextFilterState): { dateFrom: string; dateTo: string } | null {
+  if (state.years.length > 0) {
+    const sorted = [...state.years].sort();
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    if (first === undefined || last === undefined) return null;
+    return { dateFrom: `${first}-01-01`, dateTo: `${last}-12-31` };
+  }
+  if (state.from !== null && state.to !== null) return { dateFrom: state.from, dateTo: state.to };
+  return null;
+}

@@ -3,3 +3,9 @@
 .screen { display: grid; grid-template-rows: auto 1fr; height: 100%; }
 
 .back { min-height: var(--tap-target); padding: 0 0.6rem; cursor: pointer; }
+
+/* Wiring (v1.5, post-plan): the filters column, spec "les filtres" — same
+   26rem/1fr split as the images screen's own aside+main. */
+.layout { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+@media (min-width: 64rem) { .layout { grid-template-columns: 20rem 1fr; } }
+.aside { align-self: start; }
