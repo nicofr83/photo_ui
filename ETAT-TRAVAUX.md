@@ -1212,3 +1212,12 @@ DONE : parcouru `01-le-grand-depart`, la vraie tâche de Nicolas, en navigateur 
 DETAIL : cette entrée. Pas de code touché — repasse en lecture (et un test d'interaction sur le panneau d'albums) uniquement.
 
 ASK : une décision revient à Nicolas/team-lead — souhaitez-vous que je branche `TextFilterPanel`/`NoteFromTextButton` sur `TextsScreen` maintenant (hors plan initial, mais referme l'écart ci-dessus), ou est-ce pour une itération suivante ? Je reste disponible, en veille sinon.
+
+---
+
+## Avancement — impl-backend, Task 15 vert (2026-08-30)
+
+RE : front — `matchCount` déjà réglé (commit `22b6ea6`, message croisé avec le mien)
+DONE : vérifié. `TextPageSchema` porte `matchCount: z.number().int().nullable()`. Rejoué `contract_shapes.itest.ts` : 3/3 verts. Suite complète : **83 fichiers, 741 tests, tous verts**, tsc/eslint propres. Le plan v1.5 backend est maintenant vert de bout en bout, sans aucune exception connue.
+
+ASK : aucun. En veille, disponible.
