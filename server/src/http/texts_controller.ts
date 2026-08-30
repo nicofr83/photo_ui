@@ -14,7 +14,7 @@ import { getPageThumb, type PageThumbDeps } from '../metier/pages/thumb_service.
 import { getTextDateFacets } from '../repository/text_facets.ts';
 import {
   getPageImageRelpath, listCorrections, listDocuments, listPages, listTexts, putCorrection, revertCorrection,
-  type TextCorrectionInput, type TextFilters,
+  type PageFilters, type TextCorrectionInput, type TextFilters,
 } from '../repository/text_repository.ts';
 import { parseQueryParams, type ParamSpec } from './query_params.ts';
 
@@ -53,6 +53,16 @@ const TEXT_FILTER_KEYS = [
 function toFilters(parsed: Record<string, unknown>): TextFilters {
   const filters: Record<string, unknown> = {};
   for (const key of TEXT_FILTER_KEYS) {
+    if (parsed[key] !== undefined) filters[key] = parsed[key];
+  }
+  return filters;
+}
+
+const PAGE_FILTER_KEYS = ['documentId', 'dateFrom', 'dateTo', 'q'] as const;
+
+function toPageFilters(parsed: Record<string, unknown>): PageFilters {
+  const filters: Record<string, unknown> = {};
+  for (const key of PAGE_FILTER_KEYS) {
     if (parsed[key] !== undefined) filters[key] = parsed[key];
   }
   return filters;
@@ -124,11 +134,13 @@ export function registerTextsRoutes(server: FastifyInstance, deps: TextsRoutesDe
   server.get('/pages', async (request): Promise<{ items: readonly TextPage[] }> => {
     const parsed = parseQueryParams(request.query as Record<string, unknown>, {
       documentId: { kind: 'open' },
+      dateFrom: { kind: 'isoDate' },
+      dateTo: { kind: 'isoDate' },
+      q: { kind: 'open' },
     });
-    const documentId = parsed.documentId as string | undefined;
     const client = await pool.connect();
     try {
-      return { items: await listPages(client, documentId) };
+      return { items: await listPages(client, toPageFilters(parsed)) };
     } finally {
       client.release();
     }

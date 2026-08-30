@@ -38,6 +38,11 @@ export interface TextPage {
   readonly date: ResolvedDate | null;
   readonly imageUrl: string;
   readonly regionsAvailable: false;
+  /**
+   * Le nombre de textes de la page qui correspondent à `q` (v1.5, Task 14)
+   * — `null` sauf quand `q` est présent, comme `TextUnit.highlights`.
+   */
+  readonly matchCount: number | null;
 }
 
 export interface LogEntryFields {

@@ -94,14 +94,17 @@ interface PageRow {
   page_date_start: string | null;
   page_date_end: string | null;
   page_date_source: string | null;
+  match_count: number | null;
 }
 
-const PAGE_SELECT = `
-    SELECT p.id, p.document_id, p.ordinal, p.label, p.width, p.height,
-           p.window_start, p.window_end, p.span_source,
-           d.date_start AS page_date_start, d.date_end AS page_date_end, d.source AS page_date_source
-      FROM pipeline.page p
-      LEFT JOIN app.page_date d ON d.page_id = p.id`;
+const PAGE_COLUMNS = `
+    p.id, p.document_id, p.ordinal, p.label, p.width, p.height,
+    p.window_start, p.window_end, p.span_source,
+    d.date_start AS page_date_start, d.date_end AS page_date_end, d.source AS page_date_source`;
+
+const PAGE_FROM = `
+    FROM pipeline.page p
+    LEFT JOIN app.page_date d ON d.page_id = p.id`;
 
 function mapPageRow(row: PageRow): TextPage {
   return {
@@ -129,13 +132,72 @@ function mapPageRow(row: PageRow): TextPage {
     imageUrl: `/pages/image?pageId=${encodeURIComponent(row.id)}`,
     // `pages.region` est NULL sur les 155 lignes (contrat) — jamais promis.
     regionsAvailable: false,
+    matchCount: row.match_count,
   };
 }
 
-export async function listPages(client: PoolClient, documentId?: string): Promise<readonly TextPage[]> {
-  const { rows } = documentId === undefined
-    ? await client.query<PageRow>(`${PAGE_SELECT} ORDER BY p.document_id, p.ordinal`)
-    : await client.query<PageRow>(`${PAGE_SELECT} WHERE p.document_id = $1 ORDER BY p.ordinal`, [documentId]);
+export interface PageFilters {
+  readonly documentId?: string;
+  readonly dateFrom?: string;
+  readonly dateTo?: string;
+  readonly q?: string;
+}
+
+/**
+ * `documentId` reste un filtre de COLONNE (`p.document_id`) — `dateFrom`/
+ * `dateTo`/`q` filtrent par un EXISTS sur `pipeline.text_unit`, jamais un
+ * `IN` construit en TypeScript à partir d'une liste d'ids chargée à part
+ * (Task 14) : une page sort dès qu'UN de ses textes satisfait le filtre.
+ */
+export async function listPages(client: PoolClient, filters: PageFilters = {}): Promise<readonly TextPage[]> {
+  const conditions: string[] = [];
+  const values: unknown[] = [];
+  const param = (value: unknown): string => {
+    values.push(value);
+    return `$${String(values.length)}`;
+  };
+
+  if (filters.documentId !== undefined) conditions.push(`p.document_id = ${param(filters.documentId)}`);
+
+  // `app.text_search` porte le texte EFFECTIF, même règle que `/texts?q=` :
+  // repli à zéro sur du bruit pur, jamais toute la bibliothèque.
+  let cleanedQuery: string | null = null;
+  if (filters.q !== undefined && filters.q.trim() !== '') cleanedQuery = cleanSearchQuery(filters.q);
+
+  const textConditions: string[] = [];
+  if (filters.dateFrom !== undefined && filters.dateTo !== undefined) {
+    textConditions.push(`t.date_start IS NOT NULL `
+      + `AND daterange(t.date_start, t.date_end, '[]') && daterange(${param(filters.dateFrom)}, ${param(filters.dateTo)}, '[]')`);
+  }
+  let qParam: string | null = null;
+  if (filters.q !== undefined && filters.q.trim() !== '') {
+    if (cleanedQuery === null) conditions.push('false');
+    else {
+      qParam = param(cleanedQuery);
+      textConditions.push(`ts.tsv @@ plainto_tsquery('public.fr_unaccent', ${qParam})`);
+    }
+  }
+
+  if (textConditions.length > 0) {
+    conditions.push(`EXISTS (
+      SELECT 1 FROM pipeline.text_unit t
+        LEFT JOIN app.text_search ts ON ts.kind = t.kind AND ts.id = t.id
+       WHERE t.page_id = p.id AND ${textConditions.join(' AND ')})`);
+  }
+
+  const matchCountColumn = qParam === null ? 'NULL::int AS match_count' : `(
+      SELECT count(*)::int FROM pipeline.text_unit t
+        LEFT JOIN app.text_search ts ON ts.kind = t.kind AND ts.id = t.id
+       WHERE t.page_id = p.id AND ts.tsv @@ plainto_tsquery('public.fr_unaccent', ${qParam})
+    ) AS match_count`;
+
+  const whereClause = conditions.length === 0 ? '' : `WHERE ${conditions.join(' AND ')}`;
+
+  const { rows } = await client.query<PageRow>(`
+    SELECT ${PAGE_COLUMNS}, ${matchCountColumn}
+    ${PAGE_FROM}
+    ${whereClause}
+    ORDER BY p.document_id, p.ordinal`, values);
   return rows.map(mapPageRow);
 }
 

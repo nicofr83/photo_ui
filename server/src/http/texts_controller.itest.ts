@@ -109,6 +109,60 @@ describe('GET /pages', () => {
       await setup.query(`DELETE FROM pipeline.document WHERE id = 'ma-vie'`);
     }
   });
+
+  test('an unknown parameter is a named 400 (Task 14)', async () => {
+    app = await bootstrap(await completeEnv());
+    const response = await app.server.inject({ method: 'GET', url: '/pages?dateFron=1999-01-01' });
+    expect(response.statusCode).toBe(400);
+    expect(response.json<{ error: { code: string } }>().error.code).toBe('UNKNOWN_PARAMETER');
+  });
+
+  test('filters by dateFrom/dateTo — a page qualifies as soon as one of its texts is in range (Task 14)', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('ma-vie', 'handwritten', 'x', true)`);
+      await setup.query(`INSERT INTO pipeline.page (id, document_id, ordinal, image_relpath, width, height) VALUES
+        ('ma-vie/p001', 'ma-vie', 1, 'p.jpg', 1, 1), ('ma-vie/p002', 'ma-vie', 2, 'p.jpg', 1, 1)`);
+      await setup.query(`INSERT INTO pipeline.text_unit
+        (kind, id, document_id, page_id, ordinal, body, confidence, date_source, date_start, date_end) VALUES
+        ('passage', 'ma-vie/p001/1', 'ma-vie', 'ma-vie/p001', 1, 'x', 'transcribed', 'passage_date_from', '1999-08-05', '1999-08-05'),
+        ('passage', 'ma-vie/p002/1', 'ma-vie', 'ma-vie/p002', 1, 'x', 'transcribed', 'passage_date_from', '2000-01-01', '2000-01-01')`);
+
+      const response = await app.server.inject({
+        method: 'GET', url: '/pages?documentId=ma-vie&dateFrom=1999-08-01&dateTo=1999-08-31',
+      });
+      const ordinals = response.json<{ items: TextPage[] }>().items.map((p) => p.ordinal);
+      expect(ordinals).toContain(1);
+      expect(ordinals).not.toContain(2);
+    } finally {
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'ma-vie'`);
+      await setup.query(`DELETE FROM pipeline.page WHERE document_id = 'ma-vie'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'ma-vie'`);
+    }
+  });
+
+  test('q returns the pages that contain the word, with their match count (Task 14)', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('ma-vie', 'handwritten', 'x', true)`);
+      await setup.query(`INSERT INTO pipeline.page (id, document_id, ordinal, image_relpath, width, height)
+                         VALUES ('ma-vie/p001', 'ma-vie', 1, 'p.jpg', 1, 1)`);
+      await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, page_id, ordinal, body, confidence)
+        VALUES ('passage', 'ma-vie/p001/1', 'ma-vie', 'ma-vie/p001', 1, 'un beau mouillage', 'transcribed')`);
+      await setup.query(`REFRESH MATERIALIZED VIEW app.text_search`);
+
+      const response = await app.server.inject({ method: 'GET', url: '/pages?documentId=ma-vie&q=mouillage' });
+      const items = response.json<{ items: TextPage[] }>().items;
+      expect(items.length).toBeGreaterThan(0);
+      expect(items.every((p) => (p.matchCount ?? 0) > 0)).toBe(true);
+    } finally {
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'ma-vie'`);
+      await setup.query(`DELETE FROM pipeline.page WHERE document_id = 'ma-vie'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'ma-vie'`);
+    }
+  });
 });
 
 describe('GET /pages/image', () => {

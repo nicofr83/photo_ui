@@ -1109,12 +1109,23 @@ export interface TextPage {
   /** Fenêtre de la page. NULL sur 3 des 155. `carried` est une inférence et doit se voir. */
   readonly window: ResolvedDate | null;
   readonly spanSource: PageSpanSource | null;
+  /**
+   * La date de LA PAGE elle-même (v1.5, cascade registre → notes → héritage,
+   * `app.page_date`) — `kind: 'reading'` quand la page l'affirme (registre
+   * ou notes), `kind: 'inference'` quand elle est héritée de la page
+   * précédente. Distincte de `window` ci-dessus : `window` est la fenêtre de
+   * RECOUVREMENT calculée par la pipeline amont, `date` est ce que la page
+   * dit d'elle-même.
+   */
+  readonly date: ResolvedDate | null;
   readonly imageUrl: string;           // `/pages/image?pageId=…`
   /**
    * `pages.region` est NULL sur les 155 lignes : rien ne dit où un passage se
    * trouve sur l'image. Le champ existe pour ne pas promettre ce qui n'existe pas.
    */
   readonly regionsAvailable: false;
+  /** Le nombre de textes de la page qui correspondent à `q` (v1.5) — `null` sauf quand `q` est présent, comme `TextUnit.highlights`. */
+  readonly matchCount: number | null;
 }
 
 /** Un passage ou une entrée de journal. Une seule forme : l'écran texte les affiche côte à côte. */
@@ -1717,7 +1728,7 @@ nom est un `UNKNOWN_PARAMETER`.
 | Méthode | Chemin | Réponse |
 |:---|:---|:---|
 | `GET` | `/documents` | `{ items: TextDocument[] }` — 62 documents |
-| `GET` | `/pages?documentId=…` | `{ items: TextPage[] }` |
+| `GET` | `/pages?documentId=…&dateFrom=…&dateTo=…&q=…` | `{ items: TextPage[] }` |
 | `GET` | `/pages/image?pageId=…` | **image/jpeg**, servie telle quelle |
 | `GET` | `/pages/thumb?pageId=…&edge=…` | **image/jpeg**, le scan entier réduit (v1.5) |
 | `GET` | `/texts` | `ListEnvelope<TextUnit>` |
@@ -1733,6 +1744,13 @@ facultatif. Trois compteurs (`years`, `months`, `days`, chacun un
 contient RÉELLEMENT, jamais un calendrier complet : « Ma vie » ne propose
 qu'une année et quatre mois, jamais les douze. `count` est un compte de
 TEXTES, jamais de jours.
+
+**`GET /pages`** (v1.5, Task 14) gagne `dateFrom`, `dateTo`, `q` — mêmes noms
+et même sémantique que `/texts`. Une page est retenue dès qu'**un de ses
+textes** satisfait le filtre (`EXISTS` sur `pipeline.text_unit`, jamais un
+`IN` construit en TypeScript à partir d'une liste d'ids chargée à part).
+`TextPage.matchCount` est le nombre de textes de la page qui correspondent à
+`q` — `null` sauf quand `q` est présent, comme `TextUnit.highlights`.
 
 `GET /texts?documentId=logbook` renvoie les 492 passages ou les 1 012 entrées
 d'un coup : c'est quelques centaines de kilo-octets sur la boucle locale, et

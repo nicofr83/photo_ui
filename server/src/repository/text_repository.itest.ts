@@ -100,7 +100,7 @@ test('a page image path comes from the COLUMN, never rebuilt from documentId —
                         VALUES ('logbook/p001', 'logbook', 1, 'journal-de-bord/p001.jpg', 810, 1250)`);
 
     expect(await getPageImageRelpath(client, 'logbook/p001')).toBe('journal-de-bord/p001.jpg');
-    const pages = await listPages(client, 'logbook');
+    const pages = await listPages(client, { documentId: 'logbook' });
     expect(pages[0]?.imageUrl).toBe('/pages/image?pageId=logbook%2Fp001');
   });
 });
@@ -112,8 +112,71 @@ test('regionsAvailable is false — pages.region carries no data (contract §4.3
     await client.query(`INSERT INTO pipeline.page (id, document_id, ordinal, image_relpath, width, height)
                         VALUES ('logbook/p001', 'logbook', 1, 'p001.jpg', 810, 1250)`);
 
-    const pages = await listPages(client, 'logbook');
+    const pages = await listPages(client, { documentId: 'logbook' });
     expect(pages[0]?.regionsAvailable).toBe(false);
+  });
+});
+
+test('listPages: a page qualifies as soon as ONE of its texts falls in the date range (Task 14)', async () => {
+  await withRollback(async (client) => {
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                        VALUES ('ma-vie', 'handwritten', 'x', true)`);
+    await client.query(`INSERT INTO pipeline.page (id, document_id, ordinal, image_relpath, width, height)
+      VALUES ('ma-vie/p001', 'ma-vie', 1, 'p.jpg', 1, 1), ('ma-vie/p002', 'ma-vie', 2, 'p.jpg', 1, 1)`);
+    await client.query(`INSERT INTO pipeline.text_unit
+      (kind, id, document_id, page_id, ordinal, body, confidence, date_source, date_start, date_end)
+      VALUES ('passage', 'ma-vie/p001/1', 'ma-vie', 'ma-vie/p001', 1, 'x', 'transcribed', 'passage_date_from', '1999-08-05', '1999-08-05'),
+             ('passage', 'ma-vie/p002/1', 'ma-vie', 'ma-vie/p002', 1, 'x', 'transcribed', 'passage_date_from', '2000-01-01', '2000-01-01')`);
+
+    const pages = await listPages(client, { documentId: 'ma-vie', dateFrom: '1999-08-01', dateTo: '1999-08-31' });
+    const ordinals = pages.map((p) => p.ordinal);
+    expect(ordinals).toContain(1);
+    expect(ordinals).not.toContain(2);
+  });
+});
+
+test('listPages: q returns the pages that contain the word, with their match count (Task 14)', async () => {
+  await withRollback(async (client) => {
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                        VALUES ('ma-vie', 'handwritten', 'x', true)`);
+    await client.query(`INSERT INTO pipeline.page (id, document_id, ordinal, image_relpath, width, height)
+      VALUES ('ma-vie/p001', 'ma-vie', 1, 'p.jpg', 1, 1), ('ma-vie/p002', 'ma-vie', 2, 'p.jpg', 1, 1)`);
+    await client.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, page_id, ordinal, body, confidence)
+      VALUES ('passage', 'ma-vie/p001/1', 'ma-vie', 'ma-vie/p001', 1, 'un beau mouillage ce soir', 'transcribed'),
+             ('passage', 'ma-vie/p001/2', 'ma-vie', 'ma-vie/p001', 2, 'encore un mouillage', 'transcribed'),
+             ('passage', 'ma-vie/p002/1', 'ma-vie', 'ma-vie/p002', 1, 'rien à voir ici', 'transcribed')`);
+    await client.query(`REFRESH MATERIALIZED VIEW app.text_search`);
+
+    const pages = await listPages(client, { documentId: 'ma-vie', q: 'mouillage' });
+    expect(pages.map((p) => p.ordinal)).toEqual([1]);
+    expect(pages[0]?.matchCount).toBe(2);
+  });
+});
+
+test('listPages: matchCount is null when q is absent — never a count for nothing asked', async () => {
+  await withRollback(async (client) => {
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                        VALUES ('ma-vie', 'handwritten', 'x', true)`);
+    await client.query(`INSERT INTO pipeline.page (id, document_id, ordinal, image_relpath, width, height)
+                        VALUES ('ma-vie/p001', 'ma-vie', 1, 'p.jpg', 1, 1)`);
+
+    const pages = await listPages(client, { documentId: 'ma-vie' });
+    expect(pages[0]?.matchCount).toBeNull();
+  });
+});
+
+test('listPages: a pure-noise q matches zero pages, never the whole library', async () => {
+  await withRollback(async (client) => {
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                        VALUES ('ma-vie', 'handwritten', 'x', true)`);
+    await client.query(`INSERT INTO pipeline.page (id, document_id, ordinal, image_relpath, width, height)
+                        VALUES ('ma-vie/p001', 'ma-vie', 1, 'p.jpg', 1, 1)`);
+    await client.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, page_id, ordinal, body, confidence)
+                        VALUES ('passage', 'ma-vie/p001/1', 'ma-vie', 'ma-vie/p001', 1, 'un texte quelconque', 'transcribed')`);
+    await client.query(`REFRESH MATERIALIZED VIEW app.text_search`);
+
+    const pages = await listPages(client, { documentId: 'ma-vie', q: '   ***   ' });
+    expect(pages).toEqual([]);
   });
 });
 
