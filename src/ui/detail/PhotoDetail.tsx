@@ -78,8 +78,12 @@ export function PhotoDetail({ cloudAssetId, onClose }: Props): React.JSX.Element
       ) : null}
 
       <ul className={styles['tags']}>
-        {data.tags.map((tag) => (
-          <li className={styles['tag']} key={tag.name} data-testid={`tag-${tag.name}`}>
+        {/* `tag.name` alone is not a stable key: real tagging data can carry
+            the literal same name twice (independent passes, no dedup
+            promised by the contract) — `data.tags` has no id, so the index
+            breaks the tie. */}
+        {data.tags.map((tag, index) => (
+          <li className={styles['tag']} key={`${String(index)}-${tag.name}`} data-testid={`tag-${tag.name}`}>
             {tag.name}
             {/* A tag with no confidence is never dropped. Spec §6.3. */}
             {tag.confidence === null ? null : (
@@ -96,8 +100,10 @@ export function PhotoDetail({ cloudAssetId, onClose }: Props): React.JSX.Element
           <h3 className={styles['heading']}>Légende (machine)</h3>
           <p>{data.caption.text}</p>
           <ul className={styles['tags']}>
-            {data.caption.keywords.map((keyword) => (
-              <li className={styles['tag']} key={keyword}>{keyword}</li>
+            {/* Same reasoning as data.tags above: a bare string has no id,
+                and nothing dedupes this list upstream. */}
+            {data.caption.keywords.map((keyword, index) => (
+              <li className={styles['tag']} key={`${String(index)}-${keyword}`}>{keyword}</li>
             ))}
           </ul>
         </section>
