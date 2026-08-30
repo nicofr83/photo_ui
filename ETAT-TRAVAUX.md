@@ -642,3 +642,26 @@ DONE : les deux questions que je pensais encore ouvertes étaient déjà tranch�
 DETAIL : commit `645bcef`. Serveur redémarré et vérifié en direct (pid 24017).
 
 ASK : aucun. `web_caption` est maintenant complet des deux côtés (lecture `/texts?kind=web_caption`, recouvrement dans les deux sens) — reste hors périmètre, si besoin plus tard : les corrections sur ce registre (`app.text_correction` ne cible que `pipeline.text_unit`) et `q`/`dateFrom`/`confidence` sur `/texts?kind=web_caption`.
+
+---
+
+## Avancement — front, repasse navigateur après export + galleryCaption + recouvrement (2026-08-30)
+
+RE : repasse demandée par team-lead — quatre sources Textes, export re-vérifié, régressions
+DONE : `galleryCaption` et l'export confirmés en direct (curl + Chromium réel) — Textes affiche ses 4 sources sans bannière (205 légendes réelles, screenshot vérifié : texte français réel, « date indéterminée », « correspondance non vérifiée », badge photo). Export : cycle complet réel (créer → job `succeeded` → `state: exported`/`exportedAt`/`exportDirectory` posés → deuxième export → job `failed`, alerte nommée avec le bon chemin). Dossiers de test nettoyés (`trash`).
+
+**Découverte en testant l'export dans un vrai navigateur : la fonctionnalité n'avait jamais tourné contre un vrai serveur.** `JobSchema` modélisait une forme jamais envoyée (`jobId/done/total/endedAt/report` plat) — la vraie forme est `id/progress{done,total,label}/finishedAt/result{type,report}/cancellable/error`, et surtout `POST /tasks/:slug/export` répond TOUJOURS 202 avec un job `queued`/`running` (`exportTask()` tourne entièrement dans le job runner, jamais de 409 synchrone) — rien ne l'attendait, aucun sondage n'existait. Corrigé : `JobSchema` réécrit contre `server/src/contract/task_interface.ts` et `job_service.ts`, `useJob(jobId)` neuf (sonde `GET /jobs/:id` toutes les 250 ms jusqu'à un état terminal), `ReviewScreen` reconnecté dessus. `skippedImages` n'a pas de `fileName` (seulement `cloudAssetId` + raison en MAJUSCULES) — affichage et `SKIP_REASONS` corrigés en conséquence.
+
+Deux autres vrais défauts trouvés en pilotant un vrai Chromium sur des données réelles, corrigés :
+- **Clé React dupliquée** sur `PhotoDetail` : une vraie photo porte deux fois le tag littéral « construction » (rien ne garantit l'unicité en amont) — `data.tags`/`caption.keywords` n'ont pas d'id, corrigé par un index en tiebreaker.
+- **`distanceToCentreDays` contraint à un entier alors qu'il ne l'est pas** : 10 des 17 textes recouvrant une vraie photo portent `6.5` — c'est une distance entre deux MILIEUX d'intervalle, jamais un compte de jours, et le serveur ne l'arrondit pas (mon propre `centreDistanceDays` côté front arrondit, mais seulement pour son usage local de tri, jamais une promesse sur ce que le serveur envoie). Corrigé, `.int()` retiré.
+
+**Un vrai défaut trouvé, pas corrigé — pour `back`, bloquant sur deux flux réels** : l'axe de recouvrement AVANT (`GET /photos?overlapsTextKind=…&overlapsTextId=…`) ne renvoie NI `overlap` par item NI `overlapSummary` — la forme plate `PhotoListItem[]` telle quelle, testé sur les trois natures (`passage`, `log_entry`, `web_caption`, les trois vides des deux champs). Le FILTRAGE marche (le bon sous-ensemble revient, `total` varie juste comme attendu), seule la décoration manque. Ça bloque « Voir les images » depuis un texte (`TextsScreen`) en entier — bannière de contrat immédiate. Le sens INVERSE (`GET /photos/:id/texts`, testé sur une vraie légende de galerie + 16 textes recouvrants réels) renvoie bien `overlap` par item (juste le souci `distanceToCentreDays` déjà réglé plus haut) mais PAS `overlapSummary` non plus — donc « Voir les N textes » depuis une photo marche pour la liste, mais le contrat reste cassé si jamais `overlapSummary` était ajouté à cette forme sans être vraiment envoyé. Les deux endroits sont dans `src/api/contract/overlap.ts` (`PhotoOverlapEnvelopeSchema`/`TextOverlapEnvelopeSchema`, déjà écrits et documentés) — rien à changer côté front, c'est la décoration serveur qui manque.
+
+Tour des cinq écrans (images/textes/revue/réglages/tâches) à froid : zéro bannière, zéro console. Le défaut ci-dessus ne se voit qu'en ENTRANT dans le flux de recouvrement, jamais au chargement d'un écran.
+
+591 tests front verts, tsc et eslint propres.
+
+DETAIL : commits `6070052` (export), `18c1505` (clé React), `d211e87` (`distanceToCentreDays`). Serveur toujours vivant, pid inchangé depuis le dernier redémarrage de `back`.
+
+ASK : aucune décision Nicolas. J'ai écrit directement à `back` pour l'axe de recouvrement (bloquant, deux flux). Je reste disponible.
