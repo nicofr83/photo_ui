@@ -1,18 +1,28 @@
 # État des travaux — point de reprise
 
-**Établi le 2026-08-28 à 18:57**, demande de Nicolas, pour que épuisement crédits n'entraîne aucune perte.
+**Établi le 2026-08-28 à 18:57**, à la demande de Nicolas, pour que l'épuisement
+des crédits n'entraîne aucune perte.
 
-Pas une spécification. Document qu'on lit **froid** pour reprendre. Écrit par `contrat-api` faisant fonction de coordinateur.
+Ce fichier n'est pas une spécification. C'est le document qu'on lit **froid**
+pour reprendre. Il est écrit par `contrat-api` faisant fonction de coordinateur.
 
 ---
 
 ## Ce qu'il faut savoir d'abord
 
-**Aucun agent détecte épuisement crédits, ni se réveille quand ils reviennent.** Aucun outil rapporte le quota. Crédits tombent → appel échoue au milieu du tour, agent s'arrête net. Pas de fin de tour propre, donc pas de « mise en attente » exécutable au dernier moment.
+**Aucun agent ne peut détecter l'épuisement des crédits, ni se réveiller quand
+ils reviennent.** Il n'existe aucun outil qui rapporte le quota. Quand les
+crédits tombent, l'appel échoue au milieu du tour et l'agent s'arrête net — il
+n'y a pas de fin de tour propre, donc pas de « mise en attente » qu'un agent
+pourrait exécuter au dernier moment.
 
-**Conséquence, et c'est tout le protocole :** mise en attente ne peut pas être comportement d'exécution, seulement **état durable écrit d'avance**. Travail seulement dans contexte d'agent = perdu si tour meurt. Travail commité = pas perdu.
+**Conséquence, et c'est tout le protocole :** la mise en attente ne peut pas
+être un comportement d'exécution, seulement un **état durable écrit d'avance**.
+Un travail qui n'est que dans le contexte d'un agent est perdu si le tour meurt.
+Un travail commité ne l'est pas.
 
-Reprise = action de Nicolas — relancer session. Ce qu'on contrôle : qu'elle soit sans perte et sans re-décision.
+La reprise est une action de Nicolas — relancer la session. Ce qu'on contrôle,
+c'est qu'elle soit sans perte et sans re-décision.
 
 ---
 
@@ -20,99 +30,172 @@ Reprise = action de Nicolas — relancer session. Ce qu'on contrôle : qu'elle s
 
 | Chantier | Agent | État | Durabilité |
 |:---|:---|:---|:---|
-| Contrat d'API | `contrat-api` | **GELÉ** sur forme des types | **commité** — `docs/api-contract.md` |
+| Contrat d'API | `contrat-api` | **GELÉ** sur la forme des types | **commité** — `docs/api-contract.md` |
 | Spécification backend | `contrat-api` | **terminée** | **commité** — `docs/backend-spec.md` |
 | Spécification frontend | `spec-frontend` | vivante, amendée en continu | **commité** — `docs/frontend-spec.md` |
 | Plan frontend | `impl-frontend` | établi | **commité** — `docs/superpowers/plans/2026-08-28-frontend.md` |
 | Implémentation frontend T1 | `impl-frontend` | tâches 1.0 à 1.6 **faites** — socle, domaine, rendu, client, fixtures, MSW | **tout commité** (`d193a1a`) — 232 tests verts, rien en vol |
 | Échantillon de légendes | *(agent non nommé)* | en cours | `docs/echantillon-legendes.html` est commité |
 | Plan d'implémentation backend | `impl-backend` | **terminé** — 26 tâches, plan de tests, 11 décisions d'architecture | **commité** (`e349da7`) — `docs/superpowers/plans/2026-08-28-backend.md` |
-| Implémentation backend | `impl-backend` | **en cours** — tranche 0, tâche 1 | *(voir plan pour état tâche par tâche)* |
+| Implémentation backend | `impl-backend` | **en cours** — tranche 0, tâche 1 | *(voir le plan pour l'état tâche par tâche)* |
 
-Dernier commit : `c107907 feat: the resolved-date domain and the capital rule`, 2026-08-28 18:56, branche `test_dev`.
+Dernier commit : `c107907 feat: the resolved-date domain and the capital rule`,
+2026-08-28 18:56, branche `test_dev`.
 
-**Rien à risque côté frontend.** Fichiers `src/ui/` listés ici comme non suivis sont commités depuis `08e71e5` — instantané précédent datait de `c107907`. `impl-frontend` a zéro travail hors git.
+**Rien n'est à risque côté frontend.** Les fichiers de `src/ui/` qui étaient
+listés ici comme non suivis sont commités depuis `08e71e5` — l'instantané
+précédent datait de `c107907`. `impl-frontend` n'a aucun travail hors de git.
 
-**Décisions frontend qui vivent nulle part ailleurs**, écrites ici pour survivre à coupure :
+**Décisions frontend qui ne vivent nulle part ailleurs**, écrites ici pour
+survivre à une coupure :
 
-1. **TypeScript 6.0.3, pas 7.0.2** — aucune version typescript-eslint supporte TS 7 (`latest` et `canary` plafonnent à `typescript <6.1.0`). Garder `strictTypeChecked` compte plus que compilateur le plus neuf : lui qui fait respecter règle « pas de `any` ». Pas « moderniser » ce choix sans vérifier d'abord peer range du linter.
-2. **« Aucune date nue » tenu à trois couches, faut les trois.**
-   *(a)* Type marqué `IsoDate` se propage à travers Zod — `.refine()` avec prédicat de type narrowe sortie du schéma — donc **compilateur** refuse qu'une chaîne littérale serve de date nulle part dans contrat.
-   *(b)* `ResolvedDateSchema` refuse **à l'analyse de réponse HTTP** date dont `kind` contredit sa `source` : devient jamais objet JavaScript, donc aucun composant peut en recevoir une.
-   *(c)* `ResolvedDateView` = seul composant autorisé à transformer date en texte, et `src/ui/date/noBareDateRendering.test.ts` fait échouer suite si fichier de `src/ui/` ou `src/screens/` formate date lui-même.
-   Successeur casserait (a) sans le savoir en remplaçant `.refine(guard)` par `.regex()` : même contrôle, mais perd type marqué.
+1. **TypeScript 6.0.3, pas 7.0.2** — aucune version de typescript-eslint ne
+   supporte TS 7 (`latest` et `canary` plafonnent à `typescript <6.1.0`). Garder
+   `strictTypeChecked` compte plus que le compilateur le plus neuf : c'est lui
+   qui fait respecter la règle « pas de `any` ». Ne pas « moderniser » ce
+   choix sans vérifier d'abord le peer range du linter.
+2. **« Aucune date nue » est tenu à trois couches, et il faut les trois.**
+   *(a)* Le type marqué `IsoDate` se propage à travers Zod — `.refine()` avec un
+   prédicat de type narrowe la sortie du schéma — donc **le compilateur** refuse
+   qu'une chaîne littérale serve de date nulle part dans le contrat.
+   *(b)* `ResolvedDateSchema` refuse **à l'analyse de la réponse HTTP** une date
+   dont le `kind` contredit sa `source` : elle ne devient jamais un objet
+   JavaScript, donc aucun composant ne peut en recevoir une.
+   *(c)* `ResolvedDateView` est le seul composant autorisé à transformer une
+   date en texte, et `src/ui/date/noBareDateRendering.test.ts` fait échouer la
+   suite si un fichier de `src/ui/` ou `src/screens/` formate une date lui-même.
+   Un successeur casserait (a) sans le savoir en remplaçant un `.refine(guard)`
+   par un `.regex()` : c'est le même contrôle, mais il perd le type marqué.
 
-2 bis. **Quatre formes d'affichage de date, pas trois** (spec §3.6) :
-   `1999-10-14`, `octobre 1999`, `2000`, et **« entre février 1998 et juin 1999 »** quand intervalle plus large que sa précision. `precision` qualifie **chaque borne**, jamais largeur — largeur se calcule.
-3. **`web_span` est une `inference`** — divergence close le 2026-08-28 dans sens de spec, trois documents disent maintenant même chose.
-   Critère retenu, vaut pour toute source future : ce qui sépare `decision` d'`inference` n'est pas *qui* a agi mais **ce que geste établit**. Annotation de datation **arbitre** — quelqu'un a vu EXIF affiché et tapé autre chose. Plage de `ref.web_span` **comble vide** : aucun des 569 passages du site porte date. `source` dit qu'humain a saisi, `kind` dit ce que ça vaut. **`annotation` = seule source `decision`.** Conséquence de rendu voulue : ~25 plages web saisies main s'affichent ambre italique `≈`, pas violet gras `✓`.
-4. **Tags de lieu mentent — règle pour facette de T3, pas oublier.** 901 photos du périmètre portent tag IA nommant pays faux : `italy` frappe 18 photos de Tikal et 16 de Chichen Itza, `egypt` 30 du Maroc. Classifieur voit ruines de pierre, sort nom de pays. Trois règles (spec, commit `af2a65b`) : **jamais dans axe lieu** — lieu vient du nom d'album et du journal ; **hors du vocabulaire proposé** — offrir « italy (141) » dans liste triée par sélectivité fait croire qu'existe 141 photos d'Italie ; **mais cherchables**, et alors **marqués comme supposition de machine**. Pas proposer ≠ exclure : §7.3 porte sur résultats, pas sur ce qu'on met en avant.
-   **Filtrage par confiance marche pas** — tags de lieu à 60 de moyenne, descriptifs à 69, les deux au-dessus du plancher de 48. Pas retenter.
-   **Jamais coder liste de tags de lieu côté client** : prédicat vient du backend, table `ref.tag_kind`, corrigeable à la main.
+2 bis. **Quatre formes d'affichage d'une date, pas trois** (spec §3.6) :
+   `1999-10-14`, `octobre 1999`, `2000`, et **« entre février 1998 et juin
+   1999 »** quand l'intervalle est plus large que sa précision. `precision`
+   qualifie **chaque borne**, jamais la largeur — la largeur se calcule.
+3. **`web_span` est une `inference`** — divergence close le 2026-08-28 dans le
+   sens de la spec, les trois documents disent maintenant la même chose.
+   Le critère retenu, et il vaut pour toute source future : ce qui sépare
+   `decision` d'`inference` n'est pas *qui* a agi mais **ce que le geste
+   établit**. Une annotation de datation **arbitre** — quelqu'un a vu l'EXIF
+   affiché et a tapé autre chose. Une plage de `ref.web_span` **comble un
+   vide** : aucun des 569 passages du site ne porte de date. `source` dit qu'un
+   humain a saisi, `kind` dit ce que ça vaut. **`annotation` est la seule source
+   `decision`.** Conséquence de rendu voulue : les ~25 plages web saisies à la
+   main s'affichent ambre italique `≈`, pas violet gras `✓`.
+4. **Les tags de lieu mentent — règle pour la facette de T3, à ne pas oublier.**
+   901 photos du périmètre portent un tag IA qui nomme un pays faux : `italy`
+   frappe 18 photos de Tikal et 16 de Chichen Itza, `egypt` 30 du Maroc. Le
+   classifieur voit des ruines de pierre et sort un nom de pays. Trois règles
+   (spec, commit `af2a65b`) : **jamais dans l'axe lieu** — le lieu vient du nom
+   d'album et du journal ; **hors du vocabulaire proposé** — offrir
+   « italy (141) » dans une liste triée par sélectivité fait croire qu'il existe
+   141 photos d'Italie ; **mais cherchables**, et alors **marqués comme
+   supposition de machine**. Ne pas proposer n'est pas exclure : §7.3 porte sur
+   les résultats, pas sur ce qu'on met en avant.
+   **Le filtrage par confiance ne marche pas** — tags de lieu à 60 de moyenne,
+   descriptifs à 69, les deux au-dessus du plancher de 48. Ne pas retenter.
+   **Ne jamais coder une liste de tags de lieu côté client** : le prédicat vient
+   du backend, table `ref.tag_kind`, corrigeable à la main.
 
-5. **§7.1 s'étend à tout ce qu'une machine dit d'une image.** Après dates et textes, troisième extension : machine **lit** ce qui est écrit dans image — enseigne, date sur écran de navigation — et c'est lecture, vérifiable ; elle **déduit** à partir de l'apparence — lieu, époque, identité — et c'est conjecture, souvent fausse. Rien dans sa sortie les sépare : `ruins` = lecture d'apparence honnête, `italy` = déduction fausse. À l'interface de les séparer.
+5. **§7.1 s'étend à tout ce qu'une machine dit d'une image.** Après les dates et
+   les textes, la troisième extension : une machine **lit** ce qui est écrit
+   dans l'image — une enseigne, une date sur un écran de navigation — et c'est
+   une lecture, vérifiable ; elle **déduit** à partir de l'apparence — un lieu,
+   une époque, une identité — et c'est une conjecture, souvent fausse. Rien dans
+   sa sortie ne les sépare : `ruins` est une lecture d'apparence honnête,
+   `italy` une déduction fausse. C'est à l'interface de les séparer.
 
-6. **`server/` à la racine, pas sous `src/`** — accord avec `impl-backend`. Raison mécanique : `tsconfig.json` et couverture du frontend portent sur `src/**`, code serveur là-dedans casserait son `typecheck` et son seuil de couverture à chaque écriture en cours.
+6. **`server/` est à la racine, pas sous `src/`** — accord avec `impl-backend`.
+   La raison est mécanique : le `tsconfig.json` et la couverture du frontend
+   portent sur `src/**`, du code serveur là-dedans casserait son `typecheck` et
+   son seuil de couverture à chaque écriture en cours.
 
 ---
 
 ## Le protocole de mise en attente
 
-Tient en une règle : **jamais laisser décision vivre uniquement dans contexte d'agent.**
+Il tient en une règle : **ne jamais laisser une décision vivre uniquement dans
+un contexte d'agent.**
 
-1. **Commiter ce qui compile ou se lit.** Sur `test_dev`, jamais sur `main`, jamais de push. Commit intermédiaire nommé `wip:` vaut mieux que contexte perdu.
-2. **Écrire décisions, pas seulement code.** Décision prise et non écrite = à refaire — et sera refaite différemment.
-3. **Ce qui est en négociation entre agents va dans document**, pas dans fil de messages : messages survivent pas.
-4. **Mettre à jour ligne de ce tableau qui vous concerne** avant de vous arrêter, si temps. Sinon commit suffit.
+1. **Commiter ce qui compile ou se lit.** Sur `test_dev`, jamais sur `main`,
+   jamais de push. Un commit intermédiaire nommé `wip:` vaut mieux qu'un
+   contexte perdu.
+2. **Écrire les décisions, pas seulement le code.** Une décision prise et non
+   écrite est à refaire — et sera refaite différemment.
+3. **Ce qui est en cours de négociation entre agents va dans un document**, pas
+   dans un fil de messages : les messages ne survivent pas.
+4. **Mettre à jour la ligne de ce tableau qui vous concerne** avant de vous
+   arrêter, si vous en avez le temps. Si vous ne l'avez pas, le commit suffit.
 
 ---
 
 ## Reprendre — dans cet ordre
 
-1. `git log --oneline -5` et `git status` sur `test_dev` : voir ce qui a été laissé en vol.
-2. Lire ce fichier, puis document du chantier concerné.
-3. **Pas rouvrir ce qui est gelé.** Contrat stable sur forme des types ; `impl-frontend` a écrit son client contre lui. Questions encore ouvertes listées en §11 du contrat, portent seulement sur comportement serveur.
-4. Reprendre à première ligne non faite du plan concerné.
+1. `git log --oneline -5` et `git status` sur `test_dev` : voir ce qui a été
+   laissé en vol.
+2. Lire ce fichier, puis le document du chantier concerné.
+3. **Ne pas rouvrir ce qui est gelé.** Le contrat est stable sur la forme des
+   types ; `impl-frontend` a écrit son client contre lui. Les questions encore
+   ouvertes sont listées en §11 du contrat et ne portent que sur du comportement
+   serveur.
+4. Reprendre à la première ligne non faite du plan concerné.
 
 ---
 
 ## Ce qui reste ouvert et qui bloquerait une reprise
 
-Rien bloque. Questions ouvertes documentées à leur place, chacune porte défaut appliqué en attendant :
+Rien ne bloque. Les questions ouvertes sont documentées à leur place et chacune
+porte un défaut appliqué en attendant :
 
-- **Contrat, §11** — 11 questions, toutes de comportement serveur. Aucune change interface. N° 1, 3, 4, 5, 6 et 7 tranchées.
-- **Spec backend, §16** — 7 questions. N° 1 (PostgreSQL 17.6 ou 18) seule à trancher **avant première migration**, parce que revenir en arrière sur base peuplée coûte plus cher que contraire.
-- **Légendage VLM** — décision de Nicolas : échantillon de 50 à 100 photos d'abord. Champs restent dans contrat, passe complète pas engagée, aucune UI en V1.
-- **`GET /tasks/:slug/review` : tranché, il reste.** `impl-frontend` s'était trompé en annonçant tout dériver côté client. Chronologie = rendu, reste au frontend ; **comptes** du bandeau restent au serveur, parce que « N images qu'aucun texte ne recouvre » applique prédicat de recouvrement. Le calculer côté client créerait seconde implémentation du recouvrement, qui finirait par contredire `GET /photos?overlapsText…` — chiffre qui contredit reste de l'application est pire qu'un endpoint de plus.
+- **Contrat, §11** — 11 questions, toutes de comportement serveur. Aucune ne
+  change une interface. Les n° 1, 3, 4, 5, 6 et 7 sont tranchées.
+- **Spec backend, §16** — 7 questions. La n° 1 (PostgreSQL 17.6 ou 18) est la
+  seule à trancher **avant la première migration**, parce que revenir en arrière
+  sur une base peuplée coûte plus cher que le contraire.
+- **Légendage VLM** — décision de Nicolas : échantillon de 50 à 100 photos
+  d'abord. Les champs restent dans le contrat, la passe complète n'est pas
+  engagée, aucune UI n'est en V1.
+- **`GET /tasks/:slug/review` : tranché, il reste.** `impl-frontend` s'était
+  trompé en annonçant tout dériver côté client. La chronologie est du rendu et
+  reste au frontend ; les **comptes** du bandeau restent au serveur, parce que
+  « N images qu'aucun texte ne recouvre » applique le prédicat de recouvrement.
+  Le calculer côté client créerait une seconde implémentation du recouvrement,
+  qui finirait par contredire `GET /photos?overlapsText…` — un chiffre qui
+  contredit le reste de l'application est pire qu'un endpoint de plus.
 
 ---
 
 ## Ce qu'on ne fait pas
 
-**Pas de tâche planifiée (`cron`) pour reprendre automatiquement.** Tâche déclenchée pendant crédits épuisés échoue ; tâche déclenchée quand ils reviennent ferait tourner du travail de spécification **sans personne pour le relire**, et ce travail-là se juge. Reprise reste geste de Nicolas.
+**Pas de tâche planifiée (`cron`) pour reprendre automatiquement.** Une tâche
+qui se déclenche pendant que les crédits sont épuisés échoue ; une tâche qui se
+déclenche quand ils reviennent ferait tourner du travail de spécification
+**sans personne pour le relire**, et ce travail-là se juge. La reprise reste un
+geste de Nicolas.
 
 ---
 
 ## Les décisions de Nicolas, dans l'ordre où il les a prises
 
-*Ajouté par session pilote. Ce fil existait que dans son contexte de conversation : aucun document le portait. Chaque ligne = décision tranchée par Nicolas lui-même, pas inférence d'agent.*
+*Ajouté par la session pilote. Ce fil n'existait que dans son contexte de
+conversation : aucun document ne le portait. Chaque ligne est une décision
+tranchée par Nicolas lui-même, pas une inférence d'agent.*
 
 | Décision | Ce qu'il a choisi | Pourquoi ça compte |
 |:---|:---|:---|
-| Topologie | Backend sur son Mac pour dev, déplaçable en fin de projet | Impose : aucun chemin en dur, tout par variables d'environnement |
-| Périmètre fonctionnel | Navigateur complet **et** revue de datation, d'un bloc — puis **pivot complet** vers atelier de composition de BD | Spec antérieure au pivot est morte ; seule règle des trois dates a survécu |
-| Store | Postgres local plutôt que SQLite lecture seule | Pipeline reconstruit tout à zéro : correction écrite dans ses bases meurt à passe suivante |
-| Retour vers `adobe_mcp` | Export explicite, à la main, jamais automatique, derrière drapeau désactivé | Il a vu deux écrivains sur `annotations.jsonl` à même minute |
-| Stack | React + Vite + TypeScript strict | Web d'abord, iOS et macOS différés via Capacitor — différé coûte rien si web fait correctement |
-| Périmètre de travail | Les **82 albums** (3 930 photos), pas `photos.year` (3 558) | Hiérarchie rangée à la main fait foi ; `photos.year` se trompe 745 fois |
-| Plafond de fourchette | **Aucun** | Dates faillibles → plafond calculé dessus écarterait autant de vrai que de bruit |
-| Galeries web ↔ photothèque | Investiguer avant de coder écran texte | Spike fait : exploitable, 108 liens sur 2003-2004 |
-| Légendage VLM | **Échantillon d'abord**, 50-100 photos, avant d'engager les 3 930 | Ni spec ni contrat peuvent trancher par raisonnement si légendes valent quelque chose |
-| Reprise automatique | **Refusée** — pas de tâche planifiée | Spécification qui tourne sans relecteur vaut rien |
+| Topologie | Backend sur son Mac pour le développement, déplaçable en fin de projet | Impose : aucun chemin en dur, tout par variables d'environnement |
+| Périmètre fonctionnel | Navigateur complet **et** revue de datation, d'un bloc — puis **pivot complet** vers l'atelier de composition de BD | La spec antérieure au pivot est morte ; seule la règle des trois dates en a survécu |
+| Store | Postgres local plutôt que SQLite en lecture seule | Le pipeline reconstruit tout à zéro : une correction écrite dans ses bases meurt à la passe suivante |
+| Retour vers `adobe_mcp` | Export explicite, à la main, jamais automatique, derrière un drapeau désactivé | Il a vu deux écrivains sur `annotations.jsonl` à la même minute |
+| Stack | React + Vite + TypeScript strict | Web d'abord, iOS et macOS différés via Capacitor — le différé ne coûte rien si le web est fait correctement |
+| Périmètre de travail | Les **82 albums** (3 930 photos), pas `photos.year` (3 558) | La hiérarchie qu'il a rangée à la main fait foi ; `photos.year` se trompe 745 fois |
+| Plafond de fourchette | **Aucun** | Les dates étant faillibles, un plafond calculé dessus écarterait autant de vrai que de bruit |
+| Galeries web ↔ photothèque | Investiguer avant de coder l'écran texte | Spike fait : exploitable, 108 liens sur 2003-2004 |
+| Légendage VLM | **Un échantillon d'abord**, 50-100 photos, avant d'engager les 3 930 | Ni la spec ni le contrat ne peuvent trancher par le raisonnement si les légendes valent quelque chose |
+| Reprise automatique | **Refusée** — pas de tâche planifiée | De la spécification qui tourne sans relecteur ne vaut rien |
 
 ### La règle des dates, telle qu'il l'a énoncée
 
-Mécanisme central, vient de lui, mot pour mot :
+Elle est le mécanisme central et elle vient de lui, mot pour mot :
 
 > Quand il y a une date de capture dans l'EXIF qui ne diffère pas de plus de
 > 6 mois avec la date dans le dernier niveau de hiérarchie, c'est cette date qui
@@ -122,13 +205,15 @@ Mécanisme central, vient de lui, mot pour mot :
 > dates sont exactes. Sinon on garde la date modifiée par l'UI du pipeline, ou
 > année/mois du dernier niveau de la hiérarchie.
 
-Et sa mise en garde, qui gouverne tout le reste : **« sur les photos récentes le datage est correct, mais sur les anciennes il a été fait à la main, et des fois comporte des erreurs. »** 40,2 % des dates du périmètre sont pas des mesures.
+Et sa mise en garde, qui gouverne tout le reste : **« sur les photos récentes le
+datage est correct, mais sur les anciennes il a été fait à la main, et des fois
+comporte des erreurs. »** 40,2 % des dates du périmètre ne sont pas des mesures.
 
 ---
 
 ## Les agents, nommément
 
-*Complète tableau plus haut, qui en désignait deux comme « non nommés ».*
+*Complète le tableau plus haut, qui en désignait deux comme « non nommés ».*
 
 | Agent | Mandat | Joignable par `SendMessage` |
 |:---|:---|:---|
@@ -139,33 +224,55 @@ Et sa mise en garde, qui gouverne tout le reste : **« sur les photos récentes 
 | `spike-legendes` | Échantillon de légendes | oui |
 | `inventaire-schemas`, `digest-specs`, `spike-dhash`, `skill-dossier-bd` | Mandats terminés, livrables commités | oui |
 
-`ListAgents` pas dispo dans toutes les sessions : passer par session pilote pour relais.
+`ListAgents` n'est pas disponible dans toutes les sessions : passer par la
+session pilote pour un relais.
 
 ---
 
 ## Deux choses acquises hors dépôt
 
-- **Base `photo_ui` existe** : PostgreSQL **17.6** (client `psql` en 18.6), `localhost:5432`, conteneur Docker `timescaledb`, utilisateur `nico`, collation ICU `fr-FR`, extensions `postgis` 3.5.3, `pg_trgm`, `unaccent` installées. Vide de schéma applicatif.
-- **Skill `bd_dossier` actif globalement** : symlink créé par Nicolas depuis `~/.claude/skills/bd_dossier` vers `photo_ui/skills/bd_dossier`. Le modifier = changement du dépôt.
+- **La base `photo_ui` existe** : PostgreSQL **17.6** (le client `psql` est en 18.6), `localhost:5432`, conteneur Docker
+  `timescaledb`, utilisateur `nico`, collation ICU `fr-FR`, extensions
+  `postgis` 3.5.3, `pg_trgm`, `unaccent` installées. Vide de schéma applicatif.
+- **Le skill `bd_dossier` est actif globalement** : symlink créé par Nicolas
+  depuis `~/.claude/skills/bd_dossier` vers `photo_ui/skills/bd_dossier`. Le
+  modifier est un changement du dépôt.
 
-**Clé API Anthropic de la machine sans crédit.** Spike des légendes s'en passe : agent Claude Code voit images qu'il ouvre. À savoir avant de planifier quoi que ce soit appelant l'API directement.
+**La clé API Anthropic de la machine est sans crédit.** Le spike des légendes
+s'en passe : un agent Claude Code voit les images qu'il ouvre. À savoir avant de
+planifier quoi que ce soit qui appelle l'API directement.
 
 ---
 
 ## La coupure du 2026-08-28, 19h00, et ce qu'elle a appris
 
-Cinq agents morts en quelques secondes, en plein tour, sur `You've hit your monthly spend limit` — limite réinitialisée à 19h50. Aucun a pu finir sa phrase ni sauvegarder quoi que ce soit.
+Les cinq agents sont morts en quelques secondes, en plein tour, sur
+`You've hit your monthly spend limit` — limite réinitialisée à 19h50.
+Aucun n'a pu finir sa phrase ni sauvegarder quoi que ce soit.
 
-**Ce qui a survécu :** tout ce qui était commité, plus présent document.
+**Ce qui a survécu :** tout ce qui était commité, plus le présent document.
 **Ce qui a été perdu :** les cinq contextes, entièrement.
 
-Reprise sans perte de travail — mais uniquement parce que état écrit **avant** coupure. Aucun mécanisme de mise en attente existe : aucun agent détecte épuisement, appel échoue au milieu du tour, sans fin propre.
+La reprise a été sans perte de travail — mais uniquement parce que l'état
+avait été écrit **avant** la coupure. Il n'existe aucun mécanisme de mise en
+attente : aucun agent ne détecte l'épuisement, l'appel échoue au milieu du
+tour, sans fin propre.
 
-**Règle qui en découle, pour tout agent de ce projet :** commiter tôt et souvent, `wip:` compris, jamais plus d'une étape de travail non commitée. Et écrire ses décisions dans fichiers et messages de commit, jamais seulement dans rapport à session pilote.
+**Règle qui en découle, pour tout agent de ce projet :** commiter tôt et
+souvent, `wip:` compris, jamais plus d'une étape de travail non commitée. Et
+écrire ses décisions dans les fichiers et les messages de commit, jamais
+seulement dans un rapport à la session pilote.
 
-**Fausse alerte sur les noms.** Session pilote a cru agents perdus et en a relancé quatre sous noms suffixés `-2`. Originaux étaient en fait seulement suspendus et ont repris **avec tout leur contexte** à réinitialisation de 19h50. Pendant quelques minutes, deux agents par mandat ont donc écrit sur même branche. Doublons `-2` arrêtés ; aucun conflit résulté, mais c'était chance autant que rapidité.
+**Fausse alerte sur les noms.** La session pilote a cru les agents perdus et en
+a relancé quatre sous des noms suffixés `-2`. Les originaux étaient en fait
+seulement suspendus et ont repris **avec tout leur contexte** à la
+réinitialisation de 19h50. Pendant quelques minutes, deux agents par mandat ont
+donc écrit sur la même branche. Les doublons `-2` ont été arrêtés ; aucun
+conflit n'en est résulté, mais c'était de la chance autant que de la rapidité.
 
-**Noms d'origine sont les bons** — ceux du tableau ci-dessus. Pas recréer d'agent portant mandat déjà tenu sans avoir vérifié `ListAgents` d'abord : limite de dépense suspend les agents, elle les tue pas.
+**Les noms d'origine sont les bons** — ceux du tableau ci-dessus. Ne pas
+recréer d'agent portant un mandat déjà tenu sans avoir vérifié `ListAgents`
+d'abord : une limite de dépense suspend les agents, elle ne les tue pas.
 
 ---
 
@@ -173,59 +280,87 @@ Reprise sans perte de travail — mais uniquement parce que état écrit **avant
 
 ### `ref.web_span` est une **inférence**, pas une décision *(2026-08-29)*
 
-Plage saisie main sur document du site web, qui porte aucune date, se rend en **ambre italique avec glyphe `≈`**.
+Une plage saisie à la main sur un document du site web, qui ne porte aucune
+date, se rend en **ambre italique avec le glyphe `≈`**.
 
-**Tranché par Nicolas lui-même**, après trois allers-retours entre agents dans deux sens opposés. C'est son geste que la règle classe : il a lu les deux raisonnements et retenu celui-ci.
+**Tranché par Nicolas lui-même**, après trois allers-retours entre agents dans
+deux sens opposés. C'est son geste que la règle classe : il a lu les deux
+raisonnements et retenu celui-ci.
 
-Raisonnement retenu : **ce qui distingue décision d'inférence n'est pas qui a agi mais ce que geste établit.** Corriger date d'une photo = *arbitrage* — quelqu'un a vu EXIF à l'écran et tapé autre chose. Poser plage sur document sans date *comble vide* : conjecture. Champ `source` dit déjà qu'humain l'a tapée ; `kind` dit ce qu'elle vaut.
+Le raisonnement retenu : **ce qui distingue une décision d'une inférence n'est
+pas qui a agi mais ce que le geste établit.** Corriger la date d'une photo est
+un *arbitrage* — quelqu'un a vu l'EXIF à l'écran et a tapé autre chose. Poser
+une plage sur un document sans date *comble un vide* : c'est une conjecture.
+Le champ `source` dit déjà qu'un humain l'a tapée ; `kind` dit ce qu'elle vaut.
 
-`annotation` = donc **seule** source de nature `decision`.
+`annotation` est donc la **seule** source de nature `decision`.
 
-État d'application — **tout conforme au 2026-08-29** :
+État d'application — **tout est conforme au 2026-08-29** :
 - `src/domain/dateKind.ts` — conforme (commit `be819a2`)
 - `docs/api-contract.md` — conforme (§2.1, §4.8, amendement A2)
-- `docs/frontend-spec.md` §9.4 — corrigé par `contrat-api`, sur mandat du lead, `spec-frontend` étant tombé juste après l'avoir retourné en `decision`
+- `docs/frontend-spec.md` §9.4 — corrigé par `contrat-api`, sur mandat du lead,
+  `spec-frontend` étant tombé juste après l'avoir retourné en `decision`
 
-Tout agent qui trouve désaccord sur ce point corrige le document, il rouvre pas la question.
+Tout agent qui trouve un désaccord sur ce point corrige le document, il ne
+rouvre pas la question.
 
 ---
 
 ## Amendements au contrat gelé
 
-Contrat gelé sur forme des types depuis 2026-08-28. Gel protège de dérive, pas de correction d'erreur — mais **tout amendement daté dans `docs/api-contract.md` et annoncé aux deux agents d'implémentation avant d'être écrit.** Contrat gelé qui change en silence est pire que contrat jamais gelé.
+Le contrat est gelé sur la forme des types depuis le 2026-08-28. Un gel protège
+de la dérive, pas de la correction d'une erreur — mais **tout amendement est
+daté dans `docs/api-contract.md` et annoncé aux deux agents d'implémentation
+avant d'être écrit.** Un contrat gelé qui change en silence est pire qu'un
+contrat jamais gelé.
 
-Trois à ce jour, tous documentés en tête du contrat sous « Amendements depuis le gel » :
+Trois à ce jour, tous documentés en tête du contrat sous « Amendements depuis le
+gel » :
 
 | # | Objet | Type modifié ? |
 |:---|:---|:---|
-| **A1** | `TextUnit.pageSpanSource` ajouté — `carried` doit se voir dans résultat où page pas chargée | oui, champ ajouté |
+| **A1** | `TextUnit.pageSpanSource` ajouté — `carried` doit se voir dans un résultat où la page n'est pas chargée | oui, champ ajouté |
 | **A2** | `web_span` : `decision` → `inference` *(décision de Nicolas)* | non, valeur émise seulement |
-| **A3** | `TextUnit.date` est `null` quand texte n'affirme rien — 1 031 unités sur 2 871 | non, `date` était déjà nullable |
+| **A3** | `TextUnit.date` est `null` quand le texte n'affirme rien — 1 031 unités sur 2 871 | non, `date` était déjà nullable |
 
-**A3 en une phrase**, parce que celui qui change le plus de données : passage placé par fenêtre de sa page porte plus de date héritée, fenêtre vit dans `overlap`, et **toute date de texte du système est désormais lecture** — garanti par trois contraintes PostgreSQL, pas par relecture.
+**A3 en une phrase**, parce que c'est celui qui change le plus de données : un
+passage placé par la fenêtre de sa page ne porte plus de date héritée, la
+fenêtre vit dans `overlap`, et **toute date de texte du système est désormais
+une lecture** — garanti par trois contraintes PostgreSQL, pas par relecture.
 
 ## Une faute corrigée dans `backend-spec.md` *(2026-08-28)*
 
-`CONSTRAINT photo_month_is_whole_month` testait **largeur** de l'intervalle alors que contrat définit `precision` comme propriété de **chaque borne**. Rejetait exemple phare de la spécification — `1998-02-Maison rose Algès`, dix-sept mois — et offrait aucune précision jouable pour les 421 photos concernées : `month` et `year` refusés par base, `day` faisant afficher jour inventé.
+`CONSTRAINT photo_month_is_whole_month` testait la **largeur** de l'intervalle
+alors que le contrat définit `precision` comme une propriété de **chaque
+borne**. Il rejetait l'exemple phare de la spécification —
+`1998-02-Maison rose Algès`, dix-sept mois — et n'offrait aucune précision
+jouable pour les 421 photos concernées : `month` et `year` refusés par la base,
+`day` faisant afficher un jour inventé.
 
-Trouvée et mesurée par `impl-backend`, corrigée en testant alignement des bornes. Cas `[2004-09-14, 2004-09-14]` en `precision: 'month'` reste rejeté : rien de ce qui était protégé est perdu.
+Trouvée et mesurée par `impl-backend`, corrigée en testant l'alignement des
+bornes. Le cas `[2004-09-14, 2004-09-14]` en `precision: 'month'` reste rejeté :
+rien de ce qui était protégé n'est perdu.
 
 ---
 
 ## Protocole d'échange entre agents — obligatoire
 
-Échanges entre agents ont consommé part majeure du budget de ce projet. Message coûte **deux fois** : émetteur l'écrit, récepteur recharge son contexte entier pour le lire. Ligne écrite ici coûte une fois, lue que par qui en a besoin.
+Les échanges entre agents ont consommé une part majeure du budget de ce projet.
+Un message coûte **deux fois** : l'émetteur l'écrit, le récepteur recharge son
+contexte entier pour le lire. Une ligne écrite ici coûte une fois, et n'est lue
+que par qui en a besoin.
 
 ### Règle 1 — n'envoie pas de message
 
-Par défaut, **écris ici**. Message se justifie que si autre agent **bloqué maintenant** par ce que tu as à dire.
+Par défaut, **écris ici**. Un message ne se justifie que si l'autre agent est
+**bloqué maintenant** par ce que tu as à dire.
 
 | Situation | Où |
 |:---|:---|
-| Avancement, décision d'archi, ce qui reste | **ici**, jamais message |
-| Faute trouvée dans document | **ici** + corrige document |
-| Question dont réponse débloque ton prochain commit | message |
-| Décision qui appartient à Nicolas | message à session pilote |
+| Avancement, décision d'archi, ce qui reste | **ici**, jamais un message |
+| Faute trouvée dans un document | **ici** + corrige le document |
+| Question dont la réponse débloque ton prochain commit | message |
+| Décision qui appartient à Nicolas | message à la session pilote |
 
 ### Règle 2 — format fixe, pas de prose
 
@@ -235,7 +370,10 @@ ASK|TELL|BLOCK|DONE: <une ligne>
 DETAIL: <3 lignes maximum, seulement si indispensable>
 ```
 
-Pas de salutation, pas de reformulation du contexte que l'autre a déjà, pas de justification sauf si elle change la réponse. Référence fichiers par `chemin:ligne` — **jamais recopier leur contenu**, destinataire peut les ouvrir.
+Pas de salutation, pas de reformulation du contexte que l'autre a déjà, pas de
+justification sauf si elle change la réponse. Référence les fichiers par
+`chemin:ligne` — **ne recopie jamais leur contenu**, le destinataire peut les
+ouvrir.
 
 Exemple réel de ce qui suffit :
 
@@ -247,7 +385,8 @@ DETAIL: besoin pour T2.4. Attendu: {caption, page, distance, margin, verified}[]
 
 ### Règle 3 — la session pilote se tait aussi
 
-Elle relaie plus. Écrit qu'une décision de Nicolas ou un arrêt. Ses messages suivent même format.
+Elle ne relaie plus. Elle n'écrit qu'une décision de Nicolas ou un arrêt. Ses
+messages suivent le même format.
 
 ---
 
@@ -986,3 +1125,4 @@ En marge, trouvé en lisant l'avancement de `back` (Task 14, commit `d2aea93`) :
 DETAIL : commit `22b6ea6`.
 
 ASK : aucune décision Nicolas. J'enchaîne sur la Tranche 5 (Tasks 8-11 — l'écran des textes, la plus grosse tranche restante).
+
