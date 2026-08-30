@@ -26,6 +26,24 @@ existants du projet.
 >
 ### Amendements depuis le gel
 
+### A7 — le verrou de préfixe d'attribution d'une note *(2026-08-30, v1.5)*
+
+`PATCH /tasks/:slug/notes/:noteId` acceptait n'importe quel titre. Une note
+dérivée (A6) porte son attribution DANS LE TITRE — le seul endroit qui
+survit dans `textes/notes.md`, où `derivedFrom` n'apparaît pas — et rien ne
+protégeait ce préfixe contre une modification qui l'efface.
+
+Refus nommé, jamais silencieux : modifier `title` sur une note dont le
+préfixe (`journal de bord, `/`ma vie, `/`site web, ` jusqu'au premier tiret
+cadratin `" — "`) ne serait plus un préfixe exact du nouveau titre répond
+**422 `ATTRIBUTION_PREFIX_REMOVED`**, `details: { noteId, prefix }`. Ajouter
+à la suite du préfixe reste permis ; une note sans préfixe d'attribution
+(jamais dérivée) n'est pas concernée.
+
+Aucun type ne change — un nouveau code d'erreur (`ErrorCode.
+ATTRIBUTION_PREFIX_REMOVED`, ajouté à `src/shared/enums.ts`) et une règle de
+refus de plus.
+
 ### A6 — `TaskNote.derivedFrom` et `editedSince` *(2026-08-30, v1.5)*
 
 Une note peut naître de la recopie d'un texte d'époque (`docs/spec-v1.5.md`,

@@ -357,6 +357,56 @@ describe('POST /tasks/:slug/notes', () => {
       await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
     }
   });
+
+  test('PATCH refuses a title that erases the attribution prefix', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('logbook', 'handwritten', 'Journal', true)`);
+      await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+        VALUES ('passage', 'logbook/p003/001', 'logbook', 1, 'Départ.', 'transcribed')`);
+      await app.server.inject({ method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null } });
+
+      const created = await app.server.inject({
+        method: 'POST', url: '/tasks/x/notes',
+        payload: {
+          title: 'journal de bord, page 3 du 09/07/1998', text: 'Départ.',
+          attachedTo: { images: [], texts: [] }, derivedFrom: { kind: 'passage', id: 'logbook/p003/001' },
+        },
+      });
+      const noteId = created.json<{ id: string }>().id;
+
+      const refused = await app.server.inject({
+        method: 'PATCH', url: `/tasks/x/notes/${noteId}`, payload: { title: 'la nuit du grain' },
+      });
+      expect(refused.statusCode).toBe(422);
+      expect(refused.json<{ error: { code: string } }>().error.code).toBe('ATTRIBUTION_PREFIX_REMOVED');
+
+      const accepted = await app.server.inject({
+        method: 'PATCH', url: `/tasks/x/notes/${noteId}`,
+        payload: { title: 'journal de bord, page 3 du 09/07/1998 — la nuit du grain' },
+      });
+      expect(accepted.statusCode).toBe(200);
+    } finally {
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'logbook'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
+    }
+  });
+
+  test('PATCH on a note with no attribution prefix accepts any title', async () => {
+    app = await bootstrap(await completeEnv());
+    await app.server.inject({ method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null } });
+    const created = await app.server.inject({
+      method: 'POST', url: '/tasks/x/notes',
+      payload: { title: 'Ce que le journal ne dit pas', text: 'x', attachedTo: { images: [], texts: [] } },
+    });
+    const noteId = created.json<{ id: string }>().id;
+
+    const response = await app.server.inject({
+      method: 'PATCH', url: `/tasks/x/notes/${noteId}`, payload: { title: 'Autre chose entièrement' },
+    });
+    expect(response.statusCode).toBe(200);
+  });
 });
 
 describe('PATCH /tasks/:slug/notes/:noteId', () => {

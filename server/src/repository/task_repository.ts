@@ -613,7 +613,7 @@ export async function createTaskNote(
   return await loadNoteById(client, id);
 }
 
-async function loadNoteById(client: PoolClient, noteId: string): Promise<TaskNote | null> {
+export async function loadNoteById(client: PoolClient, noteId: string): Promise<TaskNote | null> {
   const { rows } = await client.query<NoteRow>(`${NOTE_SELECT} WHERE n.id = $1 GROUP BY n.id`, [noteId]);
   const row = rows[0];
   return row === undefined ? null : toTaskNote(row);

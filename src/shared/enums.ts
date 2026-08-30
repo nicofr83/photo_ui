@@ -194,5 +194,9 @@ export const ErrorCode = {
   FEATURE_DISABLED: 'FEATURE_DISABLED',
   IMPORT_IN_PROGRESS: 'IMPORT_IN_PROGRESS',
   INTERNAL: 'INTERNAL',
+  /** v1.5 : `PATCH /tasks/:slug/notes/:noteId` refuse un titre qui efface le préfixe d'attribution d'une note dérivée. */
+  ATTRIBUTION_PREFIX_REMOVED: 'ATTRIBUTION_PREFIX_REMOVED',
+  /** v1.5 : `PATCH /tasks/:slug` refuse un `exportDirectory` hors de `TASKS_ROOT`. */
+  DIRECTORY_OUTSIDE_ROOT: 'DIRECTORY_OUTSIDE_ROOT',
 } as const;
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

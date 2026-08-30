@@ -12,9 +12,10 @@ import { withTransaction } from '../db/transaction.ts';
 import type { ExportServiceDeps } from '../metier/export/export_service.ts';
 import { exportTask } from '../metier/export/export_service.ts';
 import type { Job, JobStore } from '../metier/jobs/job_service.ts';
+import { attributionPrefix, titleKeepsPrefix } from '../metier/tasks/note_title.ts';
 import {
   createTask, createTaskNote, deleteTask, deleteTaskNote, duplicateTask, getTaskDetail, getTaskReview, listTasks,
-  mutateTaskImages, mutateTaskTexts, patchTask, patchTaskNote,
+  loadNoteById, mutateTaskImages, mutateTaskTexts, patchTask, patchTaskNote,
 } from '../repository/task_repository.ts';
 
 /** Même expression que `app.task.task_slug_is_a_folder_name` — un refus nommé plutôt qu'une contrainte Postgres brute. */
@@ -436,7 +437,20 @@ export function registerTasksRoutes(server: FastifyInstance, deps: TasksRoutesDe
     const { slug, noteId } = request.params as { slug: string; noteId: string };
     const patch = parseNotePatchInput(request.body);
 
-    const note = await withTransaction(pool, (client) => patchTaskNote(client, slug, noteId, patch));
+    const note = await withTransaction(pool, async (client) => {
+      // Le verrou de préfixe d'attribution est tenu ICI, pas côté client : un
+      // titre est le SEUL porteur de provenance de `textes/notes.md` (contrat
+      // A6, spec v1.5).
+      if (patch.title !== undefined) {
+        const current = await loadNoteById(client, noteId);
+        if (current !== null && !titleKeepsPrefix(current.title, patch.title)) {
+          const prefix = attributionPrefix(current.title);
+          throw new AppError(ErrorCode.ATTRIBUTION_PREFIX_REMOVED,
+            "le préfixe d'attribution d'une note ne peut pas être retiré", 422, { noteId, prefix });
+        }
+      }
+      return await patchTaskNote(client, slug, noteId, patch);
+    });
     if (note === null) {
       throw new AppError(ErrorCode.NOT_FOUND, `note introuvable : ${noteId}`, 404, { resource: 'note', id: noteId });
     }
