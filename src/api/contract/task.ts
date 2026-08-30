@@ -113,25 +113,52 @@ export type TaskCreateInput = z.infer<typeof TaskCreateInputSchema>;
 
 /**
  * A batch, never one request per photo: selecting an album of 286 photos is a
- * gesture, not 286 requests (spec §9.3).
+ * gesture, not 286 requests (spec §9.3). Never wired into `apiPost` (which
+ * only validates RESPONSES, never outgoing bodies) until a real bug — a
+ * bare id in `add[]`, `useSelection.ts` sent `add: string[]` for a long
+ * time — reached Nicolas in production. `server/src/http/tasks_controller
+ * .ts#parseImageAddItem` refuses anything but `{ cloudAssetId,
+ * selectedBecause }` PER ITEM; this schema previously modeled the wrong
+ * shape (a bare id array, one shared `selectedBecause`) and nothing ever
+ * checked it against reality. Now used by the mock (`mocks/handlers.ts`) to
+ * refuse the same malformed shape the real server would, so MSW can no
+ * longer agree with a broken client.
  */
+export const TaskImageAddItemSchema = z.strictObject({
+  cloudAssetId: CloudAssetIdSchema,
+  selectedBecause: z.array(z.enum(SelectionReason)),
+  note: z.string().optional(),
+});
 export const TaskImagesMutationSchema = z.strictObject({
-  add: z.array(CloudAssetIdSchema).optional(),
+  add: z.array(TaskImageAddItemSchema).optional(),
   remove: z.array(CloudAssetIdSchema).optional(),
-  selectedBecause: z.array(z.enum(SelectionReason)).optional(),
+  update: z.array(z.strictObject({
+    cloudAssetId: CloudAssetIdSchema,
+    order: z.number().int().optional(),
+    note: z.string().nullable().optional(),
+  })).optional(),
 });
 
 /**
  * Accepted-with-a-reservation and refused are two different renderings, so they
  * are two different fields. `merged` counts set-union no-ops: re-adding a photo
  * already held is an idempotent success, never a rejection.
+ *
+ * `added`/`merged`/`removed`/`updated` are COUNTS, not the id arrays this
+ * schema modeled for a long time (`server/src/contract/task_interface.ts`) —
+ * a mismatch nothing ever caught, since this app never read these fields
+ * back, only passed the result through. `implicitlyAdded`/`contentHash`/
+ * `state` were entirely absent here.
  */
 export const TaskImagesMutationResultSchema = z.strictObject({
-  added: z.array(CloudAssetIdSchema),
-  removed: z.array(CloudAssetIdSchema),
-  merged: z.array(CloudAssetIdSchema),
+  added: z.number().int(),
+  merged: z.number().int(),
+  removed: z.number().int(),
+  updated: z.number().int(),
+  /** Selected IMPLICITLY by an `update` — writing a note retains the photo, never in silence. */
+  implicitlyAdded: z.array(CloudAssetIdSchema),
   rejected: z.array(
-    z.strictObject({ cloudAssetId: CloudAssetIdSchema, reason: z.string() }),
+    z.strictObject({ cloudAssetId: CloudAssetIdSchema, reason: z.enum(['unknown_photo', 'not_selected']) }),
   ),
   warnings: z.array(
     z.strictObject({
@@ -140,6 +167,8 @@ export const TaskImagesMutationResultSchema = z.strictObject({
     }),
   ),
   imageCount: z.number().int(),
+  contentHash: z.string(),
+  state: z.enum(TaskState),
 });
 export type TaskImagesMutationResult = z.infer<typeof TaskImagesMutationResultSchema>;
 
@@ -150,10 +179,15 @@ export const TaskTextsMutationSchema = z.strictObject({
 });
 export type TaskTextsMutation = z.infer<typeof TaskTextsMutationSchema>;
 
+/**
+ * `added`/`removed` are COUNTS (`server/src/contract/task_interface.ts`),
+ * same shape drift as `TaskImagesMutationResultSchema` above and same fix —
+ * this app never read these two fields back either.
+ */
 export const TaskTextsMutationResultSchema = z.strictObject({
-  added: z.array(TextRefSchema),
-  removed: z.array(TextRefSchema),
-  rejected: z.array(z.strictObject({ ref: TextRefSchema, reason: z.string() })),
+  added: z.number().int(),
+  removed: z.number().int(),
+  rejected: z.array(z.strictObject({ ref: TextRefSchema, reason: z.enum(['unknown_text', 'not_selected']) })),
   textCount: z.number().int(),
   contentHash: z.string(),
 });

@@ -19,10 +19,10 @@ import type { TextRef, TextUnit } from '../src/api/contract/text';
 import { isIsoDate, type IsoDate } from '../src/shared/date_interface';
 import {
   CorrectionStatus, DateKind, DatePrecision, DateSource, ErrorCode, MatchField, OverlapRule,
-  PhotoSort, SelectionReason, TaskState,
+  PhotoSort, TaskState,
 } from '../src/shared/enums';
 import {
-  TaskNoteCreateInputSchema, TaskTextsMutationSchema, type TaskDetail,
+  TaskImagesMutationSchema, TaskNoteCreateInputSchema, TaskTextsMutationSchema, type TaskDetail,
 } from '../src/api/contract/task';
 import type { Album } from '../src/api/contract/album';
 import type { Job } from '../src/api/contract/job';
@@ -938,28 +938,38 @@ export const handlers = [
         resource: 'task', id: String(params['slug']),
       });
     }
-    const body = (await request.json()) as {
-      add?: string[]; remove?: string[]; selectedBecause?: SelectionReason[];
-      update?: { cloudAssetId: string; order?: number; note?: string | null }[];
-    };
+    // Real shape, not the client's hope: `add[]` is objects, never bare ids
+    // — a mismatch here is exactly the class of bug a lenient mock let
+    // reach Nicolas in production (add: string[] instead of add:
+    // {cloudAssetId, selectedBecause}[]). Refusing it the same way the real
+    // server does is what makes THIS mock trustworthy again.
+    const parsed = TaskImagesMutationSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      const path = issue?.path.join('.') ?? '<root>';
+      return error(400, ErrorCode.INVALID_PARAMETER, `${path} : ${issue?.message ?? 'forme invalide'}`, {
+        parameter: path, received: null, accepted: null,
+      });
+    }
+    const body = parsed.data;
 
     const held = new Set(task.images.map((i) => i.cloudAssetId));
     const added: string[] = [];
     const merged: string[] = [];
     const rejected: { cloudAssetId: string; reason: string }[] = [];
 
-    for (const id of body.add ?? []) {
-      if (!store.photos.some((p) => p.cloudAssetId === id)) {
-        rejected.push({ cloudAssetId: id, reason: 'unknown_photo' });
+    for (const item of body.add ?? []) {
+      if (!store.photos.some((p) => p.cloudAssetId === item.cloudAssetId)) {
+        rejected.push({ cloudAssetId: item.cloudAssetId, reason: 'unknown_photo' });
         continue;
       }
       // Set union: re-adding is an idempotent success, never a rejection.
-      if (held.has(id)) { merged.push(id); continue; }
-      held.add(id);
-      added.push(id);
+      if (held.has(item.cloudAssetId)) { merged.push(item.cloudAssetId); continue; }
+      held.add(item.cloudAssetId);
+      added.push(item.cloudAssetId);
       task.images.push({
-        cloudAssetId: id, order: task.images.length, note: null,
-        selectedBecause: body.selectedBecause ?? [SelectionReason.MANUAL],
+        cloudAssetId: item.cloudAssetId, order: task.images.length, note: item.note ?? null,
+        selectedBecause: item.selectedBecause,
         selectedAt: NOW, orphaned: false,
         // Placeholder: both GET handlers recompute this live against the
         // task's CURRENT period (imageOutOfPeriod) — never read from here.
@@ -983,7 +993,18 @@ export const handlers = [
     }
 
     return HttpResponse.json({
-      added, removed, merged, rejected, warnings: [], imageCount: task.images.length,
+      // Real shape (server/src/contract/task_interface.ts): counts, never
+      // the id arrays this mock used to hand back — nothing here reads
+      // them back as arrays, only the wire shape needed correcting.
+      added: added.length, merged: merged.length, removed: removed.length, updated: 0,
+      // This mock's `update` loop only ever touches an id already held
+      // (`continue`s past an unknown one) — the real "an update can
+      // implicitly retain a not-yet-selected photo" behaviour is not
+      // simulated here, so this stays empty rather than half-faking it.
+      implicitlyAdded: [],
+      rejected, warnings: [], imageCount: task.images.length,
+      contentHash: `hash-${String(params['slug'])}-${String(task.images.length)}`,
+      state: task.state,
     });
   }),
 
@@ -1033,7 +1054,10 @@ export const handlers = [
     task.textCount = task.texts.length;
 
     return HttpResponse.json({
-      added, removed, rejected, textCount: task.texts.length,
+      // Counts, not the ref arrays this mock used to return — same drift,
+      // same fix as /tasks/:slug/images above.
+      added: added.length, removed: removed.length,
+      rejected, textCount: task.texts.length,
       contentHash: `hash-${String(params['slug'])}-${String(task.texts.length)}`,
     });
   }),

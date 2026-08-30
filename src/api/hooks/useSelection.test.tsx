@@ -4,6 +4,7 @@ import { http, HttpResponse } from 'msw';
 import type { ReactNode } from 'react';
 
 import { server } from '../../../mocks/node';
+import { SelectionReason } from '../../shared/enums';
 import { testQueryClient } from '../../test/renderWithProviders';
 import { ApiError } from '../client';
 
@@ -35,14 +36,42 @@ describe('INVARIANT §9.3 — a batch is ONE request, not one per photo', () => 
   });
 });
 
+describe('contract §7.2 — the real shape of an `add` element, never a bare id', () => {
+  test('each add[] element is { cloudAssetId, selectedBecause }, matching what the real server requires', async () => {
+    // MSW's own handler happily accepted a bare string here — the real
+    // server does not (server/src/http/tasks_controller.ts:parseImageAddItem
+    // refuses anything but an object). Bypassing the default handler and
+    // inspecting the exact body sent is what a lenient mock could never
+    // catch: it asserts the SHAPE, not just that the mock's own response
+    // looked right.
+    let body: unknown = null;
+    server.use(http.post('*/tasks/:slug/images', async ({ request }) => {
+      body = await request.json();
+      return HttpResponse.json({
+        added: 1, merged: 0, removed: 0, updated: 0, implicitlyAdded: [],
+        rejected: [], warnings: [], imageCount: 2, contentHash: 'hash-x', state: 'draft',
+      });
+    }));
+
+    const { result } = renderHook(() => useSelection('1999-transat'), { wrapper: wrapper() });
+    await waitFor(() => { expect(result.current.selected.size).toBe(1); });
+
+    await act(async () => { await result.current.add([A], [SelectionReason.MANUAL]); });
+
+    expect(body).toEqual({
+      add: [{ cloudAssetId: A, selectedBecause: [SelectionReason.MANUAL] }],
+    });
+  });
+});
+
 describe('set-union semantics', () => {
   test('re-adding a held photo is an idempotent success, not a rejection', async () => {
     const { result } = renderHook(() => useSelection('1999-transat'), { wrapper: wrapper() });
     await waitFor(() => { expect(result.current.selected.has(HELD)).toBe(true); });
 
     const outcome = await act(async () => result.current.add([HELD, A]));
-    expect(outcome.merged).toEqual([HELD]);
-    expect(outcome.added).toEqual([A]);
+    expect(outcome.merged).toBe(1);
+    expect(outcome.added).toBe(1);
     expect(outcome.rejected).toEqual([]);
   });
 

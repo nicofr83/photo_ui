@@ -5,12 +5,23 @@ import {
   TaskDetailSchema, TaskImagesMutationResultSchema,
   type TaskImageSelection, type TaskImagesMutationResult,
 } from '../contract/task';
-import type { SelectionReason } from '../../shared/enums';
+import { SelectionReason } from '../../shared/enums';
+
+/**
+ * `server/src/http/tasks_controller.ts#parseImageAddItem`: each element MUST
+ * be `{ cloudAssetId, selectedBecause }` — a bare id is refused with a named
+ * 400, never treated as one. `selectedBecause` travels PER ITEM, not once
+ * for the whole batch, even though every caller here applies the same
+ * reasons to a whole gesture.
+ */
+interface ImageAddItem {
+  readonly cloudAssetId: string;
+  readonly selectedBecause: readonly SelectionReason[];
+}
 
 interface Mutation {
-  readonly add?: readonly string[];
+  readonly add?: readonly ImageAddItem[];
   readonly remove?: readonly string[];
-  readonly selectedBecause?: readonly SelectionReason[];
   readonly update?: ReadonlyArray<{ readonly cloudAssetId: string; readonly order: number }>;
 }
 
@@ -82,9 +93,12 @@ export function useSelection(slug: string): Selection {
     error: mutation.error,
     add: (cloudAssetIds, selectedBecause) =>
       mutation.mutateAsync(
-        selectedBecause === undefined
-          ? { add: cloudAssetIds }
-          : { add: cloudAssetIds, selectedBecause },
+        {
+          add: cloudAssetIds.map((cloudAssetId) => ({
+            cloudAssetId,
+            selectedBecause: selectedBecause ?? [SelectionReason.MANUAL],
+          })),
+        },
       ),
     remove: (cloudAssetIds) => mutation.mutateAsync({ remove: cloudAssetIds }),
     moveUp: (cloudAssetId) => swapWithNeighbour(cloudAssetId, -1),
