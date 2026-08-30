@@ -2,14 +2,11 @@ import { useState } from 'react';
 
 import { useAlbums } from '../api/hooks/useAlbums';
 import { useAlbumSpan } from '../api/hooks/useAlbumSpan';
-import { useWebDocuments, useWebSpan } from '../api/hooks/useWebSpan';
 import type { Album } from '../api/contract/album';
-import type { AlbumSpanUpdateResult, WebDocumentRow } from '../api/contract/ref';
-import type { TextDocument } from '../api/contract/text';
+import type { AlbumSpanUpdateResult } from '../api/contract/ref';
 import { sortAlbumsByPath } from '../domain/albumOrder';
 import { matchesSearch } from '../domain/searchFold';
 import { isIsoDate } from '../shared/date_interface';
-import { ResolvedDateView } from '../ui/date/ResolvedDate';
 import { ErrorBanner } from '../ui/primitives/ErrorBanner';
 import { FixedHeader } from '../ui/primitives/FixedHeader';
 import scrollStyles from '../ui/primitives/FixedHeader.module.css';
@@ -23,10 +20,13 @@ const WARNING_LABEL: Record<string, (details: { prefixYear?: number; albumPath?:
 };
 
 /**
- * Spec §5.7/contract §4.8: the three referentials only a person can fill.
- * Small screen, biggest yield of the whole app — 25 entries correct the
+ * Spec §5.7/contract §4.8: the album span editor — 25 entries correct the
  * interval of 421 photos. Country aliases are not built here: neither the
  * spec's brief for this tranche nor T4's mandate named them.
+ *
+ * v1.5, Task 12: the "Site web" section moved out to its own screen
+ * (`/dates-site`) — dating 60 documents with a proposal and a periscope
+ * ("Voir tout") outgrew a settings subsection.
  */
 export function SettingsScreen(): React.JSX.Element {
   return (
@@ -36,7 +36,6 @@ export function SettingsScreen(): React.JSX.Element {
       </FixedHeader>
       <div className={`${String(scrollStyles['scrolls'])} ${String(styles['content'])}`}>
         <AlbumSpans />
-        <WebSpans />
       </div>
     </section>
   );
@@ -204,98 +203,6 @@ function AlbumRow({ album }: { readonly album: Album }): React.JSX.Element {
           </p>
         </>
       )}
-    </li>
-  );
-}
-
-function WebSpans(): React.JSX.Element {
-  const documents = useWebDocuments();
-
-  if (documents.error !== null) return <ErrorBanner error={documents.error} />;
-  if (documents.isPending) return <p role="status">Chargement des documents…</p>;
-
-  return (
-    <section>
-      <h2>Site web</h2>
-      <ul className={styles['list']} aria-label="Documents du site web">
-        {documents.data.items.map((doc) => (
-          <WebDocRow key={doc.documentId} row={doc} />
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function WebDocRow({ row }: { readonly row: WebDocumentRow }): React.JSX.Element {
-  const editor = useWebSpan();
-  const [dateFrom, setDateFrom] = useState('');
-  const [note, setNote] = useState('');
-  const [doc, setDoc] = useState<TextDocument | null>(null);
-
-  // v1.5: a web span is a single START bound — the end is derived (the next
-  // DATED document's day minus one, or this document's own day if it is
-  // the last), never entered.
-  const save = (): void => {
-    if (!isIsoDate(dateFrom)) return;
-    void editor.save({ documentId: row.documentId, dateFrom, note: note === '' ? null : note })
-      .then((d) => { setDoc(d); setDateFrom(''); setNote(''); })
-      .catch(() => undefined);
-  };
-
-  const clear = (): void => {
-    void editor.clear(row.documentId).then((d) => { setDoc(d); }).catch(() => undefined);
-  };
-
-  const span = doc?.span ?? row.span;
-
-  return (
-    <li className={styles['row']} data-testid={`web-doc-${row.documentId}`}>
-      <p className={styles['title']}>{row.title}</p>
-      <p className={styles['current']}>{row.excerpt}</p>
-      {/* Contract §4.8: the document's PATH is the only date hint — said as one. */}
-      <p className={styles['hints']} data-testid="path-hint">Indice de date : {row.pathHint}</p>
-
-      {span === null ? (
-        <p className={styles['current']}>Aucune plage saisie.</p>
-      ) : (
-        <p className={styles['current']}><ResolvedDateView date={span} /></p>
-      )}
-
-      {editor.error !== null ? <ErrorBanner error={editor.error} /> : null}
-
-      <div className={styles['form']}>
-        <label className={styles['field']}>
-          Premier jour
-          <input
-            className={styles['control']}
-            type="date"
-            value={dateFrom}
-            onChange={(e) => { setDateFrom(e.target.value); }}
-          />
-        </label>
-        <label className={styles['field']}>
-          Note
-          <input
-            className={styles['control']}
-            type="text"
-            value={note}
-            onChange={(e) => { setNote(e.target.value); }}
-          />
-        </label>
-        <button
-          className={styles['button']}
-          type="button"
-          disabled={editor.isPending || dateFrom === ''}
-          onClick={save}
-        >
-          Enregistrer
-        </button>
-        {span === null ? null : (
-          <button className={styles['button']} type="button" onClick={clear}>
-            Effacer
-          </button>
-        )}
-      </div>
     </li>
   );
 }

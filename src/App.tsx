@@ -19,6 +19,7 @@ export function App(): React.JSX.Element {
           <VolumeBanner />
           <header className={styles['globalHeader']}>
             <strong>photo_ui</strong> <Link to="/taches">Tâches</Link>{' '}
+            <Link to="/dates-site">Datation du site</Link>{' '}
             <Link to="/reglages">Réglages</Link>
           </header>
           {/* v1.5, Task 6: this is what a screen's own FixedHeader is bounded

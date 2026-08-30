@@ -6,6 +6,7 @@ import { ReviewScreen } from '../screens/ReviewScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { TasksScreen } from '../screens/TasksScreen';
 import { TextsScreen } from '../screens/TextsScreen';
+import { WebDatingScreen } from '../screens/WebDatingScreen';
 
 function Tasks(): React.JSX.Element {
   const navigate = useNavigate();
@@ -32,6 +33,7 @@ export function AppRoutes(): React.JSX.Element {
       <Route path="/consigne/:slug" element={<Consigne />} />
       <Route path="/revue/:slug" element={<Review />} />
       <Route path="/reglages" element={<SettingsScreen />} />
+      <Route path="/dates-site" element={<WebDatingScreen />} />
     </Routes>
   );
 }

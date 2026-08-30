@@ -6,14 +6,24 @@ import {
   WebDocumentListSchema, type WebSpanPutInput,
 } from '../contract/ref';
 import { TextDocumentSchema, type TextDocument } from '../contract/text';
+import { WebDocumentScope } from '../../shared/enums';
 
 type WebDocumentList = z.infer<typeof WebDocumentListSchema>;
 
-/** Contract §4.8: the document's path is the only date hint — presented as one. */
-export function useWebDocuments(): UseQueryResult<WebDocumentList> {
+/**
+ * Contract §4.8: the document's path is the only date hint — presented as
+ * one. `scope` (v1.5, Task 12): `perimeter` (default) excludes rebuts —
+ * empty templates, the Google-verification file, anything outside 1998-2004
+ * — never named by a hardcoded list, which would go stale on the next
+ * reimport (contract).
+ */
+export function useWebDocuments(
+  scope: WebDocumentScope = WebDocumentScope.PERIMETER,
+): UseQueryResult<WebDocumentList> {
   return useQuery({
-    queryKey: ['ref', 'web-documents'],
-    queryFn: ({ signal }) => apiGet('/ref/web-documents', WebDocumentListSchema, signal),
+    queryKey: ['ref', 'web-documents', scope],
+    queryFn: ({ signal }) =>
+      apiGet(`/ref/web-documents?scope=${scope}`, WebDocumentListSchema, signal),
   });
 }
 

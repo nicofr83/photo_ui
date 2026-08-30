@@ -1,0 +1,13 @@
+.screen { display: grid; grid-template-rows: auto 1fr; height: 100%; }
+
+.showAll {
+  min-height: var(--tap-target);
+  padding: 0 0.6rem;
+  margin-bottom: 0.5rem;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}

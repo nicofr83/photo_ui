@@ -6,6 +6,7 @@
  * neither date nor page, a corrected passage, and one marked `needs_review`.
  */
 import type { TextDocument, TextFacets, TextPage, TextUnit } from '../../src/api/contract/text';
+import type { WebDateProposal } from '../../src/api/contract/ref';
 import { parseIsoDate, parseIsoTimestamp } from '../../src/shared/date_interface';
 import {
   CorrectionStatus, DateKind, DatePrecision, DateSource, PageSpanSource,
@@ -40,7 +41,50 @@ export const INVARIANT_DOCUMENTS: readonly TextDocument[] = [
     id: 'web/2003/2003_gal_1', kind: 'html', title: 'Galerie 2003',
     pageCount: null, passageCount: 12, span: null, hasPages: false,
   },
+  // v1.5, Task 12 — web-dating screen fixtures.
+  {
+    // A strong proposal: 20 photos, all dated to the day, a 9-day span.
+    id: 'web/2003/2003_gal_15', kind: 'html', title: 'Galerie 15',
+    pageCount: null, passageCount: 5, span: null, hasPages: false,
+  },
+  {
+    // A weak proposal: one photo, dated only to the month.
+    id: 'web/photo', kind: 'html', title: 'Une photo', pageCount: null,
+    passageCount: 2, span: null, hasPages: false,
+  },
+  {
+    // Already dated (a saved web_span — always an inference, contract §4.8).
+    id: 'web/1999/Transat', kind: 'html', title: 'Transat', pageCount: null,
+    passageCount: 10,
+    span: {
+      start: parseIsoDate('1999-11-05'), end: parseIsoDate('1999-11-08'),
+      precision: DatePrecision.DAY, kind: DateKind.INFERENCE, source: DateSource.WEB_SPAN,
+      bracketHours: null,
+    },
+    hasPages: false,
+  },
+  {
+    // A rebut: one passage only, under the "at least two" threshold (contract
+    // §4.8) — outside the perimeter, reachable only behind "Voir tout".
+    id: 'web/googlea0ccc7e24963cc5e', kind: 'html', title: 'Vérification Google',
+    pageCount: null, passageCount: 1, span: null, hasPages: false,
+  },
 ];
+
+/**
+ * v1.5, Task 12: `WebDocumentRow.proposal` fixtures — synthesized by the
+ * mock handler for `GET /ref/web-documents`, never a field `TextDocument`
+ * itself carries (contract: the row is a JOIN of the document, an excerpt,
+ * and this).
+ */
+export const INVARIANT_WEB_PROPOSALS: Record<string, WebDateProposal> = {
+  'web/2003/2003_gal_15': {
+    date: parseIsoDate('2004-10-05'), photoCount: 20, datedToDayCount: 20, spanDays: 9,
+  },
+  'web/photo': {
+    date: parseIsoDate('2000-06-15'), photoCount: 1, datedToDayCount: 0, spanDays: 30,
+  },
+};
 
 export const INVARIANT_PAGES: readonly TextPage[] = [
   {

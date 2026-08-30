@@ -1,3 +1,4 @@
+import { formatDDMMYYYY } from './isoDateFormat';
 import { TextSource } from './textSource';
 
 /**
@@ -32,11 +33,6 @@ interface WebAttributionInput {
 }
 
 export type AttributionInput = PageAttributionInput | WebAttributionInput;
-
-function formatDDMMYYYY(isoDay: string): string {
-  const [year, month, day] = isoDay.split('-');
-  return `${day ?? ''}/${month ?? ''}/${year ?? ''}`;
-}
 
 /**
  * Spec: "Le titre porte l'attribution" — the source, the page, and the

@@ -30,7 +30,7 @@ import type { Job } from '../src/api/contract/job';
 
 import { store } from './store';
 import { PHOTO_OCR, PHOTO_TAGS } from '../fixtures/invariants/photoTags';
-import { INVARIANT_PAGES, INVARIANT_TEXT_FACETS } from '../fixtures/invariants/texts';
+import { INVARIANT_PAGES, INVARIANT_TEXT_FACETS, INVARIANT_WEB_PROPOSALS } from '../fixtures/invariants/texts';
 
 /**
  * The mock's own knowledge of which tags name a place — standing in for
@@ -183,6 +183,20 @@ function recomputeWebSpanEnds(): void {
     const end = next?.span == null ? doc.span.start : isoDayMinusOne(next.span.start);
     doc.span = { ...doc.span, end };
   });
+}
+
+const PERIMETER_YEARS = ['1998', '1999', '2000', '2001', '2002', '2003', '2004'];
+
+/**
+ * v1.5, Task 12 (contract §4.8): a path OR a proposal falling in the
+ * 1998-2004 period, with at least two passages. Never a hardcoded list of
+ * document ids — that would go stale on the next reimport.
+ */
+function inWebPerimeter(row: WebDocumentRow): boolean {
+  if (row.passageCount < 2) return false;
+  const pathYear = PERIMETER_YEARS.some((year) => row.pathHint.includes(year));
+  const proposalYear = row.proposal !== null && PERIMETER_YEARS.includes(row.proposal.date.slice(0, 4));
+  return pathYear || proposalYear;
 }
 
 function textIncludes(haystack: string | null, needle: string): boolean {
@@ -446,11 +460,17 @@ export const handlers = [
     return HttpResponse.json(result);
   }),
 
-  http.get('*/ref/web-documents', () => {
+  // v1.5, Task 12. `scope=perimeter` (default): a path OR a proposal falling
+  // in 1998-2004, with at least two passages — the threshold that excludes
+  // rebuts (a Google-verification file, empty templates) without naming any
+  // file by id, which would go stale on the next reimport (contract §4.8).
+  http.get('*/ref/web-documents', ({ request }) => {
+    const scope = new URL(request.url).searchParams.get('scope') ?? 'perimeter';
     const items: WebDocumentRow[] = store.documents
       .filter((d) => d.kind === 'html')
       .map((d) => {
         const firstPassage = store.texts.find((t) => t.documentId === d.id);
+        const proposal = INVARIANT_WEB_PROPOSALS[d.id] ?? null;
         return {
           documentId: d.id,
           title: d.title,
@@ -458,13 +478,10 @@ export const handlers = [
           excerpt: firstPassage === undefined ? d.title : firstPassage.text.slice(0, 120),
           span: d.span,
           pathHint: d.id,
-          // v1.5, tranche 6 (Task 12): the real proposal is computed from
-          // nearby photos once the datation screen consumes it. Always
-          // absent here for now — a valid, honest "nothing to propose",
-          // never a guessed value ahead of that task.
-          proposal: null,
+          proposal,
         };
-      });
+      })
+      .filter((row) => scope === 'all' || inWebPerimeter(row));
     return HttpResponse.json({ items });
   }),
 

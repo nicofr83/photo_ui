@@ -138,6 +138,18 @@ export const PhotoScope = {
 } as const;
 export type PhotoScope = (typeof PhotoScope)[keyof typeof PhotoScope];
 
+/**
+ * v1.5, Task 12: `GET /ref/web-documents?scope=…` — `PERIMETER` (default)
+ * excludes junk, empty templates and off-topic files (a path OR a proposal
+ * falling in 1998-2004, with at least two passages); `ALL` shows every one
+ * of the 60, rebuts included, behind "Voir tout".
+ */
+export const WebDocumentScope = {
+  PERIMETER: 'perimeter',
+  ALL: 'all',
+} as const;
+export type WebDocumentScope = (typeof WebDocumentScope)[keyof typeof WebDocumentScope];
+
 export const PhotoSort = {
   DATE_ASC: 'date_asc',
   DATE_DESC: 'date_desc',

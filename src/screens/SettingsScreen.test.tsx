@@ -124,22 +124,5 @@ describe('spec §5.7/contract §4.8 — Réglages, the highest-yield screen', ()
   });
 });
 
-describe('contract §4.8 — web documents, where the path is the only date hint', () => {
-  test('a document is listed with its path named as the hint it is', async () => {
-    setup();
-    const row = await screen.findByTestId('web-doc-web/2003/2003_gal_1');
-    expect(within(row).getByTestId('path-hint')).toHaveTextContent('web/2003/2003_gal_1');
-  });
-
-  test('saving a span marks it as an inference, not a certainty', async () => {
-    const user = userEvent.setup();
-    setup();
-    const row = await screen.findByTestId('web-doc-web/2003/2003_gal_1');
-    // v1.5: a single START bound — the end is derived server-side, never entered.
-    await user.type(within(row).getByLabelText(/premier jour/i), '2003-01-01');
-    await user.click(within(row).getByRole('button', { name: /enregistrer/i }));
-
-    const date = await within(row).findByTestId('resolved-date');
-    expect(date).toHaveAttribute('data-date-kind', 'inference');
-  });
-});
+// v1.5, Task 12: the "Site web" section (and its tests) moved to
+// WebDatingScreen.test.tsx — its own screen now, at /dates-site.
