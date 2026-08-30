@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router';
 
 import { apiGet } from '../api/client';
 import type { TaskReview, TaskReviewWarnings } from '../api/contract/review';
@@ -11,6 +12,7 @@ import { useSystemStatus } from '../api/hooks/useSystemStatus';
 import { useTaskReview } from '../api/hooks/useTaskReview';
 import { overlaps } from '../domain/interval';
 import { originalsUnavailable } from '../domain/systemStatus';
+import { sourceOf, TEXT_SOURCE_TITLES, TextSource } from '../domain/textSource';
 import { NotesPanel } from '../ui/notes/NotesPanel';
 import { ErrorBanner } from '../ui/primitives/ErrorBanner';
 import { FixedHeader } from '../ui/primitives/FixedHeader';
@@ -19,6 +21,7 @@ import { TaskNav } from '../ui/primitives/TaskNav';
 import { Chronology } from '../ui/review/Chronology';
 import { ControlBanner } from '../ui/review/ControlBanner';
 import styles from '../ui/review/ReviewList.module.css';
+import { TextCard } from '../ui/texts/TextCard';
 
 /**
  * Spec §5.6: most of the eight counters can be turned into "which entries
@@ -67,6 +70,23 @@ const SKIP_REASONS: Record<string, string> = {
   VOLUME_UNAVAILABLE: 'volume absent',
 };
 
+/**
+ * v1.5, Task 7: the same three-sources-never-mixed rule as TextsScreen
+ * (spec §5.3), applied to the task's retained texts instead of a whole
+ * document's. `domain/textSource.ts#groupBySource` operates on documents,
+ * not on units — this mirrors it with `sourceOf` directly.
+ */
+function groupTextsBySource(
+  texts: TaskReview['texts'],
+): ReadonlyArray<{ source: TextSource; title: string; texts: TaskReview['texts'] }> {
+  return Object.values(TextSource)
+    .map((source) => ({
+      source, title: TEXT_SOURCE_TITLES[source],
+      texts: texts.filter((t) => sourceOf(t.documentId) === source),
+    }))
+    .filter((group) => group.texts.length > 0);
+}
+
 export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Element {
   const task = useQuery({
     queryKey: ['task', slug],
@@ -92,6 +112,11 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
   const report = job?.result?.report ?? null;
   const jobRunning = job !== null && (job.state === 'queued' || job.state === 'running');
   const highlightIds = review.data === undefined ? null : highlightIdsFor(activeWarning, review.data);
+  // Task 7: the thumbnail comes from GET /tasks/:slug/review, already
+  // fetched above — never a second request just to get a src.
+  const thumbUrlFor = (cloudAssetId: string): string | undefined =>
+    review.data?.images.find((i) => i.cloudAssetId === cloudAssetId)?.thumbUrl;
+  const textGroups = review.data === undefined ? [] : groupTextsBySource(review.data.texts);
 
   return (
     <section className={styles['screen']}>
@@ -111,13 +136,19 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
         </>
       )}
 
-      {/* La consigne au LLM et la période de la tâche vivent sur Consigne
-          (v1.5, Task 5) — leur propre sous-page, pas un onglet de celle-ci. */}
+      {/* La consigne au LLM et la période de la tâche s'ÉDITENT sur Consigne
+          (v1.5, Task 5) — leur propre sous-page. Rappelée ici en lecture
+          seule : ce que le LLM lira ne devrait pas se deviner. */}
+      <div className={styles['brief']} data-testid="brief-recall">
+        <p>{task.data.brief === '' ? 'Aucune consigne.' : task.data.brief}</p>
+        <Link to={`/consigne/${slug}`}>Modifier sur Consigne</Link>
+      </div>
 
       <p className={styles['note']} data-testid="order-note">
         Ordre chronologique par défaut — c’est celui que le LLM lira.
       </p>
 
+      {review.data === undefined ? <p role="status">Chargement…</p> : (
       <ul className={styles['list']} aria-label="Images de la tâche">
         {selection.images.map((image, index) => (
           <li
@@ -125,6 +156,12 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
             key={image.cloudAssetId}
             data-testid={`review-image-${image.cloudAssetId}`}
           >
+            <img
+              className={styles['thumb']}
+              src={thumbUrlFor(image.cloudAssetId)}
+              alt={`Vignette ${image.cloudAssetId.slice(0, 8)}`}
+              width={64}
+            />
             <span>{image.cloudAssetId.slice(0, 8)}</span>
             <button
               className={styles['move']}
@@ -147,14 +184,29 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
             <button
               className={styles['remove']}
               type="button"
-              aria-label={`Retirer ${image.cloudAssetId.slice(0, 8)}`}
               onClick={() => { void selection.remove([image.cloudAssetId]); }}
             >
-              Retirer
+              Retirer {image.cloudAssetId.slice(0, 8)}
             </button>
           </li>
         ))}
       </ul>
+      )}
+
+      {textGroups.length === 0 ? null : (
+        <div role="list" aria-label="Textes de la tâche">
+          {textGroups.map((group) => (
+            <section key={group.source}>
+              <h2>{group.title}</h2>
+              {group.texts.map((text) => (
+                <div role="listitem" key={`${text.ref.kind}:${text.ref.id}`}>
+                  <TextCard unit={text} />
+                </div>
+              ))}
+            </section>
+          ))}
+        </div>
+      )}
 
       {/* The POST itself only ever fails synchronously for something OTHER
           than "directory exists" — e.g. IMPORT_IN_PROGRESS, a mutant job

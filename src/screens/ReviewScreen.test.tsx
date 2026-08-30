@@ -22,6 +22,35 @@ describe('§5.6 — what is held is shown', () => {
       .toBeInTheDocument();
   });
 
+  test('v1.5, Task 7: each row carries its own photo thumbnail', async () => {
+    setup();
+    const rows = await screen.findAllByTestId(/^review-image-/);
+    for (const row of rows) {
+      expect(within(row).getByRole('img')).toHaveAttribute('src', expect.stringContaining('/images/'));
+    }
+  });
+
+  test('v1.5, Task 7: the retained texts are also listed, grouped by source', async () => {
+    const task = store.tasks.get('1999-transat');
+    task?.texts.push({
+      ref: { kind: 'log_entry', id: 'logbook/p003/001' },
+      order: 0, selectedAt: parseIsoTimestamp('2026-08-29T10:00:00.000Z'), orphaned: false,
+      startOffset: null, endOffset: null,
+    });
+
+    setup();
+    expect(await screen.findByRole('list', { name: 'Textes de la tâche' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Journal de bord' })).toBeInTheDocument();
+  });
+
+  test('v1.5, Task 7: the brief is recalled read-only, with a link to edit it', async () => {
+    setup();
+    const recall = await screen.findByTestId('brief-recall');
+    expect(within(recall).queryByRole('textbox')).toBeNull();
+    expect(within(recall).getByRole('link', { name: /Consigne/ }))
+      .toHaveAttribute('href', '/consigne/1999-transat');
+  });
+
   test('Q6 — the default order is chronological, and it is stated', async () => {
     setup();
     expect(await screen.findByTestId('order-note')).toHaveTextContent(/chronologique/i);
@@ -50,7 +79,7 @@ describe('§5.6 — what is held is shown', () => {
     await screen.findByTestId('review-image-e8bc80b75e254b7db2e1454222416813');
     const removeButtons = screen.getAllByRole('button', { name: /^Retirer /i });
     expect(removeButtons).toHaveLength(2);
-    const names = removeButtons.map((b) => b.getAttribute('aria-label'));
+    const names = removeButtons.map((b) => b.textContent);
     expect(new Set(names).size).toBe(2);
     expect(names).toEqual(
       expect.arrayContaining(['Retirer e8bc80b7', 'Retirer 05b9a4fa']),
