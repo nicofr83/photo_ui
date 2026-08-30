@@ -740,3 +740,21 @@ DONE (`systematic-debugging`, test qui échoue vérifié avant correctif pour ch
 DETAIL : commits `e9b73b1` (bouton retirer), `66e3d10` (chemin complet + redondance Réglages).
 
 ASK : aucune décision Nicolas. Les deux défauts remontés par l'agent V1.5 sont faits et vérifiés en direct.
+
+---
+
+## Avancement — impl-backend, v1.5 tranche A, Tasks 1-4 (2026-08-30)
+
+RE : v1.5, tranche A — les quatre amendements au contrat
+DONE : Tasks 1 à 4 terminées et commitées.
+- **Task 1 (migration `006_v15.sql`)** : `app.task_note.derived_from_kind/derived_from_id/derived_text_original` (CHECK 0 ou 3), `ref.web_span.date_to` nullable, `app.page_date` (cascade de la 1.5). **Écart réel trouvé, corrigé, pas dans le plan** : le snippet du plan posait une FK `app.page_date.page_id → pipeline.page(id) ON DELETE CASCADE` — l'INVARIANT 6 existant (« aucune FK d'app/ref vers pipeline ») l'a immédiatement fait échouer : `import_service.ts` fait un `TRUNCATE` NU (sans `CASCADE`) sur `pipeline.*`, une FK ici aurait fait échouer TOUT import suivant. Corrigé : `page_id` sans FK, comme partout ailleurs dans `app`/`ref`. Migration déjà appliquée une fois avec la FK fautive (base réelle ET de test) — corrigée en place par un `ALTER TABLE ... DROP CONSTRAINT` ciblé sur les deux, le lanceur de migration ne rejouant jamais un fichier déjà marqué appliqué.
+- **Task 2 (A6, `TaskNote.derivedFrom`/`editedSince`)** : `editedSince` calculé à la lecture (jamais stocké). `NOTE_SELECT` extrait (trois projections de note ne divergent plus). **Écart réel trouvé et corrigé, pas dans le plan** : `duplicateTask` (tâche 26) ne copiait que `id/title/body` — une note dérivée dupliquée perdait silencieusement sa provenance. Corrigé.
+- **Task 3 (A7, verrou de préfixe)** : `note_title.ts` pur (`attributionPrefix`/`titleKeepsPrefix`), câblé sur `PATCH /tasks/:slug/notes/:noteId` → 422 `ATTRIBUTION_PREFIX_REMOVED` avant toute écriture.
+- **Task 4 (A8, répertoire de livraison)** : `TaskPatchInput.exportDirectory`, confiné sous `TASKS_ROOT` (422 `DIRECTORY_OUTSIDE_ROOT`, jamais assaini). Le défaut `<TASKS_ROOT>/<slug>` est résolu à la frontière HTTP sur LES SIX routes qui rendent un `TaskSummary`/`TaskDetail`/`TaskReview.task`, pas seulement `PATCH` — pour ne pas répéter l'écart `outOfPeriod` déjà payé une fois. **Signalé, pas fait** : `export_service.ts` ne lit pas encore ce réglage comme repli avant son propre défaut — absent du périmètre de fichiers de la Task 4 dans le plan ; à confirmer si c'est un oubli ou un report délibéré (écrit dans l'amendement A8 aussi).
+`src/shared/enums.ts` touché une fois pour les deux codes d'erreur (`ATTRIBUTION_PREFIX_REMOVED`, `DIRECTORY_OUTSIDE_ROOT`) — front prévenu au moment du geste.
+31 tests neufs sur les quatre tâches. 683 tests serveur, tsc/eslint propres.
+DETAIL : commits `d4b8f62`, `d7442ad`, `4f75a63`, `36f864e`.
+
+**Task 5 — BLOQUÉE, message envoyé à team-lead** : l'algorithme décrit («l'ordre des non datés entre deux datés est celui du document_id ») contredit son propre exemple de test — `web/1999/Caraibe` (non daté) devrait hériter de `web/1999/Transat` (daté), mais `'Caraibe' < 'Transat'` en ordre `document_id` réel (vérifié contre la vraie collation Postgres), ce qui devrait au contraire le laisser sans date par la même règle que l'exemple `web/1900-1988`. Je ne tranche pas seul lequel des deux (le texte ou l'exemple) fait foi — c'est une règle qui va dater 60 documents réels. Task 6 (l'annonce) ne peut pas conclure tant que les quatre amendements ne sont pas tous écrits.
+
+ASK : envoyé à team-lead directement (bloquant, une décision de conception). J'attends sa réponse pour Task 5 ; rien d'autre à faire en parallèle dans la tranche A tant qu'elle n'est pas close (team-lead : « rien d'autre en parallèle »).
