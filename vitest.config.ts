@@ -42,6 +42,19 @@ export default defineConfig({
           exclude: ['src/ui/date/noBareDateRendering.test.ts'],
         },
       },
+      {
+        extends: true,
+        test: {
+          name: 'live',
+          environment: 'node',
+          // v1.5, Task 14: the client's schemas against the REAL server's
+          // real responses — deliberately excluded from `npm test`
+          // (package.json's `test`/`test:watch`/`test:coverage` scripts
+          // pin `--project domain --project ui`), since it needs
+          // `cd server && npm run dev` running first. `npm run test:live`.
+          include: ['src/api/contract/*.itest.ts'],
+        },
+      },
     ],
     coverage: {
       provider: 'v8',

@@ -8,7 +8,7 @@ import {
 import {
   IsoTimestampSchema, ResolvedDateSchema, Sha256Schema, TextRangeSchema,
 } from './common';
-import { FacetBucketSchema } from './photo';
+import { FacetBucketSchema, ListEnvelopeSchema } from './photo';
 
 /**
  * THE KEY OF A TEXT IS THE COUPLE, NEVER THE ID ALONE.
@@ -174,6 +174,9 @@ export const TextUnitSchema = z.strictObject({
   galleryCaption: GalleryCaptionFieldsSchema.nullable(),
 });
 export type TextUnit = z.infer<typeof TextUnitSchema>;
+
+/** `GET /texts` — same envelope shape as `/photos`, one schema for the idea. */
+export const TextUnitListSchema = ListEnvelopeSchema(TextUnitSchema);
 
 export const TextDocumentSchema = z.strictObject({
   id: z.string(),

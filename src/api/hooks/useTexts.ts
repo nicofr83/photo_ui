@@ -2,12 +2,10 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { z } from 'zod';
 
 import { apiGet } from '../client';
-import { TextDocumentListSchema, TextUnitSchema } from '../contract/text';
-import { ListEnvelopeSchema } from '../contract/photo';
+import { TextDocumentListSchema, TextUnitListSchema } from '../contract/text';
 import type { TextKind } from '../../shared/enums';
 
-const TextPageEnvelope = ListEnvelopeSchema(TextUnitSchema);
-type TextEnvelope = z.infer<typeof TextPageEnvelope>;
+type TextEnvelope = z.infer<typeof TextUnitListSchema>;
 type DocumentList = z.infer<typeof TextDocumentListSchema>;
 
 export function useDocuments(): UseQueryResult<DocumentList> {
@@ -28,7 +26,7 @@ export function useTexts(documentId: string): UseQueryResult<TextEnvelope> {
   return useQuery({
     queryKey: ['texts', documentId],
     queryFn: ({ signal }) =>
-      apiGet(`/texts?documentId=${encodeURIComponent(documentId)}`, TextPageEnvelope, signal),
+      apiGet(`/texts?documentId=${encodeURIComponent(documentId)}`, TextUnitListSchema, signal),
   });
 }
 
@@ -42,6 +40,6 @@ export function useTextsByKind(kind: TextKind): UseQueryResult<TextEnvelope> {
   return useQuery({
     queryKey: ['texts', 'kind', kind],
     queryFn: ({ signal }) =>
-      apiGet(`/texts?kind=${encodeURIComponent(kind)}`, TextPageEnvelope, signal),
+      apiGet(`/texts?kind=${encodeURIComponent(kind)}`, TextUnitListSchema, signal),
   });
 }
