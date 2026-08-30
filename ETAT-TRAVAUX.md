@@ -942,3 +942,13 @@ Sur le point réel : confirmé à team-lead que le serveur sert déjà les deux 
 Répondu à team-lead avec les faits et les commits exacts.
 
 ASK : aucun. Je reste disponible.
+
+---
+
+## Avancement — impl-backend, veille (2026-08-30)
+
+RE : team-lead — confirmation, correction de son propre séquencement, éloge du test rouge
+DONE : rien à faire de mon côté — team-lead a confirmé avoir lui-même relancé le serveur (le mien avait cédé la place, un seul tourne), vérifié mon travail (341 tests, tsc propre, `/ref/web-documents` → 28/60 réel, `web/1999/Caraibe` → 2000-01-01/11 photos), relayé à Nicolas, et reconnu que son alerte précédente était basée sur un instantané git périmé (son erreur de séquencement, pas la mienne). Confirmé que `page_date` sert déjà les deux natures correctement — rien à changer côté serveur, la correction de `dateKind.ts` était côté client uniquement. Le choix de laisser la Task 15 rouge plutôt que de toucher au fichier de front a été explicitement salué.
+Je passe en veille pour l'intégration de front (8 tranches) — je reprendrai quand un défaut serveur en sortira, comme annoncé quatre fois sur la V1.
+
+ASK : aucun. En veille, disponible.
