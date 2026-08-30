@@ -1,7 +1,9 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
 import { MemoryRouter } from 'react-router';
 
+import { server } from '../../mocks/node';
 import { store } from '../../mocks/store';
 import { parseIsoDate, parseIsoTimestamp } from '../shared/date_interface';
 import { renderWithProviders } from '../test/renderWithProviders';
@@ -91,10 +93,47 @@ describe('§5.6 — exporting', () => {
     setup();
     await user.click(await screen.findByRole('button', { name: /^Exporter/ }));
     const report = await screen.findByTestId('export-report');
-    expect(report).toHaveTextContent('sans-vignette.jpg');
-    expect(report).toHaveTextContent(/introuvable|source_file_missing/);
+    // No fileName on a skipped image (server/src/contract/task_interface.ts
+    // TaskExportReport.skippedImages) — only the id it could not resolve.
+    expect(report).toHaveTextContent('708192a3');
+    expect(report).toHaveTextContent(/introuvable|source_file_missing/i);
     // It continued: something was written.
     expect(report).toHaveTextContent(/1 image écrite/);
+  });
+
+  test('a running job shows a status while it is polled, before the report lands', async () => {
+    const user = userEvent.setup();
+    const running = {
+      id: 'job_running', type: 'export' as const, state: 'running' as const,
+      createdAt: '2026-08-29T10:00:00.000Z', startedAt: '2026-08-29T10:00:00.000Z', finishedAt: null,
+      progress: { done: 0, total: 1, label: null }, cancellable: false, result: null, error: null,
+    };
+    const succeeded = {
+      ...running, state: 'succeeded' as const, finishedAt: '2026-08-29T10:00:01.000Z',
+      progress: { done: 1, total: 1, label: null },
+      result: {
+        type: 'export' as const,
+        report: {
+          directory: '/tasks/1999-transat', manifestPath: '/tasks/1999-transat/manifest.json',
+          imagesWritten: 1, pagesWritten: 0, textsWritten: 0, notesWritten: 0, bytesWritten: 10,
+          skippedImages: [], partial: false, exportedAt: '2026-08-29T10:00:01.000Z',
+        },
+      },
+    };
+    // POST answers 202 with the job still running — exportTask() truly runs
+    // inside the async job runner, spec §7.4 — and the first poll confirms
+    // that before a second poll turns it terminal.
+    server.use(http.post('*/tasks/:slug/export', () => HttpResponse.json(running, { status: 202 })));
+    let polls = 0;
+    server.use(http.get('*/jobs/job_running', () => {
+      polls += 1;
+      return HttpResponse.json(polls === 1 ? running : succeeded);
+    }));
+
+    setup();
+    await user.click(await screen.findByRole('button', { name: /^Exporter/ }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Export en cours');
+    expect(await screen.findByTestId('export-report')).toBeInTheDocument();
   });
 
   test('an existing directory is NAMED and never overwritten in silence', async () => {

@@ -603,6 +603,14 @@ export const handlers = [
     return HttpResponse.json(unit);
   }),
 
+  // Real shape (server/src/metier/jobs/job_service.ts): the POST always
+  // answers 202 with a job — `exportTask()` runs INSIDE the async runner, so
+  // "directory exists" is never a synchronous error here either, only a
+  // failed job the client learns about by polling (GET /jobs/:jobId below).
+  // This mock resolves synchronously to a terminal state in the same
+  // response — faithful to what the real export is in practice (a 1-2 image
+  // task finishes before the client's first poll), while still exercising
+  // the real terminal shapes `useJob`/ReviewScreen consume.
   http.post('*/tasks/:slug/export', async ({ params, request }) => {
     const slug = String(params['slug']);
     const task = store.tasks.get(slug);
@@ -611,11 +619,22 @@ export const handlers = [
     }
     const body = (await request.json()) as { overwrite: boolean };
 
+    const base = {
+      id: `job_${slug}_${String(store.jobs.size)}`,
+      type: 'export' as const,
+      createdAt: NOW, startedAt: NOW, finishedAt: NOW,
+      progress: { done: task.images.length, total: task.images.length, label: null },
+      cancellable: false,
+    };
+
     // Never overwrite in silence: name the directory and let the user choose.
     if (store.exportDirectoryExists && !body.overwrite) {
-      return error(409, ErrorCode.TARGET_DIRECTORY_EXISTS, 'Le dossier existe déjà.', {
-        directory: `/tasks/${slug}`,
-      });
+      const job: Job = {
+        ...base, state: 'failed', result: null,
+        error: { code: ErrorCode.TARGET_DIRECTORY_EXISTS, message: `dossier déjà existant : /tasks/${slug}` },
+      };
+      store.jobs.set(job.id, job);
+      return HttpResponse.json(job, { status: 202 });
     }
 
     // One image will not render. The export continues without it, and the
@@ -625,25 +644,23 @@ export const handlers = [
     );
 
     const job: Job = {
-      jobId: `job_${slug}`,
-      type: 'export',
-      state: 'succeeded',
-      done: task.images.length,
-      total: task.images.length,
-      startedAt: NOW,
-      endedAt: NOW,
-      report: {
-        directory: `/tasks/${slug}`,
-        written: task.images.length - unrenderable.length,
-        skipped: unrenderable.map((i) => ({
-          cloudAssetId: i.cloudAssetId,
-          fileName: 'sans-vignette.jpg',
-          reason: 'source_file_missing',
-        })),
-        partial: false,
+      ...base, state: 'succeeded', error: null,
+      result: {
+        type: 'export',
+        report: {
+          directory: `/tasks/${slug}`,
+          manifestPath: `/tasks/${slug}/manifest.json`,
+          imagesWritten: task.images.length - unrenderable.length,
+          pagesWritten: 0, textsWritten: 0, notesWritten: 0, bytesWritten: 0,
+          skippedImages: unrenderable.map((i) => ({
+            cloudAssetId: i.cloudAssetId, reason: 'SOURCE_FILE_MISSING', expectedPath: null,
+          })),
+          partial: false,
+          exportedAt: NOW,
+        },
       },
     };
-    store.jobs.set(job.jobId, job);
+    store.jobs.set(job.id, job);
     return HttpResponse.json(job, { status: 202 });
   }),
 

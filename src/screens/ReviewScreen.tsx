@@ -5,6 +5,7 @@ import { apiGet } from '../api/client';
 import type { TaskReview, TaskReviewWarnings } from '../api/contract/review';
 import { TaskDetailSchema } from '../api/contract/task';
 import { useExport } from '../api/hooks/useExport';
+import { useJob } from '../api/hooks/useJob';
 import { useSelection } from '../api/hooks/useSelection';
 import { useSystemStatus } from '../api/hooks/useSystemStatus';
 import { useTaskReview } from '../api/hooks/useTaskReview';
@@ -59,9 +60,9 @@ function highlightIdsFor(key: keyof TaskReviewWarnings | null, review: TaskRevie
 }
 
 const SKIP_REASONS: Record<string, string> = {
-  source_file_missing: 'fichier introuvable',
-  not_renderable: 'format non rendable',
-  volume_unavailable: 'volume absent',
+  SOURCE_FILE_MISSING: 'fichier introuvable',
+  NOT_RENDERABLE: 'format non rendable',
+  VOLUME_UNAVAILABLE: 'volume absent',
 };
 
 export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Element {
@@ -71,6 +72,13 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
   });
   const selection = useSelection(slug);
   const exportTask = useExport(slug);
+  // POST /tasks/:slug/export ALWAYS answers 202 with a queued/running job —
+  // the outcome (report or "directory exists") only exists once this poll
+  // reaches a terminal state. exportJob.data supersedes exportTask.data as
+  // soon as its first fetch lands; before that, the mutation's own response
+  // is already a valid (non-terminal) Job to fall back on.
+  const exportJob = useJob(exportTask.data?.id ?? null);
+  const job = exportJob.data ?? exportTask.data ?? null;
   const review = useTaskReview(slug);
   const systemStatus = useSystemStatus();
   const volumeUnavailable = systemStatus.data !== undefined && originalsUnavailable(systemStatus.data);
@@ -80,7 +88,8 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
   if (task.error !== null) return <ErrorBanner error={task.error} />;
   if (task.isPending) return <p role="status">Chargement de la tâche…</p>;
 
-  const report = exportTask.data?.report ?? null;
+  const report = job?.result?.report ?? null;
+  const jobRunning = job !== null && (job.state === 'queued' || job.state === 'running');
   const highlightIds = review.data === undefined ? null : highlightIdsFor(activeWarning, review.data);
 
   return (
@@ -148,12 +157,20 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
         ))}
       </ul>
 
-      {/* A 409 means the directory exists. Name it and let the user choose;
-          never overwrite in silence. Spec §5.6. */}
-      {exportTask.error !== null ? (
+      {/* The POST itself only ever fails synchronously for something OTHER
+          than "directory exists" — e.g. IMPORT_IN_PROGRESS, a mutant job
+          already running. That case IS surfaced here, at the mutation. */}
+      {exportTask.error !== null ? <ErrorBanner error={exportTask.error} /> : null}
+
+      {/* exportTask succeeding only ever hands back a queued/running job —
+          the export itself runs inside the job runner, so "the directory
+          exists" (or any other outcome) can only be learned by polling it
+          to a terminal state. Never overwrite in silence: name it and let
+          the user choose. Spec §5.6. */}
+      {job?.state === 'failed' && job.error !== null ? (
         <>
-          <ErrorBanner error={exportTask.error} />
-          {exportTask.error.code === 'TARGET_DIRECTORY_EXISTS' ? (
+          <p className={styles['jobError']} role="alert">{job.error.message}</p>
+          {job.error.code === 'TARGET_DIRECTORY_EXISTS' ? (
             <button
               className={styles['export']}
               type="button"
@@ -163,6 +180,10 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
             </button>
           ) : null}
         </>
+      ) : null}
+
+      {jobRunning ? (
+        <p className={styles['note']} role="status">Export en cours…</p>
       ) : null}
 
       {/* Spec §5.1/§9: vignettes and selections stay usable while the volume
@@ -186,14 +207,14 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
       {report !== null ? (
         <div className={styles['report']} data-testid="export-report">
           <p>
-            {report.written} image{report.written > 1 ? 's' : ''} écrite
-            {report.written > 1 ? 's' : ''} dans {report.directory}.
+            {report.imagesWritten} image{report.imagesWritten > 1 ? 's' : ''} écrite
+            {report.imagesWritten > 1 ? 's' : ''} dans {report.directory}.
           </p>
-          {report.skipped.length > 0 ? (
+          {report.skippedImages.length > 0 ? (
             <ul className={styles['skipped']}>
-              {report.skipped.map((skip) => (
+              {report.skippedImages.map((skip) => (
                 <li key={skip.cloudAssetId}>
-                  {skip.fileName} — {SKIP_REASONS[skip.reason] ?? skip.reason}
+                  {skip.cloudAssetId.slice(0, 8)} — {SKIP_REASONS[skip.reason] ?? skip.reason}
                 </li>
               ))}
             </ul>

@@ -11,3 +11,4 @@
 .export { min-height: var(--tap-target); padding: 0 1rem; align-self: flex-start; cursor: pointer; }
 .report { padding: 0.75rem; border-left: 3px solid #1a7f4b; background: #f0fdf4; }
 .skipped { color: #92400e; }
+.jobError { margin: 0; padding: 0.75rem 1rem; border-left: 4px solid #b91c1c; background: #fef2f2; color: #7f1d1d; }
