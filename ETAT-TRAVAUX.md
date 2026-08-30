@@ -1221,3 +1221,21 @@ RE : front — `matchCount` déjà réglé (commit `22b6ea6`, message croisé av
 DONE : vérifié. `TextPageSchema` porte `matchCount: z.number().int().nullable()`. Rejoué `contract_shapes.itest.ts` : 3/3 verts. Suite complète : **83 fichiers, 741 tests, tous verts**, tsc/eslint propres. Le plan v1.5 backend est maintenant vert de bout en bout, sans aucune exception connue.
 
 ASK : aucun. En veille, disponible.
+
+---
+
+## Avancement — impl-frontend, câblage TextFilterPanel + NoteFromTextButton (2026-08-30)
+
+RE : team-lead — « câble-les maintenant, ce n'est pas une itération suivante »
+DONE : les deux composants de la Tranche 5 (Tasks 10-11), construits et testés mais inatteignables, sont maintenant branchés sur `TextsScreen`. Détail complet dans le commit `d035cb4` — reprise ici des quatre points demandés :
+- **Les deux branchés, avec tests d'intégration** : colonne de filtres ajoutée à `TextsScreen` (même disposition que l'aside d'Images), `NoteFromTextButton` déplacé dans `PageDetail`, réutilisant la coche de sélection de tâche existante — cocher un texte le retient pour la tâche ET le rend disponible pour la note, jamais une deuxième coche. `GET /pages` (mock) gagne `dateFrom`/`dateTo`/`q` ; une sélection d'années cumulée collapse en une seule plage (la plus ancienne au 1er janvier → la plus récente au 31 décembre), jamais un appel par année — exact sur les deux sources réelles (années contiguës). Tests d'intégration nouveaux dans `TextsScreen.test.tsx` (recherche et plage qui réduisent réellement la liste, avec `matchCount` affiché) et `PageDetail.test.tsx` (cocher un texte fait apparaître le bouton, créer la note ne recoche rien).
+- **Aller-retour d'URL** : même discipline que le panneau de filtres des images — une borne seule n'atteint jamais l'URL (testé), changer de source efface les filtres (testé), et un test dédié prouve la lecture au montage (une URL construite à la main avec `dateFrom`/`dateTo` filtre déjà au premier rendu, sans interaction) — pas seulement l'écriture.
+- **Le préfixe d'attribution, vérifié contre le vrai serveur** : `liveShapes.itest.ts` construit maintenant le titre via `attributionTitle` (plus un littéral en dur), le POST, puis PATCH la note créée deux fois — une extension après tiret cadratin (200) et un titre qui perd le préfixe (422 `ATTRIBUTION_PREFIX_REMOVED`). Les deux copies de la règle sont confirmées identiques par un aller-retour réel contre le vrai serveur, à l'instant — 7/7 verts.
+- **Repasse navigateur réelle** : sur `01-le-grand-depart`, en lecture seule (rechercher/filtrer par date ne mute rien) — une vraie recherche « mouillage » réduit 52 pages à 22 avec leur compte de correspondances, une vraie plage (juillet 1998) à 3, les deux dans l'URL, 5 années réelles proposées. Le geste cocher-puis-créer-une-note vérifié séparément sur `zz-repro-bug1` (tâche de reproduction déjà jetable, jamais sur les vraies données de Nicolas) : la coche fait apparaître « Créer une note », jamais avant ; état restauré après vérification. Aucune erreur console sur l'ensemble de la passe.
+
+678 tests front verts (+ 7 côté `live`, contre le vrai serveur), tsc et eslint propres.
+DETAIL : commit `d035cb4`.
+
+**La V1.5 est livrée — les 15 tâches, les 8 tranches, et ce câblage de fermeture.**
+
+ASK : aucune. J'attends votre confirmation, sinon je reste disponible.
