@@ -35,6 +35,8 @@ export const DateSource = {
   LOG_ENTRY_DATE: 'log_entry_date',
   PAGE_WINDOW: 'page_window',
   WEB_SPAN: 'web_span',
+  /** v1.5 : `TextPage.date` — la cascade registre → notes → héritage (`app.page_date`), distincte de `PAGE_WINDOW` (le recouvrement). */
+  PAGE_DATE: 'page_date',
 } as const;
 export type DateSource = (typeof DateSource)[keyof typeof DateSource];
 

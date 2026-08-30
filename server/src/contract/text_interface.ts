@@ -26,6 +26,16 @@ export interface TextPage {
   readonly height: number;
   readonly window: ResolvedDate | null;
   readonly spanSource: PageSpanSource | null;
+  /**
+   * La date de la page elle-même (v1.5, cascade registre → notes →
+   * héritage, `app.page_date`) — `kind: 'reading'` quand la page l'affirme
+   * (registre ou notes), `kind: 'inference'` quand elle est héritée de la
+   * page précédente. Distincte de `window` : `window` est la fenêtre de
+   * RECOUVREMENT calculée par la pipeline amont, `date` est ce que LA PAGE
+   * dit d'elle-même. `null` seulement pour une page antérieure à la
+   * première page datée de son document.
+   */
+  readonly date: ResolvedDate | null;
   readonly imageUrl: string;
   readonly regionsAvailable: false;
 }

@@ -12,6 +12,7 @@ import { withTransaction } from '../db/transaction.ts';
 import { openReadOnly } from '../io/sqlite_reader.ts';
 import { assertUnchanged, sourceFingerprints, type Fingerprint } from '../io/sqlite_reader.ts';
 import { copyRows, formatTextArray } from '../repository/import_repository.ts';
+import { recomputePageDates } from '../repository/page_date_repository.ts';
 import { readOcr } from './read_content.ts';
 import { readAnnotations } from './read_annotations.ts';
 import { readProposals, readUnresolved } from './read_dating.ts';
@@ -343,6 +344,11 @@ export async function runImportInto(client: PoolClient, sources: ImportSources):
     // de quelques millisecondes sur 2 871 lignes, acceptable dans l'import qui
     // tient déjà toute la base verrouillée le temps de son unique transaction.
     await client.query(`REFRESH MATERIALIZED VIEW app.text_search`);
+
+    // `app.page_date` — même raison, même repli : `pipeline.page`/`text_unit`
+    // reconstruits par le `TRUNCATE` laissent la cascade v1.5 périmée tant
+    // que rien ne la recalcule.
+    await recomputePageDates(client);
 
     return report;
   } finally {

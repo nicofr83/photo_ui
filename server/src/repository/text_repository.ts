@@ -90,7 +90,17 @@ interface PageRow {
   window_start: string | null;
   window_end: string | null;
   span_source: string | null;
+  page_date_start: string | null;
+  page_date_end: string | null;
+  page_date_source: string | null;
 }
+
+const PAGE_SELECT = `
+    SELECT p.id, p.document_id, p.ordinal, p.label, p.width, p.height,
+           p.window_start, p.window_end, p.span_source,
+           d.date_start AS page_date_start, d.date_end AS page_date_end, d.source AS page_date_source
+      FROM pipeline.page p
+      LEFT JOIN app.page_date d ON d.page_id = p.id`;
 
 function mapPageRow(row: PageRow): TextPage {
   return {
@@ -107,6 +117,14 @@ function mapPageRow(row: PageRow): TextPage {
       bracketHours: null,
     },
     spanSource: row.span_source as TextPage['spanSource'],
+    // La date de LA PAGE (cascade registre → notes → héritage, v1.5) —
+    // `reading` quand elle l'affirme (registre ou notes), `inference` quand
+    // elle est héritée (`carried`). Jamais confondue avec `window` ci-dessus.
+    date: row.page_date_start === null || row.page_date_end === null ? null : {
+      start: row.page_date_start, end: row.page_date_end, precision: 'day',
+      kind: row.page_date_source === 'carried' ? 'inference' : 'reading',
+      source: 'page_date', bracketHours: null,
+    },
     imageUrl: `/pages/image?pageId=${encodeURIComponent(row.id)}`,
     // `pages.region` est NULL sur les 155 lignes (contrat) — jamais promis.
     regionsAvailable: false,
@@ -115,9 +133,8 @@ function mapPageRow(row: PageRow): TextPage {
 
 export async function listPages(client: PoolClient, documentId?: string): Promise<readonly TextPage[]> {
   const { rows } = documentId === undefined
-    ? await client.query<PageRow>(`SELECT * FROM pipeline.page ORDER BY document_id, ordinal`)
-    : await client.query<PageRow>(
-      `SELECT * FROM pipeline.page WHERE document_id = $1 ORDER BY ordinal`, [documentId]);
+    ? await client.query<PageRow>(`${PAGE_SELECT} ORDER BY p.document_id, p.ordinal`)
+    : await client.query<PageRow>(`${PAGE_SELECT} WHERE p.document_id = $1 ORDER BY p.ordinal`, [documentId]);
   return rows.map(mapPageRow);
 }
 

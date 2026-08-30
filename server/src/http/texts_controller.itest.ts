@@ -79,6 +79,30 @@ describe('GET /pages', () => {
       await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
     }
   });
+
+  test('serves the page date with its nature: reading when own, inference when carried', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('ma-vie', 'handwritten', 'x', true)`);
+      await setup.query(`INSERT INTO pipeline.page (id, document_id, ordinal, image_relpath, width, height) VALUES
+        ('ma-vie/p001', 'ma-vie', 1, 'p1.jpg', 1, 1), ('ma-vie/p002', 'ma-vie', 2, 'p2.jpg', 1, 1)`);
+      await setup.query(`INSERT INTO app.page_date (page_id, date_start, date_end, source) VALUES
+        ('ma-vie/p001', '1999-08-04', '1999-08-04', 'notes'),
+        ('ma-vie/p002', '1999-08-04', '1999-08-04', 'carried')`);
+
+      const response = await app.server.inject({ method: 'GET', url: '/pages?documentId=ma-vie' });
+      const items = response.json<{ items: TextPage[] }>().items;
+      const propre = items.find((p) => p.ordinal === 1);
+      const herite = items.find((p) => p.ordinal === 2);
+      expect(propre?.date?.kind).toBe('reading');
+      expect(herite?.date?.kind).toBe('inference');
+    } finally {
+      await setup.query(`DELETE FROM app.page_date WHERE page_id IN ('ma-vie/p001', 'ma-vie/p002')`);
+      await setup.query(`DELETE FROM pipeline.page WHERE document_id = 'ma-vie'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'ma-vie'`);
+    }
+  });
 });
 
 describe('GET /pages/image', () => {
