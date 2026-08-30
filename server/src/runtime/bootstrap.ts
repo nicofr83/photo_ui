@@ -85,7 +85,7 @@ export async function bootstrap(env: NodeJS.ProcessEnv): Promise<App> {
   registerTasksRoutes(server, { pool, jobStore, exportDeps });
   registerImagesRoutes(server, { pool, imageService });
   registerJobsRoutes(server, { pool, jobStore, config, imageService });
-  registerTextsRoutes(server, { pool, pagesRoot: config.pagesRoot });
+  registerTextsRoutes(server, { pool, pagesRoot: config.pagesRoot, imageService });
   await server.ready();
 
   log.info('serveur prêt', { host: config.host, port: config.port });

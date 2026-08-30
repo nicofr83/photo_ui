@@ -1656,7 +1656,7 @@ n'oblige à écrire T3 avant que T1 tourne.
 | Tranche | Ce qu'elle livre | Endpoints |
 |:---|:---|:---|
 | **T1** — une tâche, une grille, un dossier | le produit minimal : il écrit le dossier sur disque | `/system/status` · `/tasks` et `/tasks/:slug` (+ `PATCH`, `/opened`) · `/albums` · `/photos` · `/photos/:id` · `/images/*` · `/tasks/:slug/images` · `/tasks/:slug/export` · `/jobs*` |
-| **T2** — le texte | documents, pages, recouvrement, notes | `/documents` · `/pages` · `/pages/image` · `/texts` · `/photos/:id/texts` · `/photos?overlapsText…` · `/tasks/:slug/texts` · `/tasks/:slug/notes*` |
+| **T2** — le texte | documents, pages, recouvrement, notes | `/documents` · `/pages` · `/pages/image` · `/pages/thumb` · `/texts` · `/photos/:id/texts` · `/photos?overlapsText…` · `/tasks/:slug/texts` · `/tasks/:slug/notes*` |
 | **T3** — chercher | facettes et plein texte | `/photos/facets` · `q` sur `/photos` et `/texts` · `/vocabularies/*` |
 | **T4** — écrire | correction et référentiels | `/corrections*` · `/ref/*` |
 | **T5** — la revue en entier | **presque aucun endpoint nouveau** | `/tasks/:slug/review` · `/tasks/:slug/duplicate` · `DELETE /tasks/:slug` |
@@ -1719,6 +1719,7 @@ nom est un `UNKNOWN_PARAMETER`.
 | `GET` | `/documents` | `{ items: TextDocument[] }` — 62 documents |
 | `GET` | `/pages?documentId=…` | `{ items: TextPage[] }` |
 | `GET` | `/pages/image?pageId=…` | **image/jpeg**, servie telle quelle |
+| `GET` | `/pages/thumb?pageId=…&edge=…` | **image/jpeg**, le scan entier réduit (v1.5) |
 | `GET` | `/texts` | `ListEnvelope<TextUnit>` |
 
 **Paramètres de `/texts`** : `documentId`, `pageId`, `kind`, `dateFrom`,
@@ -2089,6 +2090,27 @@ Trois orthographes coexistent en amont pour le même document — `logbook` (id)
 `journal de bord/` (source PDF), `journal-de-bord/` (dossier des images). Le
 backend résout par `pages.imagePath`, jamais en reconstruisant un chemin depuis
 `documentId`.
+
+### 6.3bis Vignette de page — `GET /pages/thumb?pageId=…&edge=…` (v1.5)
+
+Le scan **entier réduit**, jamais rogné — même rapport d'aspect que l'image
+pleine taille (§6.3), même mécanisme que le rendu intermédiaire des photos
+(§6.2) : `sips`, caché sous `<RENDER_CACHE_ROOT>/pages/`, le même sémaphore
+`InFlightRenders` que tout le reste du processus. Sert une LISTE de pages
+(103 pages, jusqu'à 31 Mo en pleine taille) sans en payer le poids.
+
+- `edge` : vocabulaire **fermé**, `160 · 320 · 640`. Toute autre valeur est
+  un 400 `INVALID_PARAMETER` listant les valeurs acceptées — une valeur libre
+  laisserait un visiteur remplir le disque de variantes.
+- Clé de cache : `pageId` (tout caractère hors `[a-z0-9]` remplacé par `_`,
+  ce qui exclut par construction tout `..` ou séparateur) + `edge`.
+
+```
+200  image/jpeg   (Cache-Control immutable)
+400  INVALID_PARAMETER    — edge hors du vocabulaire fermé
+404  NOT_FOUND            — pageId inconnu
+404  SOURCE_FILE_MISSING  — le fichier de scan manque, avec `expectedPath`
+```
 
 ### 6.4 Ce que le service d'images ne fait pas
 

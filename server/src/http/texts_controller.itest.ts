@@ -1,4 +1,4 @@
-import { mkdtemp, writeFile, mkdir } from 'node:fs/promises';
+import { copyFile, mkdtemp, readFile, stat, writeFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -8,11 +8,15 @@ import { afterAll, afterEach, beforeAll, describe, expect, test } from 'vitest';
 import { runMigrations } from '../db/migrate.ts';
 import { createLog, LogLevel } from '../log/log.ts';
 import { closeTestPool, testPool } from '../../test/helpers/db.ts';
+import { readJpegSize } from '../../test/helpers/jpeg_size.ts';
 import type { ListEnvelope } from '../contract/filter_interface.ts';
 import type { TextDocument, TextPage, TextUnit } from '../contract/text_interface.ts';
 import { bootstrap, type App } from '../runtime/bootstrap.ts';
 
 const MIGRATIONS = fileURLToPath(new URL('../../db/migrations', import.meta.url));
+// Un vrai scan de page (adobe_mcp, lecture seule) — jamais un fixture synthétique
+// pour un test qui doit faire tourner un VRAI `sips`.
+const REAL_PAGE_SCAN = '/Users/nico/projects/adobe_mcp/docs/pages/journal-de-bord/p010.jpg';
 
 beforeAll(async () => {
   await runMigrations(testPool(), createLog(LogLevel.ERROR), MIGRATIONS);
@@ -22,6 +26,7 @@ afterAll(async () => { await closeTestPool(); });
 
 let app: App | undefined;
 let pagesRoot = '';
+let renderCacheRoot = '';
 
 async function completeEnv(): Promise<NodeJS.ProcessEnv> {
   const base = await mkdtemp(path.join(tmpdir(), 'texts-controller-'));
@@ -31,12 +36,13 @@ async function completeEnv(): Promise<NodeJS.ProcessEnv> {
     return p;
   };
   pagesRoot = await dir('pages');
+  renderCacheRoot = await dir('render-cache');
   return {
     DATABASE_URL: process.env.DATABASE_URL_TEST,
     ORIGINALS_ROOT: await dir('originals'), THUMBS_ROOT: await dir('thumbs'),
     PIPELINE_DB_ROOT: await dir('pipeline-db'), PAGES_ROOT: pagesRoot,
     ANNOTATIONS_DIR: await dir('annotations'), WEB_GALLERY_ROOT: await dir('web-gallery'),
-    RENDER_CACHE_ROOT: await dir('render-cache'), TASKS_ROOT: await dir('tasks'),
+    RENDER_CACHE_ROOT: renderCacheRoot, TASKS_ROOT: await dir('tasks'),
   };
 }
 
@@ -154,6 +160,71 @@ describe('GET /pages/image', () => {
       await setup.query(`DELETE FROM pipeline.page WHERE document_id = 'logbook'`);
       await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
     }
+  });
+});
+
+describe('GET /pages/thumb', () => {
+  async function seedRealPage(setup: ReturnType<typeof testPool>): Promise<void> {
+    await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                       VALUES ('logbook', 'handwritten', 'Journal', true)`);
+    await setup.query(`INSERT INTO pipeline.page (id, document_id, ordinal, image_relpath, width, height)
+                       VALUES ('logbook/p010', 'logbook', 10, 'p010.jpg', 798, 1233)`);
+    await copyFile(REAL_PAGE_SCAN, path.join(pagesRoot, 'p010.jpg'));
+  }
+
+  test('the thumbnail is the ENTIRE scan reduced — same aspect ratio, no cropping', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await seedRealPage(setup);
+
+      const response = await app.server.inject({ method: 'GET', url: '/pages/thumb?pageId=logbook%2Fp010&edge=320' });
+      expect(response.statusCode).toBe(200);
+      expect(response.headers['content-type']).toBe('image/jpeg');
+
+      const { width, height } = await readJpegSize(response.rawPayload);
+      expect(Math.max(width, height)).toBe(320);
+
+      const source = await readJpegSize(await readFile(REAL_PAGE_SCAN));
+      expect(Math.abs(width / height - source.width / source.height)).toBeLessThan(0.01);
+    } finally {
+      await setup.query(`DELETE FROM pipeline.page WHERE document_id = 'logbook'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
+    }
+  });
+
+  test('a second request serves the cache — the rendered file is never rewritten', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await seedRealPage(setup);
+
+      await app.server.inject({ method: 'GET', url: '/pages/thumb?pageId=logbook%2Fp010&edge=320' });
+      const cachePath = path.join(renderCacheRoot, 'pages', 'logbook_p010-320.jpg');
+      const firstWrite = await stat(cachePath);
+
+      const response = await app.server.inject({ method: 'GET', url: '/pages/thumb?pageId=logbook%2Fp010&edge=320' });
+      expect(response.statusCode).toBe(200);
+      const secondWrite = await stat(cachePath);
+      expect(secondWrite.mtimeMs).toBe(firstWrite.mtimeMs);
+    } finally {
+      await setup.query(`DELETE FROM pipeline.page WHERE document_id = 'logbook'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
+    }
+  });
+
+  test('an unexpected size is refused, never rendered', async () => {
+    app = await bootstrap(await completeEnv());
+    const response = await app.server.inject({ method: 'GET', url: '/pages/thumb?pageId=logbook%2Fp010&edge=4000' });
+    expect(response.statusCode).toBe(400);
+    expect(response.json<{ error: { code: string } }>().error.code).toBe('INVALID_PARAMETER');
+  });
+
+  test('an unknown page is a named 404, not an empty image', async () => {
+    app = await bootstrap(await completeEnv());
+    const response = await app.server.inject({ method: 'GET', url: '/pages/thumb?pageId=nowhere%2Fp001&edge=320' });
+    expect(response.statusCode).toBe(404);
+    expect(response.json<{ error: { code: string } }>().error.code).toBe('NOT_FOUND');
   });
 });
 

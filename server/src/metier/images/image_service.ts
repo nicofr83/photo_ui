@@ -1,7 +1,7 @@
-import { randomUUID } from 'node:crypto';
 import { access, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { writeCacheAtomic } from '../../io/render_cache.ts';
 import type { SafeFs } from '../../io/safe_fs.ts';
 import { renderToJpeg } from '../../io/sips.ts';
 import { classifyRenderFailure, type RenderFailure } from './render_availability.ts';
@@ -41,15 +41,6 @@ async function readIfPresent(target: string): Promise<Buffer | null> {
   } catch {
     return null;
   }
-}
-
-/** Le rendu va dans un temporaire du MÊME dossier puis `rename` (tâche 15, §9.2). */
-async function writeCacheAtomic(safeFs: SafeFs, targetPath: string, data: Buffer): Promise<void> {
-  const dir = path.dirname(targetPath);
-  await safeFs.mkdir(dir);
-  const tmpPath = path.join(dir, `.tmp-${randomUUID()}-${path.basename(targetPath)}`);
-  await safeFs.writeFile(tmpPath, data);
-  await safeFs.rename(tmpPath, targetPath);
 }
 
 /**

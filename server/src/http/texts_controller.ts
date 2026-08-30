@@ -9,15 +9,21 @@ import type { ListEnvelope } from '../contract/filter_interface.ts';
 import type { TextCorrection, TextDocument, TextPage, TextUnit } from '../contract/text_interface.ts';
 import type { Pool } from '../db/pool.ts';
 import { withTransaction } from '../db/transaction.ts';
+import type { ImageServiceDeps } from '../metier/images/image_service.ts';
+import { getPageThumb, type PageThumbDeps } from '../metier/pages/thumb_service.ts';
 import {
   getPageImageRelpath, listCorrections, listDocuments, listPages, listTexts, putCorrection, revertCorrection,
   type TextCorrectionInput, type TextFilters,
 } from '../repository/text_repository.ts';
 import { parseQueryParams, type ParamSpec } from './query_params.ts';
 
+/** Vocabulaire FERMÉ (contrat §6.1) — une valeur libre laisserait un visiteur remplir le disque de variantes. */
+const PAGE_THUMB_EDGE_VALUES = ['160', '320', '640'] as const;
+
 export interface TextsRoutesDeps {
   readonly pool: Pool;
   readonly pagesRoot: string;
+  readonly imageService: ImageServiceDeps;
 }
 
 const TEXTS_PARAM_SPEC: ParamSpec = {
@@ -64,6 +70,21 @@ function invalidParameter(parameter: string, received: string, message: string):
   return new AppError(ErrorCode.INVALID_PARAMETER, message, 400, { parameter, received, accepted: null });
 }
 
+/** Le même lookup pour `/pages/image` et `/pages/thumb` — un `pageId` inconnu est le même 404 nommé dans les deux. */
+async function resolvePageSourcePath(pool: Pool, pagesRoot: string, pageId: string): Promise<string> {
+  const client = await pool.connect();
+  let relpath: string | null;
+  try {
+    relpath = await getPageImageRelpath(client, pageId);
+  } finally {
+    client.release();
+  }
+  if (relpath === null) {
+    throw new AppError(ErrorCode.NOT_FOUND, `page introuvable : ${pageId}`, 404, { resource: 'page', id: pageId });
+  }
+  return path.join(pagesRoot, relpath);
+}
+
 function parseTextRef(value: unknown, parameter: string): { kind: string; id: string } {
   if (typeof value !== 'object' || value === null) {
     throw invalidParameter(parameter, JSON.stringify(value), `${parameter} doit être { kind, id }`);
@@ -85,7 +106,10 @@ function parseCorrectionInput(body: unknown): TextCorrectionInput {
 }
 
 export function registerTextsRoutes(server: FastifyInstance, deps: TextsRoutesDeps): void {
-  const { pool, pagesRoot } = deps;
+  const { pool, pagesRoot, imageService } = deps;
+  const pageThumbDeps: PageThumbDeps = {
+    renderCacheRoot: imageService.renderCacheRoot, safeFs: imageService.safeFs, inFlight: imageService.inFlight,
+  };
 
   server.get('/documents', async (): Promise<{ items: readonly TextDocument[] }> => {
     const client = await pool.connect();
@@ -119,24 +143,36 @@ export function registerTextsRoutes(server: FastifyInstance, deps: TextsRoutesDe
         { parameter: 'pageId', received: '', accepted: null });
     }
 
-    const client = await pool.connect();
-    let relpath: string | null;
-    try {
-      relpath = await getPageImageRelpath(client, pageId);
-    } finally {
-      client.release();
-    }
-    if (relpath === null) {
-      throw new AppError(ErrorCode.NOT_FOUND, `page introuvable : ${pageId}`, 404, { resource: 'page', id: pageId });
-    }
-
-    const sourcePath = path.join(pagesRoot, relpath);
+    const sourcePath = await resolvePageSourcePath(pool, pagesRoot, pageId);
     if (!await pathExists(sourcePath)) {
       throw new AppError(ErrorCode.SOURCE_FILE_MISSING, `image de page manquante`, 404,
         { cloudAssetId: pageId, expectedPath: sourcePath });
     }
     void reply.type('image/jpeg');
     return await readFile(sourcePath);
+  });
+
+  server.get('/pages/thumb', async (request, reply) => {
+    const parsed = parseQueryParams(request.query as Record<string, unknown>, {
+      pageId: { kind: 'open' },
+      edge: { kind: 'closed', values: PAGE_THUMB_EDGE_VALUES, fallback: PAGE_THUMB_EDGE_VALUES[1] },
+    });
+    const pageId = parsed.pageId as string | undefined;
+    if (pageId === undefined) {
+      throw new AppError(ErrorCode.INVALID_PARAMETER, 'pageId est requis', 400,
+        { parameter: 'pageId', received: '', accepted: null });
+    }
+    const edge = Number(parsed.edge);
+
+    const sourcePath = await resolvePageSourcePath(pool, pagesRoot, pageId);
+    const result = await getPageThumb(pageThumbDeps, pageId, sourcePath, edge);
+    if (result.failure !== null) {
+      throw new AppError(ErrorCode.SOURCE_FILE_MISSING, `image de page manquante`, 404,
+        { cloudAssetId: pageId, expectedPath: sourcePath });
+    }
+    void reply.header('Cache-Control', 'public, max-age=31536000, immutable');
+    void reply.type('image/jpeg');
+    return result.buffer;
   });
 
   server.get('/texts', async (request): Promise<ListEnvelope<TextUnit>> => {
