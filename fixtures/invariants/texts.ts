@@ -5,7 +5,7 @@
  * `carried` page window — an inference on an inference — a web passage with
  * neither date nor page, a corrected passage, and one marked `needs_review`.
  */
-import type { TextDocument, TextPage, TextUnit } from '../../src/api/contract/text';
+import type { TextDocument, TextFacets, TextPage, TextUnit } from '../../src/api/contract/text';
 import { parseIsoDate, parseIsoTimestamp } from '../../src/shared/date_interface';
 import {
   CorrectionStatus, DateKind, DatePrecision, DateSource, PageSpanSource,
@@ -339,3 +339,32 @@ export const INVARIANT_TEXTS: readonly TextUnit[] = [
     galleryCaption: null,
   },
 ] as const;
+
+/**
+ * v1.5, Task 10: `GET /texts/facets?documentId=…` fixtures. Real numbers,
+ * not the tiny `INVARIANT_TEXTS` array's own count — same convention as
+ * `INVARIANT_DOCUMENTS.passageCount` above, a representative corpus size,
+ * not `.length`. `logbook`'s years sum to 151 (492 − 151 = 341) and
+ * `ma-vie`'s to 677 (798 − 677 = 121) — the exact undated counts the spec
+ * itself names ("341 dans le journal, 121 dans « Ma vie »"), independently
+ * confirmed against the real corpus by `back` (ETAT-TRAVAUX.md, Task 13).
+ */
+export const INVARIANT_TEXT_FACETS: Record<string, TextFacets> = {
+  logbook: {
+    years: [
+      { value: '1998', count: 42 }, { value: '1999', count: 38 },
+      { value: '2000', count: 31 }, { value: '2001', count: 26 },
+      { value: '2002', count: 14 },
+    ],
+    months: [{ value: '1998-07', count: 12 }, { value: '1998-08', count: 15 }],
+    days: [{ value: '1998-07-08', count: 2 }, { value: '1998-07-09', count: 1 }],
+  },
+  'ma-vie': {
+    years: [{ value: '1999', count: 677 }],
+    months: [
+      { value: '1999-08', count: 210 }, { value: '1999-09', count: 198 },
+      { value: '1999-10', count: 175 }, { value: '1999-11', count: 94 },
+    ],
+    days: [{ value: '1999-08-04', count: 3 }, { value: '1999-09-23', count: 2 }],
+  },
+};

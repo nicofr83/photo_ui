@@ -30,7 +30,7 @@ import type { Job } from '../src/api/contract/job';
 
 import { store } from './store';
 import { PHOTO_OCR, PHOTO_TAGS } from '../fixtures/invariants/photoTags';
-import { INVARIANT_PAGES } from '../fixtures/invariants/texts';
+import { INVARIANT_PAGES, INVARIANT_TEXT_FACETS } from '../fixtures/invariants/texts';
 
 /**
  * The mock's own knowledge of which tags name a place — standing in for
@@ -553,6 +553,18 @@ export const handlers = [
         photo.date === null ? 0 : widthDays({ start: photo.date.start, end: photo.date.end }),
       ),
     });
+  }),
+
+  // v1.5, Task 10. Registered BEFORE the generic `*/texts` handler below:
+  // MSW's leading `*` matches any prefix, so `*/texts` alone would also
+  // swallow this nested URL and win by registration order if it came first.
+  http.get('*/texts/facets', ({ request }) => {
+    const documentId = new URL(request.url).searchParams.get('documentId');
+    const facets = documentId === null ? undefined : INVARIANT_TEXT_FACETS[documentId];
+    if (facets === undefined) {
+      return HttpResponse.json({ years: [], months: [], days: [] });
+    }
+    return HttpResponse.json(facets);
   }),
 
   http.get('*/texts', ({ request }) => {

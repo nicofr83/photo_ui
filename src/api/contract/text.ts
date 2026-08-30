@@ -8,6 +8,7 @@ import {
 import {
   IsoTimestampSchema, ResolvedDateSchema, Sha256Schema, TextRangeSchema,
 } from './common';
+import { FacetBucketSchema } from './photo';
 
 /**
  * THE KEY OF A TEXT IS THE COUPLE, NEVER THE ID ALONE.
@@ -225,3 +226,17 @@ export const TextDocumentListSchema = z.strictObject({
   items: z.array(TextDocumentSchema),
 });
 export const TextPageListSchema = z.strictObject({ items: z.array(TextPageSchema) });
+
+/**
+ * v1.5, Task 10: `GET /texts/facets?documentId=…` — what a source actually
+ * contains, not what remains under the current filter (contract, back's
+ * Task 13: unlike `/photos/facets`, this route is not contextual). Same
+ * bucket shape as `PhotoFacets` — never a second bucket shape for the same
+ * idea.
+ */
+export const TextFacetsSchema = z.strictObject({
+  years: z.array(FacetBucketSchema),
+  months: z.array(FacetBucketSchema),
+  days: z.array(FacetBucketSchema),
+});
+export type TextFacets = z.infer<typeof TextFacetsSchema>;
