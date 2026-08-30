@@ -916,3 +916,18 @@ Vérifié contre le corpus réel (serveur réel redémarré — front prévenu �
 DETAIL : commit `d2aea93`. **Tranche E (v1.5) est maintenant complète : Tasks 12 à 14.**
 
 ASK : aucun. Il ne reste que la tranche F (Task 15, l'invariant de forme contre le vrai serveur, « en dernier, avec le frontend » selon le plan). Serveur arrêté pour l'instant, je le relance pour cette vérification finale ; front prévenu.
+
+---
+
+## Avancement — impl-backend, v1.5 Task 15 — tranche F, PLAN COMPLET (2026-08-30)
+
+RE : v1.5, tranche F — l'invariant de forme contre le vrai serveur
+DONE : `server/src/invariants/contract_shapes.itest.ts` — les schémas Zod du CLIENT (`TaskDetailSchema`, `TextPageListSchema`, `WebDocumentListSchema`) appliqués aux réponses d'un VRAI Fastify connecté au VRAI corpus. Contre `DATABASE_URL` (le corpus réel), délibérément jamais `DATABASE_URL_TEST` — `photo_ui_test` est vide sauf ce qu'un test y insère, et `01-le-grand-depart`/`ma-vie` n'existent que dans la vraie base de travail. Seulement des `GET` : `bootstrap()` ne rejoue aucune migration et n'écrit rien au démarrage (`createSafeFs` ne fait que lire), donc rien ne touche le travail réel de Nicolas malgré la connexion à la base de travail. Pas de serveur externe nécessaire : `app.server.inject()` tourne en mémoire.
+Aucun slug fictif du plan (`tache-a`) — remplacé par le vrai `01-le-grand-depart`, vérifié présent avant écriture du test.
+**Rouge, par construction, et déjà signalé** : `TextPageSchema` (front) ne connaît pas encore `matchCount` (Task 14, ajouté quelques minutes avant ce test). Le serveur a raison ici — le champ est réel, documenté dans le contrat, un `strictObject` qui le rejette est EXACTEMENT ce que ce test existe pour attraper. Front prévenu avec le correctif exact en une ligne ; le test reste rouge pour continuer à prouver le point jusqu'à ce que ça atterrisse côté front — je ne touche pas `src/api/contract/*.ts`, hors de mon périmètre.
+741 tests serveur (740 verts, 1 rouge connu et signalé), tsc/eslint propres.
+DETAIL : commit `18eece6`.
+
+**LE PLAN V1.5 BACKEND EST COMPLET : les 15 tâches, les 6 tranches (A-F).**
+
+ASK : aucun de mon côté. J'attends la mise à jour de `TextPageSchema` par front pour que la suite complète redevienne verte — non bloquant, je reste disponible pour la suite (v1.6 ou autre) si Nicolas/team-lead en a.
