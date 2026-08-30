@@ -117,17 +117,20 @@ test('regionsAvailable is false — pages.region carries no data (contract §4.3
   });
 });
 
-test('listDocuments carries the ref.web_span as an inference, never null when a span was entered', async () => {
+test('listDocuments carries the ref.web_span as an inference, never null when a span was entered — a stale stored date_to is ignored (A9)', async () => {
   await withRollback(async (client) => {
     await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
                         VALUES ('web/1999/Transat', 'html', 'La transat', false)`);
+    // `date_to` écrit directement en base, comme un import d'avant l'amendement
+    // A9 pourrait en laisser un — la chaîne calculée à la lecture ne le
+    // regarde jamais : seule sans voisin daté, sa fin est son propre début.
     await client.query(`INSERT INTO ref.web_span (document_id, date_from, date_to)
                         VALUES ('web/1999/Transat', '1999-09-01', '1999-11-30')`);
 
     const documents = await listDocuments(client);
     const doc = documents.find((d) => d.id === 'web/1999/Transat');
     expect(doc?.span).toEqual({
-      start: '1999-09-01', end: '1999-11-30', precision: 'day', kind: 'inference', source: 'web_span',
+      start: '1999-09-01', end: '1999-09-01', precision: 'day', kind: 'inference', source: 'web_span',
       bracketHours: null,
     });
   });
@@ -463,25 +466,80 @@ test('listWebDocuments carries an excerpt from the first passage (corrected text
   });
 });
 
-test('putWebSpan/deleteWebSpan round-trip, null for a non-html or unknown document', async () => {
+test('putWebSpan/deleteWebSpan round-trip, null for a non-html or unknown document — a single bound only (A9)', async () => {
   await withRollback(async (client) => {
     await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
                         VALUES ('web/1999/Transat', 'html', 'La transat', false),
                                ('logbook', 'handwritten', 'Journal', true)`);
 
-    expect(await putWebSpan(client, { documentId: 'nowhere', dateFrom: '1999-01-01', dateTo: '1999-01-31', note: null })).toBeNull();
-    expect(await putWebSpan(client, { documentId: 'logbook', dateFrom: '1999-01-01', dateTo: '1999-01-31', note: null })).toBeNull();
+    expect(await putWebSpan(client, { documentId: 'nowhere', dateFrom: '1999-01-01', note: null })).toBeNull();
+    expect(await putWebSpan(client, { documentId: 'logbook', dateFrom: '1999-01-01', note: null })).toBeNull();
 
-    const put = await putWebSpan(client, {
-      documentId: 'web/1999/Transat', dateFrom: '1999-09-01', dateTo: '1999-11-30', note: 'saisi',
-    });
+    // Seule dans la base : rien après elle dans l'ordre des dates — sa
+    // propre fin est son propre début (Nicolas, via team-lead : "la date de
+    // début du suivant est la date de fin" — sans suivant, un jour seul).
+    const put = await putWebSpan(client, { documentId: 'web/1999/Transat', dateFrom: '1999-09-01', note: 'saisi' });
     expect(put?.span).toEqual({
-      start: '1999-09-01', end: '1999-11-30', precision: 'day', kind: 'inference', source: 'web_span',
+      start: '1999-09-01', end: '1999-09-01', precision: 'day', kind: 'inference', source: 'web_span',
       bracketHours: null,
     });
 
     const deleted = await deleteWebSpan(client, 'web/1999/Transat');
     expect(deleted?.span).toBeNull();
+  });
+});
+
+test('a dated document\'s end is the NEXT dated document\'s start minus a day — chained by DATE, never document_id', async () => {
+  await withRollback(async (client) => {
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+      VALUES ('web/1999/Transat', 'html', 'x', false), ('web/1999/Caraibe', 'html', 'x', false),
+             ('web/1999/VersTrinidad', 'html', 'x', false)`);
+    // Insérés dans le désordre : l'ordre qui compte est celui des DATES, pas
+    // celui des appels ni celui des identifiants (`Caraibe` < `Transat` en
+    // `document_id`, l'inverse en date — la mesure qui a tranché la question).
+    await putWebSpan(client, { documentId: 'web/1999/Caraibe', dateFrom: '2000-01-01', note: null });
+    await putWebSpan(client, { documentId: 'web/1999/Transat', dateFrom: '1999-11-10', note: null });
+    await putWebSpan(client, { documentId: 'web/1999/VersTrinidad', dateFrom: '2000-01-15', note: null });
+
+    const rows = await listWebDocuments(client);
+    expect(rows.find((r) => r.documentId === 'web/1999/Transat')?.span)
+      .toMatchObject({ start: '1999-11-10', end: '1999-12-31' });
+    expect(rows.find((r) => r.documentId === 'web/1999/Caraibe')?.span)
+      .toMatchObject({ start: '2000-01-01', end: '2000-01-14' });
+    // Le dernier par la date, aucun suivant : sa propre fin est son propre début.
+    expect(rows.find((r) => r.documentId === 'web/1999/VersTrinidad')?.span)
+      .toMatchObject({ start: '2000-01-15', end: '2000-01-15' });
+  });
+});
+
+test('an undated document has NO period at all — no inheritance on the web (Nicolas, via team-lead)', async () => {
+  await withRollback(async (client) => {
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+      VALUES ('web/1999/Transat', 'html', 'x', false), ('web/1999/bidon', 'html', 'x', false)`);
+    await putWebSpan(client, { documentId: 'web/1999/Transat', dateFrom: '1999-11-10', note: null });
+
+    const rows = await listWebDocuments(client);
+    // Un héritage rattraperait `bidon` (un gabarit vide) et lui donnerait une
+    // période inventée — précisément ce que Nicolas ne veut pas : les rebuts
+    // « sortent d'eux-mêmes en restant sans date ».
+    expect(rows.find((r) => r.documentId === 'web/1999/bidon')?.span).toBeNull();
+  });
+});
+
+test('deleting a dated document extends its neighbours\' chain — computed live, nothing stored', async () => {
+  await withRollback(async (client) => {
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+      VALUES ('web/a', 'html', 'x', false), ('web/b', 'html', 'x', false), ('web/c', 'html', 'x', false)`);
+    await putWebSpan(client, { documentId: 'web/a', dateFrom: '2000-01-01', note: null });
+    await putWebSpan(client, { documentId: 'web/b', dateFrom: '2000-02-01', note: null });
+    await putWebSpan(client, { documentId: 'web/c', dateFrom: '2000-03-01', note: null });
+
+    await deleteWebSpan(client, 'web/b');
+
+    const rows = await listWebDocuments(client);
+    // `a` va maintenant jusqu'à la veille de `c` — `b` a disparu de la chaîne.
+    expect(rows.find((r) => r.documentId === 'web/a')?.span).toMatchObject({ start: '2000-01-01', end: '2000-02-29' });
+    expect(rows.find((r) => r.documentId === 'web/b')?.span).toBeNull();
   });
 });
 

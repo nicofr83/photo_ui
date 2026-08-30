@@ -142,7 +142,7 @@ describe('GET /ref/web-documents', () => {
 });
 
 describe('PUT /ref/web-span', () => {
-  test('a saisie sets the document span', async () => {
+  test('a saisie sets the document span — a single bound, alone its own end (A9)', async () => {
     const setup = testPool();
     app = await bootstrap(await completeEnv());
     try {
@@ -151,12 +151,12 @@ describe('PUT /ref/web-span', () => {
 
       const response = await app.server.inject({
         method: 'PUT', url: '/ref/web-span',
-        payload: { documentId: 'site/journal', dateFrom: '2003-04-01', dateTo: '2003-04-30', note: 'chemin daté' },
+        payload: { documentId: 'site/journal', dateFrom: '2003-04-01', note: 'chemin daté' },
       });
       expect(response.statusCode).toBe(200);
       const body = response.json<TextDocument>();
       expect(body.span).toEqual({
-        start: '2003-04-01', end: '2003-04-30', precision: 'day', kind: 'inference', source: 'web_span', bracketHours: null,
+        start: '2003-04-01', end: '2003-04-01', precision: 'day', kind: 'inference', source: 'web_span', bracketHours: null,
       });
     } finally {
       await setup.query(`DELETE FROM ref.web_span WHERE document_id = 'site/journal'`);
@@ -164,21 +164,11 @@ describe('PUT /ref/web-span', () => {
     }
   });
 
-  test('dateTo < dateFrom is a named 400', async () => {
-    app = await bootstrap(await completeEnv());
-    const response = await app.server.inject({
-      method: 'PUT', url: '/ref/web-span',
-      payload: { documentId: 'site/journal', dateFrom: '2003-04-30', dateTo: '2003-04-01', note: null },
-    });
-    expect(response.statusCode).toBe(400);
-    expect(response.json<{ error: { code: string } }>().error.code).toBe('INVALID_PARAMETER');
-  });
-
   test('an unknown documentId is a named 404', async () => {
     app = await bootstrap(await completeEnv());
     const response = await app.server.inject({
       method: 'PUT', url: '/ref/web-span',
-      payload: { documentId: 'site/nowhere', dateFrom: '2003-04-01', dateTo: '2003-04-30', note: null },
+      payload: { documentId: 'site/nowhere', dateFrom: '2003-04-01', note: null },
     });
     expect(response.statusCode).toBe(404);
     expect(response.json<{ error: { code: string } }>().error.code).toBe('NOT_FOUND');
@@ -192,11 +182,30 @@ describe('PUT /ref/web-span', () => {
                          VALUES ('logbook', 'handwritten', 'Journal de bord', true)`);
       const response = await app.server.inject({
         method: 'PUT', url: '/ref/web-span',
-        payload: { documentId: 'logbook', dateFrom: '2003-04-01', dateTo: '2003-04-30', note: null },
+        payload: { documentId: 'logbook', dateFrom: '2003-04-01', note: null },
       });
       expect(response.statusCode).toBe(404);
     } finally {
       await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
+    }
+  });
+
+  test('two dated documents chain by DATE, an undated one between them stays without a period', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES
+        ('site/a', 'html', 'a', false), ('site/b', 'html', 'b', false), ('site/bidon', 'html', 'bidon', false)`);
+      await app.server.inject({ method: 'PUT', url: '/ref/web-span', payload: { documentId: 'site/a', dateFrom: '2000-01-01', note: null } });
+      await app.server.inject({ method: 'PUT', url: '/ref/web-span', payload: { documentId: 'site/b', dateFrom: '2000-02-01', note: null } });
+
+      const docs = await app.server.inject({ method: 'GET', url: '/ref/web-documents' });
+      const rows = docs.json<{ items: { documentId: string; span: { start: string; end: string } | null }[] }>().items;
+      expect(rows.find((r) => r.documentId === 'site/a')?.span).toMatchObject({ start: '2000-01-01', end: '2000-01-31' });
+      expect(rows.find((r) => r.documentId === 'site/bidon')?.span).toBeNull();
+    } finally {
+      await setup.query(`DELETE FROM ref.web_span WHERE document_id IN ('site/a', 'site/b')`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id IN ('site/a', 'site/b', 'site/bidon')`);
     }
   });
 });
@@ -210,7 +219,7 @@ describe('DELETE /ref/web-span', () => {
                          VALUES ('site/journal', 'html', 'Journal du site', false)`);
       await app.server.inject({
         method: 'PUT', url: '/ref/web-span',
-        payload: { documentId: 'site/journal', dateFrom: '2003-04-01', dateTo: '2003-04-30', note: null },
+        payload: { documentId: 'site/journal', dateFrom: '2003-04-01', note: null },
       });
 
       const response = await app.server.inject({ method: 'DELETE', url: '/ref/web-span', payload: { documentId: 'site/journal' } });

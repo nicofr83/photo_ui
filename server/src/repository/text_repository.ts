@@ -40,13 +40,33 @@ function mapDocumentRow(row: DocumentRow): TextDocument {
   };
 }
 
+/**
+ * La chaîne des documents web DATÉS, par DATE — jamais par `document_id`
+ * (un chemin de fichier mesuré non chronologique : `gal_7` du 9 octobre est
+ * rangé avant `gal_5` du 13) ni par ordre d'insertion. Amendement A9 : une
+ * seule borne saisie, la fin de chacun est la veille du début du suivant
+ * (Nicolas, via team-lead — « la date de début du suivant est la date de
+ * fin »), et le dernier n'a pas de suivant : sa propre fin est son propre
+ * début. AUCUN héritage vers un document non daté — `LEFT JOIN` seul,
+ * jamais de repli sur un voisin : un rebut ou un gabarit vide sans date
+ * saisie reste `span: null`, il « sort de lui-même » plutôt que de recevoir
+ * une période inventée.
+ */
+const WEB_SPAN_CHAIN = `
+  web_span_chain AS (
+    SELECT document_id, date_from,
+           coalesce(LEAD(date_from) OVER (ORDER BY date_from) - 1, date_from) AS date_to
+      FROM ref.web_span
+  )`;
+
 const DOCUMENT_SELECT = `
+    WITH ${WEB_SPAN_CHAIN}
     SELECT d.id, d.kind, d.title, d.page_count, d.has_pages,
            (SELECT count(*)::int FROM pipeline.text_unit t
              WHERE t.document_id = d.id AND t.kind = 'passage') AS passage_count,
-           ws.date_from, ws.date_to
+           wsc.date_from, wsc.date_to
       FROM pipeline.document d
-      LEFT JOIN ref.web_span ws ON ws.document_id = d.id`;
+      LEFT JOIN web_span_chain wsc ON wsc.document_id = d.id`;
 
 /** 62 documents (contrat §4.3) — assez petit pour un aller-retour sans filtre. */
 export async function listDocuments(client: PoolClient): Promise<readonly TextDocument[]> {
@@ -611,6 +631,7 @@ export async function listWebDocuments(client: PoolClient): Promise<readonly Web
     id: string; title: string; passage_count: number; excerpt: string | null;
     date_from: string | null; date_to: string | null;
   }>(`
+    WITH ${WEB_SPAN_CHAIN}
     SELECT d.id, d.title,
            (SELECT count(*)::int FROM pipeline.text_unit t
              WHERE t.document_id = d.id AND t.kind = 'passage') AS passage_count,
@@ -618,9 +639,9 @@ export async function listWebDocuments(client: PoolClient): Promise<readonly Web
               LEFT JOIN app.text_correction tc ON tc.text_kind = t.kind AND tc.text_id = t.id
              WHERE t.document_id = d.id AND t.kind = 'passage'
              ORDER BY t.ordinal LIMIT 1) AS excerpt,
-           ws.date_from, ws.date_to
+           wsc.date_from, wsc.date_to
       FROM pipeline.document d
-      LEFT JOIN ref.web_span ws ON ws.document_id = d.id
+      LEFT JOIN web_span_chain wsc ON wsc.document_id = d.id
      WHERE d.kind = 'html'
      ORDER BY d.id`);
 
@@ -645,8 +666,14 @@ async function isWebDocument(client: PoolClient, documentId: string): Promise<bo
 
 export interface WebSpanInput {
   readonly documentId: string;
+  /**
+   * UNE seule borne (amendement A9, spec v1.5) — la fin se calcule à la
+   * lecture, jamais stockée : « la date de début du suivant est la date de
+   * fin » (Nicolas). Aucun héritage entre documents non datés — un rebut
+   * ou un gabarit vide sans date saisie n'a AUCUNE période, jamais une
+   * empruntée à son voisin.
+   */
   readonly dateFrom: string;
-  readonly dateTo: string;
   readonly note: string | null;
 }
 
@@ -656,10 +683,10 @@ export async function putWebSpan(client: PoolClient, input: WebSpanInput): Promi
 
   await client.query(
     `INSERT INTO ref.web_span (document_id, date_from, date_to, note, updated_at)
-     VALUES ($1, $2, $3, $4, now())
+     VALUES ($1, $2, NULL, $3, now())
      ON CONFLICT (document_id) DO UPDATE
-       SET date_from = EXCLUDED.date_from, date_to = EXCLUDED.date_to, note = EXCLUDED.note, updated_at = now()`,
-    [input.documentId, input.dateFrom, input.dateTo, input.note],
+       SET date_from = EXCLUDED.date_from, date_to = NULL, note = EXCLUDED.note, updated_at = now()`,
+    [input.documentId, input.dateFrom, input.note],
   );
   return await getTextDocument(client, input.documentId);
 }

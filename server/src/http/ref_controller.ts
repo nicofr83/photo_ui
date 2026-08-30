@@ -47,16 +47,16 @@ function parseAlbumPath(body: unknown): string {
   return albumPath;
 }
 
+/** Une seule borne (amendement A9) — `dateTo` n'existe plus en entrée, la fin se calcule à la lecture. */
 function parseWebSpanInput(body: unknown): WebSpanInput {
   if (typeof body !== 'object' || body === null) {
     throw invalidParameter('body', JSON.stringify(body), 'corps de requête invalide');
   }
-  const { documentId, dateFrom, dateTo, note } = body as Record<string, unknown>;
+  const { documentId, dateFrom, note } = body as Record<string, unknown>;
   if (typeof documentId !== 'string') throw invalidParameter('documentId', JSON.stringify(documentId), 'documentId doit être une chaîne');
   if (typeof dateFrom !== 'string') throw invalidParameter('dateFrom', JSON.stringify(dateFrom), 'dateFrom doit être une chaîne');
-  if (typeof dateTo !== 'string') throw invalidParameter('dateTo', JSON.stringify(dateTo), 'dateTo doit être une chaîne');
   if (note !== null && typeof note !== 'string') throw invalidParameter('note', JSON.stringify(note), 'note doit être une chaîne ou null');
-  return { documentId, dateFrom, dateTo, note: note ?? null };
+  return { documentId, dateFrom, note: note ?? null };
 }
 
 function parseDocumentId(body: unknown): string {
@@ -119,7 +119,6 @@ export function registerRefRoutes(server: FastifyInstance, deps: RefRoutesDeps):
 
   server.put('/ref/web-span', async (request): Promise<TextDocument> => {
     const input = parseWebSpanInput(request.body);
-    assertOrderedDates(input.dateFrom, input.dateTo);
 
     const document = await withTransaction(pool, (client) => putWebSpan(client, input));
     if (document === null) {

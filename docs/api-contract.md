@@ -26,6 +26,41 @@ existants du projet.
 >
 ### Amendements depuis le gel
 
+### A9 — la période d'un document du site n'a plus qu'une borne de début *(2026-08-30, v1.5)*
+
+`PUT /ref/web-span` acceptait `{ documentId, dateFrom, dateTo, note }` ; `dateTo`
+disparaît. La règle de Nicolas : « la date de début du suivant est la date de
+fin », « tes dates font l'ordre » — un chaînage entre documents DATÉS
+seulement, jamais un héritage.
+
+```ts
+export interface WebSpanInput {
+  readonly documentId: string;
+  readonly dateFrom: string;
+  readonly note: string | null;
+}
+```
+
+`GET /ref/web-documents` et `GET /documents` calculent la fin de chaque
+document DATÉ à la lecture : *(début du document daté suivant, par DATE)
+− 1 jour* ; le dernier (aucun suivant) a pour fin son propre début — un
+document seul dans la base porte donc une plage d'un jour. **Un document
+sans `ref.web_span` reste `span: null`, sans AUCUN repli sur un voisin** —
+aucun héritage entre documents non datés, contrairement à la cascade des
+pages scannées (§ v1.5, registre → notes → héritage) qui, elle, s'appuie sur
+un numéro de page réel et fiable. Un document web n'a que son chemin de
+fichier, mesuré NON chronologique (`gal_7` du 9 octobre rangé avant `gal_5`
+du 13 ; `funfun1`, classé dans `1999/`, date de décembre 2001) — s'en servir
+comme ordre de repli inventerait une période sur un rebut ou un gabarit
+vide, l'inverse de ce que Nicolas veut : ces documents « sortent d'eux-mêmes
+en restant sans date ».
+
+**Corrigé après une première lecture erronée du plan v1.5**, qui proposait un
+héritage ordonné par `document_id` — jamais une décision de Nicolas, une
+invention contredite par la mesure ci-dessus. `docs/superpowers/plans/
+2026-08-30-v1.5-backend.md` (Task 5) est corrigé en même temps que ce
+document et le code.
+
 ### A8 — le répertoire de livraison d'une tâche est réglable *(2026-08-30, v1.5)*
 
 `PATCH /tasks/:slug` n'acceptait que `title`/`brief`/`period` ; le répertoire
