@@ -1142,3 +1142,19 @@ Vérifié contre le vrai serveur en navigateur réel (`01-le-grand-depart`) : le
 DETAIL : commits `4293d4a` (Task 8), `aaa0d05` (Task 9).
 
 ASK : aucune décision Nicolas. J'enchaîne sur la Task 10 (les filtres de l'écran Textes).
+
+---
+
+## Avancement — impl-frontend, v1.5 Tranche 5 complète — Tasks 10 et 11 (2026-08-30)
+
+RE : v1.5, tranche 5 — les filtres et la note depuis un texte
+DONE : Task 10 — `TextFilterPanel` : une recherche plein texte, plus l'axe date — années cumulables OU une plage plus fine, jamais les deux (`domain/textFilterState.ts`, même discipline « l'URL fait foi, une borne seule n'atteint jamais l'URL » que le panneau de filtres des images). Le sélecteur d'années ne propose que ce que la source contient (`useTextFacets`, tranche E de `back` — schéma vérifié contre le vrai serveur, `ma-vie` → `[{1999, 677}]` identique au réel). Un compteur dit combien de textes sans date le filtre écarte, avec un geste pour l'effacer entièrement. Le site web n'a pas un seul document à interroger (60) et aucun de ses textes n'est daté aujourd'hui : son bloc de dates est un fait fixe, désactivé avec sa raison, jamais une requête. **Non branché sur `TextsScreen`** : la liste de fichiers de la Task 10 s'arrête au composant et ses deux modules de soutien — chaque test rend le panneau seul, jamais par la route. L'intégration reste à faire (tâche non identifiée par le plan).
+Task 11 — `NoteFromTextButton` fabrique une note qui recopie le texte coché, la rattache (`derivedFrom`) sans jamais recocher le passage d'origine (le renvoyer aussi dans `journal.md` ferait lire un doublon comme deux sources concordantes au LLM). `attributionTitle` (`domain/noteTitle.ts`) produit exactement le préfixe verrouillé côté serveur — recopié à la lettre depuis `note_title.ts` en lecture seule, jamais un jour fabriqué pour une page non datée. Le bouton ne bloque jamais son clic sur `usePages`/`useDocuments` : en usage réel il vit à côté de `PageDetail`, qui a déjà chargé le même `documentId` (dédoublonné par TanStack Query) — sur cache froid, repli sur l'ordinal/la date du texte plutôt que bloquer la création, la note restant éditable ensuite.
+Déviations vérifiées avant de m'en écarter : le type `TextFilterState` du plan liste `source` comme champ, mais son propre test le passe en prop séparée de `filters` — gardé ainsi (`?source=` a déjà un seul propriétaire, l'URL de Textes) ; les helpers `lastRequestBody`/`requestsTo` du plan n'existent pas dans ce code — remplacés par le motif déjà établi (`server.use` + inspection du corps exact reçu par MSW, comme le test §7.2 de `useSelection`).
+Pas de vérification par écriture réelle sur `POST /tasks/:slug/notes` cette fois (contrairement aux tâches précédentes) : ça laisserait une note parasite dans les vraies données de tâche de Nicolas. Le contrat de forme est déjà vérifié via `back` (tranche A, note dérivée) ; la Task 14 est l'endroit prévu pour vérifier le préfixe contre le vrai serveur.
+651 tests front verts, tsc et eslint propres.
+DETAIL : commits `d5a9f77` (Task 10), `a74179d` (Task 11).
+
+**La Tranche 5 (v1.5) est complète : Tasks 8 à 11.**
+
+ASK : aucune décision Nicolas. La Tranche 6 (Task 12, datation du site) attend « les tâches backend 10 et 11 » — `back` a annoncé le plan backend entièrement terminé (Tasks 1 à 15, tranches A-F, ETAT-TRAVAUX plus haut) : je pars du principe que la dépendance est satisfaite et j'enchaîne sur la Task 12.
