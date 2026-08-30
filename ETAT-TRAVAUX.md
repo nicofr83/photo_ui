@@ -825,3 +825,20 @@ Vérifié contre le corpus réel (requête en lecture seule) : 27 documents web 
 DETAIL : commit `2c352cd`.
 
 ASK : aucun. J'enchaîne sur la Task 11 (le périmètre 1998-2004).
+
+---
+
+## Avancement — front, v1.5 Tranche 1 — les trois écrans cassés rattrapés (2026-08-30)
+
+RE : URGENT, trois écrans cassés contre le vrai serveur — Textes, Revue, Réglages
+DONE : les quatre amendements de la tranche A backend rattrapés. `TextPageSchema.date`, `TaskNoteSchema.derivedFrom/editedSince` (+ `TaskNoteCreateInputSchema.derivedFrom`), `WebDocumentRowSchema.proposal` et `WebSpanPutInputSchema` sans `dateTo` (borne unique, fin dérivée à la lecture — jamais un héritage pour un document non daté). `mocks/handlers.ts` mis à jour dans le même commit (règle du plan) : `recomputeWebSpanEnds` recalcule la fin de tous les documents du site affectés à chaque changement, `proposal` reste `null` partout pour l'instant (calcul réel = tranche 6, task 12, pas ici). `SettingsScreen.tsx` : le formulaire de période du site perd son champ « Dernier jour ».
+
+**Défaut architectural trouvé en écrivant le test du plan lui-même** (celui-ci teste `page_date` en `reading` ET en `inference` — les deux, volontairement) : `domain/dateKind.ts` modélisait la table source → nature comme une fonction PURE (une seule nature possible par source), une table exhaustive avec vérification `never` au compile. `DateSource.PAGE_DATE` est la première source à deux natures légitimes — `reading` quand la page porte sa propre date, `inference` quand elle hérite de la précédente. Corrigé : `expectedKindFor` retourne maintenant `DateKind | readonly DateKind[]`, nouvelle fonction `isKindConsistent` utilisée aux deux points d'application (`common.ts` superRefine, `dateKind.ts` assertKindConsistent) — `decision` reste refusé pour `page_date`, rien dans cette cascade n'arbitre. Répercuté dans les deux fichiers de test qui construisaient des dates de test via `expectedKindFor` (`formatResolvedDate.test.ts`, `ResolvedDate.test.tsx`) avec un petit helper `singleValidKind`.
+
+**Étape 5 du plan (vérification contre le vrai serveur) bloquée** : le serveur ne démarre plus — `TypeError` à `ref_controller.ts:84`, `deps.periodFrom` est `undefined` (`bootstrap.ts` ne le câble apparemment pas encore dans `RefRoutesDeps`, malgré les défauts dans `config.ts`). Fichiers vus modifiés dans l'arbre partagé (`server/src/http/ref_controller.ts`, `server/src/runtime/bootstrap.ts`) — travail en cours de `back`, jamais touché. Signalé, je continue sur le mock et j'enchaîne sur la Tranche 2 (écran Images, aucune dépendance serveur) en attendant.
+
+632 tests front verts, tsc et eslint propres (bruit sans rapport : deux fichiers scratch non suivis de `back` dans `server/`, hors périmètre de mon lint).
+
+DETAIL : commit `f613eaf`. TDD suivi : chaque schéma corrigé avait un test qui échouait d'abord (fournis par le plan pour Task 1/2, écrits par moi pour `TaskNoteSchema` et `dateKind.ts`, aucun test existant pour ces deux-là).
+
+ASK : aucune décision Nicolas. J'attends que `back` répare le boot du serveur pour finir l'étape 5, mais ça ne me bloque pas — j'enchaîne sur la Tranche 2.
