@@ -1,71 +1,142 @@
-# Questions avant la spécification V1.5
+# V1.5 — ce qui est décidé, et ce qui attend une réponse
 
-*Relevé le 2026-08-30 sur le serveur réel (`127.0.0.1:4310`), le code de
-`src/screens/`, et les fichiers de `PAGES_ROOT`. Chaque question porte une
-recommandation : réponds par un choix, pas par une rédaction.*
+*Relevé le 2026-08-30 sur ton serveur (`127.0.0.1:4310`), ta base, le code, et
+les scans de `PAGES_ROOT`. Rien ici ne vient d'une supposition : chaque chiffre
+a été mesuré.*
 
-Trois marqueurs, à lire comme un tri :
+## Comment lire ce document
 
-- **[Ambigu]** — ta phrase admet plusieurs lectures et je ne peux pas trancher seul.
-- **[Non dit]** — un cas limite ou une absence de donnée que la V1.5 rencontrera.
-- **[Tension]** — ta demande entre en conflit avec une règle déjà posée, ou avec ce
-  que la donnée porte réellement. Dit maintenant plutôt que découvert à
-  l'implémentation.
+**Tu n'as pas à le lire en entier.** Il est organisé pour que tu ailles droit à
+ce qui a besoin de toi :
 
-Les questions marquées **TRANCHÉ** portent ta réponse et ne se rouvrent pas ;
-elles restent là parce que ce qu'elles ouvrent est numéroté juste en dessous.
-La numérotation ne suit pas l'ordre de lecture : elle est stable, pour qu'une
-réponse « §F.54 : (a) » désigne toujours la même question.
+1. **« Déjà tranché »** ci-dessous — tes réponses, rassemblées. Rien à y faire,
+   c'est là pour que tu ne les relises pas.
+2. **« Ce qui a besoin de toi »** — **8 questions**. Elles changent quelque
+   chose que tu verras à l'écran ou dans le dossier livré. Chacune tient en une
+   ligne avec ma recommandation : un « d'accord » suffit.
+3. **« Ce que tu peux ignorer »** — **50 questions**. Des cas limites et des
+   choix d'implémentation. **Sans réponse de ta part, j'applique ma
+   recommandation.** Tu peux les survoler ou les sauter entièrement.
+
+Le corps du document, sections A à G, garde le détail de chacune : la mesure,
+les options, le raisonnement. Va y voir seulement si une ligne t'arrête.
+
+La numérotation est **stable** — « §F.54 : d'accord » désignera toujours la même
+question, même si le document est réorganisé.
 
 ---
 
-## Ce que j'ai vérifié avant d'écrire, et qui change la donne
+## Déjà tranché — rien à relire
 
-Quatre faits, parce qu'ils contredisent ou compliquent des parties du brief.
+| | Décision |
+|:--|:--|
+| **§A.6** | Afficher le **chemin complet** des albums (« 1998-1999 / 1998-02-Maison rose Algès ») |
+| **§E.22** | `TASKS_ROOT` **affiché**, pas modifiable ; il se change dans `.env` |
+| **§F.26** | Le **site web** est une troisième source, à côté du journal et de « Ma vie » |
+| **§F.28** | Date d'une page : la **lue** d'abord (vert), la **calculée** en repli (ambre `≈`) |
+| **§F.29** | Tri **par date** par défaut, avec une bascule vers l'ordre du cahier |
+| **§F.40** | La sélection reste **au passage**, dans la page ouverte |
+| **§F.42** | La note **recopie** le texte, et reste éditable ensuite |
+| **§F.46** | Un **document du site vaut une page** — mais le titre de note nomme le document, jamais « page 1 » |
+| **§F.48** | Tu saisis les dates du site, dans un **écran dédié** (section G) |
+| **§F.51** | Les **légendes de galerie sont indicatives** : ni filtrées, ni relues, ni sélectionnables |
+| **§F.54** | Titre de note : **préfixe verrouillé**, ajout libre à la suite |
+| **§F.55** | Le manifeste distingue une note **dérivée** d'une note écrite de zéro |
+| **§F.56** | La note **recopie et rattache** |
+| **§F.57** | Créer une note **ne coche pas** le passage |
 
-**Les albums sont déjà triés.** `sortAlbumsByPath` (`src/domain/albumOrder.ts`)
-trie sur le **chemin complet** (`2003/2003-03-everglades`), corrigé ce matin.
-Mais l'écran n'affiche que la **feuille** (`2003-03-everglades`) : le set
-(`1998-1999`, `2000-2001`, `2002`, `2003`, `2004`) est invisible. L'ordre est
-bon, sa raison ne se voit pas. Deux entrées cassent l'illusion : `2000` (album
-sans mois) et `2002-38Dec02` (préfixe abîmé, « 38 » n'est pas un mois). Et
-`localeCompare` ignore la casse, donc `2003-03-everglades` passe **avant**
-`2003-03-Fort Lauderdale`.
+Deux conséquences de ces décisions valent d'être sues, parce qu'elles se
+paieraient tard :
 
-**Les pages du journal de bord ne sont pas dans l'ordre chronologique.**
-Page 3 → 09/07/1998, page 4 → 05/08/1998, **page 5 → 12/04/1998**, page 8 →
-13/02/1999. « Ma vie », elle, est parfaitement chronologique (103 pages, 04/08
-au 18/11/1999). Une liste triée par numéro de page mélange les dates ; une
-liste triée par date casse la numérotation. Les deux documents ne se comportent
-pas pareil.
+- **§F.54 doit être tenu par le serveur**, pas par l'interface :
+  `PATCH /notes/:id` accepte déjà un titre libre.
+- **§F.51 a un coût** : sous cette règle, **2003-2004 n'a plus aucun texte
+  d'époque sélectionnable**. Les 103 légendes de ces deux années étaient la
+  seule matière contemporaine de 2 041 photos. Le dossier livré y contiendra
+  tes notes, et rien d'autre côté texte.
 
-**Il n'existe aucune miniature de page.** `PAGES_ROOT` contient
-`journal-de-bord/p001.jpg` … `p052.jpg` et `ma-vie/p001.jpg` … `p103.jpg` :
-155 JPEG, ~300 Ko pièce, **49 Mo au total**, taille variable (774×1275 à
-1018×1435 — pas le 810×1250 uniforme qu'annonce la spec). Le seul point d'accès
-est `/pages/image?pageId=…`, qui sert le fichier entier. Afficher les 103
-vignettes de « Ma vie » télécharge **31 Mo**. Il faut un point d'accès de
-vignette côté serveur : c'est du travail back, pas un `width` en CSS.
+---
 
-**Le site web n'a pas de pages du tout.** Tu as confirmé qu'il rejoint le
-bouton global comme troisième source. Mais les 569 passages de ses 60 documents
-portent `pageId: null`, et les 60 documents portent `hasPages: false` et
-`pageCount: null`. Il n'y a **aucun objet page** de ce côté : ni numéro, ni
-date de page, ni image à mettre en vignette. Tout le modèle d'écran que tu
-décris — une liste de pages, leur date de début, leur miniature, un titre de
-note « page xx du jj/mm/aaaa » — n'a pas de contrepartie sur cette source. Ce
-n'est pas seulement « il manque les dates » : c'est l'objet lui-même qui
-manque. Voir §F.1bis.
+## Ce qui a besoin de toi — 8 questions
 
-**« La date de début d'une page » n'a pas une seule valeur, et les deux
-candidates n'ont pas la même nature.** `TextPage.window` est une **inférence**
-(`kind: "inference"`, ambre italique `≈` par la règle en vigueur), absente sur
-3 pages du journal, et **héritée de la page voisine sur 22 des 103 pages de
-« Ma vie »** (`spanSource: "carried"` — rien sur cette page-là ne l'affirme).
-La date des passages, elle, est une **lecture** (`kind: "reading"`, vert).
-*Tranché depuis : la lue d'abord, la calculée en repli — 133 pages en vert,
-22 en ambre, aucune sans date. Voir §F.28, et §F.71 pour les 85 pages où les
-deux valeurs divergent.*
+*Chacune change quelque chose de visible. Ma recommandation est en gras ; un
+« d'accord » la valide.*
+
+| | La question | Ma recommandation |
+|:--|:--|:--|
+| **§G.58** | La chaîne de dates du site suit quel ordre ? L'ordre des fichiers ne marche pas — `gal_7` est daté avant `gal_5`, et un document rangé dans `1999/` propose 2001. | **La chaîne se réordonne d'elle-même** sur les dates que tu saisis |
+| **§G.60** | Un document non daté au milieu de la chaîne : `2003_gal_9` n'a aucune photo liée et se trouve entre deux documents datés. | **Il est sauté et reste sans date**, l'écran signale le trou — jamais une date inventée |
+| **§G.61** | Trois documents proposent la **même** date (01/12/2000) : au moins deux auraient un intervalle de largeur nulle. | **L'écran te prévient sans refuser** |
+| **§G.63** | La date proposée : pré-remplie dans le champ, ou à côté ? Le contrat interdit de pré-remplir, en nommant ce cas précis. Le pilote maintient le pré-remplissage ; moi non. | **À côté, avec un bouton « adopter »** — même geste, règle intacte |
+| **§G.64** | La date que tu saisis là : **inférence** (ambre `≈`) ou **décision** (violet) ? Tu as tranché « inférence » le 29/08, mais l'écran affiche maintenant une proposition, ce qui change peut-être la nature de ton geste. | **Elle reste une inférence** ; « proposé » et « saisi » se distinguent par un état, pas par une couleur |
+| **§F.27** | Un scan du journal porte **deux pages** — les notes en haut, le registre en bas. On montre les deux, ou une seule ? | **Les deux**, nommées « Notes de bord » et « Registre » |
+| **§F.31** | La miniature de la moitié haute : où couper, puisque rien ne dit où est la reliure ? | **À 48 % de la hauteur**, en disant que le cadrage est approximatif |
+| **§F.72** | « Légende » désigne deux choses : ton texte du site, et la future légende produite par une machine. Les deux s'afficheraient au survol d'une photo. | **Ton texte seul** aujourd'hui, nommé « texte du site » |
+
+---
+
+## Ce que tu peux ignorer — 50 questions
+
+*Sans réponse, j'applique la recommandation. Elles sont dans le corps du
+document, groupées par écran, chacune avec sa mesure et son raisonnement.*
+
+- **Écran Images (§A.1 à §A.5)** — largeur du panneau, comportement du filtre
+  d'albums, albums cochés qui sortent du filtre, filtre sur les tags.
+- **En-têtes fixes (§B.7 à §B.12)** — ce qui reste figé sur chaque écran. Tu
+  avais dit « demande en cas de doute » : la liste est là, écran par écran, et
+  mes réponses sont uniformes.
+- **Sous-page Consigne (§C.13 à §C.15)** — ce qui déménage sur cette page.
+- **Sous-page Revue (§D.16 à §D.20)** — vignettes dans la liste, contenu de la
+  partie fixe, place du rapport d'export.
+- **Réglages (§E.21, §E.23 à §E.25)** — répertoire par tâche, dossiers
+  existants. **§E.21 est une vraie question** si tu as un avis : tu as dit ne
+  pas voir l'intérêt de l'écran Réglages, et je ne sais pas si tu l'as ouvert —
+  c'est lui qui porte les périodes d'album, 25 saisies pour redater 421 photos.
+- **Écran Textes (§F.30 à §F.39, §F.41, §F.43 à §F.45, §F.47, §F.49, §F.52,
+  §F.53, §F.68, §F.71, §F.73 à §F.75)** — miniatures et leur coût, filtres de
+  dates, recherche, titres de notes, fragments de menu du site, pages du
+  registre qui reculent dans le temps.
+- **Écran de datation (§G.59, §G.62, §G.65 à §G.67, §G.69, §G.70)** — dernier
+  document de la chaîne, périmètre de la liste, ce que la proposition doit
+  dire, doublon avec les Réglages.
+
+---
+
+## Ce que j'ai mesuré, et qui contredisait le brief
+
+*Cinq constats. Les trois premiers ont déjà changé une décision ; les deux
+derniers restent des contraintes à connaître.*
+
+**Un scan du journal contient deux pages.** Ta remarque — « la page du bas est
+en ordre chronologique car c'est un document officiel » — m'a fait ouvrir les
+images. En haut : notes libres, photos collées, billets de musée. En bas : le
+**registre réglé** avec ses colonnes imprimées *Date · Cap · Vent · Loc. · Baro
+· Moteur · Position · Remarques*. La reliure à spirale sépare les deux. La donnée
+le confirme : les 1 012 `log_entry` portent **807 heures et 711 positions GPS**,
+les 492 `passage` en portent **zéro**.
+
+**Et donc je m'étais trompé sur l'ordre du journal.** J'avais écrit que ses
+pages ne sont pas chronologiques ; je l'avais mesuré **en mélangeant les deux
+moitiés**. Sur le registre seul, **42 des 49 pages avancent dans le temps**. Les
+sept qui reculent le font de 12 à 351 jours, et douze pages couvrent plus de
+60 jours dont une exactement un an : ce sont des **erreurs de transcription**
+probables, pas du désordre (§F.75).
+
+**Il n'existe aucune miniature de page.** 155 JPEG sous `PAGES_ROOT`, ~300 Ko
+pièce, **49 Mo au total**, tailles variables (774×1275 à 1018×1435). Le seul
+point d'accès sert le fichier entier : afficher les 103 pages de « Ma vie »
+téléchargerait **31 Mo**. Il faut un point d'accès de vignette côté serveur —
+du travail back, pas un `width` en CSS (§F.32).
+
+**Le site web n'a aucun objet page.** Ses 569 passages portent `pageId: null`
+et ses 60 documents `hasPages: false`. Tu as tranché que le document tiendrait
+lieu de page (§F.46) ; la contrainte reste que rien en dessous ne porte de
+numéro ni d'image.
+
+**L'écran des Réglages liste 60 documents web, pas les 25 du périmètre.** Dont
+16 pages `raiders/*`, un fichier de vérification Google, une page « bidon »,
+et une vingtaine hors corpus. Et **l'extrait censé te faire reconnaître un
+document est identique à son titre sur 45 des 60** (§G.62, §G.66).
 
 ---
 
@@ -117,24 +188,15 @@ la colonne, le champ collé en haut.
 *Recommandation : **(b)** — c'est le comportement que ta phrase décrit
 vraiment, et il tient mieux sur grand écran.*
 
-**6. [Ambigu] « Vérifie que les noms de hiérarchie sont bien triés » — ils le
-sont. Je pense que ta vraie demande est de **voir** le chemin.**
-Je l'ai vérifié : `sortAlbumsByPath` trie sur le **chemin complet**
-(`2003/2003-03-everglades`), corrigé hier matin, et l'ordre est juste. Mais
-l'écran n'affiche que la **feuille** (`2003-03-everglades`) : le set qui donne
-l'ordre — `1998-1999`, `2000-2001`, `2002`, `2003`, `2004` — est invisible. On
-regarde une liste triée sur une clé qu'on ne voit pas, ce qui est exactement
-l'impression d'une liste mal triée. Trois choses achèvent de la donner :
-`2000` (album sans mois) et `2002-38Dec02` (préfixe abîmé, « 38 » n'est pas un
-mois) tombent à des places qui semblent fausses, et `localeCompare` ignore la
-casse, donc `2003-03-everglades` passe **avant** `2003-03-Fort Lauderdale`.
-→ **(a)** afficher le **chemin complet** sur chaque ligne : la clé de tri
-devient visible et le problème disparaît de lui-même · **(b)** afficher le set
-en tête de groupe, les albums en dessous sans leur préfixe · **(c)** garder la
-feuille seule, et je cherche un vrai défaut de tri ailleurs.
-*Recommandation : **(a)**, qui répond du même coup à §A.1 — même geste, un seul
-changement. Si après ça un album te paraît encore mal placé, ce sera un vrai
-défaut et je le traiterai comme tel : dis-moi lequel.*
+**6. TRANCHÉ — afficher le chemin complet.** « 1998-1999 / 1998-02-Maison rose
+Algès ». La clé de tri devient visible, donc l'ordre s'explique de lui-même, et
+les albums nommés simplement « 2000 » cessent d'être énigmatiques. Ça répond du
+même coup à §A.1 — un seul changement pour les deux.
+
+*Il reste un vrai défaut de tri à corriger dans le même geste : `localeCompare`
+ignore la casse, donc `2003-03-everglades` passe **avant**
+`2003-03-Fort Lauderdale`. Deux albums du même mois qui s'inversent selon leur
+majuscule. Je le corrige — **tu peux ignorer ce point**.*
 
 ---
 
@@ -262,7 +324,8 @@ chose.
 d'album repose sur des préfixes dont tu as toi-même dit qu'ils sont des
 débuts, pas des mois — et 421 photos restent datées trop large.*
 
-**22. [Tension] `TASKS_ROOT` modifiable depuis l'interface : ce que ça coûte.**
+**22. TRANCHÉ — `TASKS_ROOT` affiché, pas modifiable.**
+*Le contexte, pour mémoire :*
 C'est aujourd'hui une **variable d'environnement obligatoire**, lue une seule
 fois au démarrage (`server/src/runtime/config.ts`). Elle sert à deux choses
 distinctes : dire où écrire, et **constituer la liste blanche d'écriture** de
@@ -328,20 +391,14 @@ autres, et six décisions en découlent.
 ta décision : elles règlent ce qu'elle implique. La numérotation continue celle
 du document.*
 
-**46. [Tension] Cette source n'a pas de pages : que liste l'écran quand elle est
-active ?**
-Les 60 documents ont `hasPages: false`, `pageCount: null`, et leurs 569
-passages ont tous `pageId: null`. Il n'y a **pas d'objet page** à lister, à
-dater, à numéroter ni à mettre en vignette. Ton écran est construit autour de la
-page.
-→ **(a)** la liste devient une liste de **documents** (titre, nombre de
-passages), qu'on déplie sur ses passages — même geste que §F.40(a), un cran
-plus haut · **(b)** une liste de **passages** à plat, sans niveau intermédiaire ·
-**(c)** on force un objet « page » artificiel par document.
-*Recommandation : **(a)**. Le document web joue le rôle de la page : c'est
-l'unité qu'on ouvre, et « Transat » ou « Vers Trinidad » se reconnaît par son
-titre comme une page du journal se reconnaît par sa date. **(c)** fabriquerait
-un numéro de page qui n'existe nulle part.*
+**46. TRANCHÉ — un document du site vaut une page.** Tu choisis l'uniformité des
+trois sources : la liste montre des documents web au même niveau que les pages
+du journal et de « Ma vie », et on les ouvre de la même façon.
+
+*Une conséquence a été verrouillée pour que la fiction ne devienne pas un
+mensonge : **le titre d'une note tirée du site ne dit jamais « page 1 »**, parce
+qu'il n'y a pas de page. Il nomme le document — « site web, Vers Trinidad ».
+Voir §F.50, réécrite en ce sens.*
 
 **47. [Tension] Le filtre par date, sur une source où zéro texte est daté.**
 `0 / 569`. Et le filtre serveur exige `date_start IS NOT NULL` : activé sur
@@ -354,7 +411,8 @@ aucune photo n'a de position · **(b)** le laisser actif et afficher zéro ·
 bonne : un filtre désactivé **qui dit pourquoi** enseigne quelque chose sur le
 corpus ; un filtre masqué laisse croire qu'on a mal cherché.*
 
-**48. [Tension] `ref.web_span` est la vraie réponse, et elle est vide.**
+**48. TRANCHÉ — tu saisis les dates, dans un écran dédié (§G).**
+*Le contexte, pour mémoire :*
 La table existe, l'écran Réglages sait déjà l'éditer (`PUT /ref/web-span`,
 section « Site web »), et **0 des 60 documents porte une plage**. Si tu les
 saisis, tes filtres de date fonctionnent sur cette source et ces textes se
@@ -392,17 +450,14 @@ galerie du document, sans le HTML — elles sont déjà lues par l'appariement.
 si tu veux voir quelque chose, mais il dépend du volume externe et vaut d'être
 posé séparément, une fois les liens de galerie relus (§F.51).*
 
-**50. [Ambigu] Le titre de note pour un texte du site : « page xx du jj/mm/aaaa »
-n'a ni page ni date.**
-Ni numéro de page, ni date, sur cette source. Ton gabarit ne s'applique pas.
-→ **(a)** « site web, Vers Trinidad » — le titre du document, rien d'inventé ·
-**(b)** « site web, Vers Trinidad (1999-2002) » si tu as saisi une plage
-(§F.48), sans parenthèse sinon · **(c)** un numéro d'ordre du passage dans le
-document : « site web, Vers Trinidad, passage 12 ».
-*Recommandation : **(b)**. Elle donne la seule information temporelle
-disponible quand elle existe, et se tait quand elle n'existe pas — jamais un
-jj/mm/aaaa fabriqué. Le sort de ce titre une fois posé se règle en §F.54,
-comme pour les deux autres sources.*
+**50. TRANCHÉ, par la conséquence posée en §F.46 — le titre nomme le document.**
+« site web, Vers Trinidad », jamais « page 1 » : la liste est uniforme, mais
+l'attribution reste exacte.
+→ Reste un choix mineur : ajoute-t-on la plage quand tu l'as saisie (§G) —
+« site web, Vers Trinidad (1999-2002) » — ou jamais ?
+*Recommandation : l'ajouter quand elle existe, se taire sinon. Jamais un
+jj/mm/aaaa fabriqué. **Tu peux ignorer cette question** : sans réponse,
+j'applique ça.*
 
 **51. TRANCHÉ — les légendes sont indicatives, et rien de plus.** Tes mots :
 « Le contenu des légendes est là à titre indicatif. donc pas de filtre sur les
@@ -478,20 +533,36 @@ pour les montrer.
 *Recommandation : **(b)**. Un menu de navigation FrontPage n'est pas un texte
 d'époque, et le seuil se voit et se défait — jamais un filtre silencieux.*
 
-**27. [Tension] « Le journal de bord » désigne deux jeux de textes différents.**
-Le document `logbook` porte **492 passages** et **1 012 entrées de journal**.
-456 identifiants existent **dans les deux** avec un **texte différent** :
-`logbook/p025/011` est « Génois tangonné bâbord (Martin 15.32N…) » en passage,
-et « Spi. Il fait beau. » en entrée. Une recherche sur « le texte du journal de
-bord » renvoie aujourd'hui les deux — 89 résultats sur « mouillage », dont 36
-entrées et 53 passages, avec des doublons apparents qui n'en sont pas.
-→ **(a)** l'écran montre les **passages** (le texte de la page tel qu'il est
-écrit), les entrées restent la matière du rapprochement · **(b)** il montre les
-**entrées** (une ligne = un fait daté) · **(c)** les deux, dans deux
-sous-listes.
-*Recommandation : **(a)**. Ta demande — afficher une page, copier son texte,
-en faire une note — porte sur ce qui est **écrit sur la page**, pas sur la
-version structurée. Et c'est la lecture « au plus simple ».*
+**27. [Tension] « Le journal de bord » désigne deux jeux de textes — et ta
+remarque m'a fait comprendre pourquoi.**
+
+Tu as dit : « le journal de bord, la page du bas est en ordre chronologique car
+c'est un document officiel ». **J'ai ouvert les scans, et tu as raison.** Un
+scan du journal contient **deux pages physiques séparées par la reliure à
+spirale**, bien visible en travers de l'image :
+- **en haut**, des notes libres, des photos collées, des billets et des
+  prospectus — la page de carnet de voyage ;
+- **en bas**, le **registre réglé**, avec ses colonnes imprimées *Date · Cap ·
+  Vent · Loc. · Baro · Moteur · Position · Remarques*, rempli ligne par ligne.
+
+La donnée confirme la correspondance sans ambiguïté : les **1 012 `log_entry`**
+portent **807 heures et 711 positions GPS** — ce sont les lignes du registre.
+Les **492 `passage`** portent **zéro heure et zéro position** — c'est la prose.
+Les 456 identifiants partagés ne sont donc pas des doublons : c'est la ligne 11
+du haut et la ligne 11 du bas.
+
+Ce n'est pas enregistré comme tel : `pipeline.page` ne connaît qu'**une seule
+image par scan**, `label` est `null` sur les 155 pages et `regionsAvailable`
+vaut `false`. La distinction existe dans le `kind` des textes, pas dans la
+géométrie.
+→ **(a)** l'écran montre les **deux**, nommées pour ce qu'elles sont — « Notes
+de bord » (les passages) et « Registre » (les entrées) — dans la page ouverte ·
+**(b)** les passages seuls · **(c)** les entrées seules.
+*Recommandation : **(a)**, qui remplace ma recommandation précédente. Les deux
+moitiés sont deux documents différents du même cahier : le registre porte les
+faits datés, la prose porte le récit. Pour une BD, c'est la prose qui écrit et
+le registre qui situe — se priver de l'un ou de l'autre serait perdre la moitié
+du cahier.*
 
 ### F.2 — La liste de pages
 
@@ -509,11 +580,24 @@ donne sur les 155 pages, et elle est meilleure que ce que j'annonçais :
 - Bilan à l'écran : **133 pages en vert, 22 en ambre**. La liste n'est ni
   uniformément verte ni à moitié ambre.
 
-**29. TRANCHÉ, dans le même geste — reste l'ordre.** Le tri de la liste n'était
-pas dans ta réponse ; je maintiens la question et ma recommandation : un
-sélecteur, **défaut par date**, le numéro de page affiché à côté. Page 5 du
-journal = avril 1998, page 3 = juillet 1998, page 8 = février 1999 ; « Ma vie »
-est chronologique de bout en bout. Une phrase de ta part suffit.
+**29. TRANCHÉ — tri par date par défaut, avec une bascule vers l'ordre du
+cahier**, mémorisée par source.
+
+**Et je te dois une correction sur le chiffre qui a motivé cette question.**
+J'avais écrit que les pages du journal ne sont pas chronologiques — page 5 en
+avril 1998, page 3 en juillet 1998. C'était mesuré **en mélangeant les deux
+moitiés du scan**, ce que ta remarque sur le registre m'a fait voir (§F.27).
+Mesuré sur le **registre seul**, ton cahier est bien tenu :
+
+- **42 des 49 pages du registre avancent dans le temps.** Sept reculent.
+- Et ces sept-là ne ressemblent pas à du désordre, mais à des **erreurs de
+  transcription** : la page 19 recule de **351 jours** et couvre exactement un
+  an (16/11/1998 → 16/11/1999), la page 40 recule de **316 jours**, la page 26
+  de **215**. Un « 1998 » lu là où « 1999 » était écrit produit exactement ça.
+
+La bascule reste donc utile — tu travailles parfois le cahier ouvert devant toi
+et tu cherches « la page 12 » — mais sur le journal, les deux ordres coïncident
+presque. Voir §F.75, qui propose d'en faire quelque chose.
 
 **71. [Non dit] Faut-il signaler quand la date lue et la fenêtre divergent ?
 Attention : ce n'est pas 5 pages, c'est 85.**
@@ -542,22 +626,61 @@ d'œil · **(b)** signaler toute divergence · **(c)** ne rien signaler.
 85 est une liste qu'on ignore. Et le seuil se dit à l'écran, il ne se cache
 pas.*
 
+**74. [Non dit] Faut-il nommer les deux moitiés du scan à l'écran ?**
+La donnée ne les distingue pas géométriquement, mais elle les distingue
+parfaitement par le `kind` (§F.27). L'écran peut donc dire ce que chaque texte
+est, même s'il ne peut pas le situer sur l'image.
+→ **(a)** dans la page ouverte, deux blocs titrés « Notes de bord » et
+« Registre », avec pour chacun sa propre numérotation de ligne · **(b)** une
+seule liste mêlée, chaque texte portant une étiquette · **(c)** rien, on
+n'en parle pas.
+*Recommandation : **(a)**. C'est la seule qui explique les 456 identifiants
+partagés — ligne 11 en haut, ligne 11 en bas — au lieu de les faire passer pour
+un défaut.*
+
+**75. [Non dit] Sept pages du registre reculent dans le temps : on te les
+signale ?**
+Mesuré en §F.29 : sur les 49 pages du registre, sept reculent, de 12 à
+**351 jours**. Et **12 pages couvrent plus de 60 jours**, l'une exactement
+365 — sur un registre qui tient une vingtaine de lignes par page, c'est
+physiquement improbable. Les deux signes pointent vers la même cause : une
+année mal lue à la transcription.
+→ **(a)** une liste « pages à revérifier » dans les Réglages, avec le motif —
+recul de N jours, ou page couvrant N jours — et un lien vers la page pour la
+corriger · **(b)** un signe discret sur la page concernée dans la liste ·
+**(c)** rien.
+*Recommandation : **(b)** pour la V1.5, **(a)** si tu veux vraiment reprendre
+ces dates. Ce sont des dates **lues**, donc réputées exactes, et sur lesquelles
+tout le rapprochement photo-texte s'appuie : une année fausse déplace une page
+entière de rapprochements d'un an. Mais c'est un chantier de correction de
+transcription, pas de l'affichage — il ne doit pas retarder la V1.5.*
+
 **30. SANS OBJET — le cas n'existe pas.** Je demandais où ranger les pages sans
 aucune date. La mesure dit **zéro sur 155** : sous la règle de repli que tu
 viens de trancher, chaque page porte une date. La question tombe.
 
-**31. [Ambigu] « Une miniature de la page du haut pour le journal de bord » —
-qu'est-ce que « la page du haut » ?**
-Je ne sais pas lire cette phrase avec certitude. Trois lectures :
-→ **(a)** le **haut de la page** — un cadrage sur le premier tiers, là où la
-date est écrite · **(b)** la page **de gauche** d'une double page scannée ·
-**(c)** la **première** page d'un groupe de pages partageant une date.
-*Recommandation : **(a)** si c'est la date que tu veux reconnaître d'un coup
-d'œil. Mais aucune donnée ne dit **où** se trouve quoi que ce soit sur une page
-(`regionsAvailable: false` sur les 155 pages) : un cadrage serait un
-pourcentage arbitraire, pas une région connue. Si c'est **(a)**, ma
-recommandation est de rogner à 35 % de hauteur, à ajuster à l'œil, et de le
-dire comme un cadrage aveugle.*
+**31. [Ambigu] « La miniature de la page du haut » — je comprends maintenant, il
+reste à savoir où couper.**
+Ta phrase est claire une fois qu'on sait qu'un scan porte deux pages (§F.27) :
+tu veux la moitié **haute**, celle du carnet de voyage, parce que c'est elle qui
+se reconnaît d'un coup d'œil — une aquarelle, des photos collées, un billet de
+musée. La moitié basse est un registre réglé : toutes les pages se ressemblent,
+une vignette n'en dirait rien.
+
+Le problème est qu'**aucune donnée ne dit où couper**. `pipeline.page` ne porte
+qu'une image entière, et `regionsAvailable` vaut `false`. J'ai regardé deux
+scans : la reliure à spirale traverse l'image aux alentours de **48 à 50 % de la
+hauteur**, mais elle n'est pas au même endroit d'un scan à l'autre, et les 52
+images n'ont pas la même taille (774×1275 à 830×1282).
+→ **(a)** rogner à **48 % de la hauteur**, chiffre fixe, en disant à l'écran que
+le cadrage est approximatif · **(b)** détecter la reliure — une bande sombre
+horizontale très marquée, repérable sans grand-chose · **(c)** vignette de la
+page entière, comme « Ma vie ».
+*Recommandation : **(a)** pour la V1.5. La reliure est franche et centrée ;
+quelques pour cent d'erreur sur une vignette ne gênent personne. **(b)** est le
+correctif si le résultat déçoit — et c'est alors du travail back, pas du CSS.
+**(c)** perd ce que tu demandes : sur une vignette entière, la moitié
+reconnaissable est réduite de moitié.*
 
 **32. [Tension] Les miniatures n'existent pas et coûtent 49 Mo telles quelles.**
 155 JPEG, ~300 Ko pièce, servis entiers par `/pages/image`. Afficher les 103
@@ -678,57 +801,28 @@ de bord, page xx du jj/mm/aaaa » — est **ce qui empêche le LLM de t'attribue
 une phrase de 1999**. Il devient une pièce de sécurité, pas une commodité.
 Trois questions en découlent, §F.54 à §F.56.
 
-**54. [Tension] Le titre porte l'attribution : peut-il se perdre ?**
-Deux choses à savoir avant de répondre. L'export écrit `## <titre>` puis le
-texte brut dans `notes.md` — **le rattachement `attachedTo` n'apparaît pas dans
-ce fichier**, seulement dans `manifest.json`. Pour qui lit le Markdown, le titre
-est donc le **seul** porteur de provenance. Et `PATCH /tasks/:slug/notes/:noteId`
-accepte déjà `title` : le rendre non modifiable à la création ne suffirait pas,
-il faut aussi décider du sort de l'édition ultérieure.
-→ **(a)** le préfixe d'attribution (« journal de bord, page 5 du 12/04/1998 »)
-est **verrouillé** ; tu peux ajouter du texte à la suite, jamais l'effacer ·
-**(b)** le titre est librement éditable, mais l'écran **prévient** quand ton
-édition fait disparaître l'attribution · **(c)** librement éditable, sans rien.
-*Recommandation : **(a)**. Tu as choisi la recopie pour pouvoir retravailler le
-**texte** — le verrou ne porte que sur le préfixe du titre et ne te gêne pas
-sur ce que tu voulais faire. **(c)** rend la protection facultative au moment
-précis où on l'oublie.*
+**54. TRANCHÉ — préfixe verrouillé, ajout libre à la suite.** « journal de bord,
+page 12 du 04/11/2003 » reste ; tu écris ce que tu veux après.
+*Une conséquence à ne pas manquer : `PATCH /tasks/:slug/notes/:noteId` accepte
+déjà `title`. Le verrou doit donc être posé **au serveur**, qui refuse une
+modification altérant le préfixe — pas seulement dans l'interface, sans quoi il
+ne protège rien.*
 
-**55. [Tension] Une note recopiée puis éditée n'est plus verbatim, et rien ne le
-dira.**
-C'est la conséquence directe de ton choix, et elle est réelle : tu recopies un
-passage, tu le retouches, tu en coupes la moitié. Le résultat cesse d'être une
-citation **sans cesser d'y ressembler** — même titre, même apparence. Le
-manifeste ne porte aujourd'hui, pour une note, que `id`, `createdAt`, `title`,
-`text`, `attachedToImages`, `attachedToTexts` : **aucun champ ne dit d'où vient
-le texte, ni s'il a bougé**.
-→ **(a)** deux champs au manifeste : la **source** (`derivedFrom`, la référence
-du passage recopié) et un drapeau **« édité depuis la recopie »** ·
-**(b)** la source seulement, sans le drapeau · **(c)** rien, le titre suffit.
-*Recommandation : **(a)**. Deux champs, calculables sans rien te demander —
-le drapeau est une comparaison de chaînes à l'enregistrement. C'est un
-amendement au contrat gelé, annoncé aux deux agents comme les trois
-précédents. **(c)** laisse le LLM lire une phrase que tu as réécrite comme si
-elle sortait du cahier.*
+**55. TRANCHÉ — le manifeste distingue une note dérivée d'une note écrite de
+zéro.** Un champ de **source** (la référence du passage recopié) et un drapeau
+**« édité depuis »**, que le serveur calcule par comparaison à l'enregistrement.
+Sans lui, l'attribution que porte le titre n'est vérifiable par rien.
+*Amendement au contrat gelé, à annoncer aux deux agents d'implémentation avant
+d'être écrit — comme les trois précédents.*
 
-**56. [Non dit] Recopier **et** rattacher, tant qu'à faire.**
-`attachedTo.texts` existe déjà au contrat et part dans le manifeste. Recopier
-le texte **et** rattacher la note à son passage d'origine coûte presque rien et
-rend le lien réversible : on retrouve toujours l'original, même après que tu as
-retravaillé la note.
-→ **(a)** oui, les deux · **(b)** recopie seule.
-*Recommandation : **(a)**. C'est ce qui rend §F.55 vérifiable plutôt que
-déclaratif.*
+**56. TRANCHÉ — recopier **et** rattacher.** `attachedTo.texts` existe déjà au
+contrat. Le lien reste réversible : on retrouve l'original même après que tu as
+retravaillé la note, et c'est ce qui rend §F.55 vérifiable plutôt que
+déclaratif.
 
-**57. [Non dit] Et le passage d'origine, on le sélectionne aussi ?**
-Créer une note depuis un passage ne le fait pas entrer dans la tâche. Le texte
-partirait donc dans `notes.md` (par ta recopie) sans être dans `journal.md`.
-→ **(a)** créer la note coche aussi le passage · **(b)** non, les deux gestes
-restent séparés · **(c)** on te le propose, décoché par défaut.
-*Recommandation : **(b)**. Sous §F.42 tel que tu l'as tranché, la note **est**
-le texte — le sélectionner en plus le ferait partir deux fois dans le dossier
-livré, une fois dans `journal.md` et une fois dans `notes.md`. C'est
-exactement le doublon que le LLM lirait comme deux sources concordantes.*
+**57. TRANCHÉ — créer une note ne coche pas le passage.** Sous la recopie, la
+note **est** le texte : l'envoyer aussi dans `journal.md` ferait lire au LLM un
+doublon comme deux sources concordantes.
 
 **43. [Tension] « page xx du jj/mm/aaaa » : les deux valeurs existent, mais la
 seconde n'est pas celle que tu crois.**
@@ -990,66 +1084,15 @@ au contrat, à annoncer comme les trois amendements précédents.*
 
 ---
 
-## Récapitulatif — ce qui bloque vraiment
+## En une phrase
 
-**Huit tranchées, merci — toutes intégrées :** §F.26 (le site web est une
-troisième source), §F.28 (la date lue d'abord, la calculée en repli), §F.40 (la
-sélection reste au passage, dans la page ouverte), §F.42 (la note recopie le
-texte), §F.48 (tu saisis les dates du site, dans un écran dédié), §F.51 + §F.68
-(les légendes de galerie sont indicatives, jamais sélectionnables), §E.22
-(`TASKS_ROOT` affiché, pas modifiable). Et §F.30 tombe d'elle-même : la mesure
-dit qu'aucune page ne reste sans date.
+Plus rien ne bloque la spécification. **Huit questions** changent quelque chose
+de visible et méritent ta lecture (en tête de ce document) ; les **cinquante**
+autres ont une recommandation que j'applique sans réponse de ta part.
 
-**Ce qui bloque encore**, par ordre de portée :
-
-1. **§G.58 + §G.60 + §G.61** — la chaîne « la fin est le début du suivant ». La
-   mesure montre qu'elle ne peut pas suivre l'ordre des fichiers, qu'un
-   document non daté au milieu se fait avaler par son voisin, et que trois
-   documents proposent déjà la même date. Trois réponses courtes, mais sans
-   elles l'écran §G ne peut pas être spécifié.
-2. **§G.64** — la nature de la date que tu saisis dans ce nouvel écran.
-   Inférence (ta décision du 29/08, inchangée) ou décision (ce que l'affichage
-   d'une proposition changerait) ? Seul point de toute la V1.5 qui toucherait
-   une décision marquée « ne pas rouvrir ».
-3. **§F.46** — le site web n'a **aucun objet page** : l'écran Textes doit y
-   lister des **documents** là où il liste des pages ailleurs.
-4. **§F.54 + §F.55** — les deux conséquences de la recopie. Le titre porte
-   désormais seul l'attribution dans `notes.md`, et une note recopiée puis
-   retravaillée cesse d'être une citation sans cesser d'y ressembler.
-5. **§F.29** — l'ordre de la liste de pages, resté hors de ta réponse sur les
-   dates. Une phrase.
-6. **§A.6** — ta demande de vérifier le tri des albums. Il **est** correct ; je
-   pense que tu veux voir le chemin. Une phrase suffit, et si tu vois encore un
-   album mal placé, nomme-le.
-
-**Ce que tu perds avec §F.51, pour que ce soit dit une fois clairement :**
-sous la règle « les légendes sont indicatives », **2003-2004 n'a plus aucun
-texte d'époque sélectionnable**. Les 103 légendes de ces deux années étaient la
-seule matière contemporaine des 2 041 photos. Le dossier livré pour cette
-période contiendra donc tes notes, et rien d'autre côté texte. C'est peut-être
-le bon arbitrage — c'est le tien — mais il ne doit pas se découvrir au premier
-export.
-
-**Une tension que je n'aplanis pas**, parce qu'on m'a demandé de les remonter :
-§G.63 et §G.64 vont tous deux contre une règle déjà écrite — pré-remplir les
-champs, et requalifier `ref.web_span` en décision. Mes recommandations
-proposent chaque fois une voie qui donne le bénéfice recherché sans toucher à
-la règle. Si tu préfères amender, c'est ton droit ; ce sont alors deux
-amendements au contrat gelé, à annoncer aux deux agents d'implémentation avant
-d'être écrits.
-
-Deux questions non bloquantes, mais qui décident de ce que la V1.5 rend
-possible :
-
-**§F.48** — acceptes-tu de saisir les plages de dates des documents du site ?
-C'est le seul geste qui ouvre 2003-2004, où 2 041 photos font face à zéro ligne
-de journal. Vingt-cinq saisies, une fois. Ma recommandation est oui, **mais
-après** avoir réparé l'écran Réglages, qui te présente aujourd'hui 60 lignes
-dont 24 hors période et plusieurs vides de sens, avec un extrait identique au
-titre sur 45 d'entre elles.
-
-**§F.51** — les 205 légendes de galerie sont servies comme des faits alors
-qu'**aucune n'a été relue par un humain**, qu'un tiers est hors période et
-qu'un quart n'est pas une légende mais un paragraphe de page. Elles sont
-pourtant la seule matière textuelle d'époque pour 2003-2004. Il faut soit le
-geste de validation, soit assumer de les afficher comme des suppositions.
+Les deux seuls points où je te recommande le contraire de ce qu'on m'a proposé
+sont **§G.63** (pré-remplir les champs de date, que le contrat interdit en
+nommant ce cas) et **§G.64** (requalifier ta saisie en décision, alors que tu
+avais tranché « inférence » le 29/08). Dans les deux cas ma recommandation
+donne le bénéfice recherché sans toucher à la règle. Si tu préfères amender,
+ce sont deux amendements au contrat gelé, à annoncer avant d'être écrits.
