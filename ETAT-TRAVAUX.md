@@ -772,3 +772,17 @@ DONE : **Task 5** implémentée selon la vraie règle de Nicolas (relayée par t
 DETAIL : commit `d755cb1` (Task 5). **Tranche A (v1.5) est maintenant complète : Tasks 1 à 6.**
 
 ASK : aucun. J'enchaîne sur la tranche B (Task 7 : la cascade de date de page, pure) — peut démarrer en parallèle de rien d'autre, la tranche A étant close.
+
+---
+
+## Avancement — impl-backend, v1.5 Tasks 7-8 — tranche B (2026-08-30)
+
+RE : v1.5, tranche B — la cascade de date de page
+DONE :
+- **Task 7 (`page_date.ts`, pure)** : `resolvePageDates` — registre (`log_entry`) prime sur notes (`passage`) prime sur héritage de la page précédente du MÊME document (`source: 'carried'`), la première page d'un document sans texte reste sans date, jamais d'héritage entre documents. 8 tests. Commit `0d6b6fa`.
+- **Task 8 (`page_date_repository.ts`)** : `recomputePageDates` recalcule `app.page_date` en entier depuis `pipeline.text_unit`, appelée en fin d'import (`import_service.ts`, juste après `REFRESH MATERIALIZED VIEW app.text_search`) — jamais stockée ailleurs, jamais lue par `adobe_mcp`. `ma-vie` n'a structurellement aucun `log_entry`, donc tombe naturellement dans la branche « notes » sans cas particulier dans le code. `TextPage.date` ajouté, DISTINCT du `window` existant (`window` = géométrie du scan, `date` = chronologie résolue) — `kind: 'reading'` pour une date propre, `'inference'` pour une héritée. `PAGE_SELECT` en `LEFT JOIN app.page_date` : une page sans date résolvable sert `date: null`, jamais absente. `DateSource.PAGE_DATE` ajouté à `src/shared/enums.ts` — front prévenu au moment du geste.
+Vérifié contre le corpus réel (écrit en base réelle, c'est l'état persistant voulu, pas nettoyé) : 155 lignes écrites, 0 page de journal sans date, pages 1/2/31 datées par notes (1998-07-08/1998-07-08/2000-03-02), exactement 22 pages ma-vie en `carried` — correspond exactement aux chiffres mesurés par le plan lui-même. Repassé aussi en HTTP réel (`GET /pages?documentId=ma-vie`) : page 1 `reading`, page 2 `inference`, page 3 `reading`.
+5 tests neufs (Task 8) + 1 test HTTP. 700 tests serveur, tsc/eslint propres.
+DETAIL : commit `52a349d` (Task 8).
+
+ASK : aucun. J'enchaîne sur la tranche C (Task 9, vignettes de page) — D attend la tâche 5 (faite), C et E peuvent démarrer en parallèle de la suite de B selon team-lead. Je note aussi la tâche 12 (`excludedCount: 0` en dur, `fix:`) comme prioritaire dans mon ordre — remontée par team-lead comme un défaut vécu en production tous les jours par Nicolas.
