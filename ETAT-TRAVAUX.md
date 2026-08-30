@@ -828,6 +828,22 @@ ASK : aucun. J'enchaîne sur la Task 11 (le périmètre 1998-2004).
 
 ---
 
+## Avancement — impl-backend, v1.5 Task 11 — tranche D (2026-08-30)
+
+RE : v1.5, tranche D — le périmètre de la liste des documents du site
+DONE : `GET /ref/web-documents?scope=perimeter|all`, défaut `perimeter`. Un document est dans le périmètre (1998-2004, `config.periodFrom`/`periodTo`) s'il porte au moins deux passages ET que son CHEMIN OU sa `proposal` (Task 10) tombe dans la période — les deux sont des indices INDÉPENDANTS, aucun ne verrouille l'autre : `web/2005/images/2005_4` est classé sous `2005/` mais ses photos datent de 2003, il reste dans le périmètre. Le seuil de deux passages écarte les rebuts et la vérification Google sans nommer aucun fichier en dur.
+`isInWebPerimeter` pure (`metier/dating/web_perimeter.ts`), testée contre les cas RÉELS du corpus qui ont motivé la conception (`googlea0ccc7e24963cc5e` n'a ni année reconnaissable ni proposition ; le « 2496 » qu'il contient est filtré par une plage d'années plausible, jamais confondu avec une vraie année).
+**Trouvé au passage, corrigé** : une ligne du tableau des routes (§4.8) montrait encore `PUT /ref/web-span` acceptant `dateTo` — trois tâches après que l'amendement A9 l'a retiré. Le changelog de A9 (ligne 31 du contrat) le disait déjà, le tableau n'avait juste jamais suivi.
+Vérifié contre le corpus réel (serveur réel, `curl`) : `scope=perimeter` → exactement 28 des 60 documents réels, correspond à une simulation par script jetable faite avant l'implémentation.
+8 tests unitaires purs + 4 tests HTTP neufs (dont un test existant corrigé : un document à 1 passage n'apparaît plus par défaut, passé en `scope=all`). 724 tests serveur, tsc/eslint propres.
+DETAIL : commit `ef4e136`.
+
+**Incident signalé par front, résolu** : crash au boot (`Cannot read properties of undefined (reading 'slice')`, `ref_controller.ts:84`) — `deps.periodFrom` undefined. Root cause : un rechargement en mode watch a probablement surpris le code entre mes deux commits (l'exigence posée dans `ref_controller.ts` avant que le câblage compagnon de `bootstrap.ts` n'atterrisse), pas un défaut du code committé — `ef4e136` a TOUJOURS porté les deux ensemble. Confirmé par un `npm run start` propre après coup : démarre sans erreur, `/ref/web-documents`, `/texts`, `/pages/thumb` tous 200. Serveur relaissé vivant sur le port 4310 pour la vérification de front, prévenu.
+
+ASK : aucun. J'enchaîne sur la tranche E (Task 13, les facettes de dates ; Task 14, les pages qui correspondent à un filtre).
+
+---
+
 ## Avancement — front, v1.5 Tranche 1 — les trois écrans cassés rattrapés (2026-08-30)
 
 RE : URGENT, trois écrans cassés contre le vrai serveur — Textes, Revue, Réglages
