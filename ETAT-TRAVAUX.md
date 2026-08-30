@@ -678,3 +678,25 @@ DONE : deux vrais bugs, root-causés (`systematic-debugging`) avant tout code.
 DETAIL : commit `3560c01`. Fichiers de front modifiés en parallèle dans l'arbre partagé (`src/ui/filters/FilterPanel.*`) — jamais touchés, jamais ajoutés au commit. `distanceToCentreDays` non entier (signalé par front, déjà corrigé de son côté) : vérifié côté serveur, `computeOverlapInfo` n'arrondit jamais — rien à faire ici.
 
 ASK : aucun. Serveur redémarré et vérifié en direct.
+
+---
+
+## Avancement — front, deux bugs signalés en direct par Nicolas + deux demandes Réglages (2026-08-30)
+
+RE : bugs Tâches/Images (« I can't enter a date. Also the hierarchy name can't be selected »), demandes Réglages
+DONE (`superpowers:systematic-debugging` invoqué, cause avant correctif, test qui échouait sans lui) :
+
+**« I can't enter a date » — reproduit, corrigé.** Cause : `dateFrom`/`dateTo` ne survivent à l'URL QUE TOGETHER (`toSearchParams` exige les deux non-nuls ; vérifié aussi côté serveur, un `dateFrom` seul est silencieusement ignoré, `filters.applied` reste vide). Chaque champ mois dérivait sa valeur directement de `filters`, lui-même redérivé de l'URL à chaque rendu — taper le PREMIER mois fait un aller-retour par `toSearchParams`/`fromSearchParams` avec l'autre borne encore nulle, qui le perd ; le second mois ne peut alors plus le récupérer. Structurellement impossible à remplir, dans n'importe quel ordre, pour n'importe qui. **Pourquoi 588 tests ne l'ont pas vu** : le harnais de `FilterPanel.test.tsx` stockait le `FilterState` brut au lieu de le faire passer par le même aller-retour URL que `ImagesScreen` fait réellement — corrigé (`fromSearchParams(toSearchParams(next))`), ce qui a fait échouer le test existant avant le correctif. Corrigé par un état local (brouillon) pour les deux champs mois, qui ne valide vers `onChange` qu'une fois les deux complets — même schéma déjà utilisé pour les bornes de `SettingsScreen`. Vérifié en vrai navigateur (`dateFrom=2000-06-01&dateTo=2000-12-31`, 3930→383 résultats).
+Piège en creusant : `page.keyboard.press('Digit...')` sur un `<input type="month">` sous Chromium headless produit une valeur absurde même sur une page HTML nue sans aucun code de l'appli (`"62000-06"` au lieu de `"2000-06"`) — un artefact de l'automatisation clavier headless sur ce type de champ, pas un signal sur le bug réel. Vérifié via l'assignation directe de `.value` + `dispatchEvent` (une frappe complétée), qui elle est fiable.
+
+**« le nom de hiérarchie ne peut pas être sélectionné » — NON reproduit.** Case à cocher testée : clic sur le texte du label, clic direct sur la case, Espace au clavier avec focus, persistance après 4 s et un refetch complet — tout fonctionne (coché, URL `albumPath=…`, 3930→26 résultats). J'ai demandé à team-lead de faire préciser à Nicolas quel album et quel symptôme exact.
+
+**Réglages : tri alphabétique + recherche.** `AlbumSpans` triait « suspects d'abord » — remplacé par un tri alphabétique pur sur `path` (le préfixe `AAAA-MM` donne l'ordre chronologique gratuitement, jamais un tri de date construit pour l'usage). Champ de recherche ajouté, client seulement (82 albums en mémoire, aucun aller-retour serveur) : `matchesSearch` (`src/domain/searchFold.ts`) plie les deux côtés en NFD avant de retirer les marques combinantes — insensible à la casse ET aux accents quel que soit le sens (le contrat documente `Album.path` en NFC, mais la vraie donnée a été vue décomposée ; une personne peut aussi taper l'une ou l'autre forme). Vérifié en direct : « BVI » trouve les 3 vrais albums BVI, « Alges » sans accent trouve le vrai « Algès ».
+
+**Repasse recouvrement (`back` a livré depuis mon dernier signalement)** : `overlap`/`overlapSummary` maintenant décorés dans les deux sens, vérifié en vrai navigateur — « Voir les images » depuis un texte affiche « 2 photos dans une fenêtre de 130 jours » avec les vraies tuiles, plus aucune bannière de contrat.
+
+600 tests front verts, tsc et eslint propres.
+
+DETAIL : commits `0bf2bc9` (date), `3180f78` (tri + recherche Réglages). `superpowers:systematic-debugging` suivi intégralement pour le bug de date : reproduction avant hypothèse, hypothèse unique testée, test qui échoue avant correctif.
+
+ASK : aucune décision Nicolas. J'attends la précision sur le bug d'album pour continuer, sinon je reste disponible.
