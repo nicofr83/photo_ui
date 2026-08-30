@@ -366,6 +366,8 @@ function bucketize(
 }
 
 const NOW = '2026-08-29T10:00:00.000Z' as TaskDetail['createdAt'];
+/** v1.5, Task 13: the server's write allowlist for a task's export directory. */
+const TASKS_ROOT = '/var/photo_ui/tasks';
 
 export const handlers = [
   // Contract §4.1/§9: consulted at startup, polled during long operations.
@@ -381,7 +383,7 @@ export const handlers = [
         { name: 'originals', envVar: 'ORIGINALS_ROOT', path: '/Volumes/OWC Envoy Ultra', available: store.originalsAvailable, checkedAt: now },
         { name: 'thumbs', envVar: 'THUMBS_ROOT', path: '/var/photo_ui/thumbs', available: true, checkedAt: now },
         { name: 'pages', envVar: 'PAGES_ROOT', path: '/var/photo_ui/pages', available: true, checkedAt: now },
-        { name: 'tasks', envVar: 'TASKS_ROOT', path: '/var/photo_ui/tasks', available: store.tasksRootAvailable, checkedAt: now },
+        { name: 'tasks', envVar: 'TASKS_ROOT', path: TASKS_ROOT, available: store.tasksRootAvailable, checkedAt: now },
         { name: 'render_cache', envVar: 'RENDER_CACHE_ROOT', path: '/var/photo_ui/render_cache', available: true, checkedAt: now },
       ],
       counts: {
@@ -933,9 +935,19 @@ export const handlers = [
         parameter: 'period', received: JSON.stringify(patch.period), accepted: null,
       });
     }
+    // v1.5, Task 13 (backend A8): confined under TASKS_ROOT, the server's
+    // write allowlist — refused, never silently sanitised.
+    if (patch.exportDirectory != null && !patch.exportDirectory.startsWith(`${TASKS_ROOT}/`)) {
+      return error(422, ErrorCode.DIRECTORY_OUTSIDE_ROOT,
+        'le répertoire de livraison doit rester sous TASKS_ROOT',
+        { directory: patch.exportDirectory, root: TASKS_ROOT });
+    }
     if (patch.title !== undefined) task.title = patch.title;
     if (patch.brief !== undefined) task.brief = patch.brief;
     if (patch.period !== undefined) task.period = patch.period;
+    if (patch.exportDirectory !== undefined) {
+      task.exportDirectory = patch.exportDirectory ?? `${TASKS_ROOT}/${slug}`;
+    }
     task.updatedAt = NOW;
 
     const { images: _images, texts: _texts, brief: _brief, notes: _notes, ...summary } = task;

@@ -27,6 +27,7 @@ export function ConsigneScreen({ slug }: { readonly slug: string }): React.JSX.E
   const [brief, setBrief] = useState('');
   const [periodFrom, setPeriodFrom] = useState('');
   const [periodTo, setPeriodTo] = useState('');
+  const [exportDirectory, setExportDirectory] = useState('');
 
   // Sync FROM the loaded task once, and again whenever it changes from
   // OUTSIDE this form (a save landing, a fresh navigation) — never
@@ -37,6 +38,7 @@ export function ConsigneScreen({ slug }: { readonly slug: string }): React.JSX.E
     setBrief(task.data.brief);
     setPeriodFrom(toMonthInput(task.data.period?.from ?? null));
     setPeriodTo(toMonthInput(task.data.period?.to ?? null));
+    setExportDirectory(task.data.exportDirectory ?? '');
   }, [task.data]);
 
   if (task.error !== null) return <ErrorBanner error={task.error} />;
@@ -125,6 +127,38 @@ export function ConsigneScreen({ slug }: { readonly slug: string }): React.JSX.E
             Effacer la période
           </button>
         )}
+      </fieldset>
+
+      {/* v1.5, Task 13: this is where a task DECLARES what it is — the
+          repository field used to live only in the export dialog, one-shot;
+          DIRECTORY_OUTSIDE_ROOT (a real refusal, contract A8) surfaces
+          through the shared ErrorBanner above, which already shows the
+          server's own message verbatim. */}
+      <fieldset className={styles['brief']}>
+        <legend>Livraison</legend>
+        <p className={styles['note']}>
+          {task.data.exportDirectory === null
+            ? 'Défaut : <TASKS_ROOT>/<slug du dossier>.'
+            : `Actuellement : ${task.data.exportDirectory}`}
+        </p>
+        <label className={styles['field']}>
+          Répertoire de livraison
+          <input
+            className={styles['control']}
+            type="text"
+            value={exportDirectory}
+            onChange={(event) => { setExportDirectory(event.target.value); }}
+          />
+        </label>
+        <button
+          className={styles['save']}
+          type="button"
+          onClick={() => {
+            updateTask.mutate({ exportDirectory: exportDirectory === '' ? null : exportDirectory });
+          }}
+        >
+          Enregistrer le répertoire
+        </button>
       </fieldset>
       </div>
     </section>

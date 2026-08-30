@@ -126,3 +126,17 @@ describe('spec §5.7/contract §4.8 — Réglages, the highest-yield screen', ()
 
 // v1.5, Task 12: the "Site web" section (and its tests) moved to
 // WebDatingScreen.test.tsx — its own screen now, at /dates-site.
+
+describe('v1.5, Task 13 — the storage roots, read-only', () => {
+  test('les racines s’affichent avec leur variable, en lecture seule', async () => {
+    setup();
+    const bloc = await screen.findByRole('region', { name: 'Racines de stockage' });
+    expect(within(bloc).getByText('TASKS_ROOT')).toBeInTheDocument();
+    // Plan deviation: the plan's literal path is Nicolas's own machine
+    // (`/Users/nico/Documents/photo_ui/tasks`) — this mock's own fixture
+    // value is `/var/photo_ui/tasks` (mocks/handlers.ts's TASKS_ROOT).
+    expect(within(bloc).getByText('/var/photo_ui/tasks')).toBeInTheDocument();
+    expect(within(bloc).queryByRole('textbox')).toBeNull();
+    expect(within(bloc).getByText(/se change dans .env/)).toBeInTheDocument();
+  });
+});

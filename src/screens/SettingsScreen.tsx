@@ -2,8 +2,10 @@ import { useState } from 'react';
 
 import { useAlbums } from '../api/hooks/useAlbums';
 import { useAlbumSpan } from '../api/hooks/useAlbumSpan';
+import { useSystemStatus } from '../api/hooks/useSystemStatus';
 import type { Album } from '../api/contract/album';
 import type { AlbumSpanUpdateResult } from '../api/contract/ref';
+import type { RootStatus } from '../api/contract/system';
 import { sortAlbumsByPath } from '../domain/albumOrder';
 import { matchesSearch } from '../domain/searchFold';
 import { isIsoDate } from '../shared/date_interface';
@@ -35,9 +37,54 @@ export function SettingsScreen(): React.JSX.Element {
         <h1>Réglages</h1>
       </FixedHeader>
       <div className={`${String(scrollStyles['scrolls'])} ${String(styles['content'])}`}>
+        <StorageRoots />
         <AlbumSpans />
       </div>
     </section>
+  );
+}
+
+/**
+ * v1.5, Task 13: read-only — `TASKS_ROOT` (and its siblings) is the
+ * server's own write allowlist, changed in `.env`, never from the
+ * interface. A field here would promise a setting nothing on this screen
+ * can actually apply.
+ */
+function StorageRoots(): React.JSX.Element {
+  const status = useSystemStatus();
+
+  if (status.error !== null) return <ErrorBanner error={status.error} />;
+  if (status.isPending) return <p role="status">Chargement…</p>;
+
+  return (
+    <section aria-label="Racines de stockage">
+      <h2>Racines de stockage</h2>
+      <p className={styles['hints']}>
+        Chaque racine se change dans .env, jamais ici — c'est la liste blanche
+        d'écriture du serveur.
+      </p>
+      <ul className={styles['list']} aria-label="Racines">
+        {status.data.roots.map((root) => (
+          <RootRow key={root.name} root={root} />
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function RootRow({ root }: { readonly root: RootStatus }): React.JSX.Element {
+  return (
+    <li className={styles['row']} data-testid={`root-${root.name}`}>
+      <span className={styles['title']}>{root.name}</span>
+      {' — '}
+      <code>{root.envVar}</code>
+      {' : '}
+      <span>{root.path}</span>
+      {' '}
+      <span className={root.available ? styles['saisi'] : styles['warning']}>
+        ({root.available ? 'disponible' : 'indisponible'})
+      </span>
+    </li>
   );
 }
 

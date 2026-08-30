@@ -116,11 +116,20 @@ export const TaskCreateInputSchema = z.strictObject({
 });
 export type TaskCreateInput = z.infer<typeof TaskCreateInputSchema>;
 
-/** `PATCH /tasks/:slug`: any subset of the three, never the slug (spec §5.1: editable at creation only). */
+/** `PATCH /tasks/:slug`: any subset, never the slug (spec §5.1: editable at
+ * creation only). */
 export const TaskPatchInputSchema = z.strictObject({
   title: z.string().optional(),
   brief: z.string().optional(),
   period: CivilDayRangeSchema.nullable().optional(),
+  /**
+   * v1.5, Task 13 (backend A8): confined under `TASKS_ROOT` — the server's
+   * own write allowlist. `null` resets to the default `<TASKS_ROOT>/<slug>`.
+   * A directory outside is refused (422 `DIRECTORY_OUTSIDE_ROOT`), never
+   * silently sanitised — `ErrorBanner` already shows the server's own
+   * message verbatim, no special-casing needed here.
+   */
+  exportDirectory: z.string().nullable().optional(),
 });
 export type TaskPatchInput = z.infer<typeof TaskPatchInputSchema>;
 

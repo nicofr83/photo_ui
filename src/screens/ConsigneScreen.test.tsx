@@ -84,3 +84,19 @@ describe('v1.5, Task 5 — the task period, month/year, typable without a mouse'
     expect(await screen.findByText(/aucune période déclarée/i)).toBeInTheDocument();
   });
 });
+
+describe('v1.5, Task 13 — the delivery directory, confined under TASKS_ROOT', () => {
+  // Plan deviation: `tache-a` (the plan's slug) is not a seeded task — its
+  // GET /tasks/:slug would 404 and the whole screen would show ErrorBanner
+  // instead of the form. `1999-transat` (this file's own existing slug,
+  // `exportDirectory: null` — the field starts empty) is used instead, same
+  // reasoning as PageDetail.test.tsx's Task 9 deviation.
+  test('le répertoire de livraison d’une tâche est réglable, et son refus est nommé', async () => {
+    const user = userEvent.setup();
+    setup();
+    const champ = await screen.findByLabelText('Répertoire de livraison');
+    await user.type(champ, '../ailleurs');
+    await user.click(screen.getByRole('button', { name: 'Enregistrer le répertoire' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/doit rester sous TASKS_ROOT/);
+  });
+});
