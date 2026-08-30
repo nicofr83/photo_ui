@@ -12,6 +12,11 @@ Trois marqueurs, à lire comme un tri :
   que la donnée porte réellement. Dit maintenant plutôt que découvert à
   l'implémentation.
 
+Les questions marquées **TRANCHÉ** portent ta réponse et ne se rouvrent pas ;
+elles restent là parce que ce qu'elles ouvrent est numéroté juste en dessous.
+La numérotation ne suit pas l'ordre de lecture : elle est stable, pour qu'une
+réponse « §F.54 : (a) » désigne toujours la même question.
+
 ---
 
 ## Ce que j'ai vérifié avant d'écrire, et qui change la donne
@@ -111,14 +116,24 @@ la colonne, le champ collé en haut.
 *Recommandation : **(b)** — c'est le comportement que ta phrase décrit
 vraiment, et il tient mieux sur grand écran.*
 
-**6. [Tension] Le tri : je confirme qu'il est bon, mais deux entrées trompent.**
-`2000` et `2002-38Dec02` sortent au « mauvais » endroit parce que leur préfixe
-n'est pas un `AAAA-MM` valide. Les corriger serait renommer des dossiers du
-disque — hors périmètre de cette application.
-→ **(a)** ne rien faire, le chemin complet affiché (§A.1) explique l'ordre ·
-**(b)** les marquer d'un signe discret « préfixe non reconnu ».
-*Recommandation : **(a)**. Ces deux albums ont de toute façon une plage à
-saisir dans Réglages.*
+**6. [Ambigu] « Vérifie que les noms de hiérarchie sont bien triés » — ils le
+sont. Je pense que ta vraie demande est de **voir** le chemin.**
+Je l'ai vérifié : `sortAlbumsByPath` trie sur le **chemin complet**
+(`2003/2003-03-everglades`), corrigé hier matin, et l'ordre est juste. Mais
+l'écran n'affiche que la **feuille** (`2003-03-everglades`) : le set qui donne
+l'ordre — `1998-1999`, `2000-2001`, `2002`, `2003`, `2004` — est invisible. On
+regarde une liste triée sur une clé qu'on ne voit pas, ce qui est exactement
+l'impression d'une liste mal triée. Trois choses achèvent de la donner :
+`2000` (album sans mois) et `2002-38Dec02` (préfixe abîmé, « 38 » n'est pas un
+mois) tombent à des places qui semblent fausses, et `localeCompare` ignore la
+casse, donc `2003-03-everglades` passe **avant** `2003-03-Fort Lauderdale`.
+→ **(a)** afficher le **chemin complet** sur chaque ligne : la clé de tri
+devient visible et le problème disparaît de lui-même · **(b)** afficher le set
+en tête de groupe, les albums en dessous sans leur préfixe · **(c)** garder la
+feuille seule, et je cherche un vrai défaut de tri ailleurs.
+*Recommandation : **(a)**, qui répond du même coup à §A.1 — même geste, un seul
+changement. Si après ça un album te paraît encore mal placé, ce sera un vrai
+défaut et je le traiterai comme tel : dis-moi lequel.*
 
 ---
 
@@ -256,14 +271,11 @@ nulle part ailleurs. Rendre cette valeur éditable depuis un formulaire de
 navigateur transforme cette liste blanche en donnée mutable à chaud : un champ
 texte de l'interface pourrait pointer le serveur sur `/` ou sur le volume des
 originaux, qui ne doit jamais recevoir d'écriture.
-→ **(a)** l'écran **affiche** `TASKS_ROOT` en lecture seule, avec le chemin et
-sa disponibilité (`/system/status` les sert déjà) et dit qu'il se change dans
-`.env` puis redémarrage · **(b)** éditable, mais **restreinte** à un
-sous-dossier d'une racine autorisée fixée dans l'environnement ·
-**(c)** éditable sans contrainte, l'invariant est assoupli.
-*Recommandation : **(a)** pour la V1.5, **(b)** si le besoin de changer de
-racine est réel. **(c)** défait une protection qui a coûté cher, pour un
-réglage que tu changeras peut-être deux fois dans la vie du projet.*
+**TRANCHÉ — (a) : affiché, pas modifiable.** L'écran Réglages montre
+`TASKS_ROOT` avec son chemin et sa disponibilité (`/system/status` les sert
+déjà) ; le changer reste un geste de configuration dans `.env` suivi d'un
+redémarrage. La liste blanche d'écriture de `safeFs` reste immuable et
+l'invariant tient. Rien à décider de plus ici — mais §E.23 en dépend.
 
 **23. [Tension] Le répertoire de stockage **par tâche** n'existe pas comme
 réglage persistant.**
@@ -391,7 +403,8 @@ Ni numéro de page, ni date, sur cette source. Ton gabarit ne s'applique pas.
 document : « site web, Vers Trinidad, passage 12 ».
 *Recommandation : **(b)**. Elle donne la seule information temporelle
 disponible quand elle existe, et se tait quand elle n'existe pas — jamais un
-jj/mm/aaaa fabriqué. Et le titre reste éditable avant enregistrement.*
+jj/mm/aaaa fabriqué. Le sort de ce titre une fois posé se règle en §F.54,
+comme pour les deux autres sources.*
 
 **51. [Tension] Les 205 légendes de galerie n'appartiennent à aucune des trois
 cases, et aucune n'a été relue.**
@@ -597,19 +610,11 @@ surlignage est déjà servi par le serveur (`highlights`, offsets UTF-16).*
 
 ### F.5 — Sélectionner un texte pour la BD
 
-**40. [Tension — bloquant] La refonte supprime le geste par lequel un texte
-entre dans une BD.**
-L'écran actuel liste des **passages**, chacun avec sa case à cocher : c'est le
-seul chemin par lequel un texte rejoint une tâche, et ce qui remplit
-`journal.md` / `ma-vie.md` dans le dossier livré. Ton nouvel écran liste des
-**pages**. Rien dans ton brief ne dit ce que devient la sélection.
-→ **(a)** ouvrir une page déplie ses passages, chacun avec sa case — la
-sélection reste au passage · **(b)** on sélectionne la **page entière** (tous
-ses passages d'un coup) · **(c)** on ne sélectionne plus de texte depuis cet
-écran, seule la création de note (§F.6) l'alimente.
-*Recommandation : **(a)**. **(c)** viderait la section « textes » du dossier
-livré, qui est la moitié de la matière que le LLM reçoit. **(b)** est
-séduisant mais une page du journal porte jusqu'à 32 passages sur 11 jours.*
+**40. TRANCHÉ — la sélection reste au passage, dans la page ouverte.** La liste
+de pages sert à **naviguer** ; on ouvre une page, on voit ses passages, on coche
+ceux qu'on veut. Le geste actuel survit intact, l'écran gagne l'entrée par page
+et par date. `journal.md` et `ma-vie.md` gardent leur source. La question qui
+suit reste ouverte, et devient plus simple sous cette réponse.
 
 **41. [Non dit] Que deviennent les fonctions déjà en place sur cet écran ?**
 Trois existent aujourd'hui et ton brief ne les mentionne pas : **corriger une
@@ -622,27 +627,69 @@ texte → photos de l'application ; le supprimer casserait le flux principal.*
 
 ### F.6 — Créer une note depuis le texte d'une page
 
-**42. [Tension] Ce geste met du texte d'époque dans l'emplacement des notes
-d'aujourd'hui.**
-La règle en vigueur : **trois natures de texte, trois emplacements** — texte
-d'époque, note humaine d'aujourd'hui, légende de machine, jamais mélangés,
-parce que le LLM est le seul lecteur du dossier et ne peut pas faire la
-différence. L'export écrit les notes dans `textes/notes.md` sous
-`## <titre>` + texte brut. Coller le texte d'une page de 1999 dans une note
-place une transcription d'époque dans le fichier réservé à ce que tu écris
-aujourd'hui — et le titre que tu proposes (« journal de bord, page 5 du
-12/04/1998 ») indique la provenance à un lecteur humain, pas au manifeste.
-→ **(a)** la note **cite** le texte sans le recopier : elle est créée vide,
-avec ton titre, **rattachée** au passage (`attachedTo.texts` existe déjà et
-part dans le manifeste), et le passage est sélectionné du même geste — le texte
-d'époque part dans `journal.md`, ta note dans `notes.md`, le lien est explicite ·
-**(b)** on recopie le texte dans la note, et le manifeste porte un champ qui
-dit « ceci est une citation, pas un souvenir » · **(c)** on recopie sans rien
-marquer.
-*Recommandation : **(a)**. Elle te donne exactement le geste que tu décris —
-un clic, une note titrée, le texte disponible pour le LLM — sans ouvrir la
-seule frontière que la spec protège explicitement. **(c)** la casse. **(b)**
-est un compromis viable mais demande un amendement au contrat gelé.*
+**42. TRANCHÉ — la note recopie le texte.** Tes mots : « La note recopie, et
+pourra être éditée plus tard, comme une édition de notes qui existe
+actuellement. » Tu as lu ma recommandation de citer plutôt que recopier et tu
+choisis l'autre, parce que tu veux retravailler le texte ensuite comme
+n'importe quelle note. Je ne rouvre pas.
+
+Mais recopier fait entrer un texte d'époque dans `textes/notes.md`, le fichier
+réservé à ce que tu écris aujourd'hui. Le titre que tu as spécifié — « journal
+de bord, page xx du jj/mm/aaaa » — est **ce qui empêche le LLM de t'attribuer
+une phrase de 1999**. Il devient une pièce de sécurité, pas une commodité.
+Trois questions en découlent, §F.54 à §F.56.
+
+**54. [Tension] Le titre porte l'attribution : peut-il se perdre ?**
+Deux choses à savoir avant de répondre. L'export écrit `## <titre>` puis le
+texte brut dans `notes.md` — **le rattachement `attachedTo` n'apparaît pas dans
+ce fichier**, seulement dans `manifest.json`. Pour qui lit le Markdown, le titre
+est donc le **seul** porteur de provenance. Et `PATCH /tasks/:slug/notes/:noteId`
+accepte déjà `title` : le rendre non modifiable à la création ne suffirait pas,
+il faut aussi décider du sort de l'édition ultérieure.
+→ **(a)** le préfixe d'attribution (« journal de bord, page 5 du 12/04/1998 »)
+est **verrouillé** ; tu peux ajouter du texte à la suite, jamais l'effacer ·
+**(b)** le titre est librement éditable, mais l'écran **prévient** quand ton
+édition fait disparaître l'attribution · **(c)** librement éditable, sans rien.
+*Recommandation : **(a)**. Tu as choisi la recopie pour pouvoir retravailler le
+**texte** — le verrou ne porte que sur le préfixe du titre et ne te gêne pas
+sur ce que tu voulais faire. **(c)** rend la protection facultative au moment
+précis où on l'oublie.*
+
+**55. [Tension] Une note recopiée puis éditée n'est plus verbatim, et rien ne le
+dira.**
+C'est la conséquence directe de ton choix, et elle est réelle : tu recopies un
+passage, tu le retouches, tu en coupes la moitié. Le résultat cesse d'être une
+citation **sans cesser d'y ressembler** — même titre, même apparence. Le
+manifeste ne porte aujourd'hui, pour une note, que `id`, `createdAt`, `title`,
+`text`, `attachedToImages`, `attachedToTexts` : **aucun champ ne dit d'où vient
+le texte, ni s'il a bougé**.
+→ **(a)** deux champs au manifeste : la **source** (`derivedFrom`, la référence
+du passage recopié) et un drapeau **« édité depuis la recopie »** ·
+**(b)** la source seulement, sans le drapeau · **(c)** rien, le titre suffit.
+*Recommandation : **(a)**. Deux champs, calculables sans rien te demander —
+le drapeau est une comparaison de chaînes à l'enregistrement. C'est un
+amendement au contrat gelé, annoncé aux deux agents comme les trois
+précédents. **(c)** laisse le LLM lire une phrase que tu as réécrite comme si
+elle sortait du cahier.*
+
+**56. [Non dit] Recopier **et** rattacher, tant qu'à faire.**
+`attachedTo.texts` existe déjà au contrat et part dans le manifeste. Recopier
+le texte **et** rattacher la note à son passage d'origine coûte presque rien et
+rend le lien réversible : on retrouve toujours l'original, même après que tu as
+retravaillé la note.
+→ **(a)** oui, les deux · **(b)** recopie seule.
+*Recommandation : **(a)**. C'est ce qui rend §F.55 vérifiable plutôt que
+déclaratif.*
+
+**57. [Non dit] Et le passage d'origine, on le sélectionne aussi ?**
+Créer une note depuis un passage ne le fait pas entrer dans la tâche. Le texte
+partirait donc dans `notes.md` (par ta recopie) sans être dans `journal.md`.
+→ **(a)** créer la note coche aussi le passage · **(b)** non, les deux gestes
+restent séparés · **(c)** on te le propose, décoché par défaut.
+*Recommandation : **(b)**. Sous §F.42 tel que tu l'as tranché, la note **est**
+le texte — le sélectionner en plus le ferait partir deux fois dans le dossier
+livré, une fois dans `journal.md` et une fois dans `notes.md`. C'est
+exactement le doublon que le LLM lirait comme deux sources concordantes.*
 
 **43. [Tension] « page xx du jj/mm/aaaa » : les deux valeurs existent, mais la
 seconde n'est pas celle que tu crois.**
@@ -661,8 +708,9 @@ petite date **lue sur cette page** · **(b)** la date de la page, et rien si la
 page n'en a pas : « journal de bord, page 1 » · **(c)** ton titre littéral,
 avec la première date du document entier.
 *Recommandation : **(a)** avec le repli de **(b)** pour les 3 pages sans date.
-Et le titre reste éditable avant enregistrement — c'est un défaut proposé, pas
-une contrainte.*
+Ce titre n'est plus un simple défaut proposé : depuis que tu as tranché la
+recopie (§F.42), c'est lui qui porte l'attribution — voir §F.54 pour savoir
+s'il se modifie.*
 
 **44. [Non dit] La note reprend quel texte ?**
 → **(a)** tous les passages de la page, dans l'ordre de lecture ·
@@ -683,22 +731,26 @@ une note sans tâche ouverte.
 
 ## Récapitulatif — ce qui bloque vraiment
 
-Quatre réponses conditionnent la forme de la spécification ; les autres se
-tranchent après.
+**Quatre tranchées, merci — elles sont intégrées :** §F.26 (le site web est une
+troisième source), §F.40 (la sélection reste au passage, dans la page ouverte),
+§F.42 (la note recopie le texte), §E.22 (`TASKS_ROOT` affiché, pas modifiable).
 
-1. **§F.40** — comment on sélectionne un texte pour la BD après la refonte. Sans
-   réponse, la moitié du dossier livré n'a plus de source.
-2. **§F.42** — la note créée depuis une page : citation rattachée, ou recopie.
-   C'est la seule question qui touche une règle que la spec protège
-   explicitement.
-3. **§F.28 + §F.29** — la date affichée sur une page (lecture ou inférence) et
-   l'ordre de la liste. Elles décident du rendu de tout l'écran.
-4. **§E.22** — `TASKS_ROOT` éditable ou affiché. Elle décide si le serveur garde
-   sa garantie de ne jamais écrire hors des racines déclarées.
-5. **§F.46** — le site web entrant comme troisième source (tranché), l'écran
-   doit lister des **documents** là où il liste des pages : cette source n'a
-   aucun objet page. C'est la seule conséquence de ta décision qui change la
-   structure de l'écran, pas seulement son remplissage.
+**Ce qui bloque encore**, par ordre de portée :
+
+1. **§F.28 + §F.29** — la date affichée sur une page (lecture ou inférence) et
+   l'ordre de la liste. Elles décident du rendu de tout l'écran, et §F.28 est la
+   seule qui demande une exception à une règle en vigueur si tu réponds (b).
+2. **§F.46** — le site web n'a **aucun objet page** : l'écran doit y lister des
+   **documents** là où il liste des pages ailleurs. C'est la conséquence de
+   §F.26 qui change la structure de l'écran, pas seulement son remplissage.
+3. **§F.54 + §F.55** — les deux conséquences de ta réponse sur la recopie. Le
+   titre porte désormais seul l'attribution dans `notes.md` (le rattachement
+   n'y figure pas), et une note recopiée puis retravaillée cesse d'être une
+   citation sans cesser d'y ressembler. Ce sont les seuls points où ton choix
+   touche ce que le LLM croira lire.
+4. **§A.6** — ta demande de vérifier le tri des albums. Il **est** correct ; je
+   pense que tu veux voir le chemin. Une phrase de ta part suffit, et si tu vois
+   encore un album mal placé, nomme-le.
 
 Deux questions non bloquantes, mais qui décident de ce que la V1.5 rend
 possible :
