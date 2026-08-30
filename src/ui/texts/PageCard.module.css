@@ -1,0 +1,27 @@
+.row {
+  list-style: none;
+}
+
+.open {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: var(--tap-target);
+  padding: 0.35rem 0;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.thumb {
+  flex: none;
+  height: 3rem;
+  width: auto;
+}
+
+.label {
+  flex: none;
+  min-width: 4rem;
+}

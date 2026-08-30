@@ -44,6 +44,46 @@ export const INVARIANT_DOCUMENTS: readonly TextDocument[] = [
 
 export const INVARIANT_PAGES: readonly TextPage[] = [
   {
+    // v1.5, Task 8: earlier ordinal (1) than 'ma-vie/p007' above but exists
+    // independently — carries its OWN reading date, so the "propre" half of
+    // the reading/inference pair the sort-toggle test needs.
+    id: 'ma-vie/p001', documentId: 'ma-vie', ordinal: 1, label: 'p001',
+    width: 870, height: 1226,
+    window: { ...passageDate('1999-08-04'), kind: DateKind.INFERENCE, source: DateSource.PAGE_WINDOW },
+    date: { ...passageDate('1999-08-04'), kind: DateKind.READING, source: DateSource.PAGE_DATE },
+    matchCount: null,
+    spanSource: PageSpanSource.PASSAGES,
+    imageUrl: '/pages/image?pageId=ma-vie/p001',
+    regionsAvailable: false,
+  },
+  {
+    // Names no day of its own — inherits p001's, an inference on a reading.
+    id: 'ma-vie/p002', documentId: 'ma-vie', ordinal: 2, label: 'p002',
+    width: 870, height: 1226,
+    window: { ...passageDate('1999-08-04'), kind: DateKind.INFERENCE, source: DateSource.PAGE_WINDOW },
+    date: { ...passageDate('1999-08-04'), kind: DateKind.INFERENCE, source: DateSource.PAGE_DATE },
+    matchCount: null,
+    spanSource: PageSpanSource.CARRIED,
+    imageUrl: '/pages/image?pageId=ma-vie/p002',
+    regionsAvailable: false,
+  },
+  {
+    // v1.5, Task 8: an EARLIER date than 'logbook/p003' below despite a
+    // HIGHER ordinal — the sort-toggle test needs chronological order and
+    // notebook order to disagree on these two pages, same as the real
+    // corpus (a scan can be filed out of temporal sequence).
+    id: 'logbook/p005', documentId: 'logbook', ordinal: 5, label: 'p005',
+    width: 810, height: 1250,
+    window: { ...reading('1999-11-01'), end: parseIsoDate('1999-11-01'),
+              precision: DatePrecision.DAY, kind: DateKind.INFERENCE,
+              source: DateSource.PAGE_WINDOW },
+    date: { ...reading('1999-11-01'), source: DateSource.PAGE_DATE },
+    matchCount: null,
+    spanSource: PageSpanSource.ENTRIES,
+    imageUrl: '/pages/image?pageId=logbook/p005',
+    regionsAvailable: false,
+  },
+  {
     id: 'logbook/p003', documentId: 'logbook', ordinal: 3, label: 'p003',
     width: 810, height: 1250,
     // A page window is an INFERENCE (dateKind.ts: PAGE_WINDOW), never a

@@ -1,0 +1,25 @@
+.toggle {
+  min-height: var(--tap-target);
+  margin-bottom: 0.5rem;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.docRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: var(--tap-target);
+}
+
+.label {
+  font-weight: 600;
+}
+
+.noPages {
+  font-style: italic;
+}

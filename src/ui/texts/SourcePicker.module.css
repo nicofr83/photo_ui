@@ -1,0 +1,11 @@
+.group {
+  display: flex;
+  gap: 1rem;
+}
+
+.option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: var(--tap-target);
+}
