@@ -98,6 +98,22 @@ export const INVARIANT_PAGES: readonly TextPage[] = [
     regionsAvailable: false,
   },
   {
+    // v1.5, Task 8 (self-review): a register window over 60 days — spec
+    // "Douze pages du registre couvrent plus de soixante jours... un signe
+    // discret dans la liste" — a likely-misread transcription year, flagged
+    // (never corrected here; that is a transcription task, not a display one).
+    id: 'logbook/p006', documentId: 'logbook', ordinal: 6, label: 'p006',
+    width: 810, height: 1250,
+    window: { ...reading('1999-05-01'), end: parseIsoDate('1999-08-15'),
+              precision: DatePrecision.DAY, kind: DateKind.INFERENCE,
+              source: DateSource.PAGE_WINDOW },
+    date: { ...reading('1999-05-01'), source: DateSource.PAGE_DATE },
+    matchCount: null,
+    spanSource: PageSpanSource.ENTRIES,
+    imageUrl: '/pages/image?pageId=logbook%2Fp006',
+    regionsAvailable: false,
+  },
+  {
     // v1.5, Task 9: "Ma vie" has no register — a single block, no title.
     id: 'ma-vie/p003', documentId: 'ma-vie', ordinal: 3, label: 'p003',
     width: 870, height: 1226,

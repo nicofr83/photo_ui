@@ -25,3 +25,8 @@
   flex: none;
   min-width: 4rem;
 }
+
+.suspect {
+  flex: none;
+  color: #b45309;
+}

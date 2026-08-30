@@ -60,4 +60,16 @@ describe('v1.5, Task 8 — the source picker and the page list', () => {
     renderAt('/textes/tache-a?source=web');
     expect(await screen.findByTestId('no-pages')).toHaveTextContent(/pas de page scannée/i);
   });
+
+  // Self-review, plan: "Douze pages du registre couvrent plus de soixante
+  // jours... Ces pages portent un signe discret dans la liste." A likely
+  // misread transcription year, flagged — never corrected here.
+  test('une page dont la fenêtre du registre dépasse 60 jours porte un signe discret', async () => {
+    renderAt('/textes/tache-a?source=logbook');
+    const suspecte = await screen.findByTestId('page-logbook/p006');
+    expect(within(suspecte).getByTestId('suspect-window')).toBeInTheDocument();
+
+    const normale = await screen.findByTestId('page-logbook/p003');
+    expect(within(normale).queryByTestId('suspect-window')).not.toBeInTheDocument();
+  });
 });
