@@ -42,6 +42,16 @@ est `/pages/image?pageId=…`, qui sert le fichier entier. Afficher les 103
 vignettes de « Ma vie » télécharge **31 Mo**. Il faut un point d'accès de
 vignette côté serveur : c'est du travail back, pas un `width` en CSS.
 
+**Le site web n'a pas de pages du tout.** Tu as confirmé qu'il rejoint le
+bouton global comme troisième source. Mais les 569 passages de ses 60 documents
+portent `pageId: null`, et les 60 documents portent `hasPages: false` et
+`pageCount: null`. Il n'y a **aucun objet page** de ce côté : ni numéro, ni
+date de page, ni image à mettre en vignette. Tout le modèle d'écran que tu
+décris — une liste de pages, leur date de début, leur miniature, un titre de
+note « page xx du jj/mm/aaaa » — n'a pas de contrepartie sur cette source. Ce
+n'est pas seulement « il manque les dates » : c'est l'objet lui-même qui
+manque. Voir §F.1bis.
+
 **« La date de début d'une page » n'a pas une seule valeur, et les deux
 candidates n'ont pas la même nature.** `TextPage.window` est une **inférence**
 (`kind: "inference"`, ambre italique `≈` par la règle en vigueur), absente sur
@@ -293,21 +303,139 @@ quand elles réduisent la demande.*
 
 ### F.1 — Le bouton global
 
-**26. [Ambigu] Deux positions ou trois ? Que devient le site web ?**
-Ton bouton dit « journal de bord ou ma vie ». Le corpus a une **troisième
-source** que tu ne nommes pas : le site web, **569 passages sur 60 documents**,
-plus **205 légendes de galerie** appariées par empreinte visuelle à des photos
-de 2003-2004. Aucun de ces textes n'a de date — tes deux filtres (dates et
-texte) ne s'y appliquent donc pas de la même façon. Or les légendes de galerie
-sont, d'après la spec, **la seule source de texte d'époque pour 2003-2004**, la
-période où le journal est muet et où il y a 2 041 photos.
-→ **(a)** trois positions ; en « Site web » les filtres de date se désactivent
-avec leur raison · **(b)** deux positions, le site web disparaît de l'écran ·
-**(c)** deux positions + un accès séparé aux légendes de galerie.
-*Recommandation : **(a)**. Faire disparaître 569 passages et 205 légendes d'un
-écran nommé « Textes » est une perte silencieuse — exactement ce que la règle
-« un faux négatif coûte une photo qu'on ne retrouvera jamais » cherche à
-éviter.*
+**26. TRANCHÉ — trois positions.** Tu as répondu d'avance : « ajoute en effet le
+site web dans la liste des sources avec journal de bord, et ma vie ». Le bouton
+global a donc trois positions. Ce que cette réponse **ouvre** fait l'objet de
+§F.1bis ci-dessous : la troisième source ne se comporte comme aucune des deux
+autres, et six décisions en découlent.
+
+### F.1bis — La source « site web », puisqu'elle entre
+
+*Elle entre, et elle ne rentre pas dans le moule. Ces questions ne rouvrent pas
+ta décision : elles règlent ce qu'elle implique. La numérotation continue celle
+du document.*
+
+**46. [Tension] Cette source n'a pas de pages : que liste l'écran quand elle est
+active ?**
+Les 60 documents ont `hasPages: false`, `pageCount: null`, et leurs 569
+passages ont tous `pageId: null`. Il n'y a **pas d'objet page** à lister, à
+dater, à numéroter ni à mettre en vignette. Ton écran est construit autour de la
+page.
+→ **(a)** la liste devient une liste de **documents** (titre, nombre de
+passages), qu'on déplie sur ses passages — même geste que §F.40(a), un cran
+plus haut · **(b)** une liste de **passages** à plat, sans niveau intermédiaire ·
+**(c)** on force un objet « page » artificiel par document.
+*Recommandation : **(a)**. Le document web joue le rôle de la page : c'est
+l'unité qu'on ouvre, et « Transat » ou « Vers Trinidad » se reconnaît par son
+titre comme une page du journal se reconnaît par sa date. **(c)** fabriquerait
+un numéro de page qui n'existe nulle part.*
+
+**47. [Tension] Le filtre par date, sur une source où zéro texte est daté.**
+`0 / 569`. Et le filtre serveur exige `date_start IS NOT NULL` : activé sur
+cette source, il renvoie **zéro résultat**, aujourd'hui sans dire pourquoi.
+→ **(a)** griser le bloc de filtres de date avec sa raison — « aucun texte du
+site n'est daté », comme le fait déjà le filtre Lieu sur l'écran Images quand
+aucune photo n'a de position · **(b)** le laisser actif et afficher zéro ·
+**(c)** le masquer entièrement.
+*Recommandation : **(a)**. L'application a déjà cette convention et elle est
+bonne : un filtre désactivé **qui dit pourquoi** enseigne quelque chose sur le
+corpus ; un filtre masqué laisse croire qu'on a mal cherché.*
+
+**48. [Tension] `ref.web_span` est la vraie réponse, et elle est vide.**
+La table existe, l'écran Réglages sait déjà l'éditer (`PUT /ref/web-span`,
+section « Site web »), et **0 des 60 documents porte une plage**. Si tu les
+saisis, tes filtres de date fonctionnent sur cette source et ces textes se
+rapprochent des photos — la seule voie ouverte pour 2003-2004, où le journal
+est muet devant 2 041 photos.
+Deux obstacles concrets à te signaler avant que tu décides :
+- **L'écran liste les 60 documents, pas les 25 du périmètre.** Il y a **24
+  documents sous `2005/`** plus `web/2005-2006` (hors corpus), et des déchets :
+  `web/1999/bidon` (1 passage, « Nouvelle page 1 »),
+  `web/googlea0ccc7e24963cc5e` (un fichier de vérification Google),
+  `web/test`, `web/usr/…`. Tu trierais à la main dans du bruit.
+- **L'extrait censé te faire reconnaître un document est identique à son titre
+  sur 45 des 60.** « Caraibes », « Funfun1 », « 1998-1999 » : il n'aide en rien.
+→ **(a)** oui, tu saisis les plages — et l'écran Réglages est d'abord réparé :
+filtré au périmètre 1998-2004, déchets écartés, extrait remplacé par un vrai
+début de texte · **(b)** oui, mais plus tard ; la V1.5 sort avec les dates du
+site vides · **(c)** non, tu ne veux pas saisir ça.
+*Recommandation : **(a)**. C'est vingt-cinq saisies pour ouvrir la seule
+période aveugle du corpus, et le même geste que les périodes d'album qui
+redatent 421 photos. Mais je ne te le recommande **qu'après** la réparation de
+l'écran : te faire trier 60 lignes indiscernables est le meilleur moyen que ça
+ne se fasse jamais.*
+
+**49. [Tension] Ce qu'on affiche en regard, puisqu'il n'y a pas de page scannée.**
+La décision « texte seul en V1 » tient toujours — `docs/frontend-spec.md` et
+`docs/api-contract.md` (Q4, défaut (a)), jamais rouverte. Ses raisons sont
+vérifiées sur disque : **305 fichiers HTML**, arborescence FrontPage complète
+(`_themes`, `_borders`, `_derived`, `_fpclass`), et `file` rapporte bien un
+encodage non-ISO avec des fins de ligne `NEL` — du `cp1252` d'époque.
+S'y ajoute une raison que la spec ne mentionne pas : **`WEB_GALLERY_ROOT` est
+sur le volume externe** (`/Volumes/OWC Envoy Ultra/…`), alors que `PAGES_ROOT`
+est sur le disque interne. Un aperçu du site s'éteindrait dès que tu démontes le
+disque, là où les pages scannées resteraient lisibles.
+→ **(a)** texte seul, et le panneau droit dit pourquoi — la décision tient ·
+**(b)** une iframe isolée sur le HTML d'origine · **(c)** les **images** de la
+galerie du document, sans le HTML — elles sont déjà lues par l'appariement.
+*Recommandation : **(a)** pour la V1.5. **(c)** est le compromis intéressant
+si tu veux voir quelque chose, mais il dépend du volume externe et vaut d'être
+posé séparément, une fois les liens de galerie relus (§F.51).*
+
+**50. [Ambigu] Le titre de note pour un texte du site : « page xx du jj/mm/aaaa »
+n'a ni page ni date.**
+Ni numéro de page, ni date, sur cette source. Ton gabarit ne s'applique pas.
+→ **(a)** « site web, Vers Trinidad » — le titre du document, rien d'inventé ·
+**(b)** « site web, Vers Trinidad (1999-2002) » si tu as saisi une plage
+(§F.48), sans parenthèse sinon · **(c)** un numéro d'ordre du passage dans le
+document : « site web, Vers Trinidad, passage 12 ».
+*Recommandation : **(b)**. Elle donne la seule information temporelle
+disponible quand elle existe, et se tait quand elle n'existe pas — jamais un
+jj/mm/aaaa fabriqué. Et le titre reste éditable avant enregistrement.*
+
+**51. [Tension] Les 205 légendes de galerie n'appartiennent à aucune des trois
+cases, et aucune n'a été relue.**
+Elles sont dans la source « site web » mais se comportent comme rien d'autre :
+elles sont rattachées à **une photo précise par empreinte visuelle**, jamais par
+date. Trois faits mesurés :
+- **Aucune n'est vérifiée** : les 205 sortent avec `verified: false`. La spec
+  prévoyait « une relecture visuelle des 209 liens avant de les tenir pour
+  acquis » — elle n'a pas eu lieu. Et le champ ne distingue pas, en sortie,
+  « pas encore relu » de « relu et rejeté ».
+- **La moitié seulement est dans ta période** : 103 sur 2003, 53 sur 1999,
+  **33 sur 2005-2006**, 16 ailleurs — dont **13 sur une page d'astronomie**
+  (`web/Astro/misc/meade`), qui n'a rien à voir avec le bateau.
+- **47 d'entre elles font plus de 400 caractères**, une atteint **10 363** :
+  ce sont des paragraphes de page entiers, pas des légendes. 137 seulement
+  tiennent en 120 caractères.
+→ **(a)** sous-section dédiée dans la source « site web », filtrée au périmètre
+1998-2004, chaque entrée marquée « appariement machine, non relu » et un geste
+pour valider ou rejeter le lien · **(b)** même chose sans le geste de
+validation · **(c)** on les sort de l'écran Textes : elles se voient depuis la
+photo, dans le détail image.
+*Recommandation : **(a)**. Un texte d'époque rattaché à une photo précise est ce
+que le corpus a de plus précieux pour 2003-2004 — mais servi comme un fait
+alors qu'aucun humain ne l'a regardé, c'est exactement le « une inférence qui
+ressemble à une lecture » que la spec interdit. Le geste de validation est ce
+qui transforme les 103 liens utiles en matière sûre.*
+
+**52. [Non dit] La recherche par texte sur cette source, elle, marche déjà.**
+`/texts?q=…&documentId=web/…` fonctionne sans date. C'est le seul de tes deux
+filtres qui s'applique tel quel au site.
+→ Confirme simplement que l'écran doit le dire : quand « Site web » est actif,
+la recherche texte reste le filtre principal et les dates sont grisées (§F.47).
+*Recommandation : oui, et l'afficher comme tel plutôt que comme une source
+diminuée.*
+
+**53. [Non dit] Les 569 passages du site sont de tailles très inégales.**
+Sur « Transat » : des passages de 7 et 10 caractères (« Transat », « Caraibes »
+— des titres et des fragments de menu FrontPage) à côté de vrais paragraphes de
+230 à 310 caractères.
+→ **(a)** tout afficher, y compris les fragments · **(b)** masquer sous un seuil
+(par exemple 40 caractères) avec un compteur « N fragments masqués » et un geste
+pour les montrer.
+*Recommandation : **(b)**. Un menu de navigation FrontPage n'est pas un texte
+d'époque, et le seuil se voit et se défait — jamais un filtre silencieux.*
 
 **27. [Tension] « Le journal de bord » désigne deux jeux de textes différents.**
 Le document `logbook` porte **492 passages** et **1 012 entrées de journal**.
@@ -413,8 +541,8 @@ que je ne t'ai pas entendu formuler.*
 silencieusement.**
 La requête serveur impose `date_start IS NOT NULL` : dès qu'une plage est
 active, elle écarte **341 unités du journal**, **121 passages de « Ma vie »**
-et **la totalité du site web**. Ils ne sont pas comptés comme écartés, ils
-disparaissent.
+et **la totalité du site web** (voir §F.47, qui traite ce dernier cas à part).
+Ils ne sont pas comptés comme écartés, ils disparaissent.
 → **(a)** afficher un compteur « N textes sans date, écartés par le filtre »
 avec un geste pour les ramener — comme le troisième compteur de la grille de
 photos · **(b)** les laisser disparaître.
@@ -567,7 +695,23 @@ tranchent après.
    l'ordre de la liste. Elles décident du rendu de tout l'écran.
 4. **§E.22** — `TASKS_ROOT` éditable ou affiché. Elle décide si le serveur garde
    sa garantie de ne jamais écrire hors des racines déclarées.
+5. **§F.46** — le site web entrant comme troisième source (tranché), l'écran
+   doit lister des **documents** là où il liste des pages : cette source n'a
+   aucun objet page. C'est la seule conséquence de ta décision qui change la
+   structure de l'écran, pas seulement son remplissage.
 
-Et une question qui n'est pas bloquante mais qui vaut une phrase de ta part :
-**§F.26**, le sort du site web et de ses 205 légendes de galerie — la seule
-matière textuelle d'époque pour 2003-2004.
+Deux questions non bloquantes, mais qui décident de ce que la V1.5 rend
+possible :
+
+**§F.48** — acceptes-tu de saisir les plages de dates des documents du site ?
+C'est le seul geste qui ouvre 2003-2004, où 2 041 photos font face à zéro ligne
+de journal. Vingt-cinq saisies, une fois. Ma recommandation est oui, **mais
+après** avoir réparé l'écran Réglages, qui te présente aujourd'hui 60 lignes
+dont 24 hors période et plusieurs vides de sens, avec un extrait identique au
+titre sur 45 d'entre elles.
+
+**§F.51** — les 205 légendes de galerie sont servies comme des faits alors
+qu'**aucune n'a été relue par un humain**, qu'un tiers est hors période et
+qu'un quart n'est pas une légende mais un paragraphe de page. Elles sont
+pourtant la seule matière textuelle d'époque pour 2003-2004. Il faut soit le
+geste de validation, soit assumer de les afficher comme des suppositions.
