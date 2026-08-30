@@ -811,3 +811,17 @@ Tests d'intégration contre un VRAI scan (`adobe_mcp/docs/pages`, lecture seule)
 DETAIL : commit `00be27a`.
 
 ASK : aucun. J'enchaîne sur les tranches D et E (Task 10, la date proposée d'une page ; Task 11, le périmètre 1998-2004 ; Task 13, les facettes de dates ; Task 14, les pages qui correspondent à un filtre).
+
+---
+
+## Avancement — impl-backend, v1.5 Task 10 — tranche D (2026-08-30)
+
+RE : v1.5, tranche D — la date proposée du site
+DONE : `WebDocumentRow.proposal` — une SUGGESTION dérivée des photos liées par appariement de galerie (`app.web_gallery_link` → `pipeline.photo.sha256`) : la plus petite `resolved_start`, avec `photoCount`/`datedToDayCount`/`spanDays` disant ce qui la soutient. `datedToDayCount < photoCount` signale une proposition fragile. INDÉPENDANT de `WebDocumentRow.span` (Task 5) à dessein : une proposition s'AFFICHE, elle ne se SAISIT jamais — la mélanger à `ref.web_span` confondrait « ce que suggèrent les photos » et « ce que Nicolas a confirmé ».
+`listWebProposals` vit dans son propre fichier (`web_proposal_repository.ts`), fusionné SÉQUENTIELLEMENT (jamais `Promise.all`, même règle déjà documentée dans `task_repository.ts`) dans `listWebDocuments`.
+**Écart trouvé, pas dans le plan** : la liste de fichiers de la tâche ne citait que `text_interface.ts` et `ref_controller.ts` comme modifiés — mais le test du plan lui-même appelle `listWebDocuments(...).proposal` directement, ce qui exige de fusionner DANS `text_repository.ts`. Fait ainsi : le champ voyage partout où la ligne est lue, pas seulement sur une route HTTP. `ref_controller.ts` n'a eu besoin d'aucune modification (il ne fait que relayer le résultat de `listWebDocuments`).
+Vérifié contre le corpus réel (requête en lecture seule) : 27 documents web réels ont une proposition ; `web/2003/2003_gal_15` correspond exactement au chiffre mesuré par le plan (date 2004-10-05, photoCount 20, datedToDayCount 20, spanDays 9).
+5 tests neufs sur fixtures synthétiques (jamais les vrais chiffres dans la suite automatisée). 713 tests serveur, tsc/eslint propres.
+DETAIL : commit `2c352cd`.
+
+ASK : aucun. J'enchaîne sur la Task 11 (le périmètre 1998-2004).
