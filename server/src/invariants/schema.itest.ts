@@ -384,3 +384,55 @@ describe('ref.tag_kind — the place-tag predicate', () => {
     });
   });
 });
+
+describe('006 — the v1.5 amendments', () => {
+  test('app.page_date carries the resolved date of each page', async () => {
+    await withRollback(async (client) => {
+      const { rows } = await client.query<{ column_name: string; data_type: string }>(`
+        SELECT column_name, data_type FROM information_schema.columns
+         WHERE table_schema = 'app' AND table_name = 'page_date' ORDER BY column_name`);
+      expect(rows.map((r) => r.column_name)).toEqual(['date_end', 'date_start', 'page_id', 'source']);
+    });
+  });
+
+  test('a note can name the text it derives from', async () => {
+    await withRollback(async (client) => {
+      const { rows } = await client.query<{ column_name: string; is_nullable: string }>(`
+        SELECT column_name, is_nullable FROM information_schema.columns
+         WHERE table_schema = 'app' AND table_name = 'task_note'
+           AND column_name LIKE 'derived%' ORDER BY column_name`);
+      expect(rows).toEqual([
+        { column_name: 'derived_from_id', is_nullable: 'YES' },
+        { column_name: 'derived_from_kind', is_nullable: 'YES' },
+        { column_name: 'derived_text_original', is_nullable: 'YES' },
+      ]);
+    });
+  });
+
+  test('ref.web_span accepts a missing end bound', async () => {
+    await withRollback(async (client) => {
+      const { rows } = await client.query<{ is_nullable: string }>(`
+        SELECT is_nullable FROM information_schema.columns
+         WHERE table_schema = 'ref' AND table_name = 'web_span' AND column_name = 'date_to'`);
+      expect(must(rows[0]).is_nullable).toBe('YES');
+    });
+  });
+
+  test('a task_note with only two of the three derived_* columns is refused', async () => {
+    await withRollback(async (client) => {
+      await client.query(`INSERT INTO app.task (slug, title, brief) VALUES ('t', 'T', '')`);
+      await expect(client.query(`
+        INSERT INTO app.task_note (id, task_slug, title, body, derived_from_kind, derived_from_id)
+        VALUES ('note_x', 't', 'x', 'y', 'passage', 'doc/p1')`))
+        .rejects.toThrow(/task_note_derived_complete/);
+    });
+  });
+
+  test('ref.web_span still refuses an end before its start, when both are given', async () => {
+    await withRollback(async (client) => {
+      await expect(client.query(
+        `INSERT INTO ref.web_span (document_id, date_from, date_to) VALUES ('web/x', '2000-01-10', '2000-01-01')`))
+        .rejects.toThrow(/web_span_ordered/);
+    });
+  });
+});
