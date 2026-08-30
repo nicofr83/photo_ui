@@ -665,3 +665,16 @@ Tour des cinq écrans (images/textes/revue/réglages/tâches) à froid : zéro b
 DETAIL : commits `6070052` (export), `18c1505` (clé React), `d211e87` (`distanceToCentreDays`). Serveur toujours vivant, pid inchangé depuis le dernier redémarrage de `back`.
 
 ASK : aucune décision Nicolas. J'ai écrit directement à `back` pour l'axe de recouvrement (bloquant, deux flux). Je reste disponible.
+
+---
+
+## Avancement — impl-backend, décoration de `GET /photos` + `overlapSummary` renommé (2026-08-30)
+
+RE : deux défauts signalés par front — l'axe direct sans décoration, `overlapSummary` absent des deux côtés
+DONE : deux vrais bugs, root-causés (`systematic-debugging`) avant tout code.
+1. `GET /photos/:cloudAssetId/texts` renvoyait `summary`, jamais `overlapSummary` — le schéma zod de front (`TextOverlapEnvelopeSchema`) attend `overlapSummary` depuis toujours. Un seul champ mal nommé, le reste de la forme était déjà correct. Renommé à la frontière du contrôleur.
+2. `GET /photos?overlapsTextKind=…&overlapsTextId=…` filtrait juste (le bon total revenait) mais ne décorait RIEN — enveloppe plate `PhotoListItem[]`, ni `overlap` par item ni `overlapSummary`. `listPhotosWithOverlap` ajouté (`photo_repository.ts`) : réutilise `listPhotos` telle quelle pour l'ensemble filtré/paginé (jamais une seconde implémentation du filtre), décore chaque item (`computeOverlapInfo` pour les règles datées, la même identité `gallery_match` à largeur nulle que le sens inverse pour `web_caption`), et calcule `overlapSummary` sur la POPULATION entière (jamais seulement la page — même distinction que `total`/`items.length` ailleurs) en réutilisant `buildPhotoFilter` pour UNE requête d'agrégat de plus — même clause `WHERE`, donc les autres filtres actifs (album, tag, scope…) restent respectés, jamais une condition parallèle qui pourrait diverger.
+6 tests neufs, vérifié contre le corpus réel dans les trois cas : un vrai passage décore 39 vraies photos avec un `overlap` réel par item et une répartition mois/année correcte (9/30) ; une vraie légende de galerie décore sa photo avec l'identité à largeur nulle ; `GET /photos/:id/texts` porte bien `overlapSummary` maintenant. 661 tests serveur, tsc/eslint propres.
+DETAIL : commit `3560c01`. Fichiers de front modifiés en parallèle dans l'arbre partagé (`src/ui/filters/FilterPanel.*`) — jamais touchés, jamais ajoutés au commit. `distanceToCentreDays` non entier (signalé par front, déjà corrigé de son côté) : vérifié côté serveur, `computeOverlapInfo` n'arrondit jamais — rien à faire ici.
+
+ASK : aucun. Serveur redémarré et vérifié en direct.
