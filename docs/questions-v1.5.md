@@ -11,9 +11,8 @@ ce qui a besoin de toi :
 
 1. **« Déjà tranché »** ci-dessous — tes réponses, rassemblées. Rien à y faire,
    c'est là pour que tu ne les relises pas.
-2. **« Ce qui a besoin de toi »** — **2 questions**. Elles changent quelque
-   chose que tu verras à l'écran ou dans le dossier livré. Chacune tient en une
-   ligne avec ma recommandation : un « d'accord » suffit.
+2. **« Ce qui a besoin de toi »** — **plus rien**. Tu as répondu à tout ce qui
+   change quelque chose de visible.
 3. **« Ce que tu peux ignorer »** — **48 questions**. Des cas limites et des
    choix d'implémentation. **Sans réponse de ta part, j'applique ma
    recommandation.** Tu peux les survoler ou les sauter entièrement.
@@ -49,6 +48,8 @@ servent plus).
 | **§F.57** | Créer une note **ne coche pas** le passage |
 | **§G.63** | La date proposée s'affiche **à côté** du champ, avec un bouton « adopter » — jamais pré-remplie |
 | **§G.64** | La date que tu saisis reste une **inférence** (ambre `≈`) — ta décision du 29/08, inchangée |
+| **§G.60** | Le **registre date la page** ; une page sans registre hérite de la précédente. Les notes du haut ne déplacent jamais cette date |
+| **§F.72** | Au survol d'une photo, la **légende d'époque seulement** ; la légende de machine vit dans le détail |
 | **§G.58** | **Tes dates font l'ordre** du site ; les rebuts restent sans date et sortent d'eux-mêmes |
 | **§F.27** | Le **scan entier** affiché, registre et notes libres séparés dessous — aucun découpage d'image |
 | **§F.31** | La vignette est le **scan entier réduit** — plus de rognage à 48 % |
@@ -65,15 +66,10 @@ paieraient tard :
 
 ---
 
-## Ce qui a besoin de toi — 2 questions
+## Ce qui a besoin de toi — plus rien
 
-*Chacune change quelque chose de visible. Ma recommandation est en gras ; un
-« d'accord » la valide.*
-
-| | La question | Ma recommandation |
-|:--|:--|:--|
-| **§G.60** | L'héritage d'une date de page n'est appliqué qu'à « Ma vie » : le journal ne l'a pas, et 3 de ses pages n'ont aucune fenêtre. | **L'appliquer aux trois sources**, ton modèle étant le même partout |
-| **§F.72** | « Légende » désigne deux choses : ton texte du site, et la future légende produite par une machine. Les deux s'afficheraient au survol d'une photo. | **Ton texte seul** aujourd'hui, nommé « texte du site » |
+Tu as répondu à tout ce qui changeait quelque chose de visible. Les questions
+restantes ont chacune une recommandation, appliquée par défaut.
 
 ---
 
@@ -486,20 +482,12 @@ question qui reste :
   `web_caption` d'une photo — mesuré sur une photo appariée. Rien à ajouter au
   contrat pour l'affichage au survol.
 
-**72. [Ambigu] « La légende » désigne deux choses différentes dans cette
-application.**
-Il y a `Photo.caption` — la **légende produite par une machine**, celle du
-légendage VLM prévu, aujourd'hui vide sur les 3 930 photos — et il y a la
-`web_caption`, **ton texte d'époque** repris du site. Les deux s'appellent
-« légende » et les deux s'afficheraient au survol d'une photo. La règle des
-trois natures de texte les sépare précisément : un texte d'époque et une
-description de machine n'occupent jamais le même emplacement.
-→ **(a)** au survol, la `web_caption` seule, nommée « texte du site » plutôt
-que « légende » · **(b)** les deux, dans deux blocs visuellement distincts et
-étiquetés · **(c)** les deux, sans distinction.
-*Recommandation : **(a)** aujourd'hui, **(b)** le jour où le légendage VLM
-tourne. **(c)** ferait passer une phrase de machine pour une phrase que tu as
-écrite en 2003 — c'est exactement le mélange que la règle interdit.*
+**72. TRANCHÉ — au survol, la légende d'époque seulement.** Le survol d'une photo
+montre sa légende de 2003 et rien d'autre. La légende produite par une machine,
+quand elle existera, vit dans le panneau de détail et porte son origine. Les
+deux ne se croisent jamais, donc aucune confusion possible — et le survol reste
+court, ce qui compte puisque 47 légendes dépassent 400 caractères et l'une
+atteint 10 363.
 
 **73. [Non dit] Au survol, la légende est un lien direct ; ce qui l'entoure ne
 l'est pas.**
@@ -877,27 +865,22 @@ l'ordre qui manque.*
 L'héritage ne remonte jamais le temps, nulle part : les 22 pages de « Ma vie »
 héritent toutes de la précédente, jamais de la suivante.
 
-**60. [Tension] L'héritage n'est appliqué qu'à « Ma vie ». Le journal ne l'a
-pas.**
-Ton modèle est unique pour les trois sources ; le système, lui, ne le fait pas
-partout. Mesuré : `span_source` vaut `carried` sur 22 pages de « Ma vie » — et
-**sur aucune page du journal**, où il vaut `entries` (49 pages) ou **rien du tout
-(3 pages)**. Ces trois-là sont les pages **1, 2 et 31**, qui n'ont aucune ligne
-de registre.
+**60. TRANCHÉ — le registre date la page ; l'héritage comble les trous.**
+La partie basse fait autorité : c'est le document officiel, tenu dans l'ordre.
+Une page sans aucune ligne de registre hérite de la page précédente, comme sur
+« Ma vie ». Les trois sources se comportent alors pareil, et **les notes du haut
+ne peuvent jamais déplacer une date que le registre établit** — un billet de
+musée collé après coup n'étire pas la période d'une page.
 
-Le cas est moins grave qu'il n'y paraît : ces trois pages portent des dates dans
-leur partie **haute** (08/07/1998, 08/07/1998, 02/03/2000), donc sous la règle
-que tu as tranchée en §F.28 elles affichent une date lue, en vert. Mais la
-fenêtre de page du journal est calculée **sur le registre seul** et ignore la
-prose, alors que celle de « Ma vie » est calculée sur les passages.
-→ **(a)** appliquer l'héritage aux trois sources, uniformément · **(b)** le
-laisser tel quel : le journal n'en a pas besoin, ses 49 pages de registre
-couvrent tout · **(c)** calculer aussi la fenêtre du journal sur la prose quand
-le registre est muet.
-*Recommandation : **(a)**, parce que ton modèle est le même partout et qu'une
-règle appliquée à une source sur trois finit par surprendre. Mais c'est du
-travail serveur pour un gain de 3 pages sur 155 : **(b)** est un report
-défendable si la V1.5 est chargée.*
+*Un cas à trancher dans la spécification, et je le note ici : les trois pages du
+journal sans registre sont les pages **1, 2 et 31**, et les deux premières n'ont
+aucune page précédente dont hériter. Elles portent des dates lues dans leurs
+notes — 08/07/1998 pour les deux premières, ce que le scan confirme puisque la
+page 1 porte « Journal du bord. 8 juillet 1998 » de ta main, et 02/03/2000 pour
+la page 31. La spécification retient donc : **registre d'abord, à défaut les
+dates lues dans les notes, à défaut l'héritage.** Sur le journal l'héritage ne
+se déclenche jamais — 49 pages ont un registre, 3 ont des notes datées, aucune
+n'a ni l'un ni l'autre — mais la règle reste la même pour les trois sources.*
 
 **61. [Non dit] Ce que la date proposée doit dire, parce qu'elle est très
 inégale.**
