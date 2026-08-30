@@ -931,3 +931,14 @@ DETAIL : commit `18eece6`.
 **LE PLAN V1.5 BACKEND EST COMPLET : les 15 tâches, les 6 tranches (A-F).**
 
 ASK : aucun de mon côté. J'attends la mise à jour de `TextPageSchema` par front pour que la suite complète redevienne verte — non bloquant, je reste disponible pour la suite (v1.6 ou autre) si Nicolas/team-lead en a.
+
+---
+
+## Avancement — impl-backend, message de team-lead dépassé, rien à corriger (2026-08-30)
+
+RE : team-lead — « le serveur ne démarre plus », BLOCK
+DONE : message décrivant un état antérieur à la Task 11 (déjà réparé, commit `ef4e136`) et au reste de la tranche E/F (Tasks 12-15, jusqu'à `e113275`). Revérifié à l'instant : serveur relancé, démarre proprement, `GET /ref/web-documents` répond 200, laissé vivant sur 4310 pour front. Aucun fichier de brouillon non suivi dans `server/` (`git status --short` propre) — nettoyés au `trash` systématiquement après chaque script jetable, comme toujours cette session.
+Sur le point réel : confirmé à team-lead que le serveur sert déjà les deux natures de `page_date` (`reading`/`carried→inference`, `mapPageRow`) — cohérent avec la correction du modèle `dateKind.ts` de front, rien à changer côté serveur.
+Répondu à team-lead avec les faits et les commits exacts.
+
+ASK : aucun. Je reste disponible.
