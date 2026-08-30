@@ -11,7 +11,7 @@ ce qui a besoin de toi :
 
 1. **« Déjà tranché »** ci-dessous — tes réponses, rassemblées. Rien à y faire,
    c'est là pour que tu ne les relises pas.
-2. **« Ce qui a besoin de toi »** — **8 questions**. Elles changent quelque
+2. **« Ce qui a besoin de toi »** — **5 questions**. Elles changent quelque
    chose que tu verras à l'écran ou dans le dossier livré. Chacune tient en une
    ligne avec ma recommandation : un « d'accord » suffit.
 3. **« Ce que tu peux ignorer »** — **50 questions**. Des cas limites et des
@@ -22,7 +22,10 @@ Le corps du document, sections A à G, garde le détail de chacune : la mesure,
 les options, le raisonnement. Va y voir seulement si une ligne t'arrête.
 
 La numérotation est **stable** — « §F.54 : d'accord » désignera toujours la même
-question, même si le document est réorganisé.
+question, même si le document est réorganisé. Une seule exception, faite avant
+que tu n'aies répondu à aucune d'elles : la section G a été renumérotée quand
+j'ai compris que j'avais mal lu ton modèle de chaînage (les numéros 69 et 70 ne
+servent plus).
 
 ---
 
@@ -44,6 +47,8 @@ question, même si le document est réorganisé.
 | **§F.55** | Le manifeste distingue une note **dérivée** d'une note écrite de zéro |
 | **§F.56** | La note **recopie et rattache** |
 | **§F.57** | Créer une note **ne coche pas** le passage |
+| **§G.63** | La date proposée s'affiche **à côté** du champ, avec un bouton « adopter » — jamais pré-remplie |
+| **§G.64** | La date que tu saisis reste une **inférence** (ambre `≈`) — ta décision du 29/08, inchangée |
 
 Deux conséquences de ces décisions valent d'être sues, parce qu'elles se
 paieraient tard :
@@ -57,7 +62,7 @@ paieraient tard :
 
 ---
 
-## Ce qui a besoin de toi — 8 questions
+## Ce qui a besoin de toi — 5 questions
 
 *Chacune change quelque chose de visible. Ma recommandation est en gras ; un
 « d'accord » la valide.*
@@ -65,10 +70,7 @@ paieraient tard :
 | | La question | Ma recommandation |
 |:--|:--|:--|
 | **§G.58** | La chaîne de dates du site suit quel ordre ? L'ordre des fichiers ne marche pas — `gal_7` est daté avant `gal_5`, et un document rangé dans `1999/` propose 2001. | **La chaîne se réordonne d'elle-même** sur les dates que tu saisis |
-| **§G.60** | Un document non daté au milieu de la chaîne : `2003_gal_9` n'a aucune photo liée et se trouve entre deux documents datés. | **Il est sauté et reste sans date**, l'écran signale le trou — jamais une date inventée |
-| **§G.61** | Trois documents proposent la **même** date (01/12/2000) : au moins deux auraient un intervalle de largeur nulle. | **L'écran te prévient sans refuser** |
-| **§G.63** | La date proposée : pré-remplie dans le champ, ou à côté ? Le contrat interdit de pré-remplir, en nommant ce cas précis. Le pilote maintient le pré-remplissage ; moi non. | **À côté, avec un bouton « adopter »** — même geste, règle intacte |
-| **§G.64** | La date que tu saisis là : **inférence** (ambre `≈`) ou **décision** (violet) ? Tu as tranché « inférence » le 29/08, mais l'écran affiche maintenant une proposition, ce qui change peut-être la nature de ton geste. | **Elle reste une inférence** ; « proposé » et « saisi » se distinguent par un état, pas par une couleur |
+| **§G.60** | L'héritage d'une date de page n'est appliqué qu'à « Ma vie » : le journal ne l'a pas, et 3 de ses pages n'ont aucune fenêtre. | **L'appliquer aux trois sources**, ton modèle étant le même partout |
 | **§F.27** | Un scan du journal porte **deux pages** — les notes en haut, le registre en bas. On montre les deux, ou une seule ? | **Les deux**, nommées « Notes de bord » et « Registre » |
 | **§F.31** | La miniature de la moitié haute : où couper, puisque rien ne dit où est la reliure ? | **À 48 % de la hauteur**, en disant que le cadrage est approximatif |
 | **§F.72** | « Légende » désigne deux choses : ton texte du site, et la future légende produite par une machine. Les deux s'afficheraient au survol d'une photo. | **Ton texte seul** aujourd'hui, nommé « texte du site » |
@@ -96,9 +98,9 @@ document, groupées par écran, chacune avec sa mesure et son raisonnement.*
   §F.53, §F.68, §F.71, §F.73 à §F.75)** — miniatures et leur coût, filtres de
   dates, recherche, titres de notes, fragments de menu du site, pages du
   registre qui reculent dans le temps.
-- **Écran de datation (§G.59, §G.62, §G.65 à §G.67, §G.69, §G.70)** — dernier
-  document de la chaîne, périmètre de la liste, ce que la proposition doit
-  dire, doublon avec les Réglages.
+- **Écran de datation (§G.59, §G.61, §G.62, §G.65 à §G.68)** — pages
+  antérieures à ta première date, ce que la proposition doit dire, périmètre de
+  la liste, doublon avec les Réglages, disposition de l'écran.
 
 ---
 
@@ -136,7 +138,7 @@ numéro ni d'image.
 **L'écran des Réglages liste 60 documents web, pas les 25 du périmètre.** Dont
 16 pages `raiders/*`, un fichier de vérification Google, une page « bidon »,
 et une vingtaine hors corpus. Et **l'extrait censé te faire reconnaître un
-document est identique à son titre sur 45 des 60** (§G.62, §G.66).
+document est identique à son titre sur 45 des 60** (§G.62).
 
 ---
 
@@ -431,7 +433,7 @@ option pour aller sur un écran de saisie des dates pour le site web », avec un
 seule date de début par document puisque « la date de début du suivant est la
 date de fin ». Tout ce que cet écran implique est en **§G**, et les deux
 obstacles ci-dessus y reviennent : le périmètre de la liste (§G.62) et
-l'extrait inutile (§G.66).
+l'extrait inutile (§G.62).
 
 **49. [Tension] Ce qu'on affiche en regard, puisqu'il n'y a pas de page scannée.**
 La décision « texte seul en V1 » tient toujours — `docs/frontend-spec.md` et
@@ -862,231 +864,187 @@ une note sans tâche ouverte.
 
 ---
 
-## G. Le nouvel écran — saisir les dates du site web
+## G. Le nouvel écran — saisir les dates des pages du site
 
-*Tu l'ajoutes, accessible depuis la page principale, avec une seule date par
-document : « tout est écrit de façon chronologique donc une date de début va
-suffire (la date de début du suivant est la date de fin) ». Et l'écran montre
-le texte du document plus **les photos liées avec leur légende**, pour t'aider
-à trouver la date.*
+*J'avais mal lu ton modèle, et je m'en excuse : j'avais compris une chaîne
+courant entre les 60 documents du site, dans l'ordre des fichiers. Tes mots
+disent autre chose : « le document suivant correspondait à la page suivante du
+journal de bord, ou à la page suivante de ma vie, ou à la suite du site web,
+pas aux autres documents ». Le chaînage est **à l'intérieur d'une source, dans
+l'ordre des pages**, et « les no de pages servent à grouper les pages sur les
+dates précédentes ».*
 
-*J'ai refait la mesure sur ta base avant d'écrire. Elle tient — **227 liens
-vers 224 photos sur 27 pages**, dont 221 liens vers des photos datées (le
-relevé qu'on m'a transmis disait 228 et 225 ; l'écart est sans effet). Ce qui
-suit vient de cette mesure, et une bonne partie contredit la simplification que
-tu proposes. Je le dis maintenant.*
+**Ton modèle est déjà celui du système, et je l'ai vérifié.** Sur « Ma vie », 22
+des 103 pages ne portent aucune date propre : le système leur donne celle de la
+page précédente, et j'ai mesuré que les **22 sur 22** héritent bien de la page
+d'avant, jamais de celle d'après. C'est exactement « une page sans date se
+rattache à la dernière page datée qui la précède ». Je le signalais comme une
+faiblesse ; c'était le mécanisme.
 
-**La bonne nouvelle d'abord, parce qu'elle est vraie et importante : la
-proposition est excellente là où tu en as le plus besoin.** Les onze galeries
-2003-2004 sont soutenues à **100 % par des dates lues, au jour près**, sur des
-fourchettes de 0 à 21 jours. C'est exactement la période où le journal est muet
-devant 2 041 photos. En face, les sept pages de 1999-2002 sont soutenues par des
-dates **inférées ou arbitrées, presque jamais lues** — `Venez01` s'appuie sur
-21 photos dont **21 datées au mois seulement**, et `VersTrinidad` sur une
-fourchette de **259 jours**. La proposition vaut donc beaucoup là où tu es
-aveugle, et peu là où le journal te couvre déjà.
+Du coup **trois de mes quatre objections tombent**, et je les retire : le
+document vide au milieu n'avale plus rien (il hérite), deux pages peuvent porter
+la même date sans conséquence (elles se groupent), et le dernier de la série n'a
+besoin d'aucune saisie supplémentaire (son groupe court jusqu'au bout). La
+quatrième change de nature — c'est §G.58 ci-dessous.
 
-**58. [Tension] « Tout est écrit de façon chronologique » — le récit peut-être,
-l'ordre des fichiers non.**
-C'est la mesure qui contredit le plus directement ta simplification. Triés par
-date proposée, les documents ne sont pas dans l'ordre de leurs noms :
-- `2003_gal_7` (09/10/2003) tombe **avant** `2003_gal_5` (13/10/2003) ;
-- `2003_gal_16` (04/05/2004) tombe **avant** `2003_gal_13` (08/08/2004) ;
-- `web/1999/funfun1`, rangé dans `1999/`, propose **16/12/2001** ;
-- `web/2005/images/2005_4`, rangé dans `2005/`, propose **16/05/2003**.
+**Ce qui reste vrai de tes deux sources écrites**, mesuré : « Ma vie » est
+chronologique de bout en bout, et le registre du journal l'est à **42 pages sur
+49**. Ton modèle tient sur les deux.
 
-« Le suivant » n'est donc pas le suivant dans l'arborescence.
-→ **(a)** « le suivant » = le document dont la **date saisie** est la plus
-proche au-dessus : la chaîne se réordonne toute seule à mesure que tu saisis ·
-**(b)** tu ranges les documents dans un ordre manuel, et la chaîne suit cet
-ordre · **(c)** l'ordre des chemins, tel quel.
-*Recommandation : **(a)**. Elle est la seule qui ne te demande aucun travail
-supplémentaire et la seule que la mesure ne contredit pas. **(c)** produirait
-des intervalles négatifs sur les quatre cas ci-dessus.*
+**58. [Tension] Sur le site web, « la page suivante » n'existe pas. C'est la
+seule vraie question qui reste.**
+Ton modèle repose sur une phrase : « les pages sont chronologiques ». Elle est
+vérifiée sur tes deux cahiers, parce qu'un numéro de page vient de l'ordre où
+tu as tourné les feuilles. **Le site n'a pas ça.** `pipeline.page` contient
+155 lignes : 52 pour le journal, 103 pour « Ma vie », **zéro pour le site**. Ses
+60 documents sont une arborescence de fichiers, pas une suite.
 
-**59. [Non dit] Le dernier document de la chaîne n'a pas de suivant, donc pas de
-fin.**
-→ **(a)** il reste ouvert : « à partir du 05/10/2004 », rendu comme une borne
-et jamais comme un intervalle · **(b)** il se ferme sur la fin du périmètre
-(31/12/2004) · **(c)** tu saisis une date de fin pour celui-là seulement.
-*Recommandation : **(c)**. Une seule saisie de plus dans toute la série, et
-elle évite qu'un document se voie attribuer en silence une fin que tu n'as pas
-choisie. **(a)** est le repli acceptable si tu ne veux rien saisir de plus.*
+Et l'ordre des fichiers **n'est pas** l'ordre du temps — mesuré sur les 27 pages
+dont les photos liées donnent une date : `2003_gal_7` vient avant `2003_gal_5`,
+`2003_gal_16` avant `2003_gal_13`, un document rangé dans `1999/` date de
+décembre 2001, un autre rangé dans `2005/` date de mai 2003.
 
-**60. [Tension] Un document laissé vide au milieu — le cas existe déjà, mesuré.**
-`web/2003/2003_gal_9` porte 2 passages et **zéro photo liée** : aucune
-proposition possible. Il est assis entre `2003_gal_8` (29/10/2003) et
-`2003_gal_10` (11/11/2003). Sous la règle « la fin est le début du suivant », si
-tu ne le dates pas, la période de `gal_8` s'étend **jusqu'au 11/11** et avale
-silencieusement celle de `gal_9`, qui n'a lui-même aucun intervalle.
-→ **(a)** un document non daté est **sauté** par la chaîne et reste sans date —
-ses textes ne se rapprochent d'aucune photo, et l'écran le signale comme un trou
-· **(b)** il hérite de l'intervalle du trou (du 29/10 au 11/11) · **(c)** il
-bloque la chaîne tant qu'il n'est pas saisi.
-*Recommandation : **(a)**. **(b)** fabrique une date que personne n'a posée, sur
-un document dont on ne sait rien — c'est précisément ce que la règle des trois
-natures interdit. Le trou doit se voir, pas se combler tout seul.*
+Il faut donc décider ce qui fait la suite du site.
+→ **(a)** **ta saisie fait l'ordre** : tu dates les documents que tu reconnais,
+et la suite se déduit de ces dates ; les non datés se rattachent au dernier daté
+selon l'ordre des chemins · **(b)** tu ranges les documents dans un ordre
+manuel, une fois, et l'héritage suit cet ordre comme il suit les numéros de
+page ailleurs · **(c)** l'ordre des chemins fait foi tel quel.
+*Recommandation : **(a)**. Elle ne te demande aucun travail en plus de celui que
+tu prévois déjà, et elle dégrade proprement : tant que tu n'as rien saisi, rien
+n'est daté ; chaque date que tu poses éclaire les documents qui la suivent.
+**(c)** est mesurablement fausse. **(b)** est la plus fidèle à ton modèle — un
+ordre explicite, comme les numéros de page — mais elle te demande de ranger 60
+documents avant de pouvoir en dater un seul.*
 
-**61. [Tension] Trois documents proposent exactement la même date.**
-`web/photo`, `web/1999/Venez01` et `web/1999/Venez02` proposent tous les trois
-**01/12/2000 → 31/12/2000**, parce que leurs photos sont datées au mois. Sous
-« la fin est le début du suivant », au moins deux d'entre eux reçoivent un
-intervalle de **largeur nulle**.
-→ **(a)** deux documents peuvent porter la même date de début : la chaîne les
-traite comme un seul segment partagé · **(b)** l'écran refuse deux dates
-identiques et te demande de les départager · **(c)** l'écran te prévient sans
-refuser.
-*Recommandation : **(c)**. Deux pages web écrites le même jour, c'est
-plausible ; un intervalle de largeur nulle qui fait disparaître un document du
-rapprochement, non. Le prévenir te laisse trancher sans t'imposer une précision
-que tu n'as pas.*
+**59. [Non dit] Les pages du site avant ta première date héritent de quoi ?**
+Dans tes cahiers la question ne se pose pas : la page 1 de « Ma vie » est datée,
+la chaîne démarre. Sur le site, si tu dates le cinquième document et pas les
+quatre premiers, ceux-là n'ont aucun prédécesseur.
+→ **(a)** ils restent **sans date**, et l'écran le dit · **(b)** ils héritent de
+la première date saisie, vers l'arrière.
+*Recommandation : **(a)**. Une page antérieure à ta première date n'est pas
+« vers cette date », elle est inconnue — et **(b)** inventerait une date en
+remontant le temps, ce que le mécanisme d'héritage ne fait nulle part ailleurs
+(les 22 pages de « Ma vie » héritent toutes de la précédente, jamais de la
+suivante).*
 
-**62. [Tension] Sur quels documents la chaîne court-elle ? Il y en a 60, et la
-majorité n'a rien à y faire.**
-Mesuré : sur les 60, **16 sont `web/2005/3/raiders/*`** (2 passages chacun, une
-liste de noms), plus `web/googlea0ccc7e24963cc5e` (vérification Google),
-`web/test/map`, `web/1999/bidon` (« Nouvelle page 1 »), `web/favorite`, et
-**une vingtaine de documents `2005/`-`2006/` hors corpus**. Une chaîne qui les
-traverse tous produit des segments absurdes entre deux vrais documents.
-→ **(a)** la chaîne ne court que sur les documents du **périmètre 1998-2004**,
-les autres sont masqués derrière un « voir tout » · **(b)** elle court sur les
-60 · **(c)** tu coches toi-même les documents qui entrent dans la chaîne.
-*Recommandation : **(a)**. Ça ramène l'écran à une vingtaine de lignes, ce qui
-est le seul format dans lequel la saisie se fera vraiment.*
+**60. [Tension] L'héritage n'est appliqué qu'à « Ma vie ». Le journal ne l'a
+pas.**
+Ton modèle est unique pour les trois sources ; le système, lui, ne le fait pas
+partout. Mesuré : `span_source` vaut `carried` sur 22 pages de « Ma vie » — et
+**sur aucune page du journal**, où il vaut `entries` (49 pages) ou **rien du tout
+(3 pages)**. Ces trois-là sont les pages **1, 2 et 31**, qui n'ont aucune ligne
+de registre.
 
-**63. [Tension] Pré-remplir la date proposée contredit une règle écrite.**
-Le contrat dit, en nommant explicitement `WebDocumentRow` : les indices d'aide
-à la saisie sont présentés **« COMME DES INDICES et jamais pré-remplis dans les
-champs de saisie »** (`docs/api-contract.md`), « ce sont exactement les données
-que l'arbitrage a jugées peu fiables ». L'écran des périodes d'album applique
-cette règle à la lettre depuis le début : il montre les motifs de noms de
-fichiers et la plage EXIF écartée, et laisse les champs vides.
-→ **(a)** la date proposée s'affiche **à côté** du champ vide, avec un bouton
-« adopter cette date » qui la recopie en un clic · **(b)** le champ est
-pré-rempli, la règle est amendée pour ce cas · **(c)** indice pur, sans bouton.
-*Recommandation : **(a)**. Tu obtiens l'ergonomie du pré-remplissage — un clic
-sur les 22 documents proposés — sans toucher à la règle : le champ reste vide
-tant que tu n'as pas agi, et c'est ton geste qui pose la date. **(b)** demande
-un amendement au contrat gelé pour un gain d'un seul clic.*
-*Pour que tu aies les deux positions : le pilote maintient **(b)**, le
-pré-remplissage, en précisant qu'il s'appuie sur les dates des photos et non
-sur le contenu des légendes. C'est exact, et ça ne change rien à mon objection,
-qui porte sur la règle « jamais pré-remplis » et pas sur la source de la
-proposition. À toi de trancher.*
+Le cas est moins grave qu'il n'y paraît : ces trois pages portent des dates dans
+leur partie **haute** (08/07/1998, 08/07/1998, 02/03/2000), donc sous la règle
+que tu as tranchée en §F.28 elles affichent une date lue, en vert. Mais la
+fenêtre de page du journal est calculée **sur le registre seul** et ignore la
+prose, alors que celle de « Ma vie » est calculée sur les passages.
+→ **(a)** appliquer l'héritage aux trois sources, uniformément · **(b)** le
+laisser tel quel : le journal n'en a pas besoin, ses 49 pages de registre
+couvrent tout · **(c)** calculer aussi la fenêtre du journal sur la prose quand
+le registre est muet.
+*Recommandation : **(a)**, parce que ton modèle est le même partout et qu'une
+règle appliquée à une source sur trois finit par surprendre. Mais c'est du
+travail serveur pour un gain de 3 pages sur 155 : **(b)** est un report
+défendable si la V1.5 est chargée.*
 
-**64. [Tension] La nature de la date que tu saisis : une décision close dit
-« inférence », et ce nouvel écran pourrait la rouvrir.**
-Le 29/08 tu as tranché toi-même, après trois allers-retours entre agents, que
-`ref.web_span` est une **inférence** — ambre italique avec `≈` — et non une
-décision. Le motif retenu : poser une plage sur un document qui ne porte aucune
-date, c'est *combler un vide*, une conjecture ; alors que corriger la date d'une
-photo, c'est *arbitrer* contre un EXIF qu'on avait sous les yeux. La décision est
-marquée « ne pas rouvrir ».
-
-Ce nouvel écran change une chose : **il te met une date proposée sous les yeux**.
-Ton geste ressemble alors davantage à l'arbitrage qu'à la conjecture. On m'a
-transmis la lecture inverse de la mienne — « la proposition est une inférence,
-sa saisie est une décision » — et je ne la trancherai pas à ta place, parce
-qu'elle contredit une décision que tu as prise.
-→ **(a)** rien ne change : ta date reste une **inférence** en ambre `≈`, et ce
-qui distingue la proposition de ta saisie est un **état** (« proposé, non
-validé » / « saisi »), pas une couleur · **(b)** ta date devient une
-**décision** en violet dès lors qu'une proposition était affichée — la décision
-du 29/08 est amendée pour ce cas.
-*Recommandation : **(a)**. Contredire une proposition qui dérive elle-même de
-photos inférées ne transforme pas ta conjecture en lecture — et sur les sept
-documents de 1999-2002, la proposition s'appuie sur des dates au mois, pas sur
-des faits. Deux états suffisent à ne pas confondre proposé et saisi, sans
-toucher au seul endroit du système qui produit du violet.*
-
-**65. [Non dit] La proposition doit dire sur quoi elle repose — elle est très
+**61. [Non dit] Ce que la date proposée doit dire, parce qu'elle est très
 inégale.**
-Mesuré, par document : `2003_gal_15` s'appuie sur **20 photos toutes datées au
-jour et lues**, fourchette 9 jours. `web/photo` s'appuie sur **une seule photo,
-datée au mois**. `Caraibe` sur 11 photos dont 9 inférées, fourchette **181
-jours**. Une même ligne « date proposée » recouvre ces trois cas.
-→ **(a)** afficher sous chaque proposition : le nombre de photos, combien sont
-datées au jour, et la largeur de la fourchette — « 20 photos, toutes au jour,
-sur 9 jours » contre « 1 photo, au mois » · **(b)** un simple indicateur de
-confiance · **(c)** la date seule.
-*Recommandation : **(a)**. C'est la même exigence que partout ailleurs dans
-cette application : une valeur calculée dit ce qu'elle vaut. Et la différence
-entre les deux exemples ci-dessus est exactement celle qui te fera valider d'un
-clic ou aller vérifier.*
+27 documents du site reçoivent une date proposée, dérivée de leurs photos liées
+(227 liens vers 224 photos, dont 221 vers des photos datées). Mais la qualité
+varie énormément : `2003_gal_15` s'appuie sur **20 photos toutes lues au jour**,
+fourchette 9 jours. `web/photo` s'appuie sur **une seule photo datée au mois**.
+`Caraibe` sur 11 photos dont 9 inférées, fourchette **181 jours**.
 
-**66. [Non dit] Les documents qui ont le plus besoin d'une date n'ont aucune
-proposition.**
-Les 27 pages proposées sont surtout des galeries. Les documents **narratifs**,
-ceux qui portent le plus de texte, n'ont aucune photo liée : `web/1999-2002`
-(17 passages), `web/2005-2006` (10), `web/index` (9), `web/2003-2004` (8),
-`web/1999/vie_a_bord` (7), `web/1998-1999` (6), `web/1900-1988` (4). Ce sont
-ceux dont le titre annonce une période, et ceux que la chaîne aidera le moins.
-→ **(a)** trier l'écran par **besoin** : d'abord les documents sans proposition
-et à fort volume de texte, ensuite les proposés à valider · **(b)** trier par
-date proposée · **(c)** trier par chemin.
-*Recommandation : **(b)** comme ordre principal — c'est une chaîne
-chronologique, la voir dans l'ordre est ce qui te permet de repérer une date
-aberrante — avec les non proposés intercalés à leur place présumée et marqués.
-**(a)** casse la lecture de la chaîne, qui est justement l'intérêt de ta
-simplification. Et pour ces documents-là, l'aide n'est pas la photo mais le
-titre : « 1999-2002 » se date presque tout seul.*
+Et la coupure est nette : les **onze galeries 2003-2004 sont soutenues à 100 %
+par des dates lues au jour**, sur 0 à 21 jours — c'est excellent, et c'est
+exactement la période où le journal est muet devant 2 041 photos. Les sept pages
+de 1999-2002, elles, s'appuient presque uniquement sur des dates inférées au
+mois.
+→ **(a)** afficher sous chaque proposition : nombre de photos, combien datées au
+jour, largeur de la fourchette — « 20 photos, toutes au jour, sur 9 jours »
+contre « 1 photo, au mois » · **(b)** un indicateur de confiance · **(c)** la
+date seule.
+*Recommandation : **(a)**. Même exigence que partout ailleurs ici : une valeur
+calculée dit ce qu'elle vaut. Et c'est cette différence-là qui te fera valider
+d'un clic ou aller vérifier.*
 
-**67. [Non dit] Une page porte 14 photos liées et n'existe comme document nulle
-part.**
-`Astro/misc/meade/meade.htm` — 14 liens vers des photos datées de décembre 2005,
-et **aucun passage** : elle n'est pas dans les 60 documents du corpus texte.
-Elle apparaîtrait dans un écran construit sur les liens de photos, et nulle part
-ailleurs.
+**62. [Non dit] L'écran liste 60 documents, dont une bonne moitié n'a rien à y
+faire.**
+Mesuré : **16 sont `web/2005/3/raiders/*`** (2 passages chacun, une liste de
+noms), plus `web/googlea0ccc7e24963cc5e` (un fichier de vérification Google),
+`web/test/map`, `web/1999/bidon` (1 passage, « Nouvelle page 1 »),
+`web/favorite`, et une vingtaine de documents `2005/`-`2006/` hors corpus. Ils
+resteront sans date puisque tu ne les dateras pas — mais tu devras les
+traverser des yeux à chaque fois.
+→ **(a)** limiter au **périmètre 1998-2004**, le reste derrière un « voir tout »
+· **(b)** les 60, tels quels.
+*Recommandation : **(a)**. Ça ramène l'écran à une vingtaine de lignes, seul
+format dans lequel la saisie se fera vraiment.*
+
+**63. RÉGLÉ — la proposition à côté du champ, pas dedans.** Un bouton « adopter
+cette date » la recopie en un clic. Le contrat interdit de pré-remplir les
+champs de saisie **en nommant `WebDocumentRow`** (« ce sont exactement les
+données que l'arbitrage a jugées peu fiables »), et l'écran des périodes
+d'album applique cette règle depuis le début. Cette variante donne le même clic
+unique sans rien amender. *Le pilote, qui proposait le pré-remplissage, s'est
+rangé à cette lecture.*
+
+**64. RÉGLÉ — ta date saisie reste une inférence, en ambre `≈`.** Ta décision du
+29/08 s'applique inchangée : poser une date sur un document qui n'en porte
+aucune comble un vide, c'est une conjecture, même informée par une proposition.
+Ce qui distingue « proposé » de « saisi » est un **état**, pas une couleur.
+*Rien à rouvrir.*
+
+**65. [Non dit] Une page du site porte 14 photos liées et n'existe comme
+document nulle part.**
+`Astro/misc/meade/meade.htm` — 14 liens vers des photos de décembre 2005, et
+**aucun passage** : elle n'est pas dans les 60. Elle apparaîtrait dans un écran
+construit sur les liens de photos, et nulle part ailleurs.
 → **(a)** l'écran ne liste que les documents du corpus texte : elle n'apparaît
 pas · **(b)** elle apparaît, comme page sans texte.
-*Recommandation : **(a)**. C'est une page de matériel d'astronomie, hors sujet
-et hors période ; §G.62 l'écarte déjà par le périmètre.*
+*Recommandation : **(a)**. Page de matériel d'astronomie, hors sujet et hors
+période ; §G.62 l'écarte déjà.*
 
-**68. TRANCHÉ par §F.51 — indicatif, jamais sélectionnable.** Je demandais
-jusqu'où allait ton « sinon on n'utilise pas la légende ». Ta réponse sur les
-légendes le dit : elles s'affichent, elles n'entrent nulle part. La question
-tombe.
-
-Une conséquence que je dois quand même poser, parce qu'elle a un coût réel :
-sous cette règle, **2003-2004 n'a plus aucun texte d'époque sélectionnable**.
-Les 103 légendes de cette période étaient la seule matière textuelle
-contemporaine des 2 041 photos, et elles ne partiront pas dans le dossier livré.
-Ce n'est pas un désaccord — c'est le prix de la simplification, et il est peut-
-être le bon. Mais tu l'assumes en connaissance de cause : pour ces deux années,
-le dossier livré contiendra tes **notes** et rien d'autre côté texte. Si un jour
-tu veux qu'une légende parte avec la photo, le geste existe déjà — la recopier
-dans une note (§F.42), ce que tu as justement rendu possible.
-
-**69. [Non dit] Le nouvel écran et la section « Site web » des Réglages font la
+**66. [Non dit] Le nouvel écran et la section « Site web » des Réglages font la
 même chose.**
-Les Réglages portent déjà une section « Site web » qui édite exactement ça
+Les Réglages portent déjà une section « Site web » qui édite cette donnée
 (`PUT /ref/web-span`), avec deux dates au lieu d'une.
-→ **(a)** le nouvel écran **remplace** cette section, qui disparaît des
-Réglages · **(b)** les deux coexistent · **(c)** les Réglages n'en gardent qu'un
-lien vers le nouvel écran.
+→ **(a)** le nouvel écran **remplace** cette section · **(b)** les deux
+coexistent · **(c)** les Réglages n'en gardent qu'un lien.
 *Recommandation : **(a)**, ou **(c)** si tu tiens à retrouver tous les
 référentiels au même endroit. Deux écrans qui écrivent la même donnée avec deux
-modèles différents — un intervalle ici, une borne là — finiront par se
-contredire.*
+modèles différents finiront par se contredire.*
 
-**70. [Non dit] Une seule date saisie, mais l'API en exige deux : qui calcule la
-fin, et quand ?**
-`PUT /ref/web-span` prend `dateFrom` **et** `dateTo`. Sous ta règle, la fin d'un
-document est le début du suivant : saisir une date ne modifie donc pas une
-ligne, mais **deux** — celle que tu saisis et la fin de celle d'avant.
-→ **(a)** la fin n'est **jamais stockée** : seule la borne de début l'est, et la
-fin se calcule à la lecture, à partir du voisin · **(b)** la fin est stockée, et
-chaque saisie réécrit aussi la ligne précédente.
-*Recommandation : **(a)**. Sous **(b)**, une date recalculée peut diverger de
-la date stockée dès qu'un document est inséré, supprimé ou redaté — et les
+**67. [Non dit] Une seule date saisie : que stocke-t-on ?**
+`PUT /ref/web-span` prend aujourd'hui `dateFrom` **et** `dateTo`. Sous ton
+modèle, la fin d'un groupe est donnée par la page datée suivante — elle se
+déduit, elle ne se saisit pas.
+→ **(a)** ne stocker que la **borne de début** ; la fin se calcule à la lecture,
+comme le système le fait déjà pour les fenêtres de page · **(b)** stocker les
+deux, et réécrire la ligne précédente à chaque saisie.
+*Recommandation : **(a)**. Sous **(b)**, une date recalculée peut diverger de la
+date stockée dès qu'un document est ajouté, supprimé ou redaté, et les
 intervalles se contrediraient sans que rien ne le signale. C'est un changement
-au contrat, à annoncer comme les trois amendements précédents.*
+au contrat, à annoncer comme les précédents.*
 
----
+**68. [Non dit] L'écran montre le texte et les photos liées — dans quel ordre de
+lecture ?**
+Tu veux « le texte du site web » plus « la photo et la légende » comme aide.
+Un document comme `VersTrinidad` porte 58 passages et 8 photos liées.
+→ **(a)** le texte à gauche, les photos liées en bande à droite avec leur
+légende au survol · **(b)** les photos d'abord, le texte en dessous ·
+**(c)** seulement les photos, le texte sur demande.
+*Recommandation : **(a)**. C'est la disposition de l'écran Textes — texte à
+gauche, image à droite — et tu la connais déjà. Les légendes restent
+indicatives (§F.51) : elles s'affichent, elles ne se sélectionnent pas.*
 
 ## En une phrase
 
-Plus rien ne bloque la spécification. **Huit questions** changent quelque chose
+Plus rien ne bloque la spécification. **Cinq questions** changent quelque chose
 de visible et méritent ta lecture (en tête de ce document) ; les **cinquante**
 autres ont une recommandation que j'applique sans réponse de ta part.
 
