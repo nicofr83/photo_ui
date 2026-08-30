@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 import { apiGet } from '../api/client';
@@ -9,8 +9,11 @@ import { useJob } from '../api/hooks/useJob';
 import { useSelection } from '../api/hooks/useSelection';
 import { useSystemStatus } from '../api/hooks/useSystemStatus';
 import { useTaskReview } from '../api/hooks/useTaskReview';
+import { useUpdateTask } from '../api/hooks/useTasks';
 import { overlaps } from '../domain/interval';
+import { firstDayOfMonth, lastDayOfMonth, toMonthInput } from '../domain/monthRange';
 import { originalsUnavailable } from '../domain/systemStatus';
+import { parseIsoDate } from '../shared/date_interface';
 import { NotesPanel } from '../ui/notes/NotesPanel';
 import { ErrorBanner } from '../ui/primitives/ErrorBanner';
 import { TaskNav } from '../ui/primitives/TaskNav';
@@ -82,11 +85,31 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
   const review = useTaskReview(slug);
   const systemStatus = useSystemStatus();
   const volumeUnavailable = systemStatus.data !== undefined && originalsUnavailable(systemStatus.data);
+  const updateTask = useUpdateTask(slug);
   const [brief, setBrief] = useState('');
+  const [periodFrom, setPeriodFrom] = useState('');
+  const [periodTo, setPeriodTo] = useState('');
   const [activeWarning, setActiveWarning] = useState<keyof TaskReviewWarnings | null>(null);
+
+  // Sync FROM the loaded task once, and again whenever it changes from
+  // OUTSIDE this form (a save landing, a fresh navigation) — never
+  // overwrites what the person is mid-typing, since nothing echoes back
+  // here until a save actually happens. `brief` used to start at '' and
+  // never read `task.data.brief` at all — a save button with nothing wired
+  // to click it.
+  useEffect(() => {
+    if (task.data === undefined) return;
+    setBrief(task.data.brief);
+    setPeriodFrom(toMonthInput(task.data.period?.from ?? null));
+    setPeriodTo(toMonthInput(task.data.period?.to ?? null));
+  }, [task.data]);
 
   if (task.error !== null) return <ErrorBanner error={task.error} />;
   if (task.isPending) return <p role="status">Chargement de la tâche…</p>;
+
+  const periodStart = firstDayOfMonth(periodFrom);
+  const periodEnd = lastDayOfMonth(periodTo);
+  const periodComplete = periodStart !== null && periodEnd !== null;
 
   const report = job?.result?.report ?? null;
   const jobRunning = job !== null && (job.state === 'queued' || job.state === 'running');
@@ -107,6 +130,8 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
         </>
       )}
 
+      {updateTask.error !== null ? <ErrorBanner error={updateTask.error} /> : null}
+
       <label className={styles['brief']}>
         Consigne pour le LLM
         <textarea
@@ -115,6 +140,68 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
           onChange={(event) => { setBrief(event.target.value); }}
         />
       </label>
+      <button
+        className={styles['export']}
+        type="button"
+        disabled={brief === task.data.brief}
+        onClick={() => { updateTask.mutate({ brief }); }}
+      >
+        Enregistrer la consigne
+      </button>
+
+      {/* Spec §5.1: the date range a task is DECLARED to cover — distinct
+          from anything a photo or text itself asserts. Month/year, not a
+          day picker: the corpus runs 1998–2004, and an input that opens on
+          today and has to be stepped back 264 months is unusable regardless
+          of whether typing into it works (Nicolas, live). Typable at both
+          fields, same draft-until-complete pattern as the filter panel's
+          date range (domain/monthRange.ts). */}
+      <fieldset className={styles['brief']}>
+        <legend>Période de la tâche</legend>
+        <p className={styles['note']}>
+          {task.data.period === null
+            ? 'Aucune période déclarée.'
+            : `Actuellement : ${task.data.period.from} → ${task.data.period.to}`}
+        </p>
+        <label className={styles['field']}>
+          Premier mois
+          <input
+            className={styles['control']}
+            type="month"
+            value={periodFrom}
+            onChange={(event) => { setPeriodFrom(event.target.value); }}
+          />
+        </label>
+        <label className={styles['field']}>
+          Dernier mois
+          <input
+            className={styles['control']}
+            type="month"
+            value={periodTo}
+            onChange={(event) => { setPeriodTo(event.target.value); }}
+          />
+        </label>
+        <button
+          className={styles['export']}
+          type="button"
+          disabled={!periodComplete}
+          onClick={() => {
+            if (periodStart === null || periodEnd === null) return;
+            updateTask.mutate({ period: { from: parseIsoDate(periodStart), to: parseIsoDate(periodEnd) } });
+          }}
+        >
+          Enregistrer la période
+        </button>
+        {task.data.period === null ? null : (
+          <button
+            className={styles['export']}
+            type="button"
+            onClick={() => { updateTask.mutate({ period: null }); }}
+          >
+            Effacer la période
+          </button>
+        )}
+      </fieldset>
 
       <p className={styles['note']} data-testid="order-note">
         Ordre chronologique par défaut — c’est celui que le LLM lira.

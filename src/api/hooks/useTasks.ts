@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 import type { z } from 'zod';
 
-import { apiDeleteWithBody, apiGet, apiPost, type ApiError } from '../client';
+import { apiDeleteWithBody, apiGet, apiPatch, apiPost, type ApiError } from '../client';
 import {
-  TaskDeleteResultSchema, TaskDetailSchema, TaskListSchema,
-  type TaskCreateInput, type TaskDeleteResult, type TaskDetail,
+  TaskDeleteResultSchema, TaskDetailSchema, TaskListSchema, TaskSummarySchema,
+  type TaskCreateInput, type TaskDeleteResult, type TaskDetail, type TaskPatchInput, type TaskSummary,
 } from '../contract/task';
 
 type TaskList = z.infer<typeof TaskListSchema>;
@@ -21,6 +21,23 @@ export function useCreateTask(): UseMutationResult<TaskDetail, ApiError, TaskCre
   return useMutation<TaskDetail, ApiError, TaskCreateInput>({
     mutationFn: (input) => apiPost('/tasks', input, TaskDetailSchema),
     onSuccess: () => { void client.invalidateQueries({ queryKey: ['tasks'] }); },
+  });
+}
+
+/**
+ * `PATCH /tasks/:slug` — title, brief, and the period (spec §5.1: the
+ * declared date range a task composes against, distinct from anything a
+ * photo or text itself asserts). Any subset; the caller sends only what it
+ * changed.
+ */
+export function useUpdateTask(slug: string): UseMutationResult<TaskSummary, ApiError, TaskPatchInput> {
+  const client = useQueryClient();
+  return useMutation<TaskSummary, ApiError, TaskPatchInput>({
+    mutationFn: (patch) => apiPatch(`/tasks/${slug}`, patch, TaskSummarySchema),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ['tasks'] });
+      void client.invalidateQueries({ queryKey: ['task', slug] });
+    },
   });
 }
 

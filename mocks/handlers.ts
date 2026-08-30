@@ -22,7 +22,8 @@ import {
   PhotoSort, TaskState,
 } from '../src/shared/enums';
 import {
-  TaskImagesMutationSchema, TaskNoteCreateInputSchema, TaskTextsMutationSchema, type TaskDetail,
+  TaskImagesMutationSchema, TaskNoteCreateInputSchema, TaskPatchInputSchema, TaskTextsMutationSchema,
+  type TaskDetail,
 } from '../src/api/contract/task';
 import type { Album } from '../src/api/contract/album';
 import type { Job } from '../src/api/contract/job';
@@ -848,6 +849,38 @@ export const handlers = [
         ),
       })),
     });
+  }),
+
+  // Contract §5.1: title/brief/period, any subset — never the slug, which
+  // is editable at creation only (renaming it later would orphan a folder
+  // already on disk).
+  http.patch('*/tasks/:slug', async ({ params, request }) => {
+    const slug = String(params['slug']);
+    const task = store.tasks.get(slug);
+    if (task === undefined) {
+      return error(404, ErrorCode.NOT_FOUND, 'Tâche introuvable.', { resource: 'task', id: slug });
+    }
+    const parsed = TaskPatchInputSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      const path = issue?.path.join('.') ?? '<root>';
+      return error(400, ErrorCode.INVALID_PARAMETER, `${path} : ${issue?.message ?? 'forme invalide'}`, {
+        parameter: path, received: null, accepted: null,
+      });
+    }
+    const patch = parsed.data;
+    if (patch.period != null && patch.period.from > patch.period.to) {
+      return error(400, ErrorCode.INVALID_PARAMETER, 'la période doit avoir from <= to', {
+        parameter: 'period', received: JSON.stringify(patch.period), accepted: null,
+      });
+    }
+    if (patch.title !== undefined) task.title = patch.title;
+    if (patch.brief !== undefined) task.brief = patch.brief;
+    if (patch.period !== undefined) task.period = patch.period;
+    task.updatedAt = NOW;
+
+    const { images: _images, texts: _texts, brief: _brief, notes: _notes, ...summary } = task;
+    return HttpResponse.json(summary);
   }),
 
   http.post('*/tasks', async ({ request }) => {

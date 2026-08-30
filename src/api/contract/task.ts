@@ -111,6 +111,14 @@ export const TaskCreateInputSchema = z.strictObject({
 });
 export type TaskCreateInput = z.infer<typeof TaskCreateInputSchema>;
 
+/** `PATCH /tasks/:slug`: any subset of the three, never the slug (spec §5.1: editable at creation only). */
+export const TaskPatchInputSchema = z.strictObject({
+  title: z.string().optional(),
+  brief: z.string().optional(),
+  period: CivilDayRangeSchema.nullable().optional(),
+});
+export type TaskPatchInput = z.infer<typeof TaskPatchInputSchema>;
+
 /**
  * A batch, never one request per photo: selecting an album of 286 photos is a
  * gesture, not 286 requests (spec §9.3). Never wired into `apiPost` (which
