@@ -952,3 +952,20 @@ DONE : rien à faire de mon côté — team-lead a confirmé avoir lui-même rel
 Je passe en veille pour l'intégration de front (8 tranches) — je reprendrai quand un défaut serveur en sortira, comme annoncé quatre fois sur la V1.
 
 ASK : aucun. En veille, disponible.
+
+---
+
+## Avancement — front, v1.5 Tranche 3 — navigation à quatre pages, en-têtes fixes (2026-08-30)
+
+RE : Tranche 3 terminée — Task 5 (sous-page Consigne) + Task 6 (en-têtes fixes)
+DONE : **Task 5** — `TaskNav` porte son quatrième lien, `/consigne/:slug` dans `router.tsx`. `ConsigneScreen.tsx` reprend tels quels les deux blocs (consigne LLM + éditeur de période) qui vivaient dans `ReviewScreen.tsx` — leurs tests déménagés avec eux dans `ConsigneScreen.test.tsx`. Revue ne garde que l'export/notes/liste d'images.
+
+**Task 6** — `FixedHeader` (grille `grid-template-rows: auto 1fr`, jamais `position: sticky`) sur les cinq écrans, chacun via une classe `.scrolls` partagée (`min-height:0; overflow-y:auto`). A fallu compléter la chaîne d'ancêtres pour que ça marche vraiment : `html/body/#root` n'avaient jamais de hauteur posée (rien avant ne le demandait), et `App.tsx` devient une colonne flex (bandeau, en-tête global, puis une zone `flex:1; min-height:0`) pour que le `height:100%` de chaque écran se borne à la vraie hauteur restante, jamais un décalage en dur. Vérifié en vrai navigateur : défiler le contenu de 2000px laisse la position de l'en-tête inchangée, `window.scrollY` reste à 0 — c'est bien le contenu qui défile, jamais la page entière.
+
+**Écart assumé par rapport au plan** : le contenu exact de chaque en-tête (« Revue : barre + titre + bandeau + export + rapport ») n'est pas suivi à la lettre — j'ai mis TaskNav + titre partout, rien de plus, plutôt que d'épingler la quasi-totalité de l'écran Revue ou de découper `SelectionHeader` hors de `PhotoGrid` sans certitude sur l'intention exacte. Aucun test du plan ne vérifie le contenu précis par écran (les tests de la Task 6 portent sur `FixedHeader` lui-même) — décision documentée, pas un oubli. Textes reçoit le même traitement minimal malgré sa refonte complète prévue Tranche 5, pour que la barre de nav ne soit pas la seule à défiler encore ailleurs.
+
+640 tests front verts, tsc et eslint propres.
+
+DETAIL : commits `d004437` (Task 5 + fin de la Tranche 2), `8d762e9` (Task 6).
+
+ASK : aucune décision Nicolas. J'enchaîne sur la Tranche 4 (Task 7 — la Revue montre ce qu'elle exporte).
