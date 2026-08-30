@@ -798,3 +798,16 @@ Vérifié contre le corpus réel (script jetable, jamais commité) : 341 sans da
 DETAIL : commit `5f5e237`.
 
 ASK : aucun. J'enchaîne sur la tranche C (Task 9, vignettes de page).
+
+---
+
+## Avancement — impl-backend, v1.5 Task 9 — tranche C (2026-08-30)
+
+RE : v1.5, tranche C — les vignettes de page
+DONE : `GET /pages/thumb?pageId=…&edge=…` — le scan ENTIER réduit (jamais rogné), vocabulaire fermé `160·320·640`. Réutilise exactement le mécanisme des rendus de photos plutôt que d'en inventer un second : `sips -Z`, LE MÊME `InFlightRenders` par processus déjà construit dans `bootstrap.ts` (`imageService.inFlight`), même cache écrit-en-temporaire-puis-`rename`. Ce dernier geste était privé à `image_service.ts` — extrait en `io/render_cache.ts` (`writeCacheAtomic`) pour que photos et pages partagent une seule implémentation, jamais deux copies qui divergent. Clé de cache : `pageId` (tout caractère hors `[a-z0-9]` → `_`, ce qui exclut par construction tout `..` ou séparateur) + `edge`.
+Vérifié contre le corpus réel (serveur réel, `curl`, puis arrêté) : `logbook/p001` en 320 sert un vrai JPEG 207×320, 24,3 Ko au lieu du scan complet ; `edge=4000` → 400 `INVALID_PARAMETER` ; page inconnue → 404 `NOT_FOUND` ; fichier de cache atterrit à `RENDER_CACHE_ROOT/pages/logbook_p001-320.jpg` comme prévu — laissé en place, c'est un cache légitime, pas une donnée de test.
+Tests d'intégration contre un VRAI scan (`adobe_mcp/docs/pages`, lecture seule) et un vrai `sips` — aucun mock, même politique que le rendu photo déjà en place. Le test de réutilisation du cache compare le `mtime` du fichier avant/après une seconde requête (seul indice observable sans mocker `sips`).
+8 tests neufs. 708 tests serveur, tsc/eslint propres. `docs/api-contract.md` : §6.3bis ajouté, table T2 et table des routes mises à jour.
+DETAIL : commit `00be27a`.
+
+ASK : aucun. J'enchaîne sur les tranches D et E (Task 10, la date proposée d'une page ; Task 11, le périmètre 1998-2004 ; Task 13, les facettes de dates ; Task 14, les pages qui correspondent à un filtre).
