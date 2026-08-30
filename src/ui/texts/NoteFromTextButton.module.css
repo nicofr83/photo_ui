@@ -1,0 +1,11 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.button {
+  min-height: var(--tap-target);
+  padding: 0 0.6rem;
+  cursor: pointer;
+}
