@@ -184,6 +184,30 @@ describe('GET /photos/:cloudAssetId/texts', () => {
       await setup.query('DELETE FROM pipeline.photo');
     }
   });
+
+  test('an UNDATED photo still surfaces a real gallery caption — identity, not a date overlap', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    const id = 'a'.repeat(32);
+    try {
+      await setup.query(`INSERT INTO pipeline.photo (cloud_asset_id, sha256, relative_path, file_name, format, raw_date_source)
+        VALUES ($1, $2, 'x/p.jpg', 'p.jpg', 'jpg', 'none')`, [id, 'b'.repeat(64)]);
+      await setup.query(`INSERT INTO app.web_gallery_link (sha256, page, image_path, caption, distance, margin, verified)
+        VALUES ($1, '2003/gal.htm', 'p01.jpg', 'Le port au matin', 4, 8, null)`, ['b'.repeat(64)]);
+
+      const response = await app.server.inject({ method: 'GET', url: `/photos/${id}/texts` });
+      expect(response.statusCode).toBe(200);
+      const body = response.json<ListEnvelope<TextWithOverlap> & { summary: OverlapSummary }>();
+      expect(body.items).toHaveLength(1);
+      expect(body.items[0]?.overlap).toEqual({
+        rule: 'gallery_match', photoSpanDays: 0, textSpanDays: 0, totalSpanDays: 0, distanceToCentreDays: 0,
+      });
+      expect(body.summary.matchCount).toBe(1);
+    } finally {
+      await setup.query(`DELETE FROM app.web_gallery_link WHERE sha256 = $1`, ['b'.repeat(64)]);
+      await setup.query('DELETE FROM pipeline.photo');
+    }
+  });
 });
 
 describe('GET /photos/facets', () => {

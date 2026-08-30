@@ -239,6 +239,35 @@ test('overlapsTextKind+overlapsTextId finds a photo whose resolved_range overlap
   });
 });
 
+test('overlapsTextKind=web_caption finds the photo by DIRECT sha256 identity, never a date window', async () => {
+  await withRollback(async (client) => {
+    await insertAlbum(client, 'set/2000-12');
+    // Volontairement NON datée : l'identité par sha256 ne dépend d'aucune date.
+    await insertPhoto(client, { resolved_from: null, resolved_start: null, resolved_end: null, resolved_precision: null });
+    await client.query(`INSERT INTO app.web_gallery_link (sha256, page, image_path, caption, distance, margin, verified)
+      VALUES ($1, '2003/gal.htm', 'p01.jpg', 'Le port au matin', 4, 8, null)`, ['b'.repeat(64)]);
+
+    const result = await listPhotos(client, {
+      scope: 'all', overlapsTextKind: 'web_caption', overlapsTextId: `${'b'.repeat(64)}:p01.jpg`,
+    });
+    expect(result.total).toBe(1);
+  });
+});
+
+test('overlapsTextKind=web_caption with a mismatched sha256 finds nothing', async () => {
+  await withRollback(async (client) => {
+    await insertAlbum(client, 'set/2000-12');
+    await insertPhoto(client, {});
+    await client.query(`INSERT INTO app.web_gallery_link (sha256, page, image_path, caption, distance, margin, verified)
+      VALUES ($1, '2003/gal.htm', 'p01.jpg', 'Le port au matin', 4, 8, null)`, ['c'.repeat(64)]);
+
+    const result = await listPhotos(client, {
+      scope: 'all', overlapsTextKind: 'web_caption', overlapsTextId: `${'c'.repeat(64)}:p01.jpg`,
+    });
+    expect(result.total).toBe(0);
+  });
+});
+
 test('inTask and notInTask are opposite, checked against app.task_image', async () => {
   await withRollback(async (client) => {
     await insertAlbum(client, 'set/2000-12');

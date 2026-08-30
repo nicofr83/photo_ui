@@ -1,4 +1,4 @@
-import { DateKind, DatePrecision, DateSource, PositionSource } from '@shared/enums';
+import { DateKind, DatePrecision, DateSource, PositionSource, TextKind } from '@shared/enums';
 import type { PoolClient } from '../db/pool.ts';
 import type { AppliedFilter, UnmatchedFilterValue } from '../contract/filter_interface.ts';
 import type {
@@ -257,11 +257,20 @@ async function buildPhotoFilter(client: PoolClient, filters: PhotoFilters): Prom
   }
 
   if (filters.overlapsTextKind !== undefined && filters.overlapsTextId !== undefined) {
-    const kind = qb.param(filters.overlapsTextKind);
-    const id = qb.param(filters.overlapsTextId);
-    // Aucun plafond de largeur (§5.3) : l'opérateur `&&`, jamais une inégalité.
-    qb.where(`EXISTS (SELECT 1 FROM pipeline.text_unit t
-                        WHERE t.kind = ${kind} AND t.id = ${id} AND p.resolved_range && t.covers_range)`);
+    if (filters.overlapsTextKind === TextKind.WEB_CAPTION) {
+      // Une légende de galerie ne recouvre pas une plage, elle EST la photo —
+      // identité par sha256 direct, jamais `&&` (Nicolas, tranché via
+      // team-lead). `overlapsTextId` est le `ref.id` déjà rendu par
+      // `/texts?kind=web_caption` : `<sha256>:<imagePath>`.
+      const sha256 = qb.param(filters.overlapsTextId.split(':')[0] ?? '');
+      qb.where(`p.sha256 = ${sha256}`);
+    } else {
+      const kind = qb.param(filters.overlapsTextKind);
+      const id = qb.param(filters.overlapsTextId);
+      // Aucun plafond de largeur (§5.3) : l'opérateur `&&`, jamais une inégalité.
+      qb.where(`EXISTS (SELECT 1 FROM pipeline.text_unit t
+                          WHERE t.kind = ${kind} AND t.id = ${id} AND p.resolved_range && t.covers_range)`);
+    }
     applied.push({ parameter: 'overlapsTextKind', values: [filters.overlapsTextKind], broadened: false });
     applied.push({ parameter: 'overlapsTextId', values: [filters.overlapsTextId], broadened: false });
   }

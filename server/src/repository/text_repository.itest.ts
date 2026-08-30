@@ -266,6 +266,49 @@ test('listOverlappingTexts on an undated photo is an EMPTY result, never an erro
   });
 });
 
+test('listOverlappingTexts: an UNDATED photo still surfaces a real gallery match — identity, not a date overlap', async () => {
+  await withRollback(async (client) => {
+    const id = 'a'.repeat(32);
+    await client.query(`INSERT INTO pipeline.photo (cloud_asset_id, sha256, relative_path, file_name, format, raw_date_source)
+                        VALUES ($1, $2, 'x/p.jpg', 'p.jpg', 'jpg', 'none')`, [id, 'b'.repeat(64)]);
+    await client.query(`INSERT INTO app.web_gallery_link (sha256, page, image_path, caption, distance, margin, verified)
+      VALUES ($1, '2003/gal.htm', 'p01.jpg', 'Le port au matin', 4, 8, null)`, ['b'.repeat(64)]);
+
+    const result = await listOverlappingTexts(client, id);
+    expect(result?.items).toHaveLength(1);
+    expect(result?.items[0]?.ref).toEqual({ kind: 'web_caption', id: `${'b'.repeat(64)}:p01.jpg` });
+    expect(result?.items[0]?.overlap).toEqual({
+      rule: 'gallery_match', photoSpanDays: 0, textSpanDays: 0, totalSpanDays: 0, distanceToCentreDays: 0,
+    });
+    expect(result?.summary).toEqual({
+      matchCount: 1, windowDays: 0, datedToDayCount: 0, datedToMonthCount: 0, datedToYearCount: 0, undatedCount: 1,
+    });
+  });
+});
+
+test('listOverlappingTexts: a DATED photo with both a date match and a gallery match — the identity match sorts first', async () => {
+  await withRollback(async (client) => {
+    const id = 'a'.repeat(32);
+    await client.query(`INSERT INTO pipeline.photo
+      (cloud_asset_id, sha256, relative_path, file_name, format, raw_date_source,
+       resolved_from, resolved_start, resolved_end, resolved_precision)
+      VALUES ($1, $2, 'x/p.jpg', 'p.jpg', 'jpg', 'exif', 'annotation', '2000-01-15', '2000-01-15', 'day')`,
+      [id, 'b'.repeat(64)]);
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('doc', 'handwritten', 'Doc', false)`);
+    await client.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence, covers_start, covers_end, covers_rule)
+      VALUES ('passage', 'doc/p1', 'doc', 1, 'p1', 'transcribed', '2000-01-10', '2000-01-20', 'passage')`);
+    await client.query(`INSERT INTO app.web_gallery_link (sha256, page, image_path, caption, distance, margin, verified)
+      VALUES ($1, '2003/gal.htm', 'p01.jpg', 'Le port au matin', 4, 8, null)`, ['b'.repeat(64)]);
+
+    const result = await listOverlappingTexts(client, id);
+    expect(result?.items).toHaveLength(2);
+    expect(result?.items[0]?.ref.kind).toBe('web_caption');
+    expect(result?.items[0]?.overlap.totalSpanDays).toBe(0);
+    expect(result?.items[1]?.ref).toEqual({ kind: 'passage', id: 'doc/p1' });
+    expect(result?.summary.matchCount).toBe(2);
+  });
+});
+
 test('both widths travel, and the default order is the sum of the widths, ascending', async () => {
   await withRollback(async (client) => {
     const id = 'a'.repeat(32);

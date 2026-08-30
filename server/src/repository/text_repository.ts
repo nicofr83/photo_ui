@@ -1,7 +1,8 @@
-import { TextKind, TranscriptionConfidence, type DateSource } from '@shared/enums';
+import { OverlapRule, TextKind, TranscriptionConfidence, type DateSource } from '@shared/enums';
 import type { PoolClient } from '../db/pool.ts';
 import type {
-  LogEntryFields, OverlapSummary, TextCorrection, TextDocument, TextPage, TextUnit, TextWithOverlap, WebDocumentRow,
+  LogEntryFields, OverlapInfo, OverlapSummary, TextCorrection, TextDocument, TextPage, TextUnit, TextWithOverlap,
+  WebDocumentRow,
 } from '../contract/text_interface.ts';
 import { computeOverlapInfo, spanDays } from '../metier/overlap/overlap_info.ts';
 import {
@@ -422,55 +423,85 @@ export interface OverlappingTextsResult {
  * résultat vide (jamais une erreur) si elle existe mais n'a aucune date
  * résolue — rien à comparer, pas une faute.
  */
+const GALLERY_MATCH_OVERLAP: OverlapInfo = {
+  rule: OverlapRule.GALLERY_MATCH, photoSpanDays: 0, textSpanDays: 0, totalSpanDays: 0, distanceToCentreDays: 0,
+};
+
+/**
+ * Les légendes de galerie liées à cette photo par son `sha256` — une
+ * IDENTITÉ, jamais un recouvrement de plage (Nicolas, tranché via
+ * team-lead) : indépendant de toute date, jamais soumis au repli « photo non
+ * datée → vide » qui gouverne le reste de cette fonction. `OverlapRule.
+ * GALLERY_MATCH` voyage dans la MÊME forme `OverlapInfo` que les trois autres
+ * règles, chaque largeur à zéro — réutilisée, jamais une seconde mécanique
+ * (contrat §11 Q11, A5).
+ */
+async function listGalleryMatchTexts(client: PoolClient, sha256: string): Promise<readonly TextWithOverlap[]> {
+  const { rows } = await client.query<GalleryLinkRow>(`
+    SELECT wgl.sha256, wgl.page, wgl.image_path, wgl.caption, wgl.alt, wgl.distance, wgl.margin, wgl.verified,
+           1 AS ordinal,
+           (SELECT count(*)::int FROM pipeline.photo p WHERE p.sha256 = wgl.sha256) AS overlapping_photo_count
+      FROM app.web_gallery_link wgl
+     WHERE wgl.sha256 = $1 AND (wgl.caption IS NOT NULL OR wgl.alt IS NOT NULL) AND (wgl.verified IS NULL OR wgl.verified = true)`,
+    [sha256]);
+  return rows.map((row) => ({ ...mapGalleryLinkRow(row), overlap: GALLERY_MATCH_OVERLAP }));
+}
+
 export async function listOverlappingTexts(client: PoolClient, cloudAssetId: string): Promise<OverlappingTextsResult | null> {
-  const { rows: photoRows } = await client.query<{ resolved_start: string | null; resolved_end: string | null }>(
-    `SELECT resolved_start, resolved_end FROM pipeline.photo WHERE cloud_asset_id = $1`, [cloudAssetId]);
+  const { rows: photoRows } = await client.query<{ sha256: string; resolved_start: string | null; resolved_end: string | null }>(
+    `SELECT sha256, resolved_start, resolved_end FROM pipeline.photo WHERE cloud_asset_id = $1`, [cloudAssetId]);
   const photoRow = photoRows[0];
   if (photoRow === undefined) return null;
 
-  const emptySummary: OverlapSummary = {
-    matchCount: 0, windowDays: 0, datedToDayCount: 0, datedToMonthCount: 0, datedToYearCount: 0, undatedCount: 0,
-  };
-  if (photoRow.resolved_start === null || photoRow.resolved_end === null) {
-    return { items: [], summary: emptySummary };
-  }
-  const photoWindow = { start: photoRow.resolved_start, end: photoRow.resolved_end };
+  const galleryItems = await listGalleryMatchTexts(client, photoRow.sha256);
 
-  const { rows } = await client.query<TextRow & {
-    effective_start: string; effective_end: string; effective_rule: string | null;
-  }>(`
-    SELECT t.kind, t.id, t.document_id, t.page_id, t.ordinal, t.body,
-           tc.corrected_text, tc.original_at_correction, tc.corrected_at,
-           t.confidence, t.date_source, t.date_start, t.date_end, t.date_kind, t.page_span_source,
-           (SELECT count(*)::int FROM pipeline.photo p2
-             WHERE p2.resolved_range IS NOT NULL AND ${EFFECTIVE_COVERS_RANGE} IS NOT NULL
-               AND p2.resolved_range && ${EFFECTIVE_COVERS_RANGE}) AS overlapping_photo_count,
-           t.entry_time, ST_Y(t.entry_position::geometry) AS entry_lat, ST_X(t.entry_position::geometry) AS entry_lon,
-           t.raw_position, t.place_name, t.heading, t.wind, t.baro, t.engine_hours,
-           t.fix_confidence, t.remark_confidence,
-           ${EFFECTIVE_COVERS_START} AS effective_start, ${EFFECTIVE_COVERS_END} AS effective_end,
-           ${EFFECTIVE_COVERS_RULE} AS effective_rule
-      FROM pipeline.text_unit t
-      JOIN pipeline.document d ON d.id = t.document_id
-      LEFT JOIN app.text_correction tc ON tc.text_kind = t.kind AND tc.text_id = t.id
-      ${WEB_SPAN_JOIN}
-     WHERE ${EFFECTIVE_COVERS_RANGE} IS NOT NULL
-       AND daterange($1::date, $2::date, '[]') && ${EFFECTIVE_COVERS_RANGE}`,
-    [photoWindow.start, photoWindow.end]);
+  // Recouvrement par date — seulement si la photo a une date résolue ; sans
+  // ça, l'identité par lien direct ci-dessus reste la SEULE source, jamais
+  // rabattue à vide par la règle « pas de date, pas de comparaison ».
+  let dateItems: TextWithOverlap[] = [];
+  let windowDays = 0;
+  if (photoRow.resolved_start !== null && photoRow.resolved_end !== null) {
+    const photoWindow = { start: photoRow.resolved_start, end: photoRow.resolved_end };
+    windowDays = spanDays(photoWindow);
 
-  const items = rows
-    .map((row): TextWithOverlap => ({
+    const { rows } = await client.query<TextRow & {
+      effective_start: string; effective_end: string; effective_rule: string | null;
+    }>(`
+      SELECT t.kind, t.id, t.document_id, t.page_id, t.ordinal, t.body,
+             tc.corrected_text, tc.original_at_correction, tc.corrected_at,
+             t.confidence, t.date_source, t.date_start, t.date_end, t.date_kind, t.page_span_source,
+             (SELECT count(*)::int FROM pipeline.photo p2
+               WHERE p2.resolved_range IS NOT NULL AND ${EFFECTIVE_COVERS_RANGE} IS NOT NULL
+                 AND p2.resolved_range && ${EFFECTIVE_COVERS_RANGE}) AS overlapping_photo_count,
+             t.entry_time, ST_Y(t.entry_position::geometry) AS entry_lat, ST_X(t.entry_position::geometry) AS entry_lon,
+             t.raw_position, t.place_name, t.heading, t.wind, t.baro, t.engine_hours,
+             t.fix_confidence, t.remark_confidence,
+             ${EFFECTIVE_COVERS_START} AS effective_start, ${EFFECTIVE_COVERS_END} AS effective_end,
+             ${EFFECTIVE_COVERS_RULE} AS effective_rule
+        FROM pipeline.text_unit t
+        JOIN pipeline.document d ON d.id = t.document_id
+        LEFT JOIN app.text_correction tc ON tc.text_kind = t.kind AND tc.text_id = t.id
+        ${WEB_SPAN_JOIN}
+       WHERE ${EFFECTIVE_COVERS_RANGE} IS NOT NULL
+         AND daterange($1::date, $2::date, '[]') && ${EFFECTIVE_COVERS_RANGE}`,
+      [photoWindow.start, photoWindow.end]);
+
+    dateItems = rows.map((row): TextWithOverlap => ({
       ...mapTextRow(row),
       overlap: computeOverlapInfo(
         photoWindow, { start: row.effective_start, end: row.effective_end }, row.effective_rule ?? '',
       ),
-    }))
-    // Tri par défaut : la somme des largeurs, croissante (contrat, tâche 21).
-    .sort((a, b) => a.overlap.totalSpanDays - b.overlap.totalSpanDays);
+    }));
+  }
+
+  // Tri par défaut : la somme des largeurs, croissante (contrat, tâche 21) —
+  // une identité (largeur 0) passe naturellement en tête, ce qui est
+  // exactement le bon ordre : la certitude avant la conjecture de plage.
+  const items = [...galleryItems, ...dateItems].sort((a, b) => a.overlap.totalSpanDays - b.overlap.totalSpanDays);
 
   const summary: OverlapSummary = {
     matchCount: items.length,
-    windowDays: spanDays(photoWindow),
+    windowDays,
     datedToDayCount: items.filter((i) => i.date !== null).length,
     // Un texte n'a jamais de date au mois ou à l'année (contrat §2.6 —
     // quand `date` n'est pas nulle, `precision` vaut TOUJOURS `day`).
