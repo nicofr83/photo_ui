@@ -1,5 +1,5 @@
 /* v1.5, Task 6: FixedHeader (row 1) + the scrolling content (row 2, 1fr) —
-   height: 100% relies on App.module.css's .routes { flex: 1; min-height: 0 }.
-   Minimal for now — this screen is rebuilt whole in Tranche 5 (Tasks 8-11),
-   where its real header content (source, search, count) lands. */
+   height: 100% relies on App.module.css's .routes { flex: 1; min-height: 0 }. */
 .screen { display: grid; grid-template-rows: auto 1fr; height: 100%; }
+
+.back { min-height: var(--tap-target); padding: 0 0.6rem; cursor: pointer; }

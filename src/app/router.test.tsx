@@ -47,7 +47,7 @@ describe('the texts screen is reachable, task-scoped', () => {
     const card = await screen.findByTestId(
       'text-web_caption-web/2003/2003_gal_1/caption/000a86651c47',
     );
-    await user.click(within(card).getByRole('button', { name: /1 photos/ }));
+    await user.click(within(card).getByRole('button', { name: /1 images/ }));
 
     expect(await screen.findByTestId('location')).toHaveTextContent(
       '/images/1999-transat?overlapsTextKind=web_caption'

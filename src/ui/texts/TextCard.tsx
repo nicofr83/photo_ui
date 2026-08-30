@@ -92,13 +92,16 @@ export function TextCard({ unit, onShowPhotos, selected, onToggleSelect }: Props
           </span>
         ) : null}
 
+        {/* Spec, "la page ouverte": "le nombre d'images qu'elle recouvre" —
+            the wording the whole app converges on for a cloud asset
+            (TaskNav, ReviewScreen's list) is "images", not "photos". */}
         {unit.overlappingPhotoCount > 0 && onShowPhotos !== undefined ? (
           <button
             className={styles['photos']}
             type="button"
             onClick={() => { onShowPhotos(unit.ref); }}
           >
-            {unit.overlappingPhotoCount} photos
+            {unit.overlappingPhotoCount} images
           </button>
         ) : null}
 
@@ -131,11 +134,14 @@ export function TextCard({ unit, onShowPhotos, selected, onToggleSelect }: Props
           </button>
         ) : null}
 
-        {/* Contract §4.5: the text equivalent of the grid's photo checkbox. */}
+        {/* Contract §4.5/spec "la page ouverte": the text equivalent of the
+            grid's photo checkbox — a real checkbox (v1.5, Task 9), not a
+            toggle button: "chaque texte garde sa coche de sélection". */}
         {onToggleSelect === undefined ? null : (
-          <button className={styles['photos']} type="button" onClick={onToggleSelect}>
-            {selected === true ? 'Retirer de la tâche' : 'Retenir pour la tâche'}
-          </button>
+          <label className={styles['selectLabel']}>
+            <input type="checkbox" checked={selected === true} onChange={onToggleSelect} />
+            {selected === true ? 'Retenu pour la tâche' : 'Retenir pour la tâche'}
+          </label>
         )}
       </div>
 

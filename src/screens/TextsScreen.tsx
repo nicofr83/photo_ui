@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
 
 import { useTextsByKind } from '../api/hooks/useTexts';
@@ -8,6 +9,7 @@ import { ErrorBanner } from '../ui/primitives/ErrorBanner';
 import { FixedHeader } from '../ui/primitives/FixedHeader';
 import scrollStyles from '../ui/primitives/FixedHeader.module.css';
 import { TaskNav } from '../ui/primitives/TaskNav';
+import { PageDetail } from '../ui/texts/PageDetail';
 import { PageList } from '../ui/texts/PageList';
 import { SourcePicker } from '../ui/texts/SourcePicker';
 import { TextCard } from '../ui/texts/TextCard';
@@ -26,20 +28,22 @@ function isTextSource(value: string | null): value is TextSource {
 }
 
 /**
- * v1.5, Task 8: the refonte — one source at a time (spec §5.3), its pages
- * listed by date or by notebook order. Opening a page renders `PageDetail`
- * (Task 9). Gallery captions stay reachable here, under the web source
+ * v1.5, Tasks 8-9: the refonte — one source at a time (spec §5.3), its pages
+ * listed by date or by notebook order, opened one at a time into
+ * `PageDetail`. Gallery captions stay reachable here, under the web source
  * only — they are not pages and never join the page list.
  */
 export function TextsScreen({ onShowPhotos }: Props): React.JSX.Element {
   const { slug = '' } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [openPageId, setOpenPageId] = useState<string | null>(null);
 
   const rawSource = searchParams.get('source');
   const source = isTextSource(rawSource) ? rawSource : TextSource.LOGBOOK;
 
   const setSource = (next: TextSource): void => {
+    setOpenPageId(null);
     setSearchParams((prev) => {
       const params = new URLSearchParams(prev);
       params.set('source', next);
@@ -64,12 +68,25 @@ export function TextsScreen({ onShowPhotos }: Props): React.JSX.Element {
         <SourcePicker value={source} onChange={setSource} />
       </FixedHeader>
       <div className={scrollStyles['scrolls']}>
-        {/* Task 9 wires this to `PageDetail`. */}
-        <PageList source={source} onOpen={() => { /* opened in Task 9 */ }} />
-
-        {source === TextSource.WEB ? (
-          <GalleryCaptions onShowPhotos={showPhotos} />
-        ) : null}
+        {openPageId === null ? (
+          <>
+            <PageList source={source} onOpen={setOpenPageId} />
+            {source === TextSource.WEB ? (
+              <GalleryCaptions onShowPhotos={showPhotos} />
+            ) : null}
+          </>
+        ) : (
+          <>
+            <button
+              className={screenStyles['back']}
+              type="button"
+              onClick={() => { setOpenPageId(null); }}
+            >
+              ← Retour à la liste
+            </button>
+            <PageDetail pageId={openPageId} slug={slug} onShowPhotos={showPhotos} />
+          </>
+        )}
       </div>
     </div>
   );

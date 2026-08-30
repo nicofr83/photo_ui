@@ -84,6 +84,31 @@ export const INVARIANT_PAGES: readonly TextPage[] = [
     regionsAvailable: false,
   },
   {
+    // v1.5, Task 9: `label: null` so `PageViewer`'s alt falls back to the
+    // ordinal ("Page 10") — the test looks for that exact accessible name.
+    id: 'logbook/p010', documentId: 'logbook', ordinal: 10, label: null,
+    width: 810, height: 1250,
+    window: { ...reading('2000-01-02'), end: parseIsoDate('2000-01-02'),
+              precision: DatePrecision.DAY, kind: DateKind.INFERENCE,
+              source: DateSource.PAGE_WINDOW },
+    date: { ...reading('2000-01-02'), source: DateSource.PAGE_DATE },
+    matchCount: null,
+    spanSource: PageSpanSource.ENTRIES,
+    imageUrl: '/pages/image?pageId=logbook%2Fp010',
+    regionsAvailable: false,
+  },
+  {
+    // v1.5, Task 9: "Ma vie" has no register — a single block, no title.
+    id: 'ma-vie/p003', documentId: 'ma-vie', ordinal: 3, label: 'p003',
+    width: 870, height: 1226,
+    window: { ...passageDate('1999-08-06'), kind: DateKind.INFERENCE, source: DateSource.PAGE_WINDOW },
+    date: { ...passageDate('1999-08-06'), kind: DateKind.READING, source: DateSource.PAGE_DATE },
+    matchCount: null,
+    spanSource: PageSpanSource.PASSAGES,
+    imageUrl: '/pages/image?pageId=ma-vie%2Fp003',
+    regionsAvailable: false,
+  },
+  {
     id: 'logbook/p003', documentId: 'logbook', ordinal: 3, label: 'p003',
     width: 810, height: 1250,
     // A page window is an INFERENCE (dateKind.ts: PAGE_WINDOW), never a
@@ -258,5 +283,59 @@ export const INVARIANT_TEXTS: readonly TextUnit[] = [
       margin: 3,
       verified: false,
     },
+  },
+  {
+    // v1.5, Task 9: the register half of the ruled-line/notes-libres split —
+    // same id string as the passage below, different table (same collision
+    // pattern as logbook/p003/001 above).
+    ref: { kind: TextKind.LOG_ENTRY, id: 'logbook/p010/011' },
+    documentId: 'logbook', pageId: 'logbook/p010', ordinal: 11,
+    text: 'Route au 090, mouillage prévu à Bequia ce soir.',
+    textOriginal: 'Route au 090, mouillage prévu à Bequia ce soir.',
+    correction: null,
+    confidence: TranscriptionConfidence.TRANSCRIBED,
+    date: reading('2000-01-02'),
+    pageSpanSource: PageSpanSource.ENTRIES,
+    overlappingPhotoCount: 2,
+    highlights: [],
+    logEntry: {
+      time: '08:00', lat: 12.98, lon: -61.25, rawPosition: '12.59.0N 61.15.0W',
+      placeName: null, heading: '090', wind: 'NE 12', baro: 1015,
+      engineHours: null,
+      fixConfidence: TranscriptionConfidence.TRANSCRIBED,
+      remarkConfidence: TranscriptionConfidence.TRANSCRIBED,
+    },
+    galleryCaption: null,
+  },
+  {
+    // The notes-libres half: a billet collé, never dating the page (spec).
+    ref: { kind: TextKind.PASSAGE, id: 'logbook/p010/011' },
+    documentId: 'logbook', pageId: 'logbook/p010', ordinal: 11,
+    text: 'Un billet du musée de Bequia, collé en souvenir.',
+    textOriginal: 'Un billet du musée de Bequia, collé en souvenir.',
+    correction: null,
+    confidence: TranscriptionConfidence.TRANSCRIBED,
+    date: null,
+    pageSpanSource: PageSpanSource.ENTRIES,
+    overlappingPhotoCount: 0,
+    highlights: [],
+    logEntry: null,
+    galleryCaption: null,
+  },
+  {
+    // v1.5, Task 9: "Ma vie" has no register — this is the ONLY block on its
+    // page, and PageDetail must not title it "Registre".
+    ref: { kind: TextKind.PASSAGE, id: 'ma-vie/p003/001' },
+    documentId: 'ma-vie', pageId: 'ma-vie/p003', ordinal: 1,
+    text: 'Le mouillage de Bequia est calme ce soir.',
+    textOriginal: 'Le mouillage de Bequia est calme ce soir.',
+    correction: null,
+    confidence: TranscriptionConfidence.TRANSCRIBED,
+    date: passageDate('1999-08-06'),
+    pageSpanSource: PageSpanSource.PASSAGES,
+    overlappingPhotoCount: 4,
+    highlights: [],
+    logEntry: null,
+    galleryCaption: null,
   },
 ] as const;

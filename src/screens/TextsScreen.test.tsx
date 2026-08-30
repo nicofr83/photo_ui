@@ -105,7 +105,7 @@ describe('the overlap count is reachable from a gallery caption', () => {
     const card = await screen.findByTestId(
       'text-web_caption-web/2003/2003_gal_1/caption/000a86651c47',
     );
-    await user.click(within(card).getByRole('button', { name: /1 photos/ }));
+    await user.click(within(card).getByRole('button', { name: /1 images/ }));
     await waitFor(() => {
       expect(opened).toEqual(['web_caption:web/2003/2003_gal_1/caption/000a86651c47']);
     });
