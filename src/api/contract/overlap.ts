@@ -21,7 +21,15 @@ export const OverlapInfoSchema = z.strictObject({
   textSpanDays: z.number().int(),
   /** Default sort: this sum, ascending. */
   totalSpanDays: z.number().int(),
-  distanceToCentreDays: z.number().int(),
+  /**
+   * A midpoint distance, NOT a day count — `.5` is a real, common value
+   * (the backend does not round it; confirmed against real data: an even
+   * span's centre falls exactly between two days). This app's OWN
+   * `domain/interval.ts#centreDistanceDays` rounds for its own use as a
+   * client-side sort tiebreaker — that rounding is local to that function,
+   * never a claim about what the server sends.
+   */
+  distanceToCentreDays: z.number(),
 });
 export type OverlapInfo = z.infer<typeof OverlapInfoSchema>;
 
