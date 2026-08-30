@@ -758,3 +758,17 @@ DETAIL : commits `d4b8f62`, `d7442ad`, `4f75a63`, `36f864e`.
 **Task 5 — BLOQUÉE, message envoyé à team-lead** : l'algorithme décrit («l'ordre des non datés entre deux datés est celui du document_id ») contredit son propre exemple de test — `web/1999/Caraibe` (non daté) devrait hériter de `web/1999/Transat` (daté), mais `'Caraibe' < 'Transat'` en ordre `document_id` réel (vérifié contre la vraie collation Postgres), ce qui devrait au contraire le laisser sans date par la même règle que l'exemple `web/1900-1988`. Je ne tranche pas seul lequel des deux (le texte ou l'exemple) fait foi — c'est une règle qui va dater 60 documents réels. Task 6 (l'annonce) ne peut pas conclure tant que les quatre amendements ne sont pas tous écrits.
 
 ASK : envoyé à team-lead directement (bloquant, une décision de conception). J'attends sa réponse pour Task 5 ; rien d'autre à faire en parallèle dans la tranche A tant qu'elle n'est pas close (team-lead : « rien d'autre en parallèle »).
+
+---
+
+## Avancement — impl-backend, v1.5 Task 5 + Task 6 — Tranche A complète (2026-08-30)
+
+RE : team-lead tranche — ni ma lecture (a) ni (b), une troisième : `document_id` ne joue AUCUN rôle
+DONE : **Task 5** implémentée selon la vraie règle de Nicolas (relayée par team-lead) : « la date de début du suivant est la date de fin », un CHAÎNAGE entre documents DATÉS seulement, par DATE — jamais par `document_id`, jamais un héritage vers un document non daté. `document_id` était une invention de CE plan, jamais une décision de Nicolas — contredite par sa propre mesure (`document_id` n'est pas chronologique : `gal_7` du 9 octobre rangé avant `gal_5` du 13 ; `funfun1`, classé `1999/`, date de décembre 2001). Un document non daté reste `span: null` sans exception : « les rebuts, gabarits vides et fichiers hors sujet sortent d'eux-mêmes en restant sans date » — un héritage les aurait rattrapés avec une période inventée.
+`listWebDocuments`/`getTextDocument`/`listDocuments` calculent maintenant la fin d'un document daté via `LEAD(date_from) OVER (ORDER BY date_from)` sur `ref.web_span` — un seul `WEB_SPAN_CHAIN` partagé, calculé À LA LECTURE (rien stocké : supprimer un document du milieu de la chaîne étend automatiquement son prédécesseur jusqu'au document suivant restant, vérifié par un test dédié). `ref.web_span.date_to` reste la colonne existante mais n'est plus jamais lue en sortie — toujours réécrite `NULL` à chaque saisie pour qu'une valeur d'avant l'amendement ne puisse jamais refaire surface.
+**Le plan lui-même corrigé dans le même commit que le code** (`docs/superpowers/plans/2026-08-30-v1.5-backend.md`, Task 5) — l'algorithme ET son exemple de test, avec une note datée expliquant pourquoi `document_id` a disparu, pour que personne ne le réintroduise en le croyant perdu.
+9 tests changés/neufs, vérifié contre le corpus réel (un vrai enchaînement de deux documents produit exactement la bonne borne, 1999-12-31, la veille du suivant ; un document non daté reste null ; nettoyé ensuite). Amendement A9 écrit. 686 tests serveur, tsc/eslint propres.
+**Task 6** : les quatre amendements v1.5 (A6-A9) confirmés écrits — 9 amendements au total dans `docs/api-contract.md` (A1-A9). Annonce envoyée à `front` ET à team-lead, nommant les quatre formes et leurs champs exacts.
+DETAIL : commit `d755cb1` (Task 5). **Tranche A (v1.5) est maintenant complète : Tasks 1 à 6.**
+
+ASK : aucun. J'enchaîne sur la tranche B (Task 7 : la cascade de date de page, pure) — peut démarrer en parallèle de rien d'autre, la tranche A étant close.
