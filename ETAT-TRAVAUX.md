@@ -903,3 +903,16 @@ DETAIL : commit `f4e60e6`.
 **Incident d'index git partagé, corrigé sans casse — et une seconde collision sur CE fichier** : mon premier `git commit` (7 fichiers par chemins explicites) a quand même embarqué 5 fichiers de `front` (`albumOrder.ts`/`.test.ts`, `ImagesScreen.module.css`, `FilterPanel.tsx`/`.test.tsx`) — corrigé par `git reset --soft HEAD~1` puis `git reset HEAD -- <fichiers de front>` (rien perdu, rien touché côté contenu), recommité en `f4e60e6` avec mes 7 seulement. Front a signalé de son côté une collision symétrique sur son propre commit Tranche 2, mêlé à mon commit Task 13 (`79dccfa` avant ma correction). Puis une TROISIÈME collision, sur ce fichier `ETAT-TRAVAUX.md` lui-même : ma première tentative d'ajouter cette entrée a été écrasée sur disque par un commit concurrent de `front` (`6a8b957`) avant que je ne la committe — perdue sans qu'aucun outil ne signale d'erreur, puisque l'écriture avait réussi avant d'être recouverte. Ré-écrite ici. À surveiller : sur un fichier que DEUX agents modifient en continu (celui-ci), écrire ET committer dans le MÊME geste, sans pause entre les deux, réduit la fenêtre de course.
 
 ASK : aucun. J'enchaîne sur la Task 14 (les pages qui correspondent à un filtre).
+
+---
+
+## Avancement — impl-backend, v1.5 Task 14 — tranche E complète (2026-08-30)
+
+RE : v1.5, tranche E — les pages qui correspondent à un filtre
+DONE : `GET /pages` gagne `dateFrom`/`dateTo`/`q` — mêmes noms et même sémantique que `/texts`. Une page sort dès qu'UN de ses textes satisfait le filtre — un `EXISTS` sur `pipeline.text_unit`, jamais un `IN` construit en TypeScript à partir d'une liste d'ids chargée à part. `TextPage.matchCount` : le compte de textes de la page qui correspondent à `q`, `null` sauf quand `q` est présent (même convention que `TextUnit.highlights`). `listPages` prend maintenant un objet `PageFilters`, comme `listTexts`/`TextFilters` — les deux sites d'appel existants mis à jour.
+**Trouvé au passage, corrigé** : le `TextPage` canonique de `docs/api-contract.md` n'avait jamais reçu le champ `date` de la tâche 8 — oublié à l'époque, ajouté maintenant avec `matchCount`.
+Vérifié contre le corpus réel (serveur réel redémarré — front prévenu à chaque fois) : `ma-vie?dateFrom=1999-08-04&dateTo=1999-08-06` → page 1 dedans, page 103 dehors, exactement l'exemple du plan ; `q=mouillage` → 25 pages, toutes `matchCount > 0`.
+8 tests de dépôt + 5 tests HTTP neufs (fixtures synthétiques). 738 tests serveur, tsc/eslint propres.
+DETAIL : commit `d2aea93`. **Tranche E (v1.5) est maintenant complète : Tasks 12 à 14.**
+
+ASK : aucun. Il ne reste que la tranche F (Task 15, l'invariant de forme contre le vrai serveur, « en dernier, avec le frontend » selon le plan). Serveur arrêté pour l'instant, je le relance pour cette vérification finale ; front prévenu.
