@@ -99,8 +99,17 @@ function AlbumRow({ album }: { readonly album: Album }): React.JSX.Element {
       data-testid={`album-row-${album.path}`}
     >
       <p className={styles['title']}>
-        {album.albumName}
-        {album.groupName === null ? '' : ` — ${album.groupName}`}
+        {/* The full path, not just the leaf: the list is sorted on it
+            (sortAlbumsByPath), and an album name does not always carry its
+            own year — without the parent set visible, the order looks
+            arbitrary (Nicolas: an unsorted-LOOKING list he could not
+            search, on a screen where the sort was already correct). */}
+        {album.path}
+        {/* Real data mostly has groupName === albumName — stating it twice
+            is exactly the kind of collision that made this row overflow
+            once the path above was added. Shown only when it says
+            something the path does not. */}
+        {album.groupName === null || album.groupName === album.albumName ? '' : ` — ${album.groupName}`}
         {' '}({album.photoCount} photo{album.photoCount > 1 ? 's' : ''})
       </p>
 

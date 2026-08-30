@@ -195,8 +195,11 @@ export function FilterPanel({ filters, onChange }: Props): React.JSX.Element {
               />
               <span className={styles['albumText']}>
                 {/* The prefix is NEVER rendered as a date (spec §3.2): the name is
-                    shown as the person typed it. */}
-                <span>{album.albumName}</span>
+                    shown as the person typed it. The full path, not just the leaf
+                    (`album.albumName` alone) — the sort is on the path, and an
+                    album name does not always carry its own year: without the
+                    parent set visible, the order looks arbitrary. */}
+                <span>{album.path}</span>
                 <span className={styles['count']}>({album.photoCount})</span>
                 {album.suspectedRange ? (
                   <span className={styles['suspect']}>couvre peut-être une plage</span>

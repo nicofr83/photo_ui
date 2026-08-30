@@ -90,6 +90,15 @@ describe('the album axis', () => {
     expect(testids[0]).toBe('album-1998-1999/1998-02-Maison rose Algès');
   });
 
+  test('shows the parent set, not just the leaf name — the sort is on the full path, the label must explain it', async () => {
+    setup();
+    const label = await screen.findByTestId('album-1998-1999/1998-02-Maison rose Algès');
+    // Two different set folders share the same-looking leaf on their own
+    // (album names are not guaranteed to carry their own year); without
+    // the set prefix visible, an alphabetical order looks arbitrary.
+    expect(label).toHaveTextContent('1998-1999');
+  });
+
   test('§3.2 — an album whose name announces a journey is flagged, not silently trusted', async () => {
     setup();
     const label = await screen.findByTestId('album-1998-1999/1998-02-Maison rose Algès');
