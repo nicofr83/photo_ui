@@ -367,15 +367,12 @@ Deux obstacles concrets à te signaler avant que tu décides :
   `web/test`, `web/usr/…`. Tu trierais à la main dans du bruit.
 - **L'extrait censé te faire reconnaître un document est identique à son titre
   sur 45 des 60.** « Caraibes », « Funfun1 », « 1998-1999 » : il n'aide en rien.
-→ **(a)** oui, tu saisis les plages — et l'écran Réglages est d'abord réparé :
-filtré au périmètre 1998-2004, déchets écartés, extrait remplacé par un vrai
-début de texte · **(b)** oui, mais plus tard ; la V1.5 sort avec les dates du
-site vides · **(c)** non, tu ne veux pas saisir ça.
-*Recommandation : **(a)**. C'est vingt-cinq saisies pour ouvrir la seule
-période aveugle du corpus, et le même geste que les périodes d'album qui
-redatent 421 photos. Mais je ne te le recommande **qu'après** la réparation de
-l'écran : te faire trier 60 lignes indiscernables est le meilleur moyen que ça
-ne se fasse jamais.*
+**TRANCHÉ — tu saisis, et tu ajoutes un écran pour ça.** Tes mots : « ajoute une
+option pour aller sur un écran de saisie des dates pour le site web », avec une
+seule date de début par document puisque « la date de début du suivant est la
+date de fin ». Tout ce que cet écran implique est en **§G**, et les deux
+obstacles ci-dessus y reviennent : le périmètre de la liste (§G.62) et
+l'extrait inutile (§G.66).
 
 **49. [Tension] Ce qu'on affiche en regard, puisqu'il n'y a pas de page scannée.**
 La décision « texte seul en V1 » tient toujours — `docs/frontend-spec.md` et
@@ -406,11 +403,17 @@ disponible quand elle existe, et se tait quand elle n'existe pas — jamais un
 jj/mm/aaaa fabriqué. Le sort de ce titre une fois posé se règle en §F.54,
 comme pour les deux autres sources.*
 
-**51. [Tension] Les 205 légendes de galerie n'appartiennent à aucune des trois
-cases, et aucune n'a été relue.**
-Elles sont dans la source « site web » mais se comportent comme rien d'autre :
-elles sont rattachées à **une photo précise par empreinte visuelle**, jamais par
-date. Trois faits mesurés :
+**51. [Tension] Les 205 légendes de galerie — leur place est réglée, leur
+fiabilité ne l'est pas.**
+**Le registre est tranché** : ce ne sont pas une quatrième source. Ce sont des
+passages du site portant **en plus** un lien vers une photo. Elles servent
+d'abord à dater le document (§G) ; une fois le document daté, elles redeviennent
+du texte d'époque, filtrable et sélectionnable comme le reste, avec leur photo
+en regard. Rien à ajouter au modèle — c'est la bonne réponse et elle ferme la
+tension de registre que j'avais signalée.
+
+Reste ce qui n'est pas réglé, et qui est à toi : **aucune n'a été relue**, et
+leur qualité est très inégale. Trois faits mesurés :
 - **Aucune n'est vérifiée** : les 205 sortent avec `verified: false`. La spec
   prévoyait « une relecture visuelle des 209 liens avant de les tenir pour
   acquis » — elle n'a pas eu lieu. Et le champ ne distingue pas, en sortie,
@@ -421,16 +424,17 @@ date. Trois faits mesurés :
 - **47 d'entre elles font plus de 400 caractères**, une atteint **10 363** :
   ce sont des paragraphes de page entiers, pas des légendes. 137 seulement
   tiennent en 120 caractères.
-→ **(a)** sous-section dédiée dans la source « site web », filtrée au périmètre
-1998-2004, chaque entrée marquée « appariement machine, non relu » et un geste
-pour valider ou rejeter le lien · **(b)** même chose sans le geste de
-validation · **(c)** on les sort de l'écran Textes : elles se voient depuis la
-photo, dans le détail image.
-*Recommandation : **(a)**. Un texte d'époque rattaché à une photo précise est ce
-que le corpus a de plus précieux pour 2003-2004 — mais servi comme un fait
-alors qu'aucun humain ne l'a regardé, c'est exactement le « une inférence qui
-ressemble à une lecture » que la spec interdit. Le geste de validation est ce
-qui transforme les 103 liens utiles en matière sûre.*
+→ **(a)** un geste « ce lien est bon / ce lien est faux » **dans l'écran de
+datation** (§G), là où tu regardes déjà la photo à côté de son texte — la
+validation ne coûte alors rien de plus que ce que tu fais déjà ·
+**(b)** le même geste, mais dans l'écran Textes · **(c)** aucun geste, elles
+restent marquées « appariement machine, non relu » pour toujours.
+*Recommandation : **(a)**. Tu ouvres l'écran de datation, tu regardes la photo
+et sa légende pour trouver la date : à ce moment-là tu **sais** si le lien est
+bon, et le dire est un clic. C'est le seul endroit où la relecture des 209
+liens que la spec réclamait se fait sans être une corvée séparée. Sans elle,
+ces textes restent servis comme des faits alors qu'aucun humain ne les a
+regardés.*
 
 **52. [Non dit] La recherche par texte sur cette source, elle, marche déjà.**
 `/texts?q=…&documentId=web/…` fonctionne sans date. C'est le seul de tes deux
@@ -729,28 +733,260 @@ une note sans tâche ouverte.
 
 ---
 
+## G. Le nouvel écran — saisir les dates du site web
+
+*Tu l'ajoutes, accessible depuis la page principale, avec une seule date par
+document : « tout est écrit de façon chronologique donc une date de début va
+suffire (la date de début du suivant est la date de fin) ». Et l'écran montre
+le texte du document plus **les photos liées avec leur légende**, pour t'aider
+à trouver la date.*
+
+*J'ai refait la mesure sur ta base avant d'écrire. Elle tient — **227 liens
+vers 224 photos sur 27 pages**, dont 221 liens vers des photos datées (le
+relevé qu'on m'a transmis disait 228 et 225 ; l'écart est sans effet). Ce qui
+suit vient de cette mesure, et une bonne partie contredit la simplification que
+tu proposes. Je le dis maintenant.*
+
+**La bonne nouvelle d'abord, parce qu'elle est vraie et importante : la
+proposition est excellente là où tu en as le plus besoin.** Les onze galeries
+2003-2004 sont soutenues à **100 % par des dates lues, au jour près**, sur des
+fourchettes de 0 à 21 jours. C'est exactement la période où le journal est muet
+devant 2 041 photos. En face, les sept pages de 1999-2002 sont soutenues par des
+dates **inférées ou arbitrées, presque jamais lues** — `Venez01` s'appuie sur
+21 photos dont **21 datées au mois seulement**, et `VersTrinidad` sur une
+fourchette de **259 jours**. La proposition vaut donc beaucoup là où tu es
+aveugle, et peu là où le journal te couvre déjà.
+
+**58. [Tension] « Tout est écrit de façon chronologique » — le récit peut-être,
+l'ordre des fichiers non.**
+C'est la mesure qui contredit le plus directement ta simplification. Triés par
+date proposée, les documents ne sont pas dans l'ordre de leurs noms :
+- `2003_gal_7` (09/10/2003) tombe **avant** `2003_gal_5` (13/10/2003) ;
+- `2003_gal_16` (04/05/2004) tombe **avant** `2003_gal_13` (08/08/2004) ;
+- `web/1999/funfun1`, rangé dans `1999/`, propose **16/12/2001** ;
+- `web/2005/images/2005_4`, rangé dans `2005/`, propose **16/05/2003**.
+
+« Le suivant » n'est donc pas le suivant dans l'arborescence.
+→ **(a)** « le suivant » = le document dont la **date saisie** est la plus
+proche au-dessus : la chaîne se réordonne toute seule à mesure que tu saisis ·
+**(b)** tu ranges les documents dans un ordre manuel, et la chaîne suit cet
+ordre · **(c)** l'ordre des chemins, tel quel.
+*Recommandation : **(a)**. Elle est la seule qui ne te demande aucun travail
+supplémentaire et la seule que la mesure ne contredit pas. **(c)** produirait
+des intervalles négatifs sur les quatre cas ci-dessus.*
+
+**59. [Non dit] Le dernier document de la chaîne n'a pas de suivant, donc pas de
+fin.**
+→ **(a)** il reste ouvert : « à partir du 05/10/2004 », rendu comme une borne
+et jamais comme un intervalle · **(b)** il se ferme sur la fin du périmètre
+(31/12/2004) · **(c)** tu saisis une date de fin pour celui-là seulement.
+*Recommandation : **(c)**. Une seule saisie de plus dans toute la série, et
+elle évite qu'un document se voie attribuer en silence une fin que tu n'as pas
+choisie. **(a)** est le repli acceptable si tu ne veux rien saisir de plus.*
+
+**60. [Tension] Un document laissé vide au milieu — le cas existe déjà, mesuré.**
+`web/2003/2003_gal_9` porte 2 passages et **zéro photo liée** : aucune
+proposition possible. Il est assis entre `2003_gal_8` (29/10/2003) et
+`2003_gal_10` (11/11/2003). Sous la règle « la fin est le début du suivant », si
+tu ne le dates pas, la période de `gal_8` s'étend **jusqu'au 11/11** et avale
+silencieusement celle de `gal_9`, qui n'a lui-même aucun intervalle.
+→ **(a)** un document non daté est **sauté** par la chaîne et reste sans date —
+ses textes ne se rapprochent d'aucune photo, et l'écran le signale comme un trou
+· **(b)** il hérite de l'intervalle du trou (du 29/10 au 11/11) · **(c)** il
+bloque la chaîne tant qu'il n'est pas saisi.
+*Recommandation : **(a)**. **(b)** fabrique une date que personne n'a posée, sur
+un document dont on ne sait rien — c'est précisément ce que la règle des trois
+natures interdit. Le trou doit se voir, pas se combler tout seul.*
+
+**61. [Tension] Trois documents proposent exactement la même date.**
+`web/photo`, `web/1999/Venez01` et `web/1999/Venez02` proposent tous les trois
+**01/12/2000 → 31/12/2000**, parce que leurs photos sont datées au mois. Sous
+« la fin est le début du suivant », au moins deux d'entre eux reçoivent un
+intervalle de **largeur nulle**.
+→ **(a)** deux documents peuvent porter la même date de début : la chaîne les
+traite comme un seul segment partagé · **(b)** l'écran refuse deux dates
+identiques et te demande de les départager · **(c)** l'écran te prévient sans
+refuser.
+*Recommandation : **(c)**. Deux pages web écrites le même jour, c'est
+plausible ; un intervalle de largeur nulle qui fait disparaître un document du
+rapprochement, non. Le prévenir te laisse trancher sans t'imposer une précision
+que tu n'as pas.*
+
+**62. [Tension] Sur quels documents la chaîne court-elle ? Il y en a 60, et la
+majorité n'a rien à y faire.**
+Mesuré : sur les 60, **16 sont `web/2005/3/raiders/*`** (2 passages chacun, une
+liste de noms), plus `web/googlea0ccc7e24963cc5e` (vérification Google),
+`web/test/map`, `web/1999/bidon` (« Nouvelle page 1 »), `web/favorite`, et
+**une vingtaine de documents `2005/`-`2006/` hors corpus**. Une chaîne qui les
+traverse tous produit des segments absurdes entre deux vrais documents.
+→ **(a)** la chaîne ne court que sur les documents du **périmètre 1998-2004**,
+les autres sont masqués derrière un « voir tout » · **(b)** elle court sur les
+60 · **(c)** tu coches toi-même les documents qui entrent dans la chaîne.
+*Recommandation : **(a)**. Ça ramène l'écran à une vingtaine de lignes, ce qui
+est le seul format dans lequel la saisie se fera vraiment.*
+
+**63. [Tension] Pré-remplir la date proposée contredit une règle écrite.**
+Le contrat dit, en nommant explicitement `WebDocumentRow` : les indices d'aide
+à la saisie sont présentés **« COMME DES INDICES et jamais pré-remplis dans les
+champs de saisie »** (`docs/api-contract.md`), « ce sont exactement les données
+que l'arbitrage a jugées peu fiables ». L'écran des périodes d'album applique
+cette règle à la lettre depuis le début : il montre les motifs de noms de
+fichiers et la plage EXIF écartée, et laisse les champs vides.
+→ **(a)** la date proposée s'affiche **à côté** du champ vide, avec un bouton
+« adopter cette date » qui la recopie en un clic · **(b)** le champ est
+pré-rempli, la règle est amendée pour ce cas · **(c)** indice pur, sans bouton.
+*Recommandation : **(a)**. Tu obtiens l'ergonomie du pré-remplissage — un clic
+sur les 22 documents proposés — sans toucher à la règle : le champ reste vide
+tant que tu n'as pas agi, et c'est ton geste qui pose la date. **(b)** demande
+un amendement au contrat gelé pour un gain d'un seul clic.*
+
+**64. [Tension] La nature de la date que tu saisis : une décision close dit
+« inférence », et ce nouvel écran pourrait la rouvrir.**
+Le 29/08 tu as tranché toi-même, après trois allers-retours entre agents, que
+`ref.web_span` est une **inférence** — ambre italique avec `≈` — et non une
+décision. Le motif retenu : poser une plage sur un document qui ne porte aucune
+date, c'est *combler un vide*, une conjecture ; alors que corriger la date d'une
+photo, c'est *arbitrer* contre un EXIF qu'on avait sous les yeux. La décision est
+marquée « ne pas rouvrir ».
+
+Ce nouvel écran change une chose : **il te met une date proposée sous les yeux**.
+Ton geste ressemble alors davantage à l'arbitrage qu'à la conjecture. On m'a
+transmis la lecture inverse de la mienne — « la proposition est une inférence,
+sa saisie est une décision » — et je ne la trancherai pas à ta place, parce
+qu'elle contredit une décision que tu as prise.
+→ **(a)** rien ne change : ta date reste une **inférence** en ambre `≈`, et ce
+qui distingue la proposition de ta saisie est un **état** (« proposé, non
+validé » / « saisi »), pas une couleur · **(b)** ta date devient une
+**décision** en violet dès lors qu'une proposition était affichée — la décision
+du 29/08 est amendée pour ce cas.
+*Recommandation : **(a)**. Contredire une proposition qui dérive elle-même de
+photos inférées ne transforme pas ta conjecture en lecture — et sur les sept
+documents de 1999-2002, la proposition s'appuie sur des dates au mois, pas sur
+des faits. Deux états suffisent à ne pas confondre proposé et saisi, sans
+toucher au seul endroit du système qui produit du violet.*
+
+**65. [Non dit] La proposition doit dire sur quoi elle repose — elle est très
+inégale.**
+Mesuré, par document : `2003_gal_15` s'appuie sur **20 photos toutes datées au
+jour et lues**, fourchette 9 jours. `web/photo` s'appuie sur **une seule photo,
+datée au mois**. `Caraibe` sur 11 photos dont 9 inférées, fourchette **181
+jours**. Une même ligne « date proposée » recouvre ces trois cas.
+→ **(a)** afficher sous chaque proposition : le nombre de photos, combien sont
+datées au jour, et la largeur de la fourchette — « 20 photos, toutes au jour,
+sur 9 jours » contre « 1 photo, au mois » · **(b)** un simple indicateur de
+confiance · **(c)** la date seule.
+*Recommandation : **(a)**. C'est la même exigence que partout ailleurs dans
+cette application : une valeur calculée dit ce qu'elle vaut. Et la différence
+entre les deux exemples ci-dessus est exactement celle qui te fera valider d'un
+clic ou aller vérifier.*
+
+**66. [Non dit] Les documents qui ont le plus besoin d'une date n'ont aucune
+proposition.**
+Les 27 pages proposées sont surtout des galeries. Les documents **narratifs**,
+ceux qui portent le plus de texte, n'ont aucune photo liée : `web/1999-2002`
+(17 passages), `web/2005-2006` (10), `web/index` (9), `web/2003-2004` (8),
+`web/1999/vie_a_bord` (7), `web/1998-1999` (6), `web/1900-1988` (4). Ce sont
+ceux dont le titre annonce une période, et ceux que la chaîne aidera le moins.
+→ **(a)** trier l'écran par **besoin** : d'abord les documents sans proposition
+et à fort volume de texte, ensuite les proposés à valider · **(b)** trier par
+date proposée · **(c)** trier par chemin.
+*Recommandation : **(b)** comme ordre principal — c'est une chaîne
+chronologique, la voir dans l'ordre est ce qui te permet de repérer une date
+aberrante — avec les non proposés intercalés à leur place présumée et marqués.
+**(a)** casse la lecture de la chaîne, qui est justement l'intérêt de ta
+simplification. Et pour ces documents-là, l'aide n'est pas la photo mais le
+titre : « 1999-2002 » se date presque tout seul.*
+
+**67. [Non dit] Une page porte 14 photos liées et n'existe comme document nulle
+part.**
+`Astro/misc/meade/meade.htm` — 14 liens vers des photos datées de décembre 2005,
+et **aucun passage** : elle n'est pas dans les 60 documents du corpus texte.
+Elle apparaîtrait dans un écran construit sur les liens de photos, et nulle part
+ailleurs.
+→ **(a)** l'écran ne liste que les documents du corpus texte : elle n'apparaît
+pas · **(b)** elle apparaît, comme page sans texte.
+*Recommandation : **(a)**. C'est une page de matériel d'astronomie, hors sujet
+et hors période ; §G.62 l'écarte déjà par le périmètre.*
+
+**68. [Ambigu] « Sinon on n'utilise pas la légende » — jusqu'où ?**
+Ta phrase se lit de deux façons : soit **la légende ne sert qu'ici**, comme aide
+au datage, et n'apparaît nulle part ailleurs ; soit elle sert **d'abord** ici, et
+redevient ensuite du texte comme un autre une fois le document daté — ce qui est
+la lecture qu'on m'a transmise, et celle qui fait des légendes du texte d'époque
+utilisable pour 2003-2004.
+→ **(a)** aide au datage **et** texte sélectionnable ensuite, dans l'écran
+Textes, avec sa photo en regard · **(b)** aide au datage seulement ; elles
+n'apparaissent pas dans l'écran Textes.
+*Recommandation : **(a)**. Sous **(b)**, 2003-2004 perd sa seule source de
+texte d'époque au moment précis où on vient de lui donner une date. Mais dis-le
+explicitement : c'est ta phrase qui décide.*
+
+**69. [Non dit] Le nouvel écran et la section « Site web » des Réglages font la
+même chose.**
+Les Réglages portent déjà une section « Site web » qui édite exactement ça
+(`PUT /ref/web-span`), avec deux dates au lieu d'une.
+→ **(a)** le nouvel écran **remplace** cette section, qui disparaît des
+Réglages · **(b)** les deux coexistent · **(c)** les Réglages n'en gardent qu'un
+lien vers le nouvel écran.
+*Recommandation : **(a)**, ou **(c)** si tu tiens à retrouver tous les
+référentiels au même endroit. Deux écrans qui écrivent la même donnée avec deux
+modèles différents — un intervalle ici, une borne là — finiront par se
+contredire.*
+
+**70. [Non dit] Une seule date saisie, mais l'API en exige deux : qui calcule la
+fin, et quand ?**
+`PUT /ref/web-span` prend `dateFrom` **et** `dateTo`. Sous ta règle, la fin d'un
+document est le début du suivant : saisir une date ne modifie donc pas une
+ligne, mais **deux** — celle que tu saisis et la fin de celle d'avant.
+→ **(a)** la fin n'est **jamais stockée** : seule la borne de début l'est, et la
+fin se calcule à la lecture, à partir du voisin · **(b)** la fin est stockée, et
+chaque saisie réécrit aussi la ligne précédente.
+*Recommandation : **(a)**. Sous **(b)**, une date recalculée peut diverger de
+la date stockée dès qu'un document est inséré, supprimé ou redaté — et les
+intervalles se contrediraient sans que rien ne le signale. C'est un changement
+au contrat, à annoncer comme les trois amendements précédents.*
+
+---
+
 ## Récapitulatif — ce qui bloque vraiment
 
-**Quatre tranchées, merci — elles sont intégrées :** §F.26 (le site web est une
+**Six tranchées, merci — elles sont intégrées :** §F.26 (le site web est une
 troisième source), §F.40 (la sélection reste au passage, dans la page ouverte),
-§F.42 (la note recopie le texte), §E.22 (`TASKS_ROOT` affiché, pas modifiable).
+§F.42 (la note recopie le texte), §E.22 (`TASKS_ROOT` affiché, pas modifiable),
+§F.48 (tu saisis les dates du site, dans un écran dédié), §F.51 (les légendes de
+galerie ne sont pas une quatrième source : elles datent d'abord, puis
+redeviennent du texte).
 
 **Ce qui bloque encore**, par ordre de portée :
 
 1. **§F.28 + §F.29** — la date affichée sur une page (lecture ou inférence) et
-   l'ordre de la liste. Elles décident du rendu de tout l'écran, et §F.28 est la
-   seule qui demande une exception à une règle en vigueur si tu réponds (b).
-2. **§F.46** — le site web n'a **aucun objet page** : l'écran doit y lister des
-   **documents** là où il liste des pages ailleurs. C'est la conséquence de
-   §F.26 qui change la structure de l'écran, pas seulement son remplissage.
-3. **§F.54 + §F.55** — les deux conséquences de ta réponse sur la recopie. Le
-   titre porte désormais seul l'attribution dans `notes.md` (le rattachement
-   n'y figure pas), et une note recopiée puis retravaillée cesse d'être une
-   citation sans cesser d'y ressembler. Ce sont les seuls points où ton choix
-   touche ce que le LLM croira lire.
-4. **§A.6** — ta demande de vérifier le tri des albums. Il **est** correct ; je
-   pense que tu veux voir le chemin. Une phrase de ta part suffit, et si tu vois
-   encore un album mal placé, nomme-le.
+   l'ordre de la liste. Elles décident du rendu de tout l'écran Textes, et
+   §F.28 demande une exception à une règle en vigueur si tu réponds (b).
+2. **§G.58 + §G.60 + §G.61** — la chaîne « la fin est le début du suivant ». La
+   mesure montre qu'elle ne peut pas suivre l'ordre des fichiers, qu'un
+   document non daté au milieu se fait avaler par son voisin, et que trois
+   documents proposent déjà la même date. Trois réponses courtes, mais sans
+   elles l'écran ne peut pas être spécifié.
+3. **§G.64** — la nature de la date que tu saisis dans ce nouvel écran.
+   Inférence (ta décision du 29/08, inchangée) ou décision (ce que
+   l'affichage d'une proposition changerait) ? C'est le seul point de toute la
+   V1.5 qui toucherait une décision marquée « ne pas rouvrir ».
+4. **§F.46** — le site web n'a **aucun objet page** : l'écran Textes doit y
+   lister des **documents** là où il liste des pages ailleurs.
+5. **§F.54 + §F.55** — les deux conséquences de la recopie. Le titre porte
+   désormais seul l'attribution dans `notes.md`, et une note recopiée puis
+   retravaillée cesse d'être une citation sans cesser d'y ressembler.
+6. **§A.6** — ta demande de vérifier le tri des albums. Il **est** correct ; je
+   pense que tu veux voir le chemin. Une phrase suffit, et si tu vois encore un
+   album mal placé, nomme-le.
+
+**Une tension que je n'aplanis pas**, parce qu'on m'a demandé de les remonter :
+§G.63 et §G.64 vont tous deux contre une règle déjà écrite — pré-remplir les
+champs, et requalifier `ref.web_span` en décision. Mes recommandations
+proposent chaque fois une voie qui donne le bénéfice recherché sans toucher à
+la règle. Si tu préfères amender, c'est ton droit ; ce sont alors deux
+amendements au contrat gelé, à annoncer aux deux agents d'implémentation avant
+d'être écrits.
 
 Deux questions non bloquantes, mais qui décident de ce que la V1.5 rend
 possible :
