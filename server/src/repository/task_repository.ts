@@ -53,9 +53,29 @@ interface NoteRow {
   body: string;
   created_at: string;
   updated_at: string;
+  derived_from_kind: string | null;
+  derived_from_id: string | null;
+  /**
+   * CALCULÉ à la lecture — jamais un booléen stocké, qui pourrait mentir
+   * après une écriture directe en base (contrat, amendement A4).
+   */
+  edited_since: boolean;
   image_ids: readonly string[];
   text_refs: readonly { kind: string; id: string }[];
 }
+
+/** Même projection partout où une ligne `TaskNote` complète est nécessaire — jamais une seconde forme qui pourrait diverger. */
+const NOTE_SELECT = `
+    SELECT n.id, n.title, n.body, n.created_at, n.updated_at,
+           n.derived_from_kind, n.derived_from_id,
+           (n.derived_text_original IS NOT NULL AND n.body <> n.derived_text_original) AS edited_since,
+           coalesce(array_agg(DISTINCT ni.cloud_asset_id) FILTER (WHERE ni.cloud_asset_id IS NOT NULL), '{}')
+             AS image_ids,
+           coalesce(jsonb_agg(DISTINCT jsonb_build_object('kind', nt.text_kind, 'id', nt.text_id))
+                      FILTER (WHERE nt.text_kind IS NOT NULL), '[]') AS text_refs
+      FROM app.task_note n
+      LEFT JOIN app.task_note_image ni ON ni.note_id = n.id
+      LEFT JOIN app.task_note_text nt ON nt.note_id = n.id`;
 
 async function loadImages(client: PoolClient, slug: string, row: TaskRow): Promise<readonly ImageRow[]> {
   const { rows } = await client.query<ImageRow>(`
@@ -88,14 +108,7 @@ async function loadTexts(client: PoolClient, slug: string): Promise<readonly Tex
 
 async function loadNotes(client: PoolClient, slug: string): Promise<readonly NoteRow[]> {
   const { rows } = await client.query<NoteRow>(`
-    SELECT n.id, n.title, n.body, n.created_at, n.updated_at,
-           coalesce(array_agg(DISTINCT ni.cloud_asset_id) FILTER (WHERE ni.cloud_asset_id IS NOT NULL), '{}')
-             AS image_ids,
-           coalesce(jsonb_agg(DISTINCT jsonb_build_object('kind', nt.text_kind, 'id', nt.text_id))
-                      FILTER (WHERE nt.text_kind IS NOT NULL), '[]') AS text_refs
-      FROM app.task_note n
-      LEFT JOIN app.task_note_image ni ON ni.note_id = n.id
-      LEFT JOIN app.task_note_text nt ON nt.note_id = n.id
+    ${NOTE_SELECT}
      WHERE n.task_slug = $1
      GROUP BY n.id
      ORDER BY n.created_at`, [slug]);
@@ -176,6 +189,9 @@ function toTaskNote(note: NoteRow): TaskNote {
   return {
     id: note.id, title: note.title, text: note.body, createdAt: note.created_at, updatedAt: note.updated_at,
     attachedTo: { images: note.image_ids, texts: note.text_refs },
+    derivedFrom: note.derived_from_kind === null || note.derived_from_id === null
+      ? null : { kind: note.derived_from_kind, id: note.derived_from_id },
+    editedSince: note.edited_since,
   };
 }
 
@@ -572,9 +588,17 @@ export async function createTaskNote(
   if (row === null) return null;
 
   const id = `note_${ulid()}`;
+  // `derived_text_original` porte le texte EFFECTIF (corrigé s'il l'a été) au
+  // moment de la recopie — jamais recalculé plus tard, sinon une correction
+  // ultérieure du texte source ferait bouger `editedSince` sans qu'aucune
+  // écriture n'ait touché la note elle-même.
   await client.query(
-    `INSERT INTO app.task_note (id, task_slug, title, body) VALUES ($1, $2, $3, $4)`,
-    [id, slug, input.title, input.text],
+    `INSERT INTO app.task_note (id, task_slug, title, body, derived_from_kind, derived_from_id, derived_text_original)
+     SELECT $1, $2, $3, $4, $5::text, $6::text,
+            (SELECT coalesce(c.corrected_text, t.body) FROM pipeline.text_unit t
+               LEFT JOIN app.text_correction c ON c.text_kind = t.kind AND c.text_id = t.id
+              WHERE t.kind = $5 AND t.id = $6)`,
+    [id, slug, input.title, input.text, input.derivedFrom?.kind ?? null, input.derivedFrom?.id ?? null],
   );
   for (const cloudAssetId of input.attachedTo.images) {
     await client.query(
@@ -590,23 +614,9 @@ export async function createTaskNote(
 }
 
 async function loadNoteById(client: PoolClient, noteId: string): Promise<TaskNote | null> {
-  const { rows } = await client.query<NoteRow>(`
-    SELECT n.id, n.title, n.body, n.created_at, n.updated_at,
-           coalesce(array_agg(DISTINCT ni.cloud_asset_id) FILTER (WHERE ni.cloud_asset_id IS NOT NULL), '{}')
-             AS image_ids,
-           coalesce(jsonb_agg(DISTINCT jsonb_build_object('kind', nt.text_kind, 'id', nt.text_id))
-                      FILTER (WHERE nt.text_kind IS NOT NULL), '[]') AS text_refs
-      FROM app.task_note n
-      LEFT JOIN app.task_note_image ni ON ni.note_id = n.id
-      LEFT JOIN app.task_note_text nt ON nt.note_id = n.id
-     WHERE n.id = $1
-     GROUP BY n.id`, [noteId]);
+  const { rows } = await client.query<NoteRow>(`${NOTE_SELECT} WHERE n.id = $1 GROUP BY n.id`, [noteId]);
   const row = rows[0];
-  if (row === undefined) return null;
-  return {
-    id: row.id, title: row.title, text: row.body, createdAt: row.created_at, updatedAt: row.updated_at,
-    attachedTo: { images: row.image_ids, texts: row.text_refs },
-  };
+  return row === undefined ? null : toTaskNote(row);
 }
 
 export async function patchTaskNote(
@@ -840,14 +850,22 @@ export async function duplicateTask(
   );
 
   // Notes rejouées une à une : chaque copie a besoin d'un ULID neuf, un
-  // `INSERT ... SELECT` ne peut pas en générer un par ligne recopiée.
-  const { rows: sourceNotes } = await client.query<{ id: string; title: string; body: string }>(
-    `SELECT id, title, body FROM app.task_note WHERE task_slug = $1 ORDER BY created_at`, [sourceSlug]);
+  // `INSERT ... SELECT` ne peut pas en générer un par ligne recopiée. La
+  // provenance (`derived_*`) suit la copie — une citation reste une
+  // citation après duplication, `editedSince` se recalcule de lui-même
+  // puisqu'il n'est jamais qu'une comparaison à la lecture.
+  const { rows: sourceNotes } = await client.query<{
+    id: string; title: string; body: string;
+    derived_from_kind: string | null; derived_from_id: string | null; derived_text_original: string | null;
+  }>(
+    `SELECT id, title, body, derived_from_kind, derived_from_id, derived_text_original
+       FROM app.task_note WHERE task_slug = $1 ORDER BY created_at`, [sourceSlug]);
   for (const note of sourceNotes) {
     const newId = `note_${ulid()}`;
     await client.query(
-      `INSERT INTO app.task_note (id, task_slug, title, body) VALUES ($1, $2, $3, $4)`,
-      [newId, input.slug, note.title, note.body],
+      `INSERT INTO app.task_note (id, task_slug, title, body, derived_from_kind, derived_from_id, derived_text_original)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [newId, input.slug, note.title, note.body, note.derived_from_kind, note.derived_from_id, note.derived_text_original],
     );
     await client.query(
       `INSERT INTO app.task_note_image (note_id, cloud_asset_id)

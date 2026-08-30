@@ -164,3 +164,53 @@ test('deleteTaskNote returns false for an unknown note, never throws', async () 
     expect(await deleteTaskNote(client, 'x', 'note_nowhere')).toBe(false);
   });
 });
+
+test('a derived note names its source and reads as not-edited while the text has not changed', async () => {
+  await withRollback(async (client) => {
+    await createTask(client, { title: 'x', slug: 'x', brief: '', period: null });
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('logbook', 'handwritten', 'Journal', true)`);
+    await client.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+                        VALUES ('passage', 'logbook/p003/001', 'logbook', 1, 'Départ de Figueira.', 'transcribed')`);
+
+    const note = await createTaskNote(client, 'x', {
+      title: 'journal de bord, page 3 du 09/07/1998', text: 'Départ de Figueira.',
+      attachedTo: { images: [], texts: [{ kind: 'passage', id: 'logbook/p003/001' }] },
+      derivedFrom: { kind: 'passage', id: 'logbook/p003/001' },
+    });
+    expect(note?.derivedFrom).toEqual({ kind: 'passage', id: 'logbook/p003/001' });
+    expect(note?.editedSince).toBe(false);
+  });
+});
+
+test('retouching a derived note\'s text raises editedSince — and never lowers it wrongly', async () => {
+  await withRollback(async (client) => {
+    await createTask(client, { title: 'x', slug: 'x', brief: '', period: null });
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('logbook', 'handwritten', 'Journal', true)`);
+    await client.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+                        VALUES ('passage', 'logbook/p003/001', 'logbook', 1, 'Départ de Figueira.', 'transcribed')`);
+
+    const note = await createTaskNote(client, 'x', {
+      title: 'journal de bord, page 3 du 09/07/1998', text: 'Départ de Figueira.',
+      attachedTo: { images: [], texts: [] }, derivedFrom: { kind: 'passage', id: 'logbook/p003/001' },
+    });
+    const noteId = note?.id ?? '';
+
+    const edited = await patchTaskNote(client, 'x', noteId, { text: 'Départ de Figueira, au moteur.' });
+    expect(edited?.editedSince).toBe(true);
+
+    const restored = await patchTaskNote(client, 'x', noteId, { text: 'Départ de Figueira.' });
+    expect(restored?.editedSince).toBe(false);
+  });
+});
+
+test('a note written from scratch derives from nothing', async () => {
+  await withRollback(async (client) => {
+    await createTask(client, { title: 'x', slug: 'x', brief: '', period: null });
+    const note = await createTaskNote(client, 'x', {
+      title: 'Ce que le journal ne dit pas', text: 'Gaëtan n’était plus à bord après 2002.',
+      attachedTo: { images: [], texts: [] },
+    });
+    expect(note?.derivedFrom).toBeNull();
+    expect(note?.editedSince).toBe(false);
+  });
+});

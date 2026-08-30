@@ -26,6 +26,32 @@ existants du projet.
 >
 ### Amendements depuis le gel
 
+### A6 — `TaskNote.derivedFrom` et `editedSince` *(2026-08-30, v1.5)*
+
+Une note peut naître de la recopie d'un texte d'époque (`docs/spec-v1.5.md`,
+« Créer une note depuis un texte ») : le titre en porte l'attribution
+(« journal de bord, page 3 du 09/07/1998 »), mais rien ne le vérifiait — sans
+`derivedFrom`, l'attribution est une simple affirmation du titre, invérifiable.
+
+```ts
+export interface TaskNote {
+  // … champs existants …
+  /** Le texte d'époque recopié pour fabriquer cette note. `null` = écrite de zéro. */
+  readonly derivedFrom: TaskTextRef | null;
+  /** Vrai quand le corps ne correspond plus au texte recopié. CALCULÉ à la lecture, jamais stocké. */
+  readonly editedSince: boolean;
+}
+```
+
+`TaskNoteCreateInput.derivedFrom?: TaskTextRef` — fourni à la création,
+jamais modifiable ensuite. `editedSince` se recalcule à chaque lecture en
+comparant le corps courant au texte source AU MOMENT DE LA RECOPIE (stocké côté
+serveur, jamais exposé) : un booléen stocké mentirait après une écriture
+directe en base — même principe que `CorrectionStatus`.
+
+Ajout de deux champs sur `TaskNote`, un champ sur `TaskNoteCreateInput` — un
+sur-ensemble, jamais un renommage cassant.
+
 ### A5 — §11 Q11 écrit : `TextUnit.galleryCaption`, `TextKind.WEB_CAPTION` *(2026-08-30)*
 
 Écrit maintenant que `impl-frontend` a intégré la forme (§11 le disait

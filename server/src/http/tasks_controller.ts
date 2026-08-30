@@ -274,10 +274,12 @@ function parseNoteCreateInput(body: unknown): TaskNoteCreateInput {
   if (typeof body !== 'object' || body === null) {
     throw invalidParameter('body', JSON.stringify(body), 'corps de requête invalide');
   }
-  const { title, text, attachedTo } = body as Record<string, unknown>;
+  const { title, text, attachedTo, derivedFrom } = body as Record<string, unknown>;
   if (typeof title !== 'string') throw invalidParameter('title', JSON.stringify(title), 'title doit être une chaîne');
   if (typeof text !== 'string') throw invalidParameter('text', JSON.stringify(text), 'text doit être une chaîne');
-  return { title, text, attachedTo: parseAttachedTo(attachedTo) };
+  const input: TaskNoteCreateInput = { title, text, attachedTo: parseAttachedTo(attachedTo) };
+  if (derivedFrom !== undefined) Object.assign(input, { derivedFrom: parseTaskTextRefItem(derivedFrom, 'derivedFrom') });
+  return input;
 }
 
 function parseNotePatchInput(body: unknown): TaskNotePatchInput {

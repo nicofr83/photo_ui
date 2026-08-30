@@ -331,6 +331,32 @@ describe('POST /tasks/:slug/notes', () => {
     });
     expect(response.statusCode).toBe(404);
   });
+
+  test('derivedFrom names the source text, editedSince starts false — through the full HTTP path', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('logbook', 'handwritten', 'Journal', true)`);
+      await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+        VALUES ('passage', 'logbook/p003/001', 'logbook', 1, 'Départ de Figueira.', 'transcribed')`);
+      await app.server.inject({ method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null } });
+
+      const response = await app.server.inject({
+        method: 'POST', url: '/tasks/x/notes',
+        payload: {
+          title: 'journal de bord, page 3 du 09/07/1998', text: 'Départ de Figueira.',
+          attachedTo: { images: [], texts: [] }, derivedFrom: { kind: 'passage', id: 'logbook/p003/001' },
+        },
+      });
+      expect(response.statusCode).toBe(201);
+      const body = response.json<{ derivedFrom: { kind: string; id: string }; editedSince: boolean }>();
+      expect(body.derivedFrom).toEqual({ kind: 'passage', id: 'logbook/p003/001' });
+      expect(body.editedSince).toBe(false);
+    } finally {
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'logbook'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
+    }
+  });
 });
 
 describe('PATCH /tasks/:slug/notes/:noteId', () => {

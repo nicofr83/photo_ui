@@ -220,6 +220,23 @@ test('duplicateTask: copies brief/period/images/texts/notes, never the export st
   });
 });
 
+test('duplicateTask: a derived note keeps its provenance — the copy is still a citation', async () => {
+  await withRollback(async (client) => {
+    await client.query(`INSERT INTO app.task (slug, title, brief) VALUES ('src', 'x', '')`);
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('doc', 'handwritten', 'Doc', false)`);
+    await client.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+      VALUES ('passage', 'doc/p1', 'doc', 1, 'Départ de Figueira.', 'transcribed')`);
+    await client.query(`INSERT INTO app.task_note (id, task_slug, title, body, derived_from_kind, derived_from_id, derived_text_original)
+      VALUES ('note_src', 'src', 'journal de bord, page 3', 'Départ de Figueira.', 'passage', 'doc/p1', 'Départ de Figueira.')`);
+
+    const result = await duplicateTask(client, 'src', { title: 'x v2', slug: 'src-v2' });
+    if (result.kind !== 'created') throw new Error('unreachable');
+
+    expect(result.task.notes[0]?.derivedFrom).toEqual({ kind: 'passage', id: 'doc/p1' });
+    expect(result.task.notes[0]?.editedSince).toBe(false);
+  });
+});
+
 test('countOrphanedSelections is GLOBAL — sums across every task, images and texts both', async () => {
   await withRollback(async (client) => {
     await client.query(`INSERT INTO app.task (slug, title, brief) VALUES ('t6', 'T6', ''), ('t7', 'T7', '')`);

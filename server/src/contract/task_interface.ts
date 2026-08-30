@@ -61,6 +61,14 @@ export interface TaskNote {
     readonly images: readonly string[];
     readonly texts: readonly TaskTextRef[];
   };
+  /** Le texte d'époque recopié pour fabriquer cette note (amendement A4). `null` = écrite de zéro. */
+  readonly derivedFrom: TaskTextRef | null;
+  /**
+   * Vrai quand le corps ne correspond plus au texte recopié. CALCULÉ à la
+   * lecture par comparaison, jamais stocké : un booléen stocké mentirait après
+   * une écriture directe en base. Toujours `false` si `derivedFrom` est `null`.
+   */
+  readonly editedSince: boolean;
 }
 
 export interface TaskDetail extends TaskSummary {
@@ -164,6 +172,8 @@ export interface TaskNoteCreateInput {
   readonly title: string;
   readonly text: string;
   readonly attachedTo: { readonly images: readonly string[]; readonly texts: readonly TaskTextRef[] };
+  /** Le texte recopié pour fabriquer cette note — omis pour une note écrite de zéro. */
+  readonly derivedFrom?: TaskTextRef;
 }
 
 export interface TaskNotePatchInput {
