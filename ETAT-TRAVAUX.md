@@ -1189,3 +1189,26 @@ DETAIL : commit `a807518`.
 **La Tranche 7 (v1.5) est complète.**
 
 ASK : aucune décision Nicolas. Il ne reste que la Tranche 8 (Task 14 — les schémas contre les vraies réponses ; Task 15 — la repasse en navigateur), « en dernier, avec la tranche F du backend » — déjà livrée par `back`. J'enchaîne.
+
+---
+
+## Avancement — impl-frontend, v1.5 Task 15 — PLAN COMPLET (2026-08-30)
+
+RE : v1.5, tranche 8 — la repasse en navigateur, dernière tâche du plan
+DONE : parcouru `01-le-grand-depart`, la vraie tâche de Nicolas, en navigateur réel contre le vrai serveur, aucune erreur console sur l'ensemble de la passe.
+
+**Vérifié en direct :**
+- **Panneau d'albums** (écran Images) : chemin complet affiché (« 1998-1999/1998-02-Maison rose Algès »), recherche « Filtrer les albums » qui réduit la liste, un album coché reste visible et coché même quand le filtre ne le retrouve plus (testé explicitement : coché puis filtré sur une chaîne qui n'existe nulle part ailleurs — un seul album reste affiché, toujours coché).
+- **Écran Textes, trois sources** : journal de bord (dates vertes/lecture et ambre/inférence, vignettes réelles des scans, tri chronologique par défaut avec pages 5 et 7 marquées d'un ⚠ — fenêtre de registre suspecte, exactement les 12 pages réelles comptées à la Task 8), Ma vie (mêmes natures de date), site web (liste de documents, pas de scan, et le dit).
+- **Une page du journal ouverte** : registre et notes séparés, coche `<input type="checkbox">` réelle par texte, bouton Corriger, dates par ligne, un « transcription incertaine » réel visible.
+- **L'écran de datation** (déjà vérifié à la Task 12, reconfirmé ici) : 28 documents dans le périmètre, proposition à côté du champ vide.
+- **La Revue** : vignettes réelles, textes retenus, bouton « Retirer {id} » désambiguïsé, rappel de consigne.
+- **Les Réglages** : les cinq racines réelles, variable/chemin/disponibilité, lecture seule.
+
+**Non vérifiable en direct, et c'est attendu** : un filtre de dates avec son compteur d'écartés, et une note créée depuis un texte. Les deux existent et sont testés (Tasks 10 et 11), mais `TextFilterPanel` et `NoteFromTextButton` ne sont branchés sur aucun écran — portée explicite de ces deux tâches, déjà signalée dans leurs commits (`d5a9f77`, `a74179d`) et dans mon message à team-lead sur le seuil de 40 caractères. Rien à corriger ici : c'est le même écart, pas un nouveau.
+
+**LE PLAN V1.5 FRONTEND EST COMPLET : les 15 tâches, les 8 tranches.**
+
+DETAIL : cette entrée. Pas de code touché — repasse en lecture (et un test d'interaction sur le panneau d'albums) uniquement.
+
+ASK : une décision revient à Nicolas/team-lead — souhaitez-vous que je branche `TextFilterPanel`/`NoteFromTextButton` sur `TextsScreen` maintenant (hors plan initial, mais referme l'écart ci-dessus), ou est-ce pour une itération suivante ? Je reste disponible, en veille sinon.
