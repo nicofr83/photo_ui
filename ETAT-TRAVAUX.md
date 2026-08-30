@@ -844,6 +844,20 @@ ASK : aucun. J'enchaîne sur la tranche E (Task 13, les facettes de dates ; Task
 
 ---
 
+## Avancement — impl-backend, v1.5 Task 13 — tranche E (2026-08-30)
+
+RE : v1.5, tranche E — les facettes de dates
+DONE : `GET /texts/facets?documentId=…` — trois agrégats (`years`/`months`/`days`, chacun un `FacetBucket[]`, le MÊME type que `PhotoFacets` — pas une seconde forme de bucket) sur `pipeline.text_unit.date_start`, `documentId` seul filtre (facultatif) : cette route répond « que contient réellement cette source », pas « que reste-t-il sous le filtre courant » (contrairement à `/photos/facets`, contextuel). `photo_repository.ts`'s `bucketQuery` (privée) exportée et réutilisée plutôt que dupliquée. Le format de `to_char` est lui aussi paramétré (`$1`), même s'il ne vient jamais que de trois littéraux internes — jamais d'interpolation, quelle que soit l'origine.
+Vérifié contre le corpus réel (serveur réel redémarré — prévenu à front avant, code rechargé) : `ma-vie` → années `[{1999, count:677}]`, mois `1999-08..11`, 81 jours ; `logbook` → années 1998-2002. Correspond exactement aux chiffres mesurés par le plan.
+4 tests de dépôt (fixtures synthétiques) + 3 tests HTTP neufs. 731 tests serveur, tsc/eslint propres.
+DETAIL : commit `f4e60e6`.
+
+**Incident d'index git partagé, corrigé sans casse** : mon premier `git commit` (par chemins explicites, 7 fichiers) a pourtant embarqué 5 fichiers de `front` (`albumOrder.ts`/`.test.ts`, `ImagesScreen.module.css`, `FilterPanel.tsx`/`.test.tsx`) — `front` a dû lancer son propre `git add` entre mon `add` et mon `commit`, sur l'index PARTAGÉ. Corrigé par `git reset --soft HEAD~1` (rien perdu, tout reste indexé) puis `git reset HEAD -- <les 5 fichiers de front>` (les désindexe sans toucher leur contenu), recommit avec mes 7 seulement. Front retrouve ses fichiers modifiés, non indexés, exactement comme avant — à lui de les committer. Aucune donnée perdue, mais ça confirme qu'un `git status --short` juste avant le commit lui-même (pas seulement avant le `add`) serait plus sûr sur un index partagé.
+
+ASK : aucun. J'enchaîne sur la Task 14 (les pages qui correspondent à un filtre).
+
+---
+
 ## Avancement — front, v1.5 Tranche 1 — les trois écrans cassés rattrapés (2026-08-30)
 
 RE : URGENT, trois écrans cassés contre le vrai serveur — Textes, Revue, Réglages
@@ -858,3 +872,20 @@ DONE : les quatre amendements de la tranche A backend rattrapés. `TextPageSchem
 DETAIL : commit `f613eaf`. TDD suivi : chaque schéma corrigé avait un test qui échouait d'abord (fournis par le plan pour Task 1/2, écrits par moi pour `TaskNoteSchema` et `dateKind.ts`, aucun test existant pour ces deux-là).
 
 ASK : aucune décision Nicolas. J'attends que `back` répare le boot du serveur pour finir l'étape 5, mais ça ne me bloque pas — j'enchaîne sur la Tranche 2.
+
+---
+
+## Avancement — front, v1.5 Tranche 1 vérifiée + Tranche 2 (2026-08-30)
+
+RE : étape 5 (vrai serveur) débloquée, Tranche 2 livrée
+DONE : `back` a réparé le boot (câblage `periodFrom`/`periodTo`), serveur relancé. Vérifié en réel via un script qui fait passer les vraies réponses (`GET /pages?documentId=ma-vie`, `GET /ref/web-documents`) dans les vrais schémas Zod : les deux valident sans écart. `GET /tasks/01-le-grand-depart` confirme `derivedFrom`/`editedSince` sur une vraie note. Les cinq écrans (images/textes/revue/réglages/tâches) tournés en vrai navigateur contre le vrai serveur : zéro bannière, zéro console — Textes/Revue/Réglages sont vraiment réparés.
+
+**Tranche 2 (écran Images, sans dépendance serveur), Task 3 + 4.** Task 3 : `sortAlbumsByPath` — le plan proposait `Intl.Collator('fr', {caseFirst:'upper', numeric:true})`, mais son propre test exige que « Fort Lauderdale » passe avant « everglades ». Vérifié en direct (node) : AUCUNE option de Collator ne produit ce résultat — la collation Unicode classe par LETTRE DE BASE d'abord ('e' < 'f'), la casse n'est qu'un départage tertiaire entre lettres IDENTIQUES. Remplacé par une comparaison brute par unité de code (`<`), qui donne exactement ce que le test du plan demande, et les préfixes `AAAA-MM` du corpus (chiffres à largeur fixe) restent correctement ordonnés sans avoir besoin d'un `numeric` Unicode. Task 4 : champ « Filtrer les albums » sur `FilterPanel` (réutilise `matchesSearch`), hors du conteneur qui défile, un album coché reste épinglé même si le filtre l'exclurait — décocher à l'aveugle est le défaut évité. Panneau élargi à 26rem (le plan).
+
+Incident d'index partagé (encore) : mon commit Tranche 2 s'est retrouvé mêlé au commit `79dccfa` de `back` (Task 13 serveur). Contenu vérifié intact, signalé, rien à corriger.
+
+637 tests front verts, tsc et eslint propres (même bruit sans rapport : scratch files non suivis de `back`).
+
+DETAIL : le tri par `Intl.Collator` est un écart documenté par rapport au plan écrit — testé et justifié, pas une improvisation.
+
+ASK : aucune décision Nicolas. J'enchaîne sur la Tranche 3 (navigation, en-têtes fixes).
