@@ -969,3 +969,20 @@ DONE : **Task 5** — `TaskNav` porte son quatrième lien, `/consigne/:slug` dan
 DETAIL : commits `d004437` (Task 5 + fin de la Tranche 2), `8d762e9` (Task 6).
 
 ASK : aucune décision Nicolas. J'enchaîne sur la Tranche 4 (Task 7 — la Revue montre ce qu'elle exporte).
+
+---
+
+## Avancement — impl-frontend, v1.5 Task 7 — Tranche 4 complète (2026-08-30)
+
+RE : v1.5, tranche 4 — la Revue montre ce qu'elle exporte
+DONE : `ReviewScreen` gagne trois choses tenues séparées jusqu'ici — une vignette par image (`thumbUrlFor`, lue depuis `GET /tasks/:slug/review` déjà chargé, jamais une seconde requête juste pour un `src`), la liste des textes retenus en lecture seule (`groupTextsBySource`, même règle des trois sources jamais mélangées que TextsScreen, appliquée aux textes d'une tâche plutôt qu'à ceux d'un document entier), et un rappel de la consigne (`data-testid="brief-recall"`, lien « Modifier sur Consigne » vers la sous-page créée à la Tâche 5 — la consigne elle-même ne s'édite plus ici).
+Corrigé au passage, trouvé en écrivant le test : `<img alt="">` est décoratif (`role=presentation`), invisible à `getByRole('img')` — texte alternatif rendu descriptif (`Vignette {id}`). Et un piège de casse : mon premier lien disait « Modifier la consigne », le test attendait `/Consigne/` (majuscule) — renommé « Modifier sur Consigne ».
+643 tests front verts, tsc et eslint propres. Vérifié en navigateur réel contre le vrai serveur : vignette réelle affichée, bloc consigne + lien fonctionnel, bouton « Retirer 045975d8 » désambiguïsé (capture d'écran).
+DETAIL : commit `288055e`.
+
+**La Tranche 4 (v1.5) est complète.**
+
+En marge, trouvé en lisant l'avancement de `back` (Task 14, commit `d2aea93`) : `TextPage.matchCount` existe déjà côté serveur, mon `TextPageSchema` (`strictObject`) le refusait — exactement le test rouge que `back` a délibérément laissé pour le signaler (Task 15, commit `18eece6`). Corrigé : `matchCount: z.number().int().nullable()`, `null` sauf quand `q` est présent (même convention que `TextUnit.highlights`). Fixtures et tests à jour, 643 verts, tsc/eslint propres.
+DETAIL : commit `22b6ea6`.
+
+ASK : aucune décision Nicolas. J'enchaîne sur la Tranche 5 (Tasks 8-11 — l'écran des textes, la plus grosse tranche restante).
