@@ -6,15 +6,21 @@ import type { Album, AlbumSpanUpdateResult } from '../contract/photo_interface.t
 import type { TextDocument, WebDocumentRow } from '../contract/text_interface.ts';
 import type { Pool } from '../db/pool.ts';
 import { withTransaction } from '../db/transaction.ts';
+import { isInWebPerimeter } from '../metier/dating/web_perimeter.ts';
 import {
   deleteAlbumSpan, listAlbums, putAlbumSpan, type AlbumSpanInput,
 } from '../repository/album_repository.ts';
 import { deleteWebSpan, listWebDocuments, putWebSpan, type WebSpanInput } from '../repository/text_repository.ts';
+import { parseQueryParams } from './query_params.ts';
 
 export interface RefRoutesDeps {
   readonly pool: Pool;
   readonly annotationsDir: string;
+  readonly periodFrom: string;
+  readonly periodTo: string;
 }
+
+const WEB_DOCUMENTS_SCOPE_VALUES = ['perimeter', 'all'] as const;
 
 function invalidParameter(parameter: string, received: string, message: string): AppError {
   return new AppError(ErrorCode.INVALID_PARAMETER, message, 400, { parameter, received, accepted: null });
@@ -74,7 +80,9 @@ function parseDocumentId(body: unknown): string {
  * pour la tâche 25).
  */
 export function registerRefRoutes(server: FastifyInstance, deps: RefRoutesDeps): void {
-  const { pool, annotationsDir } = deps;
+  const { pool, annotationsDir, periodFrom, periodTo } = deps;
+  const periodFromYear = Number(periodFrom.slice(0, 4));
+  const periodToYear = Number(periodTo.slice(0, 4));
 
   server.get('/albums', async (): Promise<{ items: readonly Album[] }> => {
     const client = await pool.connect();
@@ -108,10 +116,20 @@ export function registerRefRoutes(server: FastifyInstance, deps: RefRoutesDeps):
     return result;
   });
 
-  server.get('/ref/web-documents', async (): Promise<{ items: readonly WebDocumentRow[] }> => {
+  server.get('/ref/web-documents', async (request): Promise<{ items: readonly WebDocumentRow[] }> => {
+    const parsed = parseQueryParams(request.query as Record<string, unknown>, {
+      scope: { kind: 'closed', values: WEB_DOCUMENTS_SCOPE_VALUES, fallback: 'perimeter' },
+    });
+    const scope = parsed.scope as typeof WEB_DOCUMENTS_SCOPE_VALUES[number];
+
     const client = await pool.connect();
     try {
-      return { items: await listWebDocuments(client) };
+      const documents = await listWebDocuments(client);
+      const items = scope === 'all' ? documents : documents.filter((doc) => isInWebPerimeter(
+        { documentId: doc.documentId, passageCount: doc.passageCount, proposalDate: doc.proposal?.date ?? null },
+        periodFromYear, periodToYear,
+      ));
+      return { items };
     } finally {
       client.release();
     }

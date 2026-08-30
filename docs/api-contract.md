@@ -1857,8 +1857,8 @@ remplit. Petit écran, gros rendement : 25 saisies corrigent l'intervalle de
 |:---|:---|:---|:---|
 | `PUT` | `/ref/album-span` | `{ albumPath, dateFrom, dateTo, note }` | `AlbumSpanUpdateResult` |
 | `DELETE` | `/ref/album-span` | `{ albumPath }` | `AlbumSpanUpdateResult` — retour au présumé |
-| `GET` | `/ref/web-documents` | — | `{ items: WebDocumentRow[] }` |
-| `PUT` | `/ref/web-span` | `{ documentId, dateFrom, dateTo, note }` | `TextDocument` |
+| `GET` | `/ref/web-documents?scope=…` | — | `{ items: WebDocumentRow[] }` |
+| `PUT` | `/ref/web-span` | `{ documentId, dateFrom, note }` | `TextDocument` |
 | `DELETE` | `/ref/web-span` | `{ documentId }` | `TextDocument` |
 | `GET` | `/ref/countries` | — | `{ items: CountryRow[] }` |
 | `PUT` | `/ref/country-aliases` | `{ raw, normalized }` | `{ items: CountryRow[] }` |
@@ -1866,6 +1866,16 @@ remplit. Petit écran, gros rendement : 25 saisies corrigent l'intervalle de
 `GET /albums` sert la liste de gauche, **les 25 albums suspects en tête**, avec
 `span.presumed` qui distingue `saisi` de `presumed`, et `hints` qui porte les
 deux indices d'aide à la saisie.
+
+**`scope` de `GET /ref/web-documents`** (v1.5, Task 11) : vocabulaire fermé
+`perimeter` (défaut) · `all`. Le périmètre (`config.periodFrom`…`periodTo`,
+1998-2004) est un document dont le CHEMIN **ou** la `proposal` (Task 10)
+tombe dans la période, avec au moins deux passages — le seuil de deux écarte
+les rebuts et la vérification Google sans nommer aucun fichier en dur, un
+filtre par liste de noms se périmerait au premier réimport. Chemin et
+proposition sont deux indices INDÉPENDANTS : `web/2005/images/2005_4` est
+classé sous `2005/` mais ses photos datent de 2003, il reste dans le
+périmètre. 28 documents réels dans le périmètre sur 60 au total.
 
 ```ts
 export interface AlbumSpanUpdateResult {

@@ -119,7 +119,7 @@ describe('DELETE /ref/album-span', () => {
 });
 
 describe('GET /ref/web-documents', () => {
-  test('serves the excerpt and pathHint through the full HTTP path', async () => {
+  test('serves the excerpt and pathHint through the full HTTP path (scope=all — a single passage is below the perimeter threshold)', async () => {
     const setup = testPool();
     app = await bootstrap(await completeEnv());
     try {
@@ -128,7 +128,7 @@ describe('GET /ref/web-documents', () => {
       await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
                          VALUES ('passage', 'site/journal#1', 'site/journal', 1, 'Premier passage', 'transcribed')`);
 
-      const response = await app.server.inject({ method: 'GET', url: '/ref/web-documents' });
+      const response = await app.server.inject({ method: 'GET', url: '/ref/web-documents?scope=all' });
       expect(response.statusCode).toBe(200);
       const body = response.json<{ items: WebDocumentRow[] }>();
       expect(body.items).toHaveLength(1);
@@ -137,6 +137,57 @@ describe('GET /ref/web-documents', () => {
     } finally {
       await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'site/journal'`);
       await setup.query(`DELETE FROM pipeline.document WHERE id = 'site/journal'`);
+    }
+  });
+
+  test('an unknown scope is a named 400', async () => {
+    app = await bootstrap(await completeEnv());
+    const response = await app.server.inject({ method: 'GET', url: '/ref/web-documents?scope=bogus' });
+    expect(response.statusCode).toBe(400);
+    expect(response.json<{ error: { code: string } }>().error.code).toBe('INVALID_PARAMETER');
+  });
+
+  test('scope defaults to perimeter — a document below two passages never shows, whatever its date', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+        VALUES ('web/1999/bidon', 'html', 'x', false), ('web/1999/vrai', 'html', 'x', false)`);
+      await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+        VALUES ('passage', 'web/1999/bidon#1', 'web/1999/bidon', 1, 'seul', 'transcribed'),
+               ('passage', 'web/1999/vrai#1', 'web/1999/vrai', 1, 'un', 'transcribed'),
+               ('passage', 'web/1999/vrai#2', 'web/1999/vrai', 2, 'deux', 'transcribed')`);
+
+      const response = await app.server.inject({ method: 'GET', url: '/ref/web-documents' });
+      const ids = response.json<{ items: WebDocumentRow[] }>().items.map((d) => d.documentId);
+      expect(ids).not.toContain('web/1999/bidon');
+      expect(ids).toContain('web/1999/vrai');
+    } finally {
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id IN ('web/1999/bidon', 'web/1999/vrai')`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id IN ('web/1999/bidon', 'web/1999/vrai')`);
+    }
+  });
+
+  test('a document with a year OUTSIDE the period, and no in-period proposal, is excluded from the perimeter', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                         VALUES ('web/2005/raiders/nico', 'html', 'x', false)`);
+      await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+        VALUES ('passage', 'web/2005/raiders/nico#1', 'web/2005/raiders/nico', 1, 'un', 'transcribed'),
+               ('passage', 'web/2005/raiders/nico#2', 'web/2005/raiders/nico', 2, 'deux', 'transcribed')`);
+
+      const perimeter = await app.server.inject({ method: 'GET', url: '/ref/web-documents' });
+      expect(perimeter.json<{ items: WebDocumentRow[] }>().items.map((d) => d.documentId))
+        .not.toContain('web/2005/raiders/nico');
+
+      const all = await app.server.inject({ method: 'GET', url: '/ref/web-documents?scope=all' });
+      expect(all.json<{ items: WebDocumentRow[] }>().items.map((d) => d.documentId))
+        .toContain('web/2005/raiders/nico');
+    } finally {
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'web/2005/raiders/nico'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'web/2005/raiders/nico'`);
     }
   });
 });
@@ -199,7 +250,7 @@ describe('PUT /ref/web-span', () => {
       await app.server.inject({ method: 'PUT', url: '/ref/web-span', payload: { documentId: 'site/a', dateFrom: '2000-01-01', note: null } });
       await app.server.inject({ method: 'PUT', url: '/ref/web-span', payload: { documentId: 'site/b', dateFrom: '2000-02-01', note: null } });
 
-      const docs = await app.server.inject({ method: 'GET', url: '/ref/web-documents' });
+      const docs = await app.server.inject({ method: 'GET', url: '/ref/web-documents?scope=all' });
       const rows = docs.json<{ items: { documentId: string; span: { start: string; end: string } | null }[] }>().items;
       expect(rows.find((r) => r.documentId === 'site/a')?.span).toMatchObject({ start: '2000-01-01', end: '2000-01-31' });
       expect(rows.find((r) => r.documentId === 'site/bidon')?.span).toBeNull();
