@@ -1158,3 +1158,19 @@ DETAIL : commits `d5a9f77` (Task 10), `a74179d` (Task 11).
 **La Tranche 5 (v1.5) est complète : Tasks 8 à 11.**
 
 ASK : aucune décision Nicolas. La Tranche 6 (Task 12, datation du site) attend « les tâches backend 10 et 11 » — `back` a annoncé le plan backend entièrement terminé (Tasks 1 à 15, tranches A-F, ETAT-TRAVAUX plus haut) : je pars du principe que la dépendance est satisfaite et j'enchaîne sur la Task 12.
+
+---
+
+## Avancement — impl-frontend, v1.5 Tranche 6 complète — Task 12 (2026-08-30)
+
+RE : v1.5, tranche 6 — l'écran de datation du site
+DONE : `WebDatingScreen` (`/dates-site`, lien à côté de Réglages) : une ligne par document web — titre, extrait, chemin comme indice, sa plage actuelle si déjà saisie (toujours une inférence), une proposition à côté, un champ qui reste vide quoi qu'il arrive (même convention que l'éditeur de plage d'album : la valeur actuelle s'affiche en lecture seule, la saisie repart de zéro). La proposition n'est jamais pré-remplie — « Adopter cette date » la recopie dans l'état local du champ, un geste, jamais un rendu. Une seule borne de début envoyée ; la fin se déduit côté serveur. Périmètre par défaut (chemin OU proposition dans 1998-2004, au moins deux passages — jamais une liste d'ids en dur, qui se périmerait au réimport) ; les rebuts derrière « Voir tout » (`WebDocumentScope`, ajouté à `src/shared/enums.ts`, purement additif). La section « Site web » a disparu des Réglages.
+Déviation : pas de `useWebProposals.ts` séparé — `useWebDocuments` (qui renvoie déjà `WebDocumentRow.proposal` depuis la Tranche 1) a simplement gagné un paramètre `scope`. Un second hook rechargeant la même donnée sous une autre clé de cache aurait été une requête dupliquée pour rien.
+Extrait `domain/isoDateFormat.ts` (`formatDDMMYYYY`) hors de `noteTitle.ts` (Task 11) pour que `DateProposal.tsx` réutilise la même règle DD/MM/YYYY — une date de proposition, comme la date d'attribution d'une note, est une suggestion/un fait brut, pas une `ResolvedDate` que `ResolvedDateView` aurait une nature à rendre.
+Vérifié contre le vrai serveur en navigateur réel : 28 documents dans le périmètre par défaut, 60 sous « Voir tout » — les chiffres exacts du corpus — et une vraie proposition faible (11 photos, 2 au jour, 181 jours) rendue « seulement au mois » correctement. Aucune erreur console.
+656 tests front verts, tsc et eslint propres.
+DETAIL : commit `d4245c3`.
+
+**La Tranche 6 (v1.5) est complète.**
+
+ASK : aucune décision Nicolas. J'enchaîne sur la Tranche 7 (Task 13 — les racines et le répertoire de livraison).
