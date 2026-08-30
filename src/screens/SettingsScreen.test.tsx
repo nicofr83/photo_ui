@@ -8,15 +8,46 @@ import { SettingsScreen } from './SettingsScreen';
 const setup = () => renderWithProviders(<SettingsScreen />);
 
 describe('spec §5.7/contract §4.8 — Réglages, the highest-yield screen', () => {
-  test('suspected albums are listed first', async () => {
+  test('albums are listed alphabetically by path, never by suspected status or a date sort', async () => {
     setup();
     const list = await screen.findByRole('list', { name: /albums/i });
     const rows = within(list).getAllByRole('listitem');
-    // The two fixture albums with suspectedRange: false come last.
     const paths = rows.map((r) => r.dataset['testid']);
-    expect(paths.slice(-2)).toEqual([
-      'album-row-2000-2001/2000', 'album-row-2004/2004-03- visite de Tikal',
+    // The AAAA-MM prefix already gives chronological order for free — this
+    // is a plain string sort on `path`, nothing date-aware.
+    expect(paths).toEqual([
+      'album-row-1998-1999/1998-02-Maison rose Algès',
+      'album-row-1998-1999/1999-10 Lisboa Madere',
+      'album-row-2000-2001/2000',
+      'album-row-2000-2001/2000-12-viree au Venezuela-3mois',
+      'album-row-2004/2004-03- visite de Tikal',
     ]);
+  });
+
+  test('the search field narrows the list to a substring, anywhere in the path', async () => {
+    const user = userEvent.setup();
+    setup();
+    await screen.findByRole('list', { name: /albums/i });
+    await user.type(screen.getByLabelText(/rechercher un album/i), 'Venezuela');
+    const list = screen.getByRole('list', { name: /albums/i });
+    await waitFor(() => {
+      expect(within(list).getAllByRole('listitem')).toHaveLength(1);
+    });
+    expect(screen.getByTestId('album-row-2000-2001/2000-12-viree au Venezuela-3mois'))
+      .toBeInTheDocument();
+  });
+
+  test('the search field is accent- and case-insensitive', async () => {
+    const user = userEvent.setup();
+    setup();
+    await screen.findByRole('list', { name: /albums/i });
+    await user.type(screen.getByLabelText(/rechercher un album/i), 'alges');
+    await waitFor(() => {
+      expect(screen.getByTestId('album-row-1998-1999/1998-02-Maison rose Algès'))
+        .toBeInTheDocument();
+      expect(screen.queryByTestId('album-row-2000-2001/2000-12-viree au Venezuela-3mois'))
+        .not.toBeInTheDocument();
+    });
   });
 
   test('an already-typed span is shown as such, distinct from a presumed one', async () => {

@@ -6,6 +6,7 @@ import { useWebDocuments, useWebSpan } from '../api/hooks/useWebSpan';
 import type { Album } from '../api/contract/album';
 import type { AlbumSpanUpdateResult, WebDocumentRow } from '../api/contract/ref';
 import type { TextDocument } from '../api/contract/text';
+import { matchesSearch } from '../domain/searchFold';
 import { isIsoDate } from '../shared/date_interface';
 import { ResolvedDateView } from '../ui/date/ResolvedDate';
 import { ErrorBanner } from '../ui/primitives/ErrorBanner';
@@ -36,19 +37,33 @@ export function SettingsScreen(): React.JSX.Element {
 
 function AlbumSpans(): React.JSX.Element {
   const albums = useAlbums();
+  const [query, setQuery] = useState('');
 
   if (albums.error !== null) return <ErrorBanner error={albums.error} />;
   if (albums.isPending) return <p role="status">Chargement des albums…</p>;
 
-  // The 25 suspected albums first — stable otherwise, so the rest keeps a
-  // predictable order rather than reshuffling on every save.
-  const sorted = [...albums.data.items].sort((a, b) => Number(b.suspectedRange) - Number(a.suspectedRange));
+  // Alphabetical on the path, never a date sort built for the purpose — the
+  // `AAAA-MM` prefix already gives chronological order for free (Nicolas:
+  // "comme l'année est en 1er cela sera par ordre chronologique").
+  const sorted = [...albums.data.items].sort((a, b) => a.path.localeCompare(b.path));
+  // Client-side: 82 albums fit in memory, no round trip for this. Substring,
+  // never a prefix — "BVI" must find "2000-2001/2000-11-BVI".
+  const filtered = sorted.filter((album) => matchesSearch(album.path, query));
 
   return (
     <section>
       <h2>Albums</h2>
+      <label className={styles['field']}>
+        Rechercher un album
+        <input
+          className={styles['control']}
+          type="search"
+          value={query}
+          onChange={(e) => { setQuery(e.target.value); }}
+        />
+      </label>
       <ul className={styles['list']} aria-label="Albums">
-        {sorted.map((album) => (
+        {filtered.map((album) => (
           <AlbumRow key={album.path} album={album} />
         ))}
       </ul>
