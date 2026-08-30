@@ -34,10 +34,10 @@ const deleteAlbumSpan = (albumPath: string) =>
   apiDeleteWithBody('/ref/album-span', { albumPath }, AlbumSpanUpdateResultSchema);
 const webDocuments = () => apiGet('/ref/web-documents', WebDocumentListSchema);
 const putWebSpan = (input: {
-  documentId: string; dateFrom: string; dateTo: string; note: string | null;
+  documentId: string; dateFrom: string; note: string | null;
 }) =>
   apiPut('/ref/web-span', {
-    ...input, dateFrom: parseIsoDate(input.dateFrom), dateTo: parseIsoDate(input.dateTo),
+    ...input, dateFrom: parseIsoDate(input.dateFrom),
   }, TextDocumentSchema);
 const review = (slug: string) => apiGet(`/tasks/${slug}/review`, TaskReviewSchema);
 const systemStatus = () => apiGet('/system/status', SystemStatusSchema);
@@ -354,14 +354,14 @@ describe('contract §4.8 — /ref/web-documents and PUT/DELETE /ref/web-span', (
 
   test('a saved web_span is an INFERENCE, never a decision — the capital rule', async () => {
     const doc = await putWebSpan({
-      documentId: 'web/2003/2003_gal_1', dateFrom: '2003-01-01', dateTo: '2003-12-31', note: 'Nicolas',
+      documentId: 'web/2003/2003_gal_1', dateFrom: '2003-01-01', note: 'Nicolas',
     });
     expect(doc.span).toMatchObject({ kind: 'inference', source: 'web_span' });
   });
 
   test('an unknown document is a 404', async () => {
     const thrown = (await putWebSpan({
-      documentId: 'nope', dateFrom: '2003-01-01', dateTo: '2003-12-31', note: null,
+      documentId: 'nope', dateFrom: '2003-01-01', note: null,
     }).catch((e: unknown) => e)) as ApiError;
     expect(thrown.status).toBe(404);
   });

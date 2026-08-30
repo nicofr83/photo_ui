@@ -1,10 +1,20 @@
 import { render, screen } from '@testing-library/react';
 
 import { parseIsoDate, type DateArbitration, type ResolvedDate } from '../../shared/date_interface';
-import { DatePrecision, DateSource } from '../../shared/enums';
+import { DateKind, DatePrecision, DateSource } from '../../shared/enums';
 import { expectedKindFor } from '../../domain/dateKind';
 
 import { ResolvedDateView } from './ResolvedDate';
+
+/** `page_date` has two valid natures (dateKind.ts) — unused by this file's
+ * fixed set of sources, but the helper stays honest about the general case. */
+function singleValidKind(source: DateSource): DateKind {
+  const expected = expectedKindFor(source);
+  if (typeof expected === 'string') return expected;
+  const [first] = expected;
+  if (first === undefined) throw new Error(`expectedKindFor(${source}) returned an empty array`);
+  return first;
+}
 
 function dateFrom(
   source: DateSource,
@@ -20,7 +30,7 @@ function dateFrom(
     start: parseIsoDate(bounds[0] as string),
     end: parseIsoDate(bounds[1] as string),
     precision,
-    kind: expectedKindFor(source),
+    kind: singleValidKind(source),
     source,
     bracketHours: null,
     ...over,

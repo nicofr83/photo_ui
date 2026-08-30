@@ -7,6 +7,20 @@ import { formatResolvedDate } from './formatResolvedDate';
 const ALL_SOURCES = Object.values(DateSource);
 const ALL_PRECISIONS = Object.values(DatePrecision);
 
+/**
+ * `page_date` has two valid natures (dateKind.ts) — READING, the first, is
+ * as good a representative as any for tests that check "some valid pair
+ * renders correctly", not "every valid pair" (that exhaustive check lives
+ * in dateKind.test.ts).
+ */
+function singleValidKind(source: DateSource): DateKind {
+  const expected = expectedKindFor(source);
+  if (typeof expected === 'string') return expected;
+  const [first] = expected;
+  if (first === undefined) throw new Error(`expectedKindFor(${source}) returned an empty array`);
+  return first;
+}
+
 /** Builds a date whose kind always agrees with its source. */
 function dateFrom(
   source: DateSource,
@@ -22,7 +36,7 @@ function dateFrom(
     start: parseIsoDate(bounds[0] as string),
     end: parseIsoDate(bounds[1] as string),
     precision,
-    kind: expectedKindFor(source),
+    kind: singleValidKind(source),
     source,
     bracketHours: null,
     ...over,
@@ -85,7 +99,7 @@ describe('INVARIANT §7.1 — an inference must never look like a reading', () =
   test.each(ALL_SOURCES)('%s carries the glyph of its nature', (source) => {
     const out = formatResolvedDate(dateFrom(source));
     const glyphForKind = { reading: '', inference: '≈', decision: '✓' };
-    expect(out.glyph).toBe(glyphForKind[expectedKindFor(source)]);
+    expect(out.glyph).toBe(glyphForKind[singleValidKind(source)]);
   });
 
   test('a reading never carries the approximation glyph', () => {
@@ -215,7 +229,7 @@ describe('INVARIANT — a wide range never displays as a narrow date', () => {
   // project.
   const span = (start: string, end: string, precision: DatePrecision, source: DateSource) => ({
     start: parseIsoDate(start), end: parseIsoDate(end), precision,
-    kind: expectedKindFor(source), source, bracketHours: null,
+    kind: singleValidKind(source), source, bracketHours: null,
   });
 
   test('a seventeen-month album span renders both ends', () => {

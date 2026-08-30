@@ -196,6 +196,15 @@ export const TextPageSchema = z.strictObject({
   width: z.number().int(),
   height: z.number().int(),
   window: ResolvedDateSchema.nullable(),
+  /**
+   * v1.5: the page's own resolved date, cascade register → notes → carried
+   * inheritance (`app.page_date`). `reading` when the page carries it
+   * itself, `inference` when it comes from the previous page in the same
+   * document. Distinct from `window`, which stays the pipeline's own
+   * overlap-window geometry — the two answer different questions and
+   * neither replaces the other.
+   */
+  date: ResolvedDateSchema.nullable(),
   spanSource: z.enum(PageSpanSource).nullable(),
   imageUrl: z.string(),
   /**

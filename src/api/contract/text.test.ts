@@ -1,6 +1,6 @@
 import { DateKind, DatePrecision, DateSource, TextKind } from '../../shared/enums';
 
-import { TextUnitSchema } from './text';
+import { TextPageSchema, TextUnitSchema } from './text';
 
 const unit = (over: Record<string, unknown> = {}) => ({
   ref: { kind: TextKind.LOG_ENTRY, id: 'logbook/p003/001' },
@@ -103,5 +103,39 @@ describe('pageSpanSource qualifies the PAGE window, not the date', () => {
 
   test('it is null for a text with no page', () => {
     expect(TextUnitSchema.parse(unit({ pageSpanSource: null })).pageSpanSource).toBeNull();
+  });
+});
+
+describe('v1.5 — TextPage.date, the page dating cascade (register → notes → carried)', () => {
+  const page = {
+    id: 'ma-vie/p002', documentId: 'ma-vie', ordinal: 2, label: null,
+    width: 870, height: 1226, window: null, spanSource: 'carried',
+    imageUrl: '/pages/image?pageId=ma-vie%2Fp002', regionsAvailable: false,
+  };
+
+  test('a page carries its own resolved date — a reading when it comes from the page itself', () => {
+    const parsed = TextPageSchema.parse({
+      ...page,
+      date: {
+        start: '1999-08-04', end: '1999-08-04', precision: DatePrecision.DAY,
+        kind: DateKind.READING, source: DateSource.PAGE_DATE, bracketHours: null,
+      },
+    });
+    expect(parsed.date?.kind).toBe('reading');
+  });
+
+  test('a date inherited from a neighbouring page is an inference, never a reading', () => {
+    const parsed = TextPageSchema.parse({
+      ...page,
+      date: {
+        start: '1999-08-04', end: '1999-08-04', precision: DatePrecision.DAY,
+        kind: DateKind.INFERENCE, source: DateSource.PAGE_DATE, bracketHours: null,
+      },
+    });
+    expect(parsed.date?.kind).toBe('inference');
+  });
+
+  test('a page with no date at all stays readable — the web site has none', () => {
+    expect(TextPageSchema.parse({ ...page, date: null }).date).toBeNull();
   });
 });

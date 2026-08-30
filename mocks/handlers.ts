@@ -16,7 +16,7 @@ import {
   WebSpanPutInputSchema, type AlbumSpanUpdateResult, type AlbumSpanWarning, type WebDocumentRow,
 } from '../src/api/contract/ref';
 import type { TextRef, TextUnit } from '../src/api/contract/text';
-import { isIsoDate, type IsoDate } from '../src/shared/date_interface';
+import { isIsoDate, parseIsoDate, type IsoDate } from '../src/shared/date_interface';
 import {
   CorrectionStatus, DateKind, DatePrecision, DateSource, ErrorCode, MatchField, OverlapRule,
   PhotoSort, TaskState,
@@ -156,6 +156,33 @@ function albumSpanWarnings(album: Album, dateFrom: string, dateTo: string): Albu
     warnings.push({ code: 'overlaps_album', albumPath: overlapping.path });
   }
   return warnings;
+}
+
+function isoDayMinusOne(day: IsoDate): IsoDate {
+  const d = new Date(`${day}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return parseIsoDate(d.toISOString().slice(0, 10));
+}
+
+/**
+ * v1.5: a web document's span carries only an ENTERED start — the end is
+ * derived, never entered. Chaining is between DATED web documents, by
+ * date, never by `document_id`: the next one's date minus a day, or this
+ * document's own date if it is the last. An undated document is never
+ * rescued by inheritance — recomputed for every affected document whenever
+ * any one span changes, since adding/removing one shifts its neighbours'
+ * ends.
+ */
+function recomputeWebSpanEnds(): void {
+  const dated = store.documents
+    .filter((d) => d.kind === 'html' && d.span !== null)
+    .sort((a, b) => (a.span?.start ?? '').localeCompare(b.span?.start ?? ''));
+  dated.forEach((doc, i) => {
+    if (doc.span === null) return;
+    const next = dated[i + 1];
+    const end = next?.span == null ? doc.span.start : isoDayMinusOne(next.span.start);
+    doc.span = { ...doc.span, end };
+  });
 }
 
 function textIncludes(haystack: string | null, needle: string): boolean {
@@ -431,6 +458,11 @@ export const handlers = [
           excerpt: firstPassage === undefined ? d.title : firstPassage.text.slice(0, 120),
           span: d.span,
           pathHint: d.id,
+          // v1.5, tranche 6 (Task 12): the real proposal is computed from
+          // nearby photos once the datation screen consumes it. Always
+          // absent here for now — a valid, honest "nothing to propose",
+          // never a guessed value ahead of that task.
+          proposal: null,
         };
       });
     return HttpResponse.json({ items });
@@ -438,11 +470,6 @@ export const handlers = [
 
   http.put('*/ref/web-span', async ({ request }) => {
     const body = WebSpanPutInputSchema.parse(await request.json());
-    if (body.dateTo < body.dateFrom) {
-      return error(400, ErrorCode.INVALID_PARAMETER, 'La date de fin précède la date de début.', {
-        parameter: 'dateTo', received: body.dateTo, accepted: null,
-      });
-    }
     const doc = store.documents.find((d) => d.id === body.documentId);
     if (doc === undefined) {
       return error(404, ErrorCode.NOT_FOUND, 'Document introuvable.', {
@@ -451,11 +478,13 @@ export const handlers = [
     }
     // Contract §4.8: a web_span is always an INFERENCE — it fills a void,
     // never arbitrates. The capital rule (ResolvedDateSchema) would refuse
-    // this response if it were marked `decision` instead.
+    // this response if it were marked `decision` instead. `end` is a
+    // placeholder until recomputeWebSpanEnds derives the real one below.
     doc.span = {
-      start: body.dateFrom, end: body.dateTo, precision: DatePrecision.DAY,
+      start: body.dateFrom, end: body.dateFrom, precision: DatePrecision.DAY,
       kind: DateKind.INFERENCE, source: DateSource.WEB_SPAN, bracketHours: null,
     };
+    recomputeWebSpanEnds();
     return HttpResponse.json(doc);
   }),
 
@@ -468,6 +497,7 @@ export const handlers = [
       });
     }
     doc.span = null;
+    recomputeWebSpanEnds();
     return HttpResponse.json(doc);
   }),
 
@@ -1116,6 +1146,13 @@ export const handlers = [
       createdAt: NOW,
       updatedAt: NOW,
       attachedTo: body.attachedTo,
+      derivedFrom: body.derivedFrom ?? null,
+      // A freshly created note's body IS exactly what was copied (or empty,
+      // written from scratch) — never edited yet. The PATCH handler below
+      // does not yet flip this on a later text edit (task 11's concern, not
+      // task 1's): a known simplification, not a lie about THIS note's
+      // current state.
+      editedSince: false,
     };
     task.notes.push(note);
     task.noteCount = task.notes.length;

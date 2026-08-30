@@ -26,13 +26,26 @@ const CANONICAL: ReadonlyArray<readonly [DateSource, DateKind]> = [
   [DateSource.WEB_SPAN, DateKind.INFERENCE],
 ];
 
+/**
+ * `page_date`'s cascade (register → notes → carried inheritance) is the one
+ * source with TWO legitimate natures — `reading` when a page carries its own
+ * date, `inference` when it borrows the previous page's. `decision` is the
+ * one nature it can never have: nothing about this cascade arbitrates
+ * against conflicting evidence the way an `annotation` does.
+ */
+const PAGE_DATE_VALID: readonly DateKind[] = [DateKind.READING, DateKind.INFERENCE];
+
 describe('expectedKindFor', () => {
   test.each(CANONICAL)('%s is a %s', (source, kind) => {
     expect(expectedKindFor(source)).toBe(kind);
   });
 
+  test('page_date has two valid natures, reading and inference, never decision', () => {
+    expect(expectedKindFor(DateSource.PAGE_DATE)).toEqual(PAGE_DATE_VALID);
+  });
+
   test('every DateSource in the shared enum has a kind', () => {
-    const covered = CANONICAL.map(([source]) => source).sort();
+    const covered = [...CANONICAL.map(([source]) => source), DateSource.PAGE_DATE].sort();
     expect(covered).toEqual(Object.values(DateSource).sort());
   });
 
@@ -88,6 +101,18 @@ describe('INVARIANT §7.1 — a disagreeing (source, kind) pair must fail loudly
         assertKindConsistent(source, kind);
       }).toThrow(KindDisagreementError);
     }
+  });
+
+  test.each(PAGE_DATE_VALID)('page_date passes as %s', (kind) => {
+    expect(() => {
+      assertKindConsistent(DateSource.PAGE_DATE, kind);
+    }).not.toThrow();
+  });
+
+  test('page_date dressed up as a decision throws — nothing about this cascade arbitrates', () => {
+    expect(() => {
+      assertKindConsistent(DateSource.PAGE_DATE, DateKind.DECISION);
+    }).toThrow(KindDisagreementError);
   });
 });
 

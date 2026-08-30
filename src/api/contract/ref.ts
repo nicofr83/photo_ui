@@ -43,6 +43,19 @@ export type AlbumSpanPutInput = z.infer<typeof AlbumSpanPutInputSchema>;
 
 export const AlbumSpanDeleteInputSchema = z.strictObject({ albumPath: z.string() });
 
+/**
+ * v1.5: what a proposal would apply, and what it is worth — the same
+ * "worth AND weakness" reasoning as the photo/text overlap summary,
+ * applied to a single undated document borrowing its DATED neighbour's day.
+ */
+export const WebDateProposalSchema = z.strictObject({
+  date: IsoDateSchema,
+  photoCount: z.number().int(),
+  datedToDayCount: z.number().int(),
+  spanDays: z.number().int(),
+});
+export type WebDateProposal = z.infer<typeof WebDateProposalSchema>;
+
 export const WebDocumentRowSchema = z.strictObject({
   documentId: z.string(),
   title: z.string(),
@@ -52,15 +65,23 @@ export const WebDocumentRowSchema = z.strictObject({
   span: ResolvedDateSchema.nullable(),
   /** The document's PATH is the only date hint. Presented as exactly that. */
   pathHint: z.string(),
+  /** v1.5: `null` when there is no dated neighbour to propose from. */
+  proposal: WebDateProposalSchema.nullable(),
 });
 export type WebDocumentRow = z.infer<typeof WebDocumentRowSchema>;
 
 export const WebDocumentListSchema = z.strictObject({ items: z.array(WebDocumentRowSchema) });
 
+/**
+ * v1.5: a single START bound, never `dateTo` — the end is computed at read
+ * time (the next DATED document by date, minus a day; or this document's
+ * own date if it is the last). Chaining is between dated documents, by
+ * date; `document_id` plays no role, and an undated document is never
+ * rescued by inheritance.
+ */
 export const WebSpanPutInputSchema = z.strictObject({
   documentId: z.string(),
   dateFrom: IsoDateSchema,
-  dateTo: IsoDateSchema,
   note: z.string().nullable(),
 });
 export type WebSpanPutInput = z.infer<typeof WebSpanPutInputSchema>;

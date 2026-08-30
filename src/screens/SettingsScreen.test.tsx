@@ -135,8 +135,8 @@ describe('contract §4.8 — web documents, where the path is the only date hint
     const user = userEvent.setup();
     setup();
     const row = await screen.findByTestId('web-doc-web/2003/2003_gal_1');
+    // v1.5: a single START bound — the end is derived server-side, never entered.
     await user.type(within(row).getByLabelText(/premier jour/i), '2003-01-01');
-    await user.type(within(row).getByLabelText(/dernier jour/i), '2003-12-31');
     await user.click(within(row).getByRole('button', { name: /enregistrer/i }));
 
     const date = await within(row).findByTestId('resolved-date');

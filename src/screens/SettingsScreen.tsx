@@ -223,14 +223,16 @@ function WebSpans(): React.JSX.Element {
 function WebDocRow({ row }: { readonly row: WebDocumentRow }): React.JSX.Element {
   const editor = useWebSpan();
   const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
   const [note, setNote] = useState('');
   const [doc, setDoc] = useState<TextDocument | null>(null);
 
+  // v1.5: a web span is a single START bound — the end is derived (the next
+  // DATED document's day minus one, or this document's own day if it is
+  // the last), never entered.
   const save = (): void => {
-    if (!isIsoDate(dateFrom) || !isIsoDate(dateTo)) return;
-    void editor.save({ documentId: row.documentId, dateFrom, dateTo, note: note === '' ? null : note })
-      .then((d) => { setDoc(d); setDateFrom(''); setDateTo(''); setNote(''); })
+    if (!isIsoDate(dateFrom)) return;
+    void editor.save({ documentId: row.documentId, dateFrom, note: note === '' ? null : note })
+      .then((d) => { setDoc(d); setDateFrom(''); setNote(''); })
       .catch(() => undefined);
   };
 
@@ -266,15 +268,6 @@ function WebDocRow({ row }: { readonly row: WebDocumentRow }): React.JSX.Element
           />
         </label>
         <label className={styles['field']}>
-          Dernier jour
-          <input
-            className={styles['control']}
-            type="date"
-            value={dateTo}
-            onChange={(e) => { setDateTo(e.target.value); }}
-          />
-        </label>
-        <label className={styles['field']}>
           Note
           <input
             className={styles['control']}
@@ -286,7 +279,7 @@ function WebDocRow({ row }: { readonly row: WebDocumentRow }): React.JSX.Element
         <button
           className={styles['button']}
           type="button"
-          disabled={editor.isPending || dateFrom === '' || dateTo === ''}
+          disabled={editor.isPending || dateFrom === ''}
           onClick={save}
         >
           Enregistrer

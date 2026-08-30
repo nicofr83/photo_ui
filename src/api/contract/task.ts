@@ -74,6 +74,10 @@ export const TaskNoteSchema = z.strictObject({
     images: z.array(CloudAssetIdSchema),
     texts: z.array(TextRefSchema),
   }),
+  /** v1.5: the period text this note was copied from. `null` = written from scratch. */
+  derivedFrom: TextRefSchema.nullable(),
+  /** v1.5: the body no longer matches the copied text verbatim. Always `false` without `derivedFrom`. */
+  editedSince: z.boolean(),
 });
 export type TaskNote = z.infer<typeof TaskNoteSchema>;
 
@@ -84,6 +88,7 @@ export const TaskNoteCreateInputSchema = z.strictObject({
     images: z.array(CloudAssetIdSchema),
     texts: z.array(TextRefSchema),
   }),
+  derivedFrom: TextRefSchema.optional(),
 });
 export type TaskNoteCreateInput = z.infer<typeof TaskNoteCreateInputSchema>;
 

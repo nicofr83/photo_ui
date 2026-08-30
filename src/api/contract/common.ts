@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { expectedKindFor, expectedKindForPosition } from '../../domain/dateKind';
+import { expectedKindFor, expectedKindForPosition, isKindConsistent } from '../../domain/dateKind';
 import { isIsoDate, isIsoTimestamp, isLocalDateTime } from '../../shared/date_interface';
 import {
   DateKind, DatePrecision, DateSource, MatchField, PositionSource,
@@ -50,12 +50,13 @@ export const ResolvedDateSchema = z
     // superRefine, not refine: Zod 4 ignores a function passed as refine's
     // second argument, which silently collapsed these to "Invalid input" with
     // no path — useless for the drift detection this exists for.
-    const expected = expectedKindFor(date.source);
-    if (expected !== date.kind) {
+    if (!isKindConsistent(date.source, date.kind)) {
+      const expected = expectedKindFor(date.source);
+      const expectedLabel = typeof expected === 'string' ? expected : expected.join(' or a ');
       ctx.addIssue({
         code: 'custom',
         path: ['kind'],
-        message: `"${date.source}" is a ${expected}, but the server called it a ${date.kind}`,
+        message: `"${date.source}" is a ${expectedLabel}, but the server called it a ${date.kind}`,
       });
     }
 
