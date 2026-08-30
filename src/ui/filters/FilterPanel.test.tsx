@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 
-import { EMPTY_FILTERS, type FilterState } from '../../domain/filterState';
+import { EMPTY_FILTERS, fromSearchParams, toSearchParams, type FilterState } from '../../domain/filterState';
 import { PhotoSort } from '../../shared/enums';
 import { renderWithProviders } from '../../test/renderWithProviders';
 
@@ -12,6 +12,15 @@ import { FilterPanel } from './FilterPanel';
  * FilterPanel is controlled, so the harness must actually hold the state and
  * feed it back. A harness that only records would let a component pass while
  * being unusable in the real app.
+ *
+ * `ImagesScreen` never holds `FilterState` directly — every `onChange` goes
+ * `toSearchParams` into the URL, and `filters` comes back OUT via
+ * `fromSearchParams` on the next render (`router.tsx`'s `useSearchParams`).
+ * A harness that stores the raw `FilterState` object instead skips that
+ * round trip — and `dateFrom`/`dateTo` only survive it TOGETHER (spec: a
+ * half-open range means nothing to `/photos`, so neither URL direction
+ * persists one bound alone). That gap let a real bug — the two month
+ * inputs could never be filled in one at a time — pass all 588 tests.
  */
 function setup(initial: FilterState = EMPTY_FILTERS) {
   const changes: FilterState[] = [];
@@ -21,7 +30,10 @@ function setup(initial: FilterState = EMPTY_FILTERS) {
     return (
       <FilterPanel
         filters={filters}
-        onChange={(next) => { changes.push(next); setFilters(next); }}
+        onChange={(next) => {
+          changes.push(next);
+          setFilters(fromSearchParams(toSearchParams(next)));
+        }}
       />
     );
   }

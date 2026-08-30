@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+
 import { useAlbums } from '../../api/hooks/useAlbums';
 import { usePhotoFacets } from '../../api/hooks/usePhotoFacets';
 import type { FacetBucket } from '../../api/contract/photo';
@@ -33,9 +35,35 @@ export function FilterPanel({ filters, onChange }: Props): React.JSX.Element {
   const facets = usePhotoFacets(toSearchParams(filters));
   const tokens = activeFilterTokens(filters);
 
-  const setMonth = (edge: 'from' | 'to') => (value: string) => {
-    const day = edge === 'from' ? firstDayOfMonth(value) : lastDayOfMonth(value);
-    onChange(edge === 'from' ? { ...filters, dateFrom: day } : { ...filters, dateTo: day });
+  /**
+   * The two month inputs are typed one at a time, but `dateFrom`/`dateTo`
+   * only ever reach the URL TOGETHER — a half-open range means nothing to
+   * `/photos` (confirmed against the real backend: a lone `dateFrom` is
+   * silently ignored, `filters.applied` stays empty). Deriving each input's
+   * value straight from `filters` made completing a range structurally
+   * impossible: committing the FIRST month typed round-trips through
+   * `toSearchParams`/`fromSearchParams` with the other bound still `null`,
+   * which drops it — the second month can never rescue what the first
+   * already lost. Local draft state holds a partial edit until BOTH are
+   * complete, then commits once, atomically. Bug found live: typing into
+   * either field never produced any visible value at all.
+   */
+  const [draftFrom, setDraftFrom] = useState(toMonthInput(filters.dateFrom));
+  const [draftTo, setDraftTo] = useState(toMonthInput(filters.dateTo));
+
+  // Sync down when the pair changes from OUTSIDE this input pair — the ×
+  // token on the active-filter chip, or a fresh navigation. Never fights a
+  // keystroke: nothing echoes back from `filters` until a commit below
+  // actually happens.
+  useEffect(() => {
+    setDraftFrom(toMonthInput(filters.dateFrom));
+    setDraftTo(toMonthInput(filters.dateTo));
+  }, [filters.dateFrom, filters.dateTo]);
+
+  const commitDates = (from: string, to: string): void => {
+    const start = firstDayOfMonth(from);
+    const end = lastDayOfMonth(to);
+    if (start !== null && end !== null) onChange({ ...filters, dateFrom: start, dateTo: end });
   };
 
   const toggleAlbum = (path: string) => {
@@ -95,8 +123,8 @@ export function FilterPanel({ filters, onChange }: Props): React.JSX.Element {
           <input
             className={styles['control']}
             type="month"
-            value={toMonthInput(filters.dateFrom)}
-            onChange={(e) => { setMonth('from')(e.target.value); }}
+            value={draftFrom}
+            onChange={(e) => { setDraftFrom(e.target.value); commitDates(e.target.value, draftTo); }}
           />
         </label>
         <label className={styles['field']}>
@@ -104,8 +132,8 @@ export function FilterPanel({ filters, onChange }: Props): React.JSX.Element {
           <input
             className={styles['control']}
             type="month"
-            value={toMonthInput(filters.dateTo)}
-            onChange={(e) => { setMonth('to')(e.target.value); }}
+            value={draftTo}
+            onChange={(e) => { setDraftTo(e.target.value); commitDates(draftFrom, e.target.value); }}
           />
         </label>
         <p className={styles['note']}>
