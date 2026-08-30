@@ -62,9 +62,10 @@ candidates n'ont pas la même nature.** `TextPage.window` est une **inférence**
 (`kind: "inference"`, ambre italique `≈` par la règle en vigueur), absente sur
 3 pages du journal, et **héritée de la page voisine sur 22 des 103 pages de
 « Ma vie »** (`spanSource: "carried"` — rien sur cette page-là ne l'affirme).
-La date des passages, elle, est une **lecture** (`kind: "reading"`, vert). Les
-deux diffèrent sur 5 pages du journal. C'est le point le plus lourd du brief :
-voir §F.
+La date des passages, elle, est une **lecture** (`kind: "reading"`, vert).
+*Tranché depuis : la lue d'abord, la calculée en repli — 133 pages en vert,
+22 en ambre, aucune sans date. Voir §F.28, et §F.71 pour les 85 pages où les
+deux valeurs divergent.*
 
 ---
 
@@ -403,38 +404,61 @@ disponible quand elle existe, et se tait quand elle n'existe pas — jamais un
 jj/mm/aaaa fabriqué. Le sort de ce titre une fois posé se règle en §F.54,
 comme pour les deux autres sources.*
 
-**51. [Tension] Les 205 légendes de galerie — leur place est réglée, leur
-fiabilité ne l'est pas.**
-**Le registre est tranché** : ce ne sont pas une quatrième source. Ce sont des
-passages du site portant **en plus** un lien vers une photo. Elles servent
-d'abord à dater le document (§G) ; une fois le document daté, elles redeviennent
-du texte d'époque, filtrable et sélectionnable comme le reste, avec leur photo
-en regard. Rien à ajouter au modèle — c'est la bonne réponse et elle ferme la
-tension de registre que j'avais signalée.
+**51. TRANCHÉ — les légendes sont indicatives, et rien de plus.** Tes mots :
+« Le contenu des légendes est là à titre indicatif. donc pas de filtre sur les
+légendes de photos, pas de relecture, juste l'afficher quand la page du site web
+est affichée (ou le voir quand le curseur est sur la photo) ».
 
-Reste ce qui n'est pas réglé, et qui est à toi : **aucune n'a été relue**, et
-leur qualité est très inégale. Trois faits mesurés :
-- **Aucune n'est vérifiée** : les 205 sortent avec `verified: false`. La spec
-  prévoyait « une relecture visuelle des 209 liens avant de les tenir pour
-  acquis » — elle n'a pas eu lieu. Et le champ ne distingue pas, en sortie,
-  « pas encore relu » de « relu et rejeté ».
-- **La moitié seulement est dans ta période** : 103 sur 2003, 53 sur 1999,
-  **33 sur 2005-2006**, 16 ailleurs — dont **13 sur une page d'astronomie**
-  (`web/Astro/misc/meade`), qui n'a rien à voir avec le bateau.
-- **47 d'entre elles font plus de 400 caractères**, une atteint **10 363** :
-  ce sont des paragraphes de page entiers, pas des légendes. 137 seulement
-  tiennent en 120 caractères.
-→ **(a)** un geste « ce lien est bon / ce lien est faux » **dans l'écran de
-datation** (§G), là où tu regardes déjà la photo à côté de son texte — la
-validation ne coûte alors rien de plus que ce que tu fais déjà ·
-**(b)** le même geste, mais dans l'écran Textes · **(c)** aucun geste, elles
-restent marquées « appariement machine, non relu » pour toujours.
-*Recommandation : **(a)**. Tu ouvres l'écran de datation, tu regardes la photo
-et sa légende pour trouver la date : à ce moment-là tu **sais** si le lien est
-bon, et le dire est un clic. C'est le seul endroit où la relecture des 209
-liens que la spec réclamait se fait sans être une corvée séparée. Sans elle,
-ces textes restent servis comme des faits alors qu'aucun humain ne les a
-regardés.*
+C'est la simplification la plus économique de tout ce document, et elle règle
+d'un coup les trois problèmes que j'avais mesurés : **une légende de galerie
+n'est plus une unité de texte sélectionnable.** Elle n'entre dans aucune tâche,
+ne se filtre pas, ne se relit pas, ne part pas dans le dossier livré. Sa qualité
+inégale — 33 hors période, 13 sur une page d'astronomie, 47 qui font plus de 400
+caractères dont une de 10 363 — cesse d'être un problème, puisqu'elle n'est plus
+servie comme un fait. Il n'y a donc plus ni écran de relecture, ni filtrage, ni
+geste de validation : j'ai retiré ces questions.
+
+Deux usages lui restent : **aide visuelle quand tu dates un document du site**
+(§G) et **affichage au survol d'une photo**. Deux vérifications faites, et une
+question qui reste :
+
+- **Rien à casser.** La table `app.task_text` est **vide** — aucune tâche n'a
+  jamais sélectionné le moindre texte, donc encore moins une légende. Retirer la
+  case à cocher que l'écran Textes leur donne aujourd'hui ne perd rien.
+- **La donnée du survol existe déjà.** `GET /photos/:id/texts` renvoie bien les
+  `web_caption` d'une photo — mesuré sur une photo appariée. Rien à ajouter au
+  contrat pour l'affichage au survol.
+
+**72. [Ambigu] « La légende » désigne deux choses différentes dans cette
+application.**
+Il y a `Photo.caption` — la **légende produite par une machine**, celle du
+légendage VLM prévu, aujourd'hui vide sur les 3 930 photos — et il y a la
+`web_caption`, **ton texte d'époque** repris du site. Les deux s'appellent
+« légende » et les deux s'afficheraient au survol d'une photo. La règle des
+trois natures de texte les sépare précisément : un texte d'époque et une
+description de machine n'occupent jamais le même emplacement.
+→ **(a)** au survol, la `web_caption` seule, nommée « texte du site » plutôt
+que « légende » · **(b)** les deux, dans deux blocs visuellement distincts et
+étiquetés · **(c)** les deux, sans distinction.
+*Recommandation : **(a)** aujourd'hui, **(b)** le jour où le légendage VLM
+tourne. **(c)** ferait passer une phrase de machine pour une phrase que tu as
+écrite en 2003 — c'est exactement le mélange que la règle interdit.*
+
+**73. [Non dit] Au survol, la légende est un lien direct ; ce qui l'entoure ne
+l'est pas.**
+`GET /photos/:id/texts` a renvoyé **44 unités** pour la photo que j'ai testée :
+une `web_caption` — rattachée à **cette photo précise, par empreinte visuelle** —
+et 43 passages et entrées qui ne sont là que parce que **leurs dates se
+recouvrent**. Servies dans la même liste, elles se ressemblent, alors que
+l'une dit « ce texte parle de cette photo » et les autres « ce texte est
+contemporain de cette photo ».
+→ **(a)** au survol, **seulement** la légende de galerie : c'est le seul texte
+qui parle vraiment de cette photo · **(b)** la légende en tête, nettement
+détachée, les textes contemporains en dessous · **(c)** tout ensemble.
+*Recommandation : **(a)** pour le survol, qui doit rester bref, et **(b)** dans
+le détail de la photo, où la place existe. La distinction lien direct /
+coïncidence de dates est la même que celle que le manifeste protège déjà avec
+`covers_images` : « contemporain » n'est pas « légende ».*
 
 **52. [Non dit] La recherche par texte sur cette source, elle, marche déjà.**
 `/texts?q=…&documentId=web/…` fonctionne sans date. C'est le seul de tes deux
@@ -471,45 +495,56 @@ version structurée. Et c'est la lecture « au plus simple ».*
 
 ### F.2 — La liste de pages
 
-**28. [Tension] La date affichée sous chaque page : lecture ou inférence ?**
-Deux valeurs disponibles, deux natures :
-- `window.start` de la page — une **inférence** (`kind: "inference"`) ; absente
-  sur 3 pages du journal ; **héritée de la page précédente sur 22 des 103 pages
-  de « Ma vie »**, où rien de la page ne l'affirme.
-- la plus petite date **lue** sur la page (les passages, `kind: "reading"`,
-  précision au jour, dates exactes) ; elle diffère de `window.start` sur 5 pages
-  du journal.
+**28. TRANCHÉ — la lue d'abord, en vert ; la calculée en repli, en ambre `≈`.**
+Toujours une date, toujours sa nature visible. J'ai vérifié ce que la règle
+donne sur les 155 pages, et elle est meilleure que ce que j'annonçais :
 
-La règle « une inférence ne doit jamais ressembler à une lecture » impose que le
-premier s'affiche en **ambre italique avec `≈`** et le second en **vert**. Une
-liste où la moitié des dates est ambre est laide ; une liste où tout est vert
-est fausse.
-→ **(a)** afficher la **plus petite date lue** sur la page, en vert ; les pages
-sans passage daté affichent « sans date » · **(b)** afficher `window.start`,
-donc en ambre `≈` partout · **(c)** afficher la date lue quand elle existe,
-sinon la fenêtre en ambre.
-*Recommandation : **(a)**. C'est vrai, c'est vert, et ça ne demande aucune
-exception à la règle. Les 22 pages « héritées » de « Ma vie » ont de toute
-façon des passages datés ; ce sont les 3 pages du journal sans aucune date qui
-tomberont en « sans date », et il faut qu'elles se voient.*
+- **Aucune page ne reste sans date.** Zéro page sur 155 n'a ni date lue ni
+  fenêtre. En particulier les 3 pages du journal sans fenêtre **ont bien des
+  passages datés** : elles seront en vert, pas en « sans date ». Ma
+  recommandation précédente se trompait sur ce point.
+- **Les 22 pages « héritées » de « Ma vie » n'ont effectivement aucune date
+  lue** — vérifié, aucune des 22 ne porte un passage daté. Elles tombent en
+  ambre `≈`, ce qui est exact.
+- Bilan à l'écran : **133 pages en vert, 22 en ambre**. La liste n'est ni
+  uniformément verte ni à moitié ambre.
 
-**29. [Tension] Dans quel ordre les pages ? Le journal n'est pas chronologique.**
-Page 5 du journal = **avril 1998**, page 3 = juillet 1998, page 8 = février
-1999. « Ma vie » est chronologique de bout en bout.
-→ **(a)** trier par **date** par défaut, le numéro de page affiché à côté ·
-**(b)** trier par **numéro de page** par défaut, la date affichée à côté ·
-**(c)** un sélecteur, défaut = date.
-*Recommandation : **(c)** avec défaut **date**. Tu filtres par période : une
-liste qui remonte au hasard dans le temps rendrait ton propre filtre illisible.
-Mais le numéro de page reste le repère physique quand tu as le cahier en main.*
+**29. TRANCHÉ, dans le même geste — reste l'ordre.** Le tri de la liste n'était
+pas dans ta réponse ; je maintiens la question et ma recommandation : un
+sélecteur, **défaut par date**, le numéro de page affiché à côté. Page 5 du
+journal = avril 1998, page 3 = juillet 1998, page 8 = février 1999 ; « Ma vie »
+est chronologique de bout en bout. Une phrase de ta part suffit.
 
-**30. [Non dit] Les pages sans aucune date : où vont-elles ?**
-Trois pages du journal (dont p001 et p002), zéro sur « Ma vie ».
-→ **(a)** groupées à la fin, jamais dispersées à une date inventée ·
-**(b)** masquées dès qu'un filtre de date est actif.
-*Recommandation : **(a)**, exactement la règle déjà appliquée aux photos sans
-date dans la grille. Et **(b)** est de toute façon le comportement du serveur
-sous filtre (voir §F.34).*
+**71. [Non dit] Faut-il signaler quand la date lue et la fenêtre divergent ?
+Attention : ce n'est pas 5 pages, c'est 85.**
+On m'a demandé de t'instruire ce point parce qu'une divergence peut trahir une
+erreur de transcription. J'ai mesuré, et le chiffre que j'avais donné était
+incomplet : la divergence touche **5 pages du journal et 80 des 103 pages de
+« Ma vie »** — 85 sur 155, plus de la moitié du corpus.
+
+Mais elle n'a pas la même cause des deux côtés :
+- Sur **« Ma vie », elle est structurelle** : dans 61 des 80 cas la fenêtre
+  commence exactement à la **dernière date lue de la page précédente** — c'est
+  la continuité du récit, pas une anomalie. L'écart vaut **1 jour dans 57 cas,
+  2 jours dans 20, 3 jours dans 3. Jamais plus.**
+- Sur **le journal, deux pages sortent vraiment du lot** : la page 35 (lue
+  22/04/2000, fenêtre 24/06/2000 — **63 jours**) et la page 9 (lue 01/07/1999,
+  fenêtre 04/08/1999 — **34 jours**). Les trois autres écarts valent 1, 1 et 4
+  jours.
+
+Un signal qui se déclenche sur toute divergence s'allumerait donc sur 55 % des
+pages, dont l'immense majorité pour une raison de construction. Il ne
+signalerait rien.
+→ **(a)** signaler seulement **au-delà d'un seuil** (7 jours) : deux pages dans
+tout le corpus, `logbook/p035` et `logbook/p009`, qui méritent en effet un coup
+d'œil · **(b)** signaler toute divergence · **(c)** ne rien signaler.
+*Recommandation : **(a)**. Deux pages à vérifier est une liste qu'on traite ;
+85 est une liste qu'on ignore. Et le seuil se dit à l'écran, il ne se cache
+pas.*
+
+**30. SANS OBJET — le cas n'existe pas.** Je demandais où ranger les pages sans
+aucune date. La mesure dit **zéro sur 155** : sous la règle de repli que tu
+viens de trancher, chaque page porte une date. La question tombe.
 
 **31. [Ambigu] « Une miniature de la page du haut pour le journal de bord » —
 qu'est-ce que « la page du haut » ?**
@@ -839,6 +874,11 @@ pré-rempli, la règle est amendée pour ce cas · **(c)** indice pur, sans bout
 sur les 22 documents proposés — sans toucher à la règle : le champ reste vide
 tant que tu n'as pas agi, et c'est ton geste qui pose la date. **(b)** demande
 un amendement au contrat gelé pour un gain d'un seul clic.*
+*Pour que tu aies les deux positions : le pilote maintient **(b)**, le
+pré-remplissage, en précisant qu'il s'appuie sur les dates des photos et non
+sur le contenu des légendes. C'est exact, et ça ne change rien à mon objection,
+qui porte sur la règle « jamais pré-remplis » et pas sur la source de la
+proposition. À toi de trancher.*
 
 **64. [Tension] La nature de la date que tu saisis : une décision close dit
 « inférence », et ce nouvel écran pourrait la rouvrir.**
@@ -908,18 +948,20 @@ pas · **(b)** elle apparaît, comme page sans texte.
 *Recommandation : **(a)**. C'est une page de matériel d'astronomie, hors sujet
 et hors période ; §G.62 l'écarte déjà par le périmètre.*
 
-**68. [Ambigu] « Sinon on n'utilise pas la légende » — jusqu'où ?**
-Ta phrase se lit de deux façons : soit **la légende ne sert qu'ici**, comme aide
-au datage, et n'apparaît nulle part ailleurs ; soit elle sert **d'abord** ici, et
-redevient ensuite du texte comme un autre une fois le document daté — ce qui est
-la lecture qu'on m'a transmise, et celle qui fait des légendes du texte d'époque
-utilisable pour 2003-2004.
-→ **(a)** aide au datage **et** texte sélectionnable ensuite, dans l'écran
-Textes, avec sa photo en regard · **(b)** aide au datage seulement ; elles
-n'apparaissent pas dans l'écran Textes.
-*Recommandation : **(a)**. Sous **(b)**, 2003-2004 perd sa seule source de
-texte d'époque au moment précis où on vient de lui donner une date. Mais dis-le
-explicitement : c'est ta phrase qui décide.*
+**68. TRANCHÉ par §F.51 — indicatif, jamais sélectionnable.** Je demandais
+jusqu'où allait ton « sinon on n'utilise pas la légende ». Ta réponse sur les
+légendes le dit : elles s'affichent, elles n'entrent nulle part. La question
+tombe.
+
+Une conséquence que je dois quand même poser, parce qu'elle a un coût réel :
+sous cette règle, **2003-2004 n'a plus aucun texte d'époque sélectionnable**.
+Les 103 légendes de cette période étaient la seule matière textuelle
+contemporaine des 2 041 photos, et elles ne partiront pas dans le dossier livré.
+Ce n'est pas un désaccord — c'est le prix de la simplification, et il est peut-
+être le bon. Mais tu l'assumes en connaissance de cause : pour ces deux années,
+le dossier livré contiendra tes **notes** et rien d'autre côté texte. Si un jour
+tu veux qu'une légende parte avec la photo, le geste existe déjà — la recopier
+dans une note (§F.42), ce que tu as justement rendu possible.
 
 **69. [Non dit] Le nouvel écran et la section « Site web » des Réglages font la
 même chose.**
@@ -950,35 +992,43 @@ au contrat, à annoncer comme les trois amendements précédents.*
 
 ## Récapitulatif — ce qui bloque vraiment
 
-**Six tranchées, merci — elles sont intégrées :** §F.26 (le site web est une
-troisième source), §F.40 (la sélection reste au passage, dans la page ouverte),
-§F.42 (la note recopie le texte), §E.22 (`TASKS_ROOT` affiché, pas modifiable),
-§F.48 (tu saisis les dates du site, dans un écran dédié), §F.51 (les légendes de
-galerie ne sont pas une quatrième source : elles datent d'abord, puis
-redeviennent du texte).
+**Huit tranchées, merci — toutes intégrées :** §F.26 (le site web est une
+troisième source), §F.28 (la date lue d'abord, la calculée en repli), §F.40 (la
+sélection reste au passage, dans la page ouverte), §F.42 (la note recopie le
+texte), §F.48 (tu saisis les dates du site, dans un écran dédié), §F.51 + §F.68
+(les légendes de galerie sont indicatives, jamais sélectionnables), §E.22
+(`TASKS_ROOT` affiché, pas modifiable). Et §F.30 tombe d'elle-même : la mesure
+dit qu'aucune page ne reste sans date.
 
 **Ce qui bloque encore**, par ordre de portée :
 
-1. **§F.28 + §F.29** — la date affichée sur une page (lecture ou inférence) et
-   l'ordre de la liste. Elles décident du rendu de tout l'écran Textes, et
-   §F.28 demande une exception à une règle en vigueur si tu réponds (b).
-2. **§G.58 + §G.60 + §G.61** — la chaîne « la fin est le début du suivant ». La
+1. **§G.58 + §G.60 + §G.61** — la chaîne « la fin est le début du suivant ». La
    mesure montre qu'elle ne peut pas suivre l'ordre des fichiers, qu'un
    document non daté au milieu se fait avaler par son voisin, et que trois
    documents proposent déjà la même date. Trois réponses courtes, mais sans
-   elles l'écran ne peut pas être spécifié.
-3. **§G.64** — la nature de la date que tu saisis dans ce nouvel écran.
-   Inférence (ta décision du 29/08, inchangée) ou décision (ce que
-   l'affichage d'une proposition changerait) ? C'est le seul point de toute la
-   V1.5 qui toucherait une décision marquée « ne pas rouvrir ».
-4. **§F.46** — le site web n'a **aucun objet page** : l'écran Textes doit y
+   elles l'écran §G ne peut pas être spécifié.
+2. **§G.64** — la nature de la date que tu saisis dans ce nouvel écran.
+   Inférence (ta décision du 29/08, inchangée) ou décision (ce que l'affichage
+   d'une proposition changerait) ? Seul point de toute la V1.5 qui toucherait
+   une décision marquée « ne pas rouvrir ».
+3. **§F.46** — le site web n'a **aucun objet page** : l'écran Textes doit y
    lister des **documents** là où il liste des pages ailleurs.
-5. **§F.54 + §F.55** — les deux conséquences de la recopie. Le titre porte
+4. **§F.54 + §F.55** — les deux conséquences de la recopie. Le titre porte
    désormais seul l'attribution dans `notes.md`, et une note recopiée puis
    retravaillée cesse d'être une citation sans cesser d'y ressembler.
+5. **§F.29** — l'ordre de la liste de pages, resté hors de ta réponse sur les
+   dates. Une phrase.
 6. **§A.6** — ta demande de vérifier le tri des albums. Il **est** correct ; je
    pense que tu veux voir le chemin. Une phrase suffit, et si tu vois encore un
    album mal placé, nomme-le.
+
+**Ce que tu perds avec §F.51, pour que ce soit dit une fois clairement :**
+sous la règle « les légendes sont indicatives », **2003-2004 n'a plus aucun
+texte d'époque sélectionnable**. Les 103 légendes de ces deux années étaient la
+seule matière contemporaine des 2 041 photos. Le dossier livré pour cette
+période contiendra donc tes notes, et rien d'autre côté texte. C'est peut-être
+le bon arbitrage — c'est le tien — mais il ne doit pas se découvrir au premier
+export.
 
 **Une tension que je n'aplanis pas**, parce qu'on m'a demandé de les remonter :
 §G.63 et §G.64 vont tous deux contre une règle déjà écrite — pré-remplir les
