@@ -1,0 +1,6 @@
+/* Bounds the routes area to exactly the viewport minus whatever the global
+   banner/header actually take — no hardcoded pixel offset, so either one
+   changing height never desyncs this. */
+.shell { display: flex; flex-direction: column; height: 100vh; }
+.globalHeader { flex: none; }
+.routes { flex: 1; min-height: 0; }

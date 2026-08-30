@@ -1,4 +1,11 @@
-.screen { display: flex; flex-direction: column; gap: 1rem; }
+/* v1.5, Task 6: FixedHeader (row 1, auto) + the scrolling content (row 2,
+   1fr) — height: 100% relies on App.module.css's .routes { flex: 1;
+   min-height: 0 }, never a hardcoded viewport offset. */
+.screen { display: grid; grid-template-rows: auto 1fr; height: 100%; }
+/* Paired with FixedHeader.module.css's .scrolls on the same element: that
+   one bounds the height and scrolls, this one keeps the vertical rhythm
+   between sections that `.screen`'s own gap used to give them directly. */
+.content { display: flex; flex-direction: column; gap: 1rem; }
 .list { display: flex; flex-direction: column; gap: 0.5rem; padding: 0; margin: 0; list-style: none; }
 .row { display: flex; align-items: center; gap: 0.75rem; padding: 0.35rem; border: 1px solid #e5e7eb; }
 .thumb { width: 4rem; height: 3rem; object-fit: cover; background: #e5e7eb; }

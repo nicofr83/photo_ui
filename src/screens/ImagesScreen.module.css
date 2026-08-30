@@ -1,3 +1,6 @@
+/* v1.5, Task 6: FixedHeader (row 1) + the scrolling layout (row 2, 1fr) —
+   height: 100% relies on App.module.css's .routes { flex: 1; min-height: 0 }. */
+.screen { display: grid; grid-template-rows: auto 1fr; height: 100%; }
 .layout { display: grid; grid-template-columns: 1fr; gap: 1rem; }
 /* 26rem (v1.5 plan, Task 4): the album axis' own names run long
    ("2000-2001/2000-12-viree au Venezuela-3mois") and the filter panel is

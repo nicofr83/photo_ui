@@ -7,6 +7,8 @@ import { useUpdateTask } from '../api/hooks/useTasks';
 import { firstDayOfMonth, lastDayOfMonth, toMonthInput } from '../domain/monthRange';
 import { parseIsoDate } from '../shared/date_interface';
 import { ErrorBanner } from '../ui/primitives/ErrorBanner';
+import { FixedHeader } from '../ui/primitives/FixedHeader';
+import scrollStyles from '../ui/primitives/FixedHeader.module.css';
 import { TaskNav } from '../ui/primitives/TaskNav';
 
 import styles from './ConsigneScreen.module.css';
@@ -46,8 +48,11 @@ export function ConsigneScreen({ slug }: { readonly slug: string }): React.JSX.E
 
   return (
     <section className={styles['screen']}>
-      <TaskNav slug={slug} />
-      <h1>Consigne — {task.data.title}</h1>
+      <FixedHeader>
+        <TaskNav slug={slug} />
+        <h1>Consigne — {task.data.title}</h1>
+      </FixedHeader>
+      <div className={`${String(scrollStyles['scrolls'])} ${String(styles['content'])}`}>
 
       {updateTask.error !== null ? <ErrorBanner error={updateTask.error} /> : null}
 
@@ -121,6 +126,7 @@ export function ConsigneScreen({ slug }: { readonly slug: string }): React.JSX.E
           </button>
         )}
       </fieldset>
+      </div>
     </section>
   );
 }

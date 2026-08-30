@@ -8,3 +8,12 @@
   /* Minimum touch target. Nothing interactive is smaller. */
   --tap-target: 44px;
 }
+
+/* v1.5, Task 6: `App.module.css`'s `.shell { height: 100vh }` needs its own
+   ancestor chain to actually be full-height rather than shrink-to-content —
+   without this, a screen's FixedHeader grid still renders, but has nothing
+   bounding it, so `overflow-y: auto` never has a reason to engage. */
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}

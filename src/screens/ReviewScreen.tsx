@@ -13,6 +13,8 @@ import { overlaps } from '../domain/interval';
 import { originalsUnavailable } from '../domain/systemStatus';
 import { NotesPanel } from '../ui/notes/NotesPanel';
 import { ErrorBanner } from '../ui/primitives/ErrorBanner';
+import { FixedHeader } from '../ui/primitives/FixedHeader';
+import scrollStyles from '../ui/primitives/FixedHeader.module.css';
 import { TaskNav } from '../ui/primitives/TaskNav';
 import { Chronology } from '../ui/review/Chronology';
 import { ControlBanner } from '../ui/review/ControlBanner';
@@ -93,8 +95,11 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
 
   return (
     <section className={styles['screen']}>
-      <TaskNav slug={slug} />
-      <h1>Revue — {task.data.title}</h1>
+      <FixedHeader>
+        <TaskNav slug={slug} />
+        <h1>Revue — {task.data.title}</h1>
+      </FixedHeader>
+      <div className={`${String(scrollStyles['scrolls'])} ${String(styles['content'])}`}>
 
       {/* Spec §5.6: non-blocking — every count is informational, none
           refuses the export below. */}
@@ -217,6 +222,7 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
       ) : null}
 
       <NotesPanel slug={slug} />
+      </div>
     </section>
   );
 }

@@ -6,9 +6,13 @@ import type { TextDocument, TextRef } from '../api/contract/text';
 import { groupBySource, TextSource } from '../domain/textSource';
 import { TextKind } from '../shared/enums';
 import { ErrorBanner } from '../ui/primitives/ErrorBanner';
+import { FixedHeader } from '../ui/primitives/FixedHeader';
+import scrollStyles from '../ui/primitives/FixedHeader.module.css';
 import { TaskNav } from '../ui/primitives/TaskNav';
 import { TextCard } from '../ui/texts/TextCard';
 import styles from '../ui/texts/TextCard.module.css';
+
+import screenStyles from './TextsScreen.module.css';
 
 interface Props {
   /** Overridable for tests. Defaults to opening the grid pre-filtered on this
@@ -51,9 +55,12 @@ export function TextsScreen({ onShowPhotos }: Props): React.JSX.Element {
   if (documents.isPending) return <p role="status">Chargement des documents…</p>;
 
   return (
-    <div>
-      <TaskNav slug={slug} />
-      <h1>Textes</h1>
+    <div className={screenStyles['screen']}>
+      <FixedHeader>
+        <TaskNav slug={slug} />
+        <h1>Textes</h1>
+      </FixedHeader>
+      <div className={scrollStyles['scrolls']}>
       {groupBySource(documents.data.items).map((group) => (
         <section className={styles['section']} key={group.source} aria-label={group.title}>
           <h2>{group.title}</h2>
@@ -80,6 +87,7 @@ export function TextsScreen({ onShowPhotos }: Props): React.JSX.Element {
           ) : null}
         </section>
       ))}
+      </div>
     </div>
   );
 }

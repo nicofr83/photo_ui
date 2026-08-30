@@ -11,6 +11,8 @@ import { matchesSearch } from '../domain/searchFold';
 import { isIsoDate } from '../shared/date_interface';
 import { ResolvedDateView } from '../ui/date/ResolvedDate';
 import { ErrorBanner } from '../ui/primitives/ErrorBanner';
+import { FixedHeader } from '../ui/primitives/FixedHeader';
+import scrollStyles from '../ui/primitives/FixedHeader.module.css';
 
 import styles from './SettingsScreen.module.css';
 
@@ -29,9 +31,13 @@ const WARNING_LABEL: Record<string, (details: { prefixYear?: number; albumPath?:
 export function SettingsScreen(): React.JSX.Element {
   return (
     <section className={styles['screen']}>
-      <h1>Réglages</h1>
-      <AlbumSpans />
-      <WebSpans />
+      <FixedHeader>
+        <h1>Réglages</h1>
+      </FixedHeader>
+      <div className={`${String(scrollStyles['scrolls'])} ${String(styles['content'])}`}>
+        <AlbumSpans />
+        <WebSpans />
+      </div>
     </section>
   );
 }

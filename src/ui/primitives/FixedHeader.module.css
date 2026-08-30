@@ -1,0 +1,17 @@
+.fixed {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Shared by every screen's own content wrapper (and Textes' two panes,
+   Task 8/9): the OWNING grid gives this element a bounded height via
+   `grid-template-rows: auto 1fr`; `min-height: 0` is what lets a flex/grid
+   child actually shrink below its content size instead of pushing the
+   grid taller than its row — without it `overflow-y: auto` never engages. */
+.scrolls {
+  min-height: 0;
+  overflow-y: auto;
+}

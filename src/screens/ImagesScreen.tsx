@@ -8,6 +8,8 @@ import { PhotoDetail } from '../ui/detail/PhotoDetail';
 import { FilterPanel } from '../ui/filters/FilterPanel';
 import { PhotoGrid } from '../ui/grid/PhotoGrid';
 import { ErrorBanner } from '../ui/primitives/ErrorBanner';
+import { FixedHeader } from '../ui/primitives/FixedHeader';
+import scrollStyles from '../ui/primitives/FixedHeader.module.css';
 import { TaskNav } from '../ui/primitives/TaskNav';
 
 import styles from './ImagesScreen.module.css';
@@ -35,9 +37,11 @@ export function ImagesScreen(): React.JSX.Element {
   };
 
   return (
-    <>
-      <TaskNav slug={slug} />
-      <div className={styles['layout']}>
+    <div className={styles['screen']}>
+      <FixedHeader>
+        <TaskNav slug={slug} />
+      </FixedHeader>
+      <div className={`${String(scrollStyles['scrolls'])} ${String(styles['layout'])}`}>
         <aside className={styles['aside']}>
           <FilterPanel
             filters={filters}
@@ -65,6 +69,6 @@ export function ImagesScreen(): React.JSX.Element {
           )}
         </main>
       </div>
-    </>
+    </div>
   );
 }
