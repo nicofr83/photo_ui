@@ -1174,3 +1174,18 @@ DETAIL : commit `d4245c3`.
 **La Tranche 6 (v1.5) est complète.**
 
 ASK : aucune décision Nicolas. J'enchaîne sur la Tranche 7 (Task 13 — les racines et le répertoire de livraison).
+
+---
+
+## Avancement — impl-frontend, v1.5 Tranche 7 complète — Task 13 (2026-08-30)
+
+RE : v1.5, tranche 7 — les racines et le répertoire de livraison
+DONE : Réglages gagne « Racines de stockage » — `systemStatus.roots` listé en lecture seule (nom, variable, chemin, disponibilité), avec la phrase qui explique que `TASKS_ROOT` est la liste blanche d'écriture du serveur, changée dans `.env`, jamais ici. Le répertoire de livraison vit maintenant sur Consigne, à côté de la période — c'est là que la tâche déclare ce qu'elle est, plutôt que dans le seul dialogue d'export à usage unique. `TaskPatchInput` gagne `exportDirectory` (amendement backend A8) ; un répertoire hors `TASKS_ROOT` est refusé (422 `DIRECTORY_OUTSIDE_ROOT`), affiché par l'`ErrorBanner` déjà présent, qui montre déjà le message exact du serveur — vérifié contre le vrai code serveur (`tasks_controller.ts`, lecture seule) : « le répertoire de livraison doit rester sous TASKS_ROOT ».
+Déviation : le slug de test du plan (`tache-a`) n'est pas semé — `1999-transat` (déjà utilisé par ce fichier) à la place, `exportDirectory: null` pour que le champ parte vide. Le chemin `TASKS_ROOT` littéral du plan s'est avéré être le vrai `.env` de Nicolas (confirmé en direct) — le mock garde son propre chemin synthétique.
+Vérifié contre le vrai serveur en navigateur réel, **en lecture seule** (aucun clic sur Enregistrer, pour ne pas écrire dans les vraies données de tâche de Nicolas) : les cinq racines réelles s'affichent correctement sur Réglages, et le vrai `exportDirectory` de `01-le-grand-depart` pré-remplit exactement le champ sur Consigne.
+659 tests front verts, tsc et eslint propres.
+DETAIL : commit `a807518`.
+
+**La Tranche 7 (v1.5) est complète.**
+
+ASK : aucune décision Nicolas. Il ne reste que la Tranche 8 (Task 14 — les schémas contre les vraies réponses ; Task 15 — la repasse en navigateur), « en dernier, avec la tranche F du backend » — déjà livrée par `back`. J'enchaîne.
