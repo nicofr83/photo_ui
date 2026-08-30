@@ -74,6 +74,37 @@ describe('INVARIANT §6.1 — the reliable-dates toggle is off by default', () =
   });
 });
 
+describe('v1.5 — the album filter, spec: search on any part of the path', () => {
+  test('the filter searches the whole path, accent- and case-insensitive', async () => {
+    const user = userEvent.setup();
+    setup();
+    await screen.findByTestId('album-1998-1999/1998-02-Maison rose Algès');
+
+    await user.type(screen.getByLabelText(/filtrer les albums/i), 'alges');
+    expect(screen.getByTestId('album-1998-1999/1998-02-Maison rose Algès')).toBeInTheDocument();
+    expect(screen.queryByTestId('album-2004/2004-03- visite de Tikal')).not.toBeInTheDocument();
+  });
+
+  test('a checked album stays visible even when the filter excludes it', async () => {
+    const user = userEvent.setup();
+    setup({ ...EMPTY_FILTERS, albumPaths: ['2000-2001/2000-12-viree au Venezuela-3mois'] });
+    await screen.findByTestId('album-2000-2001/2000-12-viree au Venezuela-3mois');
+
+    // Silently unchecking what the filter no longer matches is exactly the
+    // defect this pins against.
+    await user.type(screen.getByLabelText(/filtrer les albums/i), 'zzz');
+    expect(screen.getByTestId('album-2000-2001/2000-12-viree au Venezuela-3mois')).toBeInTheDocument();
+  });
+
+  test('the filter field does not scroll away with the list', async () => {
+    setup();
+    await screen.findByTestId('album-1998-1999/1998-02-Maison rose Algès');
+    const field = screen.getByLabelText(/filtrer les albums/i);
+    const list = screen.getByTestId('album-list');
+    expect(list.contains(field)).toBe(false);
+  });
+});
+
 describe('the album axis', () => {
   test('albums are listed with their photo counts', async () => {
     setup();
@@ -83,7 +114,9 @@ describe('the album axis', () => {
   test('albums are listed alphabetically by path — Nicolas, live: unsorted made 82 of them impossible to find', async () => {
     setup();
     await screen.findByTestId('album-1998-1999/1998-02-Maison rose Algès');
-    const testids = screen.getAllByTestId(/^album-/).map((el) => el.dataset['testid']);
+    // Not /^album-/ alone: that also matches the "album-list" scroll
+    // container (v1.5) — real album paths always start with a year digit.
+    const testids = screen.getAllByTestId(/^album-\d/).map((el) => el.dataset['testid']);
     expect(testids).toEqual([...testids].sort((a, b) => (a ?? '').localeCompare(b ?? '')));
     // The 2004 album must not lead — a raw sort on the JSON insertion
     // order (this fixture's own order) would put it first.

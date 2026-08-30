@@ -4,6 +4,7 @@ import { useAlbums } from '../../api/hooks/useAlbums';
 import { usePhotoFacets } from '../../api/hooks/usePhotoFacets';
 import type { FacetBucket } from '../../api/contract/photo';
 import { sortAlbumsByPath } from '../../domain/albumOrder';
+import { matchesSearch } from '../../domain/searchFold';
 import {
   activeFilterTokens, toSearchParams, type FilterState,
 } from '../../domain/filterState';
@@ -33,6 +34,13 @@ function toggled(list: readonly string[], value: string): string[] {
 export function FilterPanel({ filters, onChange }: Props): React.JSX.Element {
   const albums = useAlbums();
   const sortedAlbums = albums.data === undefined ? [] : sortAlbumsByPath(albums.data.items);
+  const [albumQuery, setAlbumQuery] = useState('');
+  // A checked album stays visible even when the filter would exclude it —
+  // silently unchecking what scrolls out of view is the defect this pins
+  // against (spec: never let a selection disappear without saying so).
+  const visibleAlbums = sortedAlbums.filter(
+    (a) => matchesSearch(a.path, albumQuery) || filters.albumPaths.includes(a.path),
+  );
   // Contract §5.4: same filter parameters as /photos, a separate call.
   const facets = usePhotoFacets(toSearchParams(filters));
   const tokens = activeFilterTokens(filters);
@@ -185,8 +193,17 @@ export function FilterPanel({ filters, onChange }: Props): React.JSX.Element {
 
       <fieldset className={styles['group']}>
         <legend className={styles['legend']}>Albums</legend>
-        <div className={styles['albums']}>
-          {sortedAlbums.map((album) => (
+        <label className={styles['field']}>
+          Filtrer les albums
+          <input
+            className={styles['control']}
+            type="search"
+            value={albumQuery}
+            onChange={(e) => { setAlbumQuery(e.target.value); }}
+          />
+        </label>
+        <div className={styles['albums']} data-testid="album-list">
+          {visibleAlbums.map((album) => (
             <label className={styles['album']} key={album.path} data-testid={`album-${album.path}`}>
               <input
                 type="checkbox"

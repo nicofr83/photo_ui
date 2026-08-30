@@ -1,0 +1,7 @@
+.screen { display: flex; flex-direction: column; gap: 1rem; }
+.note { margin: 0; color: #6b7280; font-size: 0.85rem; }
+.brief { display: flex; flex-direction: column; gap: 0.25rem; }
+.briefInput { min-height: 6rem; padding: 0.5rem; }
+.field { display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.85rem; }
+.control { min-height: var(--tap-target); padding: 0 0.4rem; }
+.save { min-height: var(--tap-target); padding: 0 1rem; align-self: flex-start; cursor: pointer; }

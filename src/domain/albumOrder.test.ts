@@ -7,7 +7,7 @@ import { sortAlbumsByPath } from './albumOrder';
 function album(path: string, suspectedRange = false): Album {
   return {
     path,
-    setName: null,
+    setName: path.includes('/') ? (path.split('/')[0] as string) : null,
     albumName: path.split('/').at(-1) ?? path,
     groupName: null,
     photoCount: 1,
@@ -42,5 +42,24 @@ describe('sortAlbumsByPath — spec §5.4/§5.7, every screen that lists albums'
       '1998-1999/1998-01-Deux',
       '2004/2004-01-Un',
     ]);
+  });
+
+  test('v1.5: two albums from the same month do not swap on their capitalisation', () => {
+    const sorted = sortAlbumsByPath([
+      album('2003/2003-03-everglades'), album('2003/2003-03-Fort Lauderdale'),
+    ]);
+    // Default localeCompare ignores case and would put "everglades" first;
+    // the sort must be stable and predictable, uppercase before lowercase.
+    expect(sorted.map((a) => a.path)).toEqual([
+      '2003/2003-03-Fort Lauderdale', '2003/2003-03-everglades',
+    ]);
+  });
+
+  test('v1.5: the leading set gives chronological order for free', () => {
+    const sorted = sortAlbumsByPath([
+      album('2004/2004-02-Belize'), album('1998-1999/1998-03-Lisbonne'),
+      album('2000-2001/2000-01-guadeloupe'),
+    ]);
+    expect(sorted.map((a) => a.setName)).toEqual(['1998-1999', '2000-2001', '2004']);
   });
 });
