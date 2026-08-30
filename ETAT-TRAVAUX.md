@@ -723,3 +723,20 @@ DONE (`superpowers:systematic-debugging` sur chacun, cause avant correctif) :
 DETAIL : commits `1d46c3c` (add bloquant), `5eb72be` (tri + largeur Images), `0210b4e` (période + consigne). `chromium-cli` toujours absent ; `webkit`/`chromium` installés via `playwright install` pour cette session (jamais ajoutés à `package.json`).
 
 ASK : aucune décision Nicolas. Les trois défauts bloquants et l'éditeur de période sont faits et vérifiés en direct contre son vrai serveur et sa vraie tâche. Je reste disponible.
+
+---
+
+## Avancement — front, deux défauts trouvés par l'agent V1.5 (2026-08-30)
+
+RE : « Retirer scan-0007 » en dur + liste d'albums réduite à la feuille
+DONE (`systematic-debugging`, test qui échoue vérifié avant correctif pour chacun) :
+
+**1. `ReviewScreen.tsx` : le bouton retirer nommait la même image sur chaque ligne.** Littéral copié-collé : `Retirer scan-0007` en dur, jamais interpolé — contrairement à Monter/Descendre (juste à côté) qui portent déjà `aria-label={\`Monter ${image.cloudAssetId.slice(0, 8)}\`}`. Ici il n'y avait AUCUN `aria-label` : le texte visible EST le nom accessible, valeur fixe incluse — un lecteur d'écran entendait le même nom sur chaque ligne. Vérifié qu'il n'y a pas d'autre littéral du même genre dans le fichier (recherche `scan-`/motifs numériques). Le test existant (« removing an image ») cherchait justement `/Retirer scan-0007/` — il encodait le bug, pas le comportement voulu, d'où l'angle mort. Rejoué contre le composant non corrigé pour confirmer le rouge, puis corrigé (`aria-label` dynamique, texte visible neutre) et ajouté un test à deux lignes qui vérifie que chaque bouton porte un nom distinct.
+
+**2. Liste d'albums réduite à la feuille (`album.albumName`), sur les deux écrans.** Le tri porte sur `path` complet (`sortAlbumsByPath`), mais rien n'affichait ce chemin — un nom d'album ne porte pas toujours sa propre année (`2000-2001/2000`), donc l'ordre paraissait arbitraire. Hypothèse de team-lead, plausible : c'est probablement la vraie cause du « nom de hiérarchie ne peut pas être sélectionné » — on ne sélectionne pas ce qu'on ne peut pas identifier. Corrigé sur `FilterPanel.tsx` ET `SettingsScreen.tsx` (`album.path` au lieu de `album.albumName`). En le faisant, une redondance est apparue sur Réglages : `groupName` valait presque toujours `albumName` mot pour mot dans les vraies données, donc affichait le même texte deux fois — avec le chemin ajouté devant, ça faisait déborder la ligne, exactement le défaut « illisible » déjà corrigé une fois. Retiré quand `groupName === albumName`. Vérifié en direct sur les deux écrans contre les 82 vrais albums.
+
+612 tests front verts, tsc et eslint propres.
+
+DETAIL : commits `e9b73b1` (bouton retirer), `66e3d10` (chemin complet + redondance Réglages).
+
+ASK : aucune décision Nicolas. Les deux défauts remontés par l'agent V1.5 sont faits et vérifiés en direct.
