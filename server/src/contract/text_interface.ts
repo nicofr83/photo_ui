@@ -1,6 +1,6 @@
 import type { CorrectionStatus, PageSpanSource, TranscriptionConfidence } from '@shared/enums';
 import type { TextRange } from './filter_interface.ts';
-import type { ResolvedDate } from './photo_interface.ts';
+import type { FacetBucket, ResolvedDate } from './photo_interface.ts';
 
 export interface TextRef {
   readonly kind: string;
@@ -143,4 +143,17 @@ export interface WebDocumentRow {
   readonly pathHint: string;
   /** `null` quand aucune photo n'est liée à ce document — jamais une date inventée. */
   readonly proposal: WebDateProposal | null;
+}
+
+/**
+ * `GET /texts/facets?documentId=…` (v1.5, Task 13) — année, mois, jour,
+ * chacun ce que la donnée contient RÉELLEMENT : « Ma vie » ne propose qu'une
+ * année et quatre mois, jamais les douze. `Bucket.count` est un compte de
+ * TEXTES, jamais de jours — le même `FacetBucket` que `PhotoFacets`, une
+ * seule forme de bucket dans tout le contrat.
+ */
+export interface TextDateFacets {
+  readonly years: readonly FacetBucket[];
+  readonly months: readonly FacetBucket[];
+  readonly days: readonly FacetBucket[];
 }

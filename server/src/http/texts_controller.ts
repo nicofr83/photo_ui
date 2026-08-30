@@ -6,11 +6,12 @@ import type { FastifyInstance } from 'fastify';
 import { CorrectionStatus, ErrorCode, TextKind, TranscriptionConfidence } from '@shared/enums';
 import { AppError } from '../contract/error_interface.ts';
 import type { ListEnvelope } from '../contract/filter_interface.ts';
-import type { TextCorrection, TextDocument, TextPage, TextUnit } from '../contract/text_interface.ts';
+import type { TextCorrection, TextDateFacets, TextDocument, TextPage, TextUnit } from '../contract/text_interface.ts';
 import type { Pool } from '../db/pool.ts';
 import { withTransaction } from '../db/transaction.ts';
 import type { ImageServiceDeps } from '../metier/images/image_service.ts';
 import { getPageThumb, type PageThumbDeps } from '../metier/pages/thumb_service.ts';
+import { getTextDateFacets } from '../repository/text_facets.ts';
 import {
   getPageImageRelpath, listCorrections, listDocuments, listPages, listTexts, putCorrection, revertCorrection,
   type TextCorrectionInput, type TextFilters,
@@ -188,6 +189,20 @@ export function registerTextsRoutes(server: FastifyInstance, deps: TextsRoutesDe
         filters: { applied: parsed.applied, unmatchedValues: [] },
         importId: '',
       };
+    } finally {
+      client.release();
+    }
+  });
+
+  server.get('/texts/facets', async (request): Promise<TextDateFacets> => {
+    const parsed = parseQueryParams(request.query as Record<string, unknown>, {
+      documentId: { kind: 'open' },
+    });
+    const documentId = parsed.documentId as string | undefined;
+
+    const client = await pool.connect();
+    try {
+      return await getTextDateFacets(client, documentId);
     } finally {
       client.release();
     }

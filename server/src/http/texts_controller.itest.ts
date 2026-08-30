@@ -317,6 +317,45 @@ describe('GET /texts', () => {
   });
 });
 
+describe('GET /texts/facets', () => {
+  test('an unknown parameter is a named 400', async () => {
+    app = await bootstrap(await completeEnv());
+    const response = await app.server.inject({ method: 'GET', url: '/texts/facets?documnetId=x' });
+    expect(response.statusCode).toBe(400);
+    expect(response.json<{ error: { code: string } }>().error.code).toBe('UNKNOWN_PARAMETER');
+  });
+
+  test('serves years/months/days for a document through the full HTTP path', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('ma-vie', 'handwritten', 'x', true)`);
+      await setup.query(`INSERT INTO pipeline.text_unit
+        (kind, id, document_id, ordinal, body, confidence, date_source, date_start, date_end)
+        VALUES ('passage', 'ma-vie/1', 'ma-vie', 1, 'x', 'transcribed', 'passage_date_from', '1999-08-04', '1999-08-04'),
+               ('passage', 'ma-vie/2', 'ma-vie', 2, 'x', 'transcribed', 'passage_date_from', '1999-11-01', '1999-11-01')`);
+
+      const response = await app.server.inject({ method: 'GET', url: '/texts/facets?documentId=ma-vie' });
+      expect(response.statusCode).toBe(200);
+      const facets = response.json<{ years: { value: string; count: number }[]; months: { value: string }[]; days: unknown[] }>();
+      expect(facets.years).toEqual([{ value: '1999', count: 2 }]);
+      expect(facets.months.map((b) => b.value)).toEqual(['1999-08', '1999-11']);
+      expect(facets.days.length).toBe(2);
+    } finally {
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'ma-vie'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'ma-vie'`);
+    }
+  });
+
+  test('without documentId, serves facets across the whole library', async () => {
+    app = await bootstrap(await completeEnv());
+    const response = await app.server.inject({ method: 'GET', url: '/texts/facets' });
+    expect(response.statusCode).toBe(200);
+    const facets = response.json<{ years: unknown[] }>();
+    expect(Array.isArray(facets.years)).toBe(true);
+  });
+});
+
 describe('PUT /corrections', () => {
   test('an empty or blank correction is refused — 422 EMPTY_CORRECTION', async () => {
     const setup = testPool();

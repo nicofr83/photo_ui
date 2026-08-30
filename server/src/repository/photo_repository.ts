@@ -421,7 +421,8 @@ export async function listPhotosWithOverlap(
 /** Un tag au-delà de ce compte est marqué `tooBroad` — mesuré : 42 tags réels le dépassent. */
 const TAG_TOO_BROAD_THRESHOLD = 500;
 
-async function bucketQuery(
+/** Partagé avec `text_facets.ts` (Task 13) — une seule forme de « groupe par, compte » dans tout le dépôt. */
+export async function bucketQuery(
   client: PoolClient, sql: string, values: unknown[],
 ): Promise<readonly FacetBucket[]> {
   const { rows } = await client.query<{ value: string; count: number }>(sql, values);

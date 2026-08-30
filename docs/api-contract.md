@@ -1721,10 +1721,18 @@ nom est un `UNKNOWN_PARAMETER`.
 | `GET` | `/pages/image?pageId=…` | **image/jpeg**, servie telle quelle |
 | `GET` | `/pages/thumb?pageId=…&edge=…` | **image/jpeg**, le scan entier réduit (v1.5) |
 | `GET` | `/texts` | `ListEnvelope<TextUnit>` |
+| `GET` | `/texts/facets?documentId=…` | `TextDateFacets` (v1.5) |
 
 **Paramètres de `/texts`** : `documentId`, `pageId`, `kind`, `dateFrom`,
 `dateTo`, `q`, `overlapsPhoto` (`CloudAssetId`), `confidence`, `hasCorrection`,
 `limit`, `offset`, `sort` (`page` défaut · `date` · `relevance` quand `q`).
+
+**`GET /texts/facets`** (v1.5, Task 13) : `documentId` seul en paramètre,
+facultatif. Trois compteurs (`years`, `months`, `days`, chacun un
+`FacetBucket[]` — le même type que `PhotoFacets`) sur ce que la source
+contient RÉELLEMENT, jamais un calendrier complet : « Ma vie » ne propose
+qu'une année et quatre mois, jamais les douze. `count` est un compte de
+TEXTES, jamais de jours.
 
 `GET /texts?documentId=logbook` renvoie les 492 passages ou les 1 012 entrées
 d'un coup : c'est quelques centaines de kilo-octets sur la boucle locale, et
@@ -1926,6 +1934,18 @@ export interface WebDocumentRow {
   readonly pathHint: string;
   /** `null` quand aucune photo n'est liée à ce document — jamais une date inventée. */
   readonly proposal: WebDateProposal | null;
+}
+
+/**
+ * `GET /texts/facets?documentId=…` (v1.5, Task 13) — année, mois, jour,
+ * chacun ce que la donnée contient RÉELLEMENT : « Ma vie » ne propose qu'une
+ * année et quatre mois, jamais les douze. `Bucket.count` est un compte de
+ * TEXTES, jamais de jours — le même `FacetBucket` que `PhotoFacets`.
+ */
+export interface TextDateFacets {
+  readonly years: readonly FacetBucket[];
+  readonly months: readonly FacetBucket[];
+  readonly days: readonly FacetBucket[];
 }
 
 export interface CountryRow {
