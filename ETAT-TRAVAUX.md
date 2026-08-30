@@ -1126,3 +1126,19 @@ DETAIL : commit `22b6ea6`.
 
 ASK : aucune décision Nicolas. J'enchaîne sur la Tranche 5 (Tasks 8-11 — l'écran des textes, la plus grosse tranche restante).
 
+
+---
+
+## Avancement — impl-frontend, v1.5 Tranche 5 — Tasks 8 et 9 (2026-08-30)
+
+RE : v1.5, tranche 5 — la refonte de l'écran Textes (liste de pages + page ouverte)
+DONE : Task 8 — TextsScreen montre une source à la fois (`SourcePicker`, `?source=` dans l'URL) au lieu de trois sections toujours visibles. Chaque page est une ligne avec sa date résolue, une vignette réduite (`usePageThumb`) et son numéro, triée chronologiquement par défaut avec une bascule par source vers l'ordre du cahier (les pages sans date poussées en fin de liste, jamais triées comme « les plus anciennes » — `domain/pageOrder.ts`, extrait hors `ui/` pour ne pas déclencher `noBareDateRendering.test.ts`, un faux positif légitime du garde-fou sur une comparaison de dates qui n'en rend aucune). Le site web n'a pas de scan : il liste ses documents et le dit (`no-pages`).
+Task 9 — `PageDetail` montre le scan entier d'une page (réutilise `PageViewer`) à côté de ses textes séparés par nature : « Registre » (entrées de journal) et « Notes de bord » (le reste), deux numérotations indépendantes — un document sans registre (Ma vie) n'a qu'un bloc, sans titre, jamais une section « Registre » vide à côté d'un bloc mal nommé. TextsScreen ouvre une page dans `PageDetail` à la place de la liste, avec un retour.
+Réutiliser `TextCard` (comme le plan le demande) a forcé deux changements non listés dans les fichiers de la Task 9 mais exigés par son propre test : la coche de sélection est maintenant un vrai `<input type="checkbox">` (spec : « sa coche de sélection », c'était un bouton) plutôt que de réinventer la sélection dans `PageDetail`, et le bouton de recouvrement dit maintenant « N images » au lieu de « N photos » (mot du plan, déjà le choix du reste de l'appli — TaskNav, la liste de la Revue). Le renommage a touché deux tests de la Task 8 déjà commités (corrigés dans le même commit que la Task 9).
+Quatre déviations aux extraits du plan, vérifiées avant de m'en écarter (méthode Collator de la Tranche 3) : `data-date-kind` et non `data-kind` (attribut réel de `ResolvedDate.tsx`) ; les tests par défaut de la Task 8 avaient besoin d'un `?source=ma-vie` explicite (aucune donnée « ma vie » par défaut dans les fixtures, l'ordre du sélecteur commence par « logbook ») ; `PageDetail` a besoin d'un slug de tâche (sélection de texte contractuellement liée à la tâche, §4.5) — tests passés sur `1999-transat` (fixture déjà semée) plutôt que le `tache-a` non semé du plan, pour éviter un 404 à chaque rendu ; et le regex `/page 10/` du plan avait besoin du flag `i` face au « Page 10 » (P majuscule) réel de `PageViewer`.
+Écart de couverture assumé, documenté dans le commit : le bouton « Corriger » de `TextCard` reste visible sur une légende de galerie (aucune prop ne le masque) — préexistant, hors périmètre des fichiers listés, la spec dit pourtant qu'une légende ne se relit jamais.
+Vérifié contre le vrai serveur en navigateur réel (`01-le-grand-depart`) : les trois sources, les vignettes et dates réelles (lecture verte / inférence ambre), le bouton retour, un scan manuscrit réel avec zoom/pan et ses lignes de registre datées — aucune erreur console.
+639 tests front verts, tsc et eslint propres.
+DETAIL : commits `4293d4a` (Task 8), `aaa0d05` (Task 9).
+
+ASK : aucune décision Nicolas. J'enchaîne sur la Task 10 (les filtres de l'écran Textes).
