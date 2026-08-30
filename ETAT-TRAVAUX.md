@@ -786,3 +786,15 @@ Vérifié contre le corpus réel (écrit en base réelle, c'est l'état persista
 DETAIL : commit `52a349d` (Task 8).
 
 ASK : aucun. J'enchaîne sur la tranche C (Task 9, vignettes de page) — D attend la tâche 5 (faite), C et E peuvent démarrer en parallèle de la suite de B selon team-lead. Je note aussi la tâche 12 (`excludedCount: 0` en dur, `fix:`) comme prioritaire dans mon ordre — remontée par team-lead comme un défaut vécu en production tous les jours par Nicolas.
+
+---
+
+## Avancement — impl-backend, v1.5 Task 12 — remontée en priorité (2026-08-30)
+
+RE : team-lead, « remonte-la dans ton ordre si elle est loin » — `excludedCount: 0` en dur
+DONE : `GET /texts?dateFrom=...&dateTo=...` codait `excludedCount: 0` en dur — un filtre de date écartait silencieusement les textes sans date, sans jamais le dire. Réel et vécu tous les jours par Nicolas : 341 unités du journal sans date, jamais comptées. `listTexts` renvoie maintenant `undatedExcluded` (les unités qui satisfont TOUS les autres filtres, mais que `date_start IS NULL` seul écarte — jamais un texte daté hors fenêtre, qui ne correspond pas pour une autre raison). `buildNonDateTextConditions` extrait pour que la requête principale et le compte d'écartés ne puissent jamais diverger sur ce que sont « tous les autres filtres ». Contrôleur : `populationTotal = total + undatedExcluded`, `excludedCount = undatedExcluded` (contrat : redondant et voulu).
+Vérifié contre le corpus réel (script jetable, jamais commité) : 341 sans date + 491 dans la fenêtre 1999 pour `logbook` — correspond exactement au chiffre mesuré par le plan lui-même.
+1 test HTTP neuf, avec fixtures synthétiques (un texte dans la fenêtre, un daté hors fenêtre, un sans date) — la suite `photo_ui_test` reste sur fixtures, jamais sur les vrais chiffres qui pourraient bouger avec la donnée. 701 tests serveur, tsc/eslint propres.
+DETAIL : commit `5f5e237`.
+
+ASK : aucun. J'enchaîne sur la tranche C (Task 9, vignettes de page).
