@@ -889,3 +889,17 @@ Incident d'index partagé (encore) : mon commit Tranche 2 s'est retrouvé mêlé
 DETAIL : le tri par `Intl.Collator` est un écart documenté par rapport au plan écrit — testé et justifié, pas une improvisation.
 
 ASK : aucune décision Nicolas. J'enchaîne sur la Tranche 3 (navigation, en-têtes fixes).
+
+---
+
+## Avancement — impl-backend, v1.5 Task 13 — tranche E (2026-08-30)
+
+RE : v1.5, tranche E — les facettes de dates
+DONE : `GET /texts/facets?documentId=…` — trois agrégats (`years`/`months`/`days`, chacun un `FacetBucket[]`, le MÊME type que `PhotoFacets` — pas une seconde forme de bucket) sur `pipeline.text_unit.date_start`, `documentId` seul filtre (facultatif) : cette route répond « que contient réellement cette source », pas « que reste-t-il sous le filtre courant » (contrairement à `/photos/facets`, contextuel). `photo_repository.ts`'s `bucketQuery` (privée) exportée et réutilisée plutôt que dupliquée. Le format de `to_char` est lui aussi paramétré (`$1`), même s'il ne vient jamais que de trois littéraux internes — jamais d'interpolation, quelle que soit l'origine.
+Vérifié contre le corpus réel (serveur réel redémarré — prévenu à front avant, code rechargé) : `ma-vie` → années `[{1999, count:677}]`, mois `1999-08..11`, 81 jours ; `logbook` → années 1998-2002. Correspond exactement aux chiffres mesurés par le plan.
+4 tests de dépôt (fixtures synthétiques) + 3 tests HTTP neufs. 731 tests serveur, tsc/eslint propres.
+DETAIL : commit `f4e60e6`.
+
+**Incident d'index git partagé, corrigé sans casse — et une seconde collision sur CE fichier** : mon premier `git commit` (7 fichiers par chemins explicites) a quand même embarqué 5 fichiers de `front` (`albumOrder.ts`/`.test.ts`, `ImagesScreen.module.css`, `FilterPanel.tsx`/`.test.tsx`) — corrigé par `git reset --soft HEAD~1` puis `git reset HEAD -- <fichiers de front>` (rien perdu, rien touché côté contenu), recommité en `f4e60e6` avec mes 7 seulement. Front a signalé de son côté une collision symétrique sur son propre commit Tranche 2, mêlé à mon commit Task 13 (`79dccfa` avant ma correction). Puis une TROISIÈME collision, sur ce fichier `ETAT-TRAVAUX.md` lui-même : ma première tentative d'ajouter cette entrée a été écrasée sur disque par un commit concurrent de `front` (`6a8b957`) avant que je ne la committe — perdue sans qu'aucun outil ne signale d'erreur, puisque l'écriture avait réussi avant d'être recouverte. Ré-écrite ici. À surveiller : sur un fichier que DEUX agents modifient en continu (celui-ci), écrire ET committer dans le MÊME geste, sans pause entre les deux, réduit la fenêtre de course.
+
+ASK : aucun. J'enchaîne sur la Task 14 (les pages qui correspondent à un filtre).
