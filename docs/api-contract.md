@@ -26,6 +26,44 @@ existants du projet.
 >
 ### Amendements depuis le gel
 
+### A8 — le répertoire de livraison d'une tâche est réglable *(2026-08-30, v1.5)*
+
+`PATCH /tasks/:slug` n'acceptait que `title`/`brief`/`period` ; le répertoire
+de livraison n'existait qu'au corps de `POST /tasks/:slug/export`, à usage
+unique (`docs/spec-v1.5.md`, « Les réglages »).
+
+```ts
+export interface TaskPatchInput {
+  // … champs existants …
+  /** Confiné sous `TASKS_ROOT`. `null` remet au défaut `<TASKS_ROOT>/<slug>`. */
+  readonly exportDirectory?: string | null;
+}
+```
+
+`TaskSummary.exportDirectory` (déjà `string | null` dans le type — inchangé)
+n'est **plus jamais `null` dans une réponse réelle** : résolu au défaut
+`<TASKS_ROOT>/<slug>` à la frontière HTTP quand rien n'a été réglé, sur
+CHAQUE route qui rend un `TaskSummary`/`TaskDetail`/`TaskReview.task` (`GET
+/tasks`, `POST /tasks`, `GET /tasks/:slug`, `PATCH /tasks/:slug`, `GET
+/tasks/:slug/review`, `POST /tasks/:slug/duplicate`) — jamais une seule route
+au hasard, pour ne pas répéter l'écart `outOfPeriod` déjà payé une fois.
+
+Un répertoire hors de `TASKS_ROOT` est refusé, jamais assaini en silence :
+**422 `DIRECTORY_OUTSIDE_ROOT`**, `details: { directory, root }` — c'est la
+liste blanche d'écriture du serveur, la garantie qu'il n'écrit nulle part
+ailleurs. Changer ce réglage ne touche **jamais** à un dossier déjà exporté
+sur disque à l'ancien chemin — c'est le même `export_directory` que celui
+qu'écrit un export réussi (tâche 18/26), pas une seconde colonne : le réglage
+prospectif et la trace du dernier export réel partagent une colonne, par
+construction toujours un chemin absolu déjà résolu.
+
+**Non câblé dans cette tâche** : `POST /tasks/:slug/export` continue de
+résoudre sa cible via `input.directory ?? <TASKS_ROOT>/<slug>`
+(`export_service.ts`, tâche 18, inchangé) — il ne lit pas encore ce réglage
+comme second niveau de repli avant le défaut. Le plan v1.5 ne liste pas
+`export_service.ts` parmi les fichiers de cette tâche ; à confirmer si c'est
+un oubli ou un report délibéré avant de le câbler.
+
 ### A7 — le verrou de préfixe d'attribution d'une note *(2026-08-30, v1.5)*
 
 `PATCH /tasks/:slug/notes/:noteId` acceptait n'importe quel titre. Une note

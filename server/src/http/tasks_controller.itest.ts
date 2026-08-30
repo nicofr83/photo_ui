@@ -146,6 +146,67 @@ describe('PATCH /tasks/:slug', () => {
     const response = await app.server.inject({ method: 'PATCH', url: '/tasks/nowhere', payload: { title: 'x' } });
     expect(response.statusCode).toBe(404);
   });
+
+  test('a freshly created task already answers the default <TASKS_ROOT>/<slug>, never null', async () => {
+    const env = await completeEnv();
+    app = await bootstrap(env);
+    const response = await app.server.inject({
+      method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null },
+    });
+    expect(response.json<TaskSummary>().exportDirectory).toBe(path.join(String(env.TASKS_ROOT), 'x'));
+  });
+
+  test('the delivery directory is settable, confined under TASKS_ROOT', async () => {
+    const env = await completeEnv();
+    app = await bootstrap(env);
+    await app.server.inject({ method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null } });
+
+    const ok = await app.server.inject({
+      method: 'PATCH', url: '/tasks/x', payload: { exportDirectory: 'bd/le-grand-depart' },
+    });
+    expect(ok.statusCode).toBe(200);
+    expect(ok.json<TaskSummary>().exportDirectory).toBe(path.join(String(env.TASKS_ROOT), 'bd/le-grand-depart'));
+  });
+
+  test('a directory outside TASKS_ROOT is refused, never sanitized in silence', async () => {
+    const env = await completeEnv();
+    app = await bootstrap(env);
+    await app.server.inject({ method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null } });
+
+    for (const directory of ['../ailleurs', '/etc', 'bd/../../ailleurs']) {
+      const refused = await app.server.inject({ method: 'PATCH', url: '/tasks/x', payload: { exportDirectory: directory } });
+      expect(refused.statusCode).toBe(422);
+      expect(refused.json<{ error: { code: string } }>().error.code).toBe('DIRECTORY_OUTSIDE_ROOT');
+    }
+  });
+
+  test('resetting the directory to null restores the default <TASKS_ROOT>/<slug>', async () => {
+    const env = await completeEnv();
+    app = await bootstrap(env);
+    await app.server.inject({ method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null } });
+    await app.server.inject({ method: 'PATCH', url: '/tasks/x', payload: { exportDirectory: 'bd/ailleurs' } });
+
+    const reset = await app.server.inject({ method: 'PATCH', url: '/tasks/x', payload: { exportDirectory: null } });
+    expect(reset.json<TaskSummary>().exportDirectory).toBe(path.join(String(env.TASKS_ROOT), 'x'));
+  });
+
+  test('changing the directory never touches an already-exported folder', async () => {
+    const setup = testPool();
+    const env = await completeEnv();
+    app = await bootstrap(env);
+    await app.server.inject({ method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null } });
+    const oldDirectory = path.join(String(env.TASKS_ROOT), 'x');
+    await mkdir(path.join(oldDirectory, 'images'), { recursive: true });
+    await setup.query(`UPDATE app.task SET exported_at = now(), export_directory = $1 WHERE slug = 'x'`, [oldDirectory]);
+
+    const response = await app.server.inject({
+      method: 'PATCH', url: '/tasks/x', payload: { exportDirectory: 'bd/nouveau-chemin' },
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.json<TaskSummary>().exportDirectory).toBe(path.join(String(env.TASKS_ROOT), 'bd/nouveau-chemin'));
+    // Le dossier déjà livré à l'ancien chemin n'a jamais été touché par ce PATCH.
+    expect(existsSync(oldDirectory)).toBe(true);
+  });
 });
 
 describe('POST /tasks/:slug/images', () => {

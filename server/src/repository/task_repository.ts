@@ -288,6 +288,10 @@ export async function patchTask(client: PoolClient, slug: string, patch: TaskPat
     values.push(patch.period?.to ?? null);
     sets.push(`period_to = $${String(values.length)}`);
   }
+  if (patch.exportDirectory !== undefined) {
+    values.push(patch.exportDirectory);
+    sets.push(`export_directory = $${String(values.length)}`);
+  }
 
   if (sets.length === 0) {
     const row = await loadRow(client, slug);

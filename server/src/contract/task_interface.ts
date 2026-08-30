@@ -89,6 +89,12 @@ export interface TaskPatchInput {
   readonly title?: string;
   readonly brief?: string;
   readonly period?: TaskPeriod | null;
+  /**
+   * Le répertoire de livraison, confiné sous `TASKS_ROOT` (amendement A8, spec
+   * v1.5). `null` remet au défaut `<TASKS_ROOT>/<slug>`. Absent d'un dossier
+   * déjà exporté : changer ce réglage ne touche jamais au dossier existant.
+   */
+  readonly exportDirectory?: string | null;
 }
 
 /**

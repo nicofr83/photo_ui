@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 import type { FastifyInstance } from 'fastify';
 
 import { ErrorCode } from '@shared/enums';
@@ -37,6 +39,30 @@ function assertOrderedPeriod(period: TaskPeriod | null | undefined): void {
   }
 }
 
+/**
+ * Confiné sous `TASKS_ROOT` (contrat A8, spec v1.5) — c'est la liste blanche
+ * d'écriture du serveur. `startsWith` seul accepterait `<root>-autre` ; le
+ * séparateur ferme la faille. Refusé, jamais assaini en silence : une racine
+ * créée sur une faute de frappe donne un dossier fantôme qu'on ne retrouve
+ * jamais.
+ */
+function resolveExportDirectory(raw: string, tasksRoot: string): string {
+  const resolved = path.resolve(tasksRoot, raw);
+  const root = path.resolve(tasksRoot);
+  if (resolved !== root && !resolved.startsWith(root + path.sep)) {
+    throw new AppError(ErrorCode.DIRECTORY_OUTSIDE_ROOT,
+      'le répertoire de livraison doit rester sous TASKS_ROOT', 422, { directory: raw, root });
+  }
+  return resolved;
+}
+
+/** Le défaut `<TASKS_ROOT>/<slug>` (contrat A8) — appliqué à la frontière HTTP, jamais dans le dépôt : `export_directory` reste `NULL` en base tant que rien n'a été réglé. */
+function resolveTaskExportDirectory<T extends { readonly slug: string; readonly exportDirectory: string | null }>(
+  task: T, tasksRoot: string,
+): T {
+  return task.exportDirectory === null ? { ...task, exportDirectory: path.join(tasksRoot, task.slug) } : task;
+}
+
 function isPeriod(value: unknown): value is TaskPeriod {
   return typeof value === 'object' && value !== null
     && typeof (value as { from?: unknown }).from === 'string'
@@ -63,11 +89,11 @@ function parseCreateInput(body: unknown): TaskCreateInput {
   return { title, slug, brief, period: period === undefined ? null : period };
 }
 
-function parsePatchInput(body: unknown): TaskPatchInput {
+function parsePatchInput(body: unknown, tasksRoot: string): TaskPatchInput {
   if (typeof body !== 'object' || body === null) {
     throw invalidParameter('body', JSON.stringify(body), 'corps de requête invalide');
   }
-  const { title, brief, period } = body as Record<string, unknown>;
+  const { title, brief, period, exportDirectory } = body as Record<string, unknown>;
   const patch: TaskPatchInput = {};
   if (title !== undefined) {
     if (typeof title !== 'string') throw invalidParameter('title', JSON.stringify(title), 'title doit être une chaîne');
@@ -82,6 +108,14 @@ function parsePatchInput(body: unknown): TaskPatchInput {
       throw invalidParameter('period', JSON.stringify(period), 'period doit être { from, to } ou null');
     }
     Object.assign(patch, { period });
+  }
+  if (exportDirectory !== undefined) {
+    if (exportDirectory !== null && typeof exportDirectory !== 'string') {
+      throw invalidParameter('exportDirectory', JSON.stringify(exportDirectory), 'exportDirectory doit être une chaîne ou null');
+    }
+    // `null` remet au défaut (`export_directory` redevient NULL en base) —
+    // jamais assaini, la résolution ne s'applique qu'à une valeur fournie.
+    Object.assign(patch, { exportDirectory: exportDirectory === null ? null : resolveExportDirectory(exportDirectory, tasksRoot) });
   }
   return patch;
 }
@@ -315,11 +349,13 @@ function parseDuplicateInput(body: unknown): TaskDuplicateInput {
 
 export function registerTasksRoutes(server: FastifyInstance, deps: TasksRoutesDeps): void {
   const { pool, jobStore, exportDeps } = deps;
+  const { tasksRoot } = exportDeps;
 
   server.get('/tasks', async (): Promise<{ items: readonly TaskSummary[] }> => {
     const client = await pool.connect();
     try {
-      return { items: await listTasks(client) };
+      const items = await listTasks(client);
+      return { items: items.map((task) => resolveTaskExportDirectory(task, tasksRoot)) };
     } finally {
       client.release();
     }
@@ -342,7 +378,7 @@ export function registerTasksRoutes(server: FastifyInstance, deps: TasksRoutesDe
         { slug: input.slug, existingTaskTitle: result.existingTitle });
     }
     void reply.code(201);
-    return result.task;
+    return resolveTaskExportDirectory(result.task, tasksRoot);
   });
 
   server.get('/tasks/:slug', async (request): Promise<TaskDetail> => {
@@ -357,12 +393,12 @@ export function registerTasksRoutes(server: FastifyInstance, deps: TasksRoutesDe
     if (detail === null) {
       throw new AppError(ErrorCode.NOT_FOUND, `tâche introuvable : ${slug}`, 404, { resource: 'task', id: slug });
     }
-    return detail;
+    return resolveTaskExportDirectory(detail, tasksRoot);
   });
 
   server.patch('/tasks/:slug', async (request): Promise<TaskSummary> => {
     const { slug } = request.params as { slug: string };
-    const patch = parsePatchInput(request.body);
+    const patch = parsePatchInput(request.body, tasksRoot);
     assertOrderedPeriod(patch.period);
 
     const client = await pool.connect();
@@ -375,7 +411,7 @@ export function registerTasksRoutes(server: FastifyInstance, deps: TasksRoutesDe
     if (summary === null) {
       throw new AppError(ErrorCode.NOT_FOUND, `tâche introuvable : ${slug}`, 404, { resource: 'task', id: slug });
     }
-    return summary;
+    return resolveTaskExportDirectory(summary, tasksRoot);
   });
 
   server.post('/tasks/:slug/images', async (request): Promise<TaskImagesMutationResult> => {
@@ -481,7 +517,7 @@ export function registerTasksRoutes(server: FastifyInstance, deps: TasksRoutesDe
     if (review === null) {
       throw new AppError(ErrorCode.NOT_FOUND, `tâche introuvable : ${slug}`, 404, { resource: 'task', id: slug });
     }
-    return review;
+    return { ...review, task: resolveTaskExportDirectory(review.task, tasksRoot) };
   });
 
   // Copie la sélection et le brief/period — jamais l'état d'export : la
@@ -500,7 +536,7 @@ export function registerTasksRoutes(server: FastifyInstance, deps: TasksRoutesDe
         { slug: input.slug, existingTaskTitle: result.existingTitle });
     }
     void reply.code(201);
-    return result.task;
+    return resolveTaskExportDirectory(result.task, tasksRoot);
   });
 
   // Ne touche JAMAIS au dossier déjà exporté — la réponse le nomme pour que
