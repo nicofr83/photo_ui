@@ -11,10 +11,10 @@ ce qui a besoin de toi :
 
 1. **« Déjà tranché »** ci-dessous — tes réponses, rassemblées. Rien à y faire,
    c'est là pour que tu ne les relises pas.
-2. **« Ce qui a besoin de toi »** — **5 questions**. Elles changent quelque
+2. **« Ce qui a besoin de toi »** — **2 questions**. Elles changent quelque
    chose que tu verras à l'écran ou dans le dossier livré. Chacune tient en une
    ligne avec ma recommandation : un « d'accord » suffit.
-3. **« Ce que tu peux ignorer »** — **50 questions**. Des cas limites et des
+3. **« Ce que tu peux ignorer »** — **48 questions**. Des cas limites et des
    choix d'implémentation. **Sans réponse de ta part, j'applique ma
    recommandation.** Tu peux les survoler ou les sauter entièrement.
 
@@ -49,6 +49,9 @@ servent plus).
 | **§F.57** | Créer une note **ne coche pas** le passage |
 | **§G.63** | La date proposée s'affiche **à côté** du champ, avec un bouton « adopter » — jamais pré-remplie |
 | **§G.64** | La date que tu saisis reste une **inférence** (ambre `≈`) — ta décision du 29/08, inchangée |
+| **§G.58** | **Tes dates font l'ordre** du site ; les rebuts restent sans date et sortent d'eux-mêmes |
+| **§F.27** | Le **scan entier** affiché, registre et notes libres séparés dessous — aucun découpage d'image |
+| **§F.31** | La vignette est le **scan entier réduit** — plus de rognage à 48 % |
 
 Deux conséquences de ces décisions valent d'être sues, parce qu'elles se
 paieraient tard :
@@ -62,22 +65,19 @@ paieraient tard :
 
 ---
 
-## Ce qui a besoin de toi — 5 questions
+## Ce qui a besoin de toi — 2 questions
 
 *Chacune change quelque chose de visible. Ma recommandation est en gras ; un
 « d'accord » la valide.*
 
 | | La question | Ma recommandation |
 |:--|:--|:--|
-| **§G.58** | La chaîne de dates du site suit quel ordre ? L'ordre des fichiers ne marche pas — `gal_7` est daté avant `gal_5`, et un document rangé dans `1999/` propose 2001. | **La chaîne se réordonne d'elle-même** sur les dates que tu saisis |
 | **§G.60** | L'héritage d'une date de page n'est appliqué qu'à « Ma vie » : le journal ne l'a pas, et 3 de ses pages n'ont aucune fenêtre. | **L'appliquer aux trois sources**, ton modèle étant le même partout |
-| **§F.27** | Un scan du journal porte **deux pages** — les notes en haut, le registre en bas. On montre les deux, ou une seule ? | **Les deux**, nommées « Notes de bord » et « Registre » |
-| **§F.31** | La miniature de la moitié haute : où couper, puisque rien ne dit où est la reliure ? | **À 48 % de la hauteur**, en disant que le cadrage est approximatif |
 | **§F.72** | « Légende » désigne deux choses : ton texte du site, et la future légende produite par une machine. Les deux s'afficheraient au survol d'une photo. | **Ton texte seul** aujourd'hui, nommé « texte du site » |
 
 ---
 
-## Ce que tu peux ignorer — 50 questions
+## Ce que tu peux ignorer — 48 questions
 
 *Sans réponse, j'applique la recommandation. Elles sont dans le corps du
 document, groupées par écran, chacune avec sa mesure et son raisonnement.*
@@ -535,36 +535,21 @@ pour les montrer.
 *Recommandation : **(b)**. Un menu de navigation FrontPage n'est pas un texte
 d'époque, et le seuil se voit et se défait — jamais un filtre silencieux.*
 
-**27. [Tension] « Le journal de bord » désigne deux jeux de textes — et ta
-remarque m'a fait comprendre pourquoi.**
+**27. TRANCHÉ — le scan entier, les deux jeux de textes séparés dessous.**
+L'écran montre **l'image complète telle qu'elle existe**, et sous elle le
+registre d'un côté, les notes libres de l'autre. **Aucun découpage d'image.**
 
-Tu as dit : « le journal de bord, la page du bas est en ordre chronologique car
-c'est un document officiel ». **J'ai ouvert les scans, et tu as raison.** Un
-scan du journal contient **deux pages physiques séparées par la reliure à
-spirale**, bien visible en travers de l'image :
-- **en haut**, des notes libres, des photos collées, des billets et des
-  prospectus — la page de carnet de voyage ;
-- **en bas**, le **registre réglé**, avec ses colonnes imprimées *Date · Cap ·
-  Vent · Loc. · Baro · Moteur · Position · Remarques*, rempli ligne par ligne.
-
-La donnée confirme la correspondance sans ambiguïté : les **1 012 `log_entry`**
-portent **807 heures et 711 positions GPS** — ce sont les lignes du registre.
-Les **492 `passage`** portent **zéro heure et zéro position** — c'est la prose.
-Les 456 identifiants partagés ne sont donc pas des doublons : c'est la ligne 11
-du haut et la ligne 11 du bas.
-
-Ce n'est pas enregistré comme tel : `pipeline.page` ne connaît qu'**une seule
-image par scan**, `label` est `null` sur les 155 pages et `regionsAvailable`
-vaut `false`. La distinction existe dans le `kind` des textes, pas dans la
-géométrie.
-→ **(a)** l'écran montre les **deux**, nommées pour ce qu'elles sont — « Notes
-de bord » (les passages) et « Registre » (les entrées) — dans la page ouverte ·
-**(b)** les passages seuls · **(c)** les entrées seules.
-*Recommandation : **(a)**, qui remplace ma recommandation précédente. Les deux
-moitiés sont deux documents différents du même cahier : le registre porte les
-faits datés, la prose porte le récit. Pour une BD, c'est la prose qui écrit et
-le registre qui situe — se priver de l'un ou de l'autre serait perdre la moitié
-du cahier.*
+*Le contexte, parce qu'il explique la donnée :* ta remarque m'a fait ouvrir les
+scans, et tu as raison — un scan porte **deux pages séparées par la reliure à
+spirale** : en haut des notes libres, des photos collées, des billets de musée ;
+en bas le **registre réglé**, colonnes imprimées *Date · Cap · Vent · Loc. ·
+Baro · Moteur · Position · Remarques*. La donnée le confirme sans ambiguïté :
+les **1 012 `log_entry` portent 807 heures et 711 positions GPS**, les **492
+`passage` en portent zéro**. Les 456 identifiants partagés ne sont donc pas des
+doublons : c'est la ligne 11 du haut et la ligne 11 du bas. Rien de tout cela
+n'est enregistré géométriquement — `pipeline.page` ne connaît qu'une image,
+`label` est `null` sur les 155 pages, `regionsAvailable` vaut `false` — mais le
+`kind` suffit à nommer chaque texte, et c'est ce que ta réponse demande.
 
 ### F.2 — La liste de pages
 
@@ -628,17 +613,10 @@ d'œil · **(b)** signaler toute divergence · **(c)** ne rien signaler.
 85 est une liste qu'on ignore. Et le seuil se dit à l'écran, il ne se cache
 pas.*
 
-**74. [Non dit] Faut-il nommer les deux moitiés du scan à l'écran ?**
-La donnée ne les distingue pas géométriquement, mais elle les distingue
-parfaitement par le `kind` (§F.27). L'écran peut donc dire ce que chaque texte
-est, même s'il ne peut pas le situer sur l'image.
-→ **(a)** dans la page ouverte, deux blocs titrés « Notes de bord » et
-« Registre », avec pour chacun sa propre numérotation de ligne · **(b)** une
-seule liste mêlée, chaque texte portant une étiquette · **(c)** rien, on
-n'en parle pas.
-*Recommandation : **(a)**. C'est la seule qui explique les 456 identifiants
-partagés — ligne 11 en haut, ligne 11 en bas — au lieu de les faire passer pour
-un défaut.*
+**74. TRANCHÉ par §F.27 — deux blocs distincts sous l'image.** « Registre » d'un
+côté, notes libres de l'autre. C'est ce qui explique les 456 identifiants
+partagés — ligne 11 en haut, ligne 11 en bas — au lieu de les laisser passer
+pour un défaut.
 
 **75. [Non dit] Sept pages du registre reculent dans le temps : on te les
 signale ?**
@@ -661,30 +639,20 @@ transcription, pas de l'affichage — il ne doit pas retarder la V1.5.*
 aucune date. La mesure dit **zéro sur 155** : sous la règle de repli que tu
 viens de trancher, chaque page porte une date. La question tombe.
 
-**31. [Ambigu] « La miniature de la page du haut » — je comprends maintenant, il
-reste à savoir où couper.**
-Ta phrase est claire une fois qu'on sait qu'un scan porte deux pages (§F.27) :
-tu veux la moitié **haute**, celle du carnet de voyage, parce que c'est elle qui
-se reconnaît d'un coup d'œil — une aquarelle, des photos collées, un billet de
-musée. La moitié basse est un registre réglé : toutes les pages se ressemblent,
-une vignette n'en dirait rien.
+**31. TRANCHÉ, par conséquence de §F.27 — la vignette est le scan entier
+réduit.** Si l'image ne se coupe pas à l'ouverture, elle ne se coupe pas non
+plus dans la liste. Tu vois le haut, et tu vois aussi le bas.
 
-Le problème est qu'**aucune donnée ne dit où couper**. `pipeline.page` ne porte
-qu'une image entière, et `regionsAvailable` vaut `false`. J'ai regardé deux
-scans : la reliure à spirale traverse l'image aux alentours de **48 à 50 % de la
-hauteur**, mais elle n'est pas au même endroit d'un scan à l'autre, et les 52
-images n'ont pas la même taille (774×1275 à 830×1282).
-→ **(a)** rogner à **48 % de la hauteur**, chiffre fixe, en disant à l'écran que
-le cadrage est approximatif · **(b)** détecter la reliure — une bande sombre
-horizontale très marquée, repérable sans grand-chose · **(c)** vignette de la
-page entière, comme « Ma vie ».
-*Recommandation : **(a)** pour la V1.5. La reliure est franche et centrée ;
-quelques pour cent d'erreur sur une vignette ne gênent personne. **(b)** est le
-correctif si le résultat déçoit — et c'est alors du travail back, pas du CSS.
-**(c)** perd ce que tu demandes : sur une vignette entière, la moitié
-reconnaissable est réduite de moitié.*
+*C'est la meilleure issue, et elle supprime un risque que je signalais : j'allais
+te recommander un rognage fixe à 48 % de la hauteur, parce que la reliure passe
+par là — mais elle n'est pas au même endroit d'un scan à l'autre et les 52
+images n'ont pas la même taille (774×1275 à 830×1282). Un rognage aveugle aurait
+fini par couper dans le texte. La question disparaît.*
 
 **32. [Tension] Les miniatures n'existent pas et coûtent 49 Mo telles quelles.**
+*Cette question survit à §F.31 et compte davantage depuis : « le scan entier
+réduit » veut dire **réduit par le serveur**, pas servi tel quel avec une
+largeur CSS.*
 155 JPEG, ~300 Ko pièce, servis entiers par `/pages/image`. Afficher les 103
 pages de « Ma vie » télécharge **31 Mo**.
 → **(a)** un point d'accès `/pages/thumb?pageId=…&edge=…` côté serveur, avec
@@ -891,43 +859,23 @@ quatrième change de nature — c'est §G.58 ci-dessous.
 chronologique de bout en bout, et le registre du journal l'est à **42 pages sur
 49**. Ton modèle tient sur les deux.
 
-**58. [Tension] Sur le site web, « la page suivante » n'existe pas. C'est la
-seule vraie question qui reste.**
-Ton modèle repose sur une phrase : « les pages sont chronologiques ». Elle est
-vérifiée sur tes deux cahiers, parce qu'un numéro de page vient de l'ordre où
-tu as tourné les feuilles. **Le site n'a pas ça.** `pipeline.page` contient
-155 lignes : 52 pour le journal, 103 pour « Ma vie », **zéro pour le site**. Ses
-60 documents sont une arborescence de fichiers, pas une suite.
+**58. TRANCHÉ — tes dates font l'ordre du site.** Tu dates ce que tu reconnais,
+la suite se déduit de ces dates, aucun rangement préalable des 60 documents. Les
+rebuts, gabarits vides et fichiers hors sujet restent sans date et sortent
+d'eux-mêmes.
 
-Et l'ordre des fichiers **n'est pas** l'ordre du temps — mesuré sur les 27 pages
-dont les photos liées donnent une date : `2003_gal_7` vient avant `2003_gal_5`,
-`2003_gal_16` avant `2003_gal_13`, un document rangé dans `1999/` date de
-décembre 2001, un autre rangé dans `2005/` date de mai 2003.
+*Pourquoi il fallait trancher : ton modèle repose sur « les pages sont
+chronologiques », vrai de tes deux cahiers parce qu'un numéro de page vient de
+l'ordre où tu tournes les feuilles. **Le site n'a pas ça** — `pipeline.page`
+contient 155 lignes, 52 pour le journal, 103 pour « Ma vie », **zéro pour le
+site**. Et l'ordre des fichiers n'est pas celui du temps : mesuré,
+`2003_gal_7` vient avant `2003_gal_5`, un document rangé dans `1999/` date de
+décembre 2001, un autre rangé dans `2005/` date de mai 2003. Ta saisie remplace
+l'ordre qui manque.*
 
-Il faut donc décider ce qui fait la suite du site.
-→ **(a)** **ta saisie fait l'ordre** : tu dates les documents que tu reconnais,
-et la suite se déduit de ces dates ; les non datés se rattachent au dernier daté
-selon l'ordre des chemins · **(b)** tu ranges les documents dans un ordre
-manuel, une fois, et l'héritage suit cet ordre comme il suit les numéros de
-page ailleurs · **(c)** l'ordre des chemins fait foi tel quel.
-*Recommandation : **(a)**. Elle ne te demande aucun travail en plus de celui que
-tu prévois déjà, et elle dégrade proprement : tant que tu n'as rien saisi, rien
-n'est daté ; chaque date que tu poses éclaire les documents qui la suivent.
-**(c)** est mesurablement fausse. **(b)** est la plus fidèle à ton modèle — un
-ordre explicite, comme les numéros de page — mais elle te demande de ranger 60
-documents avant de pouvoir en dater un seul.*
-
-**59. [Non dit] Les pages du site avant ta première date héritent de quoi ?**
-Dans tes cahiers la question ne se pose pas : la page 1 de « Ma vie » est datée,
-la chaîne démarre. Sur le site, si tu dates le cinquième document et pas les
-quatre premiers, ceux-là n'ont aucun prédécesseur.
-→ **(a)** ils restent **sans date**, et l'écran le dit · **(b)** ils héritent de
-la première date saisie, vers l'arrière.
-*Recommandation : **(a)**. Une page antérieure à ta première date n'est pas
-« vers cette date », elle est inconnue — et **(b)** inventerait une date en
-remontant le temps, ce que le mécanisme d'héritage ne fait nulle part ailleurs
-(les 22 pages de « Ma vie » héritent toutes de la précédente, jamais de la
-suivante).*
+**59. TRANCHÉ — les pages antérieures à ta première date restent sans date.**
+L'héritage ne remonte jamais le temps, nulle part : les 22 pages de « Ma vie »
+héritent toutes de la précédente, jamais de la suivante.
 
 **60. [Tension] L'héritage n'est appliqué qu'à « Ma vie ». Le journal ne l'a
 pas.**
@@ -1044,13 +992,13 @@ indicatives (§F.51) : elles s'affichent, elles ne se sélectionnent pas.*
 
 ## En une phrase
 
-Plus rien ne bloque la spécification. **Cinq questions** changent quelque chose
-de visible et méritent ta lecture (en tête de ce document) ; les **cinquante**
-autres ont une recommandation que j'applique sans réponse de ta part.
+**Deux questions attendent une réponse** — §G.60 et §F.72, en tête de ce
+document, une ligne chacune. Les **quarante-huit** autres ont une
+recommandation que j'applique sans réponse de ta part.
 
-Les deux seuls points où je te recommande le contraire de ce qu'on m'a proposé
-sont **§G.63** (pré-remplir les champs de date, que le contrat interdit en
-nommant ce cas) et **§G.64** (requalifier ta saisie en décision, alors que tu
-avais tranché « inférence » le 29/08). Dans les deux cas ma recommandation
-donne le bénéfice recherché sans toucher à la règle. Si tu préfères amender,
-ce sont deux amendements au contrat gelé, à annoncer avant d'être écrits.
+Une seule conséquence mérite d'être sue avant la spécification, parce qu'elle
+se paierait tard : sous §F.51, **2003-2004 n'a plus aucun texte d'époque
+sélectionnable**. Les 103 légendes de ces deux années étaient la seule matière
+contemporaine de 2 041 photos ; le dossier livré y contiendra tes notes, et rien
+d'autre côté texte. Si tu veux qu'une légende parte avec sa photo, le geste
+existe — la recopier dans une note (§F.42).
