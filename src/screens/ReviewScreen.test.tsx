@@ -30,11 +30,31 @@ describe('§5.6 — what is held is shown', () => {
   test('removing an image takes it out of the export', async () => {
     const user = userEvent.setup();
     setup();
-    await user.click(await screen.findByRole('button', { name: /Retirer scan-0007/ }));
+    await user.click(await screen.findByRole('button', { name: /Retirer e8bc80b7/ }));
     await waitFor(() => {
       expect(screen.queryByTestId('review-image-e8bc80b75e254b7db2e1454222416813'))
         .not.toBeInTheDocument();
     });
+  });
+
+  test('each row\'s remove button names ITS OWN image — a copy-pasted literal once named every row the same', async () => {
+    const task = store.tasks.get('1999-transat');
+    task?.images.push({
+      cloudAssetId: '05b9a4fac5df4dd28dcc1002d7ec0074',
+      order: 1, note: null, selectedBecause: ['manual'],
+      selectedAt: parseIsoTimestamp('2026-08-29T10:00:00.000Z'), orphaned: false,
+      outOfPeriod: false,
+    });
+
+    setup();
+    await screen.findByTestId('review-image-e8bc80b75e254b7db2e1454222416813');
+    const removeButtons = screen.getAllByRole('button', { name: /^Retirer /i });
+    expect(removeButtons).toHaveLength(2);
+    const names = removeButtons.map((b) => b.getAttribute('aria-label'));
+    expect(new Set(names).size).toBe(2);
+    expect(names).toEqual(
+      expect.arrayContaining(['Retirer e8bc80b7', 'Retirer 05b9a4fa']),
+    );
   });
 });
 

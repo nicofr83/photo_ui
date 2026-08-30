@@ -236,9 +236,10 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
             <button
               className={styles['remove']}
               type="button"
+              aria-label={`Retirer ${image.cloudAssetId.slice(0, 8)}`}
               onClick={() => { void selection.remove([image.cloudAssetId]); }}
             >
-              Retirer scan-0007
+              Retirer
             </button>
           </li>
         ))}
