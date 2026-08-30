@@ -6,6 +6,7 @@ import { useWebDocuments, useWebSpan } from '../api/hooks/useWebSpan';
 import type { Album } from '../api/contract/album';
 import type { AlbumSpanUpdateResult, WebDocumentRow } from '../api/contract/ref';
 import type { TextDocument } from '../api/contract/text';
+import { sortAlbumsByPath } from '../domain/albumOrder';
 import { matchesSearch } from '../domain/searchFold';
 import { isIsoDate } from '../shared/date_interface';
 import { ResolvedDateView } from '../ui/date/ResolvedDate';
@@ -42,10 +43,8 @@ function AlbumSpans(): React.JSX.Element {
   if (albums.error !== null) return <ErrorBanner error={albums.error} />;
   if (albums.isPending) return <p role="status">Chargement des albums…</p>;
 
-  // Alphabetical on the path, never a date sort built for the purpose — the
-  // `AAAA-MM` prefix already gives chronological order for free (Nicolas:
-  // "comme l'année est en 1er cela sera par ordre chronologique").
-  const sorted = [...albums.data.items].sort((a, b) => a.path.localeCompare(b.path));
+  // Same order every screen that lists albums uses — domain/albumOrder.ts.
+  const sorted = sortAlbumsByPath(albums.data.items);
   // Client-side: 82 albums fit in memory, no round trip for this. Substring,
   // never a prefix — "BVI" must find "2000-2001/2000-11-BVI".
   const filtered = sorted.filter((album) => matchesSearch(album.path, query));

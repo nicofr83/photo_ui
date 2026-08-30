@@ -1,3 +1,7 @@
 .layout { display: grid; grid-template-columns: 1fr; gap: 1rem; }
-@media (min-width: 64rem) { .layout { grid-template-columns: 18rem 1fr; } }
+/* 22rem, not 18rem: the album axis' own names run long
+   ("2000-2001/2000-12-viree au Venezuela-3mois") and the filter panel is
+   how a person reaches 100% of the corpus — cramped here reads as broken,
+   not just tight (Nicolas, live: "illisible"). */
+@media (min-width: 64rem) { .layout { grid-template-columns: 22rem 1fr; } }
 .aside { align-self: start; }

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useAlbums } from '../../api/hooks/useAlbums';
 import { usePhotoFacets } from '../../api/hooks/usePhotoFacets';
 import type { FacetBucket } from '../../api/contract/photo';
+import { sortAlbumsByPath } from '../../domain/albumOrder';
 import {
   activeFilterTokens, toSearchParams, type FilterState,
 } from '../../domain/filterState';
@@ -31,6 +32,7 @@ function toggled(list: readonly string[], value: string): string[] {
 
 export function FilterPanel({ filters, onChange }: Props): React.JSX.Element {
   const albums = useAlbums();
+  const sortedAlbums = albums.data === undefined ? [] : sortAlbumsByPath(albums.data.items);
   // Contract §5.4: same filter parameters as /photos, a separate call.
   const facets = usePhotoFacets(toSearchParams(filters));
   const tokens = activeFilterTokens(filters);
@@ -184,20 +186,22 @@ export function FilterPanel({ filters, onChange }: Props): React.JSX.Element {
       <fieldset className={styles['group']}>
         <legend className={styles['legend']}>Albums</legend>
         <div className={styles['albums']}>
-          {albums.data?.items.map((album) => (
+          {sortedAlbums.map((album) => (
             <label className={styles['album']} key={album.path} data-testid={`album-${album.path}`}>
               <input
                 type="checkbox"
                 checked={filters.albumPaths.includes(album.path)}
                 onChange={() => { toggleAlbum(album.path); }}
               />
-              {/* The prefix is NEVER rendered as a date (spec §3.2): the name is
-                  shown as the person typed it. */}
-              <span>{album.albumName}</span>
-              <span className={styles['count']}>({album.photoCount})</span>
-              {album.suspectedRange ? (
-                <span className={styles['suspect']}>couvre peut-être une plage</span>
-              ) : null}
+              <span className={styles['albumText']}>
+                {/* The prefix is NEVER rendered as a date (spec §3.2): the name is
+                    shown as the person typed it. */}
+                <span>{album.albumName}</span>
+                <span className={styles['count']}>({album.photoCount})</span>
+                {album.suspectedRange ? (
+                  <span className={styles['suspect']}>couvre peut-être une plage</span>
+                ) : null}
+              </span>
             </label>
           ))}
         </div>

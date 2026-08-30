@@ -4,8 +4,16 @@
 .field { display: flex; flex-direction: column; gap: 0.25rem; }
 .control { min-height: var(--tap-target); padding: 0 0.5rem; }
 .note { margin: 0; color: #6b7280; font-size: 0.8rem; }
-.albums { display: flex; flex-direction: column; gap: 0.25rem; max-height: 20rem; overflow-y: auto; }
-.album { display: flex; align-items: center; gap: 0.5rem; min-height: var(--tap-target); }
+.albums { display: flex; flex-direction: column; gap: 0.25rem; max-height: 26rem; overflow-y: auto; }
+/* align-items: flex-start, not center — a long name wraps to several lines
+   (below), and centering would float the checkbox away from its label's
+   first line once that happens. */
+.album { display: flex; align-items: flex-start; gap: 0.5rem; min-height: var(--tap-target); padding: 0.2rem 0; }
+/* The checkbox stays a fixed tap target; the name/count/badge wrap onto
+   their own lines instead of forcing the row wider than the panel — a
+   long path ("2000-2001/2000-12-viree au Venezuela-3mois") no longer
+   collides with its own count and badge. */
+.albumText { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 0.4rem; row-gap: 0.1rem; }
 .count { color: #6b7280; }
 .suspect { color: #b7791f; font-size: 0.75rem; }
 /* Spec §7.3: the 42 tags over 500 photos are never hidden, only never

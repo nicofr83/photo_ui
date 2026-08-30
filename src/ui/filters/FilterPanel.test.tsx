@@ -80,6 +80,16 @@ describe('the album axis', () => {
     expect(await screen.findByRole('checkbox', { name: /Maison rose/ })).toBeInTheDocument();
   });
 
+  test('albums are listed alphabetically by path — Nicolas, live: unsorted made 82 of them impossible to find', async () => {
+    setup();
+    await screen.findByTestId('album-1998-1999/1998-02-Maison rose Algès');
+    const testids = screen.getAllByTestId(/^album-/).map((el) => el.dataset['testid']);
+    expect(testids).toEqual([...testids].sort((a, b) => (a ?? '').localeCompare(b ?? '')));
+    // The 2004 album must not lead — a raw sort on the JSON insertion
+    // order (this fixture's own order) would put it first.
+    expect(testids[0]).toBe('album-1998-1999/1998-02-Maison rose Algès');
+  });
+
   test('§3.2 — an album whose name announces a journey is flagged, not silently trusted', async () => {
     setup();
     const label = await screen.findByTestId('album-1998-1999/1998-02-Maison rose Algès');
