@@ -74,14 +74,25 @@ prédicat `&&` de date. `confidence` vaut `reviewed` si `verified`, sinon
 `uncertain` — jamais `transcribed`, qui suppose une lecture du texte, pas une
 confirmation d'appariement.
 
+**Le recouvrement, dans les deux sens, est câblé** *(2026-08-30, Nicolas tranche
+via team-lead)* : `GALLERY_MATCH` n'est pas un recouvrement de plage, c'est une
+IDENTITÉ (« c'est la même prise de vue », jamais « c'est le 4 novembre ») —
+elle ne nourrit jamais la cascade, ne produit jamais de fourchette, n'entre
+jamais dans un `&&`. Elle voyage néanmoins dans la MÊME forme `OverlapInfo`
+que les trois autres règles, chaque largeur à zéro
+(`{rule:'gallery_match', photoSpanDays:0, textSpanDays:0, totalSpanDays:0,
+distanceToCentreDays:0}`) — réutilisée, jamais une seconde mécanique.
+`GET /photos/:cloudAssetId/texts` calcule le lien de galerie
+INDÉPENDAMMENT de la date de la photo (une photo non datée peut quand même
+avoir une identité réelle) et le trie en tête (largeur 0, la certitude avant
+la conjecture). `GET /photos?overlapsTextKind=web_caption&overlapsTextId=…`
+bascule sur une égalité directe de `sha256` plutôt que le prédicat `&&`.
+
 **Pas fait ici, portée délibérément réduite** : `q`/`dateFrom`/`dateTo`/
-`confidence`/`hasCorrection`/`overlapsPhoto` ne s'appliquent pas encore à ce
-registre (`limit`/`offset` seuls). `GET /photos/:cloudAssetId/texts` et
-`GET /photos?overlapsTextKind=web_caption&…` (le sens inverse) ne sont pas
-câblés — `OverlapRule.GALLERY_MATCH` n'existe encore que dans `enums.ts` et
-dans `galleryCaption`, pas dans le prédicat de recouvrement lui-même. Aucune
-correction (`PUT /corrections`) sur ce registre — `app.text_correction` ne
-cible que `pipeline.text_unit`.
+`confidence`/`hasCorrection`/`overlapsPhoto` ne s'appliquent pas encore à
+`GET /texts?kind=web_caption` (`limit`/`offset` seuls). Aucune correction
+(`PUT /corrections`) sur ce registre — `app.text_correction` ne cible que
+`pipeline.text_unit`.
 
 Trouvé par `front` en intégrant contre le serveur réel (63 bannières de
 validation, les trois registres du texte, pas seulement galerie).

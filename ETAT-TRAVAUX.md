@@ -628,3 +628,17 @@ DONE : 205 vraies légendes de galerie servies (227 appariements réels dans `ap
 DETAIL : commit `f3443d2`. Serveur redémarré (pid réutilisé, déjà vivant depuis la vérification précédente), vérifié en direct — pas de nouveau redémarrage nécessaire pour front.
 
 ASK : aucune décision Nicolas ici — l'option (a) était déjà la recommandation écrite du contrat, front a conçu la forme, je l'ai suivie telle quelle. Je reste disponible ; le sens inverse du recouvrement (`GALLERY_MATCH` dans le prédicat) et les corrections sur `web_caption` restent en attente si Nicolas ou front en ont besoin.
+
+---
+
+## Avancement — impl-backend, `GALLERY_MATCH` dans les deux sens (2026-08-30)
+
+RE : Nicolas tranche via team-lead — finir `web_caption` maintenant, les deux questions que j'avais différées
+DONE : les deux questions que je pensais encore ouvertes étaient déjà tranchées ailleurs — team-lead m'a pointé le code déjà écrit par front plutôt que de me laisser reconcevoir :
+- `enums.ts` porte déjà le commentaire de front sur `OverlapRule.GALLERY_MATCH` : « pas un recouvrement de plage — une identité — mais elle voyage dans la MÊME forme `OverlapInfo`, chaque largeur à zéro ». Exactement ce qui manquait à ma décision sur la « sémantique de page ».
+- Un appariement de galerie **ne devient jamais une date** (Nicolas, confirmé) — jamais dans la cascade, jamais un `&&`.
+`listOverlappingTexts` (`GET /photos/:cloudAssetId/texts`) calcule maintenant le lien de galerie INDÉPENDAMMENT de la branche datée — avant, une photo non datée court-circuitait à un résultat vide AVANT même de chercher un lien de galerie, ce qui aurait caché en silence une identité réelle n'ayant rien à voir avec une date. Les items de galerie portent `{rule:'gallery_match', photoSpanDays:0, textSpanDays:0, totalSpanDays:0, distanceToCentreDays:0}` et passent naturellement en tête sous la règle de tri existante (somme croissante) — la certitude avant la conjecture, sans cas particulier. Le filtre `overlapsTextKind`/`overlapsTextId` de `photo_repository.ts` (le sens direct) bascule sur une égalité `p.sha256 = …` pour `web_caption` au lieu du prédicat `EXISTS`/`&&` — `overlapsTextId` reste le même `ref.id` (`sha256:imagePath`) déjà rendu par `/texts?kind=web_caption`, aucun nouveau schéma d'id à apprendre côté client.
+5 tests neufs, vérifié dans les deux sens contre le corpus réel : une vraie photo à 44 correspondances au total a son `gallery_match` trié en tête (0 jour) devant des recouvrements de 30+ jours ; le filtre direct retrouve exactement la seule photo appariée par identité. 657 tests serveur, tsc/eslint propres.
+DETAIL : commit `645bcef`. Serveur redémarré et vérifié en direct (pid 24017).
+
+ASK : aucun. `web_caption` est maintenant complet des deux côtés (lecture `/texts?kind=web_caption`, recouvrement dans les deux sens) — reste hors périmètre, si besoin plus tard : les corrections sur ce registre (`app.text_correction` ne cible que `pipeline.text_unit`) et `q`/`dateFrom`/`confidence` sur `/texts?kind=web_caption`.
