@@ -1890,6 +1890,21 @@ export type AlbumSpanWarning =
   /** L'intervalle chevauche celui d'un autre album. Fréquent, et pas une faute. */
   | { readonly code: 'overlaps_album'; readonly albumPath: string };
 
+/**
+ * Ce que suggèrent les photos liées par appariement de galerie
+ * (`app.web_gallery_link`) — une SUGGESTION affichée, jamais saisie dans
+ * `ref.web_span` : `proposal` et `WebDocumentRow.span` sont deux champs
+ * INDÉPENDANTS, l'un ne remplit jamais l'autre (v1.5, Task 10).
+ * `datedToDayCount < photoCount` dit que la proposition est fragile — une
+ * partie de ce qui la soutient n'est datée qu'au mois ou à l'année.
+ */
+export interface WebDateProposal {
+  readonly date: string;
+  readonly photoCount: number;
+  readonly datedToDayCount: number;
+  readonly spanDays: number;
+}
+
 export interface WebDocumentRow {
   readonly documentId: DocumentId;
   readonly title: string;
@@ -1899,6 +1914,8 @@ export interface WebDocumentRow {
   readonly span: ResolvedDate | null;
   /** Le chemin du document est le seul indice de date. Présenté comme tel. */
   readonly pathHint: string;
+  /** `null` quand aucune photo n'est liée à ce document — jamais une date inventée. */
+  readonly proposal: WebDateProposal | null;
 }
 
 export interface CountryRow {

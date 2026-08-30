@@ -466,6 +466,36 @@ test('listWebDocuments carries an excerpt from the first passage (corrected text
   });
 });
 
+test('listWebDocuments carries the linked-photo proposal, independent of the entered span (Task 10)', async () => {
+  await withRollback(async (client) => {
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                        VALUES ('web/2003/gal', 'html', 'x', false)`);
+    await client.query(`INSERT INTO pipeline.photo
+      (cloud_asset_id, sha256, relative_path, file_name, format, raw_date_source, resolved_from, resolved_start, resolved_end, resolved_precision)
+      VALUES ($1, $2, 'x/a.jpg', 'a.jpg', 'jpg', 'exif', 'exif_arbitrated', '2004-10-05', '2004-10-05', 'day')`,
+      ['a'.repeat(32), 'b'.repeat(64)]);
+    await client.query(`INSERT INTO app.web_gallery_link (sha256, page, image_path, distance, margin, verified)
+      VALUES ($1, '2003/gal.htm', 'a.jpg', 4, 8, null)`, ['b'.repeat(64)]);
+
+    const docs = await listWebDocuments(client);
+    const doc = docs.find((d) => d.documentId === 'web/2003/gal');
+    expect(doc?.proposal).toEqual({ date: '2004-10-05', photoCount: 1, datedToDayCount: 1, spanDays: 0 });
+    // La proposition ne remplit JAMAIS `span` — deux champs indépendants
+    // (Task 10) : aucun `putWebSpan` n'a été appelé ici.
+    expect(doc?.span).toBeNull();
+  });
+});
+
+test('listWebDocuments: a document with no linked photo has no proposal at all', async () => {
+  await withRollback(async (client) => {
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                        VALUES ('web/1999/aucun-lien', 'html', 'x', false)`);
+
+    const docs = await listWebDocuments(client);
+    expect(docs.find((d) => d.documentId === 'web/1999/aucun-lien')?.proposal).toBeNull();
+  });
+});
+
 test('putWebSpan/deleteWebSpan round-trip, null for a non-html or unknown document — a single bound only (A9)', async () => {
   await withRollback(async (client) => {
     await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)

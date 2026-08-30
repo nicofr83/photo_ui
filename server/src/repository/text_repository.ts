@@ -11,6 +11,7 @@ import {
 } from '../metier/overlap/overlap_sql.ts';
 import { cleanSearchQuery } from '../metier/search/clean_query.ts';
 import { highlight } from '../metier/search/highlight.ts';
+import { listWebProposals } from './web_proposal_repository.ts';
 
 interface DocumentRow {
   id: string;
@@ -710,6 +711,11 @@ export async function listWebDocuments(client: PoolClient): Promise<readonly Web
      WHERE d.kind = 'html'
      ORDER BY d.id`);
 
+  // SÉQUENTIEL sur le même client (jamais `Promise.all` — `task_repository.ts`
+  // en porte la règle) : une seconde requête, jamais un second aller-retour
+  // à `pool.connect()`.
+  const proposals = await listWebProposals(client);
+
   return rows.map((row): WebDocumentRow => ({
     documentId: row.id,
     title: row.title,
@@ -720,6 +726,9 @@ export async function listWebDocuments(client: PoolClient): Promise<readonly Web
       bracketHours: null,
     },
     pathHint: row.id,
+    // Suggestion affichée, jamais saisie dans `ref.web_span` — indépendante
+    // de `span` ci-dessus (Task 10).
+    proposal: proposals.get(row.id) ?? null,
   }));
 }
 
