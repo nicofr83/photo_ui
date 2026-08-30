@@ -66,6 +66,37 @@ describe('GET /photos', () => {
     expect(body.error.details.parameter).toBe('overlapsTextId');
   });
 
+  test('overlapsTextKind+overlapsTextId decorates each item with overlap AND the envelope with overlapSummary — front\'s exact repro', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    const id = 'a'.repeat(32);
+    try {
+      await setup.query(`INSERT INTO pipeline.photo
+        (cloud_asset_id, sha256, relative_path, file_name, format, raw_date_source,
+         resolved_from, resolved_start, resolved_end, resolved_precision)
+        VALUES ($1, $2, 'x/p.jpg', 'p.jpg', 'jpg', 'exif', 'annotation', '2000-01-15', '2000-01-15', 'day')`,
+        [id, 'b'.repeat(64)]);
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('doc', 'handwritten', 'Doc', false)`);
+      await setup.query(`INSERT INTO pipeline.text_unit
+        (kind, id, document_id, ordinal, body, confidence, covers_start, covers_end, covers_rule)
+        VALUES ('passage', 'doc/p1', 'doc', 1, 'p1', 'transcribed', '2000-01-10', '2000-01-20', 'passage')`);
+
+      const response = await app.server.inject({
+        method: 'GET', url: '/photos?scope=all&overlapsTextKind=passage&overlapsTextId=doc%2Fp1',
+      });
+      expect(response.statusCode).toBe(200);
+      const body = response.json<{ items: { overlap?: unknown }[]; overlapSummary?: { matchCount: number } }>();
+      expect(body.items).toHaveLength(1);
+      expect(body.items[0]?.overlap).toBeDefined();
+      expect(body.overlapSummary).toBeDefined();
+      expect(body.overlapSummary?.matchCount).toBe(1);
+    } finally {
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'doc'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'doc'`);
+      await setup.query('DELETE FROM pipeline.photo');
+    }
+  });
+
   test('a real request against an empty database returns a well-formed empty envelope', async () => {
     app = await bootstrap(await completeEnv());
     const response = await app.server.inject({ method: 'GET', url: '/photos?scope=all' });
@@ -174,10 +205,10 @@ describe('GET /photos/:cloudAssetId/texts', () => {
 
       const response = await app.server.inject({ method: 'GET', url: `/photos/${id}/texts` });
       expect(response.statusCode).toBe(200);
-      const body = response.json<ListEnvelope<TextWithOverlap> & { summary: OverlapSummary }>();
+      const body = response.json<ListEnvelope<TextWithOverlap> & { overlapSummary: OverlapSummary }>();
       expect(body.items).toHaveLength(1);
       expect(body.items[0]?.overlap.rule).toBe('logbook_entry');
-      expect(body.summary.matchCount).toBe(1);
+      expect(body.overlapSummary.matchCount).toBe(1);
     } finally {
       await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'logbook'`);
       await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
@@ -197,12 +228,12 @@ describe('GET /photos/:cloudAssetId/texts', () => {
 
       const response = await app.server.inject({ method: 'GET', url: `/photos/${id}/texts` });
       expect(response.statusCode).toBe(200);
-      const body = response.json<ListEnvelope<TextWithOverlap> & { summary: OverlapSummary }>();
+      const body = response.json<ListEnvelope<TextWithOverlap> & { overlapSummary: OverlapSummary }>();
       expect(body.items).toHaveLength(1);
       expect(body.items[0]?.overlap).toEqual({
         rule: 'gallery_match', photoSpanDays: 0, textSpanDays: 0, totalSpanDays: 0, distanceToCentreDays: 0,
       });
-      expect(body.summary.matchCount).toBe(1);
+      expect(body.overlapSummary.matchCount).toBe(1);
     } finally {
       await setup.query(`DELETE FROM app.web_gallery_link WHERE sha256 = $1`, ['b'.repeat(64)]);
       await setup.query('DELETE FROM pipeline.photo');

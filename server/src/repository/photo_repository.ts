@@ -1,10 +1,13 @@
-import { DateKind, DatePrecision, DateSource, PositionSource, TextKind } from '@shared/enums';
+import { DateKind, DatePrecision, DateSource, OverlapRule, PositionSource, TextKind } from '@shared/enums';
 import type { PoolClient } from '../db/pool.ts';
 import type { AppliedFilter, UnmatchedFilterValue } from '../contract/filter_interface.ts';
 import type {
   DatingDoubt, DatingProposal, DoubtCandidate, FacetBucket, PhotoDetail, PhotoExif, PhotoFacets, PhotoListItem,
-  PhotoTag,
+  PhotoTag, PhotoWithOverlap,
 } from '../contract/photo_interface.ts';
+import type { OverlapInfo, OverlapSummary } from '../contract/text_interface.ts';
+import { computeOverlapInfo, spanDays } from '../metier/overlap/overlap_info.ts';
+import { EFFECTIVE_COVERS_END, EFFECTIVE_COVERS_RULE, EFFECTIVE_COVERS_START, WEB_SPAN_JOIN } from '../metier/overlap/overlap_sql.ts';
 import { cleanSearchQuery } from '../metier/search/clean_query.ts';
 import { mapPhotoRow, type PhotoRow } from '../metier/photos/map_photo_row.ts';
 
@@ -321,6 +324,98 @@ export async function listPhotos(client: PoolClient, filters: PhotoFilters): Pro
     total, populationTotal,
     filters: { applied, unmatchedValues },
   };
+}
+
+const GALLERY_MATCH_OVERLAP: OverlapInfo = {
+  rule: OverlapRule.GALLERY_MATCH, photoSpanDays: 0, textSpanDays: 0, totalSpanDays: 0, distanceToCentreDays: 0,
+};
+
+interface TextWindow { readonly start: string; readonly end: string; readonly rule: string }
+
+/** La fenêtre EFFECTIVE du texte ciblé par `overlapsTextKind`/`overlapsTextId` — même expression que `text_repository.ts`, jamais reconstruite. */
+async function resolveTextWindow(client: PoolClient, kind: string, id: string): Promise<TextWindow | null> {
+  const { rows } = await client.query<{ start: string | null; end: string | null; rule: string | null }>(`
+    SELECT ${EFFECTIVE_COVERS_START} AS start, ${EFFECTIVE_COVERS_END} AS end, ${EFFECTIVE_COVERS_RULE} AS rule
+      FROM pipeline.text_unit t
+      ${WEB_SPAN_JOIN}
+     WHERE t.kind = $1 AND t.id = $2`, [kind, id]);
+  const row = rows[0];
+  if (row === undefined || row.start === null || row.end === null) return null;
+  return { start: row.start, end: row.end, rule: row.rule ?? '' };
+}
+
+function overlapFor(photo: PhotoListItem, isGalleryMatch: boolean, textWindow: TextWindow | null): OverlapInfo {
+  if (isGalleryMatch) return GALLERY_MATCH_OVERLAP;
+  if (textWindow === null || photo.date === null) {
+    // `overlapsTextKind`/`overlapsTextId` (branche datée) n'admet que des
+    // photos à `resolved_range` non nul (le `&&` l'exige) et un texte dont
+    // la fenêtre existe (sinon zéro ligne) — jamais atteint en pratique,
+    // gardé nommé plutôt qu'un `!` aveugle.
+    throw new Error('overlap attendu mais fenêtre ou date absente — incohérence du filtre overlapsTextKind');
+  }
+  return computeOverlapInfo({ start: photo.date.start, end: photo.date.end }, textWindow, textWindow.rule);
+}
+
+/** Même prédicat que `listPhotos`, réutilisé — jamais reconstruit — pour le compte par précision de l'`OverlapSummary`. */
+async function overlapSummaryFor(
+  client: PoolClient, filters: PhotoFilters, textWindow: TextWindow | null, matchCount: number,
+): Promise<OverlapSummary> {
+  const { qb } = await buildPhotoFilter(client, filters);
+  const { rows } = await client.query<{ day: number; month: number; year: number; undated: number }>(`
+    SELECT
+      count(*) FILTER (WHERE p.resolved_precision = 'day')::int AS day,
+      count(*) FILTER (WHERE p.resolved_precision = 'month')::int AS month,
+      count(*) FILTER (WHERE p.resolved_precision = 'year')::int AS year,
+      count(*) FILTER (WHERE p.resolved_precision IS NULL)::int AS undated
+      FROM pipeline.photo p
+      LEFT JOIN ref.country_alias ca ON ca.raw = p.country_raw
+      ${qb.whereClause}`, qb.values);
+  const row = rows[0];
+  return {
+    matchCount,
+    windowDays: textWindow === null ? 0 : spanDays(textWindow),
+    datedToDayCount: row?.day ?? 0,
+    datedToMonthCount: row?.month ?? 0,
+    datedToYearCount: row?.year ?? 0,
+    undatedCount: row?.undated ?? 0,
+  };
+}
+
+export interface PhotoOverlapResult {
+  readonly items: readonly PhotoWithOverlap[];
+  readonly total: number;
+  readonly populationTotal: number;
+  readonly filters: { readonly applied: readonly AppliedFilter[]; readonly unmatchedValues: readonly UnmatchedFilterValue[] };
+  readonly overlapSummary: OverlapSummary;
+}
+
+/**
+ * `GET /photos?overlapsTextKind=…&overlapsTextId=…` — le sens direct de
+ * `listOverlappingTexts` (`text_repository.ts`). Réutilise `listPhotos` tel
+ * quel pour l'ensemble filtré/paginé (jamais une seconde implémentation du
+ * filtre), puis décore : un `overlap` par item, un `overlapSummary`
+ * d'enveloppe — calculé sur la POPULATION entière, jamais seulement la page
+ * courante (même distinction que `total` face à `items.length` ailleurs).
+ *
+ * `web_caption` : IDENTITÉ par `sha256`, jamais un recouvrement de plage
+ * (Nicolas, tranché via team-lead) — chaque largeur à zéro, réutilisant la
+ * MÊME forme `OverlapInfo` que les trois autres règles.
+ */
+export async function listPhotosWithOverlap(
+  client: PoolClient, filters: PhotoFilters & { readonly overlapsTextKind: string; readonly overlapsTextId: string },
+): Promise<PhotoOverlapResult> {
+  const base = await listPhotos(client, filters);
+
+  const isGalleryMatch = filters.overlapsTextKind === TextKind.WEB_CAPTION;
+  const textWindow = isGalleryMatch ? null : await resolveTextWindow(client, filters.overlapsTextKind, filters.overlapsTextId);
+
+  const items: PhotoWithOverlap[] = base.items.map((photo) => ({
+    ...photo, overlap: overlapFor(photo, isGalleryMatch, textWindow),
+  }));
+
+  const overlapSummary = await overlapSummaryFor(client, filters, textWindow, base.total);
+
+  return { items, total: base.total, populationTotal: base.populationTotal, filters: base.filters, overlapSummary };
 }
 
 /** Un tag au-delà de ce compte est marqué `tooBroad` — mesuré : 42 tags réels le dépassent. */

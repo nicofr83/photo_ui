@@ -6,13 +6,15 @@ import type { FastifyInstance } from 'fastify';
 import { ErrorCode } from '@shared/enums';
 import { AppError } from '../contract/error_interface.ts';
 import type { ListEnvelope } from '../contract/filter_interface.ts';
-import type { PhotoDetail, PhotoFacets, PhotoListItem } from '../contract/photo_interface.ts';
+import type { PhotoDetail, PhotoFacets, PhotoListItem, PhotoWithOverlap } from '../contract/photo_interface.ts';
 import type { OverlapSummary, TextWithOverlap } from '../contract/text_interface.ts';
 import type { Pool } from '../db/pool.ts';
 import type { Config } from '../runtime/config.ts';
 import { classifyRenderFailure } from '../metier/images/render_availability.ts';
 import { getLatestImportId } from '../repository/import_run_repository.ts';
-import { getPhotoDetail, listFacets, listPhotos, type PhotoFilters } from '../repository/photo_repository.ts';
+import {
+  getPhotoDetail, listFacets, listPhotos, listPhotosWithOverlap, type PhotoFilters,
+} from '../repository/photo_repository.ts';
 import { listOverlappingTexts } from '../repository/text_repository.ts';
 import { parseQueryParams, type ParamSpec } from './query_params.ts';
 
@@ -80,7 +82,9 @@ function toFilters(parsed: Record<string, unknown>): PhotoFilters {
 export function registerPhotosRoutes(server: FastifyInstance, deps: { pool: Pool; config: Config }): void {
   const { pool, config } = deps;
 
-  server.get('/photos', async (request): Promise<ListEnvelope<PhotoListItem>> => {
+  server.get('/photos', async (request): Promise<
+    ListEnvelope<PhotoListItem> | (ListEnvelope<PhotoWithOverlap> & { overlapSummary: OverlapSummary })
+  > => {
     const parsed = parseQueryParams(request.query as Record<string, unknown>, PHOTOS_PARAM_SPEC);
     requireBothOrNeither(parsed);
     const filters = toFilters(parsed);
@@ -89,8 +93,28 @@ export function registerPhotosRoutes(server: FastifyInstance, deps: { pool: Pool
     try {
       // Séquentiel : le même `client` connecté ne pipeline pas deux requêtes
       // concurrentes (`pg` les sérialise avec un avertissement de dépréciation).
-      const result = await listPhotos(client, filters);
       const importId = await getLatestImportId(client);
+
+      // L'axe « texte qui recouvre » : une forme DIFFÉRENTE de l'enveloppe
+      // plate — `overlap` par item, `overlapSummary` d'enveloppe — jamais un
+      // placeholder nullable dessus (contrat §4.2, le sens direct de
+      // `GET /photos/:cloudAssetId/texts`).
+      if (filters.overlapsTextKind !== undefined && filters.overlapsTextId !== undefined) {
+        const result = await listPhotosWithOverlap(
+          client, { ...filters, overlapsTextKind: filters.overlapsTextKind, overlapsTextId: filters.overlapsTextId },
+        );
+        return {
+          items: result.items,
+          total: result.total,
+          populationTotal: result.populationTotal,
+          excludedCount: result.populationTotal - result.total,
+          filters: result.filters,
+          importId: importId ?? '',
+          overlapSummary: result.overlapSummary,
+        };
+      }
+
+      const result = await listPhotos(client, filters);
       return {
         items: result.items,
         total: result.total,
@@ -149,7 +173,7 @@ export function registerPhotosRoutes(server: FastifyInstance, deps: { pool: Pool
   // d'`overlapsTextKind`/`overlapsTextId` sur `GET /photos`, MÊME prédicat
   // (`metier/overlap/overlap_sql.ts`), jamais une seconde implémentation
   // (contrat §4.3, tâche 21).
-  server.get('/photos/:cloudAssetId/texts', async (request): Promise<ListEnvelope<TextWithOverlap> & { summary: OverlapSummary }> => {
+  server.get('/photos/:cloudAssetId/texts', async (request): Promise<ListEnvelope<TextWithOverlap> & { overlapSummary: OverlapSummary }> => {
     const { cloudAssetId } = request.params as { cloudAssetId: string };
     if (!CLOUD_ASSET_ID.test(cloudAssetId)) {
       throw new AppError(ErrorCode.NOT_FOUND, `identifiant de photo invalide : ${cloudAssetId}`, 404,
@@ -177,7 +201,7 @@ export function registerPhotosRoutes(server: FastifyInstance, deps: { pool: Pool
       excludedCount: 0,
       filters: { applied: [], unmatchedValues: [] },
       importId: importId ?? '',
-      summary: result.summary,
+      overlapSummary: result.summary,
     };
   });
 }

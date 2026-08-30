@@ -1,5 +1,6 @@
 import type { DatePrecision, DateKind, DateSource, PositionSource } from '@shared/enums';
 import type { FieldMatch, TextRange } from './filter_interface.ts';
+import type { OverlapInfo } from './text_interface.ts';
 
 /** Transcrit de `docs/api-contract.md` §2.2, §2.5. */
 export interface ResolvedDate {
@@ -62,6 +63,17 @@ export interface PhotoListItem {
   readonly captionExcerpt: CaptionExcerpt | null;
   readonly thumbUrl: string;
   readonly renderUrl: string;
+}
+
+/**
+ * `GET /photos?overlapsTextKind=…&overlapsTextId=…` — l'axe « texte qui
+ * recouvre » (contrat §4.2), le sens direct de `GET /photos/:id/texts`.
+ * Une forme DIFFÉRENTE de l'enveloppe plate, jamais un placeholder nullable
+ * dessus : hors d'une requête de recouvrement, une photo n'a aucune notion
+ * de « son » recouvrement à rendre nulle.
+ */
+export interface PhotoWithOverlap extends PhotoListItem {
+  readonly overlap: OverlapInfo;
 }
 
 export interface PhotoExif {
