@@ -162,6 +162,8 @@ export interface TextFilters {
 export interface ListTextsResult {
   readonly items: readonly TextUnit[];
   readonly total: number;
+  /** Texte sans aucune date, écarté par `dateFrom`/`dateTo` seul — 0 quand aucun filtre de date n'est posé. */
+  readonly undatedExcluded: number;
 }
 
 interface TextRow {
@@ -348,7 +350,9 @@ function mapGalleryLinkRow(row: GalleryLinkRow): TextUnit {
  * pas encore à ce registre. Étendre `app.text_search` ou le prédicat de
  * recouvrement à ces 205 lignes est un travail séparé, pas fait ici.
  */
-async function listWebCaptionTexts(client: PoolClient, filters: TextFilters): Promise<ListTextsResult> {
+async function listWebCaptionTexts(
+  client: PoolClient, filters: TextFilters,
+): Promise<Omit<ListTextsResult, 'undatedExcluded'>> {
   const { rows: totalRows } = await client.query<{ n: number }>(`
     SELECT count(*)::int AS n FROM app.web_gallery_link wgl
      WHERE (wgl.caption IS NOT NULL OR wgl.alt IS NOT NULL) AND (wgl.verified IS NULL OR wgl.verified = true)`);
@@ -374,24 +378,20 @@ async function listWebCaptionTexts(client: PoolClient, filters: TextFilters): Pr
   return { items: rows.map(mapGalleryLinkRow), total };
 }
 
-export async function listTexts(client: PoolClient, filters: TextFilters): Promise<ListTextsResult> {
-  if (filters.kind === TextKind.WEB_CAPTION) return await listWebCaptionTexts(client, filters);
-
+/**
+ * Les filtres de `/texts` qui ne portent PAS sur la date — partagés entre la
+ * requête principale et le compte des textes sans date écartés par
+ * `dateFrom`/`dateTo` (tâche 12) : les deux doivent voir EXACTEMENT le même
+ * « tous les autres filtres », jamais deux copies qui pourraient diverger.
+ */
+function buildNonDateTextConditions(
+  filters: TextFilters, param: (value: unknown) => string,
+): { conditions: string[]; cleanedQuery: string | null } {
   const conditions: string[] = [];
-  const values: unknown[] = [];
-  const param = (value: unknown): string => {
-    values.push(value);
-    return `$${String(values.length)}`;
-  };
-
   if (filters.documentId !== undefined) conditions.push(`t.document_id = ${param(filters.documentId)}`);
   if (filters.pageId !== undefined) conditions.push(`t.page_id = ${param(filters.pageId)}`);
   if (filters.kind !== undefined) conditions.push(`t.kind = ${param(filters.kind)}`);
   if (filters.confidence !== undefined) conditions.push(`t.confidence = ${param(filters.confidence)}`);
-  if (filters.dateFrom !== undefined && filters.dateTo !== undefined) {
-    conditions.push(`t.date_start IS NOT NULL `
-      + `AND daterange(t.date_start, t.date_end, '[]') && daterange(${param(filters.dateFrom)}, ${param(filters.dateTo)}, '[]')`);
-  }
   if (filters.hasCorrection !== undefined) {
     const exists = `EXISTS (SELECT 1 FROM app.text_correction c WHERE c.text_kind = t.kind AND c.text_id = t.id)`;
     conditions.push(filters.hasCorrection ? exists : `NOT ${exists}`);
@@ -412,6 +412,56 @@ export async function listTexts(client: PoolClient, filters: TextFilters): Promi
     else conditions.push(`ts.tsv @@ plainto_tsquery('public.fr_unaccent', ${param(cleanedQuery)})`);
   }
 
+  return { conditions, cleanedQuery };
+}
+
+const TEXT_UNIT_COUNT_FROM = `
+    FROM pipeline.text_unit t
+    JOIN pipeline.document d ON d.id = t.document_id
+    LEFT JOIN app.text_search ts ON ts.kind = t.kind AND ts.id = t.id
+    ${WEB_SPAN_JOIN}`;
+
+/**
+ * Combien de textes seraient dans le résultat n'était l'absence de date —
+ * ils satisfont TOUS les autres filtres, mais `t.date_start IS NULL` les
+ * exclut de la borne `dateFrom`/`dateTo`. 0 sans filtre de date : « un
+ * filtre rétrécit ou ne trouve rien, jamais il ne disparaît » (règle du
+ * produit) ne s'applique qu'à la date elle-même, pas au reste.
+ */
+async function countUndatedExcluded(client: PoolClient, filters: TextFilters): Promise<number> {
+  if (filters.dateFrom === undefined || filters.dateTo === undefined) return 0;
+
+  const values: unknown[] = [];
+  const param = (value: unknown): string => {
+    values.push(value);
+    return `$${String(values.length)}`;
+  };
+  const { conditions } = buildNonDateTextConditions(filters, param);
+  conditions.push('t.date_start IS NULL');
+
+  const { rows } = await client.query<{ n: number }>(
+    `SELECT count(*)::int AS n ${TEXT_UNIT_COUNT_FROM} WHERE ${conditions.join(' AND ')}`, values);
+  return rows[0]?.n ?? 0;
+}
+
+export async function listTexts(client: PoolClient, filters: TextFilters): Promise<ListTextsResult> {
+  if (filters.kind === TextKind.WEB_CAPTION) {
+    const result = await listWebCaptionTexts(client, filters);
+    return { ...result, undatedExcluded: 0 };
+  }
+
+  const values: unknown[] = [];
+  const param = (value: unknown): string => {
+    values.push(value);
+    return `$${String(values.length)}`;
+  };
+
+  const { conditions, cleanedQuery } = buildNonDateTextConditions(filters, param);
+  if (filters.dateFrom !== undefined && filters.dateTo !== undefined) {
+    conditions.push(`t.date_start IS NOT NULL `
+      + `AND daterange(t.date_start, t.date_end, '[]') && daterange(${param(filters.dateFrom)}, ${param(filters.dateTo)}, '[]')`);
+  }
+
   const whereClause = conditions.length === 0 ? '' : `WHERE ${conditions.join(' AND ')}`;
   const sortSql = filters.sort === 'date' ? 't.date_start ASC NULLS LAST, t.id'
     : filters.sort === 'relevance' && cleanedQuery !== null
@@ -419,12 +469,7 @@ export async function listTexts(client: PoolClient, filters: TextFilters): Promi
       : 'd.id, t.page_id, t.ordinal';
 
   const { rows: totalRows } = await client.query<{ n: number }>(
-    `SELECT count(*)::int AS n
-       FROM pipeline.text_unit t
-       JOIN pipeline.document d ON d.id = t.document_id
-       LEFT JOIN app.text_search ts ON ts.kind = t.kind AND ts.id = t.id
-       ${WEB_SPAN_JOIN}
-      ${whereClause}`, values);
+    `SELECT count(*)::int AS n ${TEXT_UNIT_COUNT_FROM} ${whereClause}`, values);
   const total = totalRows[0]?.n ?? 0;
 
   const limitClause = filters.limit !== undefined ? ` LIMIT ${param(filters.limit)}` : '';
@@ -436,6 +481,8 @@ export async function listTexts(client: PoolClient, filters: TextFilters): Promi
      ORDER BY ${sortSql}
      ${limitClause}${offsetClause}`, values);
 
+  const undatedExcluded = await countUndatedExcluded(client, filters);
+
   // `highlights` : « renseigné SEULEMENT par GET /texts?q=… » (contrat) —
   // vide sans recherche, jamais calculé pour rien.
   const terms = cleanedQuery === null ? [] : cleanedQuery.split(/\s+/).filter((t) => t !== '');
@@ -445,6 +492,7 @@ export async function listTexts(client: PoolClient, filters: TextFilters): Promi
       return terms.length === 0 ? unit : { ...unit, highlights: highlight(unit.text, terms) };
     }),
     total,
+    undatedExcluded,
   };
 }
 

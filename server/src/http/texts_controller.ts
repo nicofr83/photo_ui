@@ -147,7 +147,8 @@ export function registerTextsRoutes(server: FastifyInstance, deps: TextsRoutesDe
     try {
       const result = await listTexts(client, filters);
       return {
-        items: result.items, total: result.total, populationTotal: result.total, excludedCount: 0,
+        items: result.items, total: result.total,
+        populationTotal: result.total + result.undatedExcluded, excludedCount: result.undatedExcluded,
         filters: { applied: parsed.applied, unmatchedValues: [] },
         importId: '',
       };

@@ -193,6 +193,38 @@ describe('GET /texts', () => {
     }
   });
 
+  test('a date filter reports how many undated texts it excluded — never hardcoded to 0', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                         VALUES ('logbook', 'handwritten', 'Journal', true)`);
+      await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence, date_source, date_start, date_end)
+        VALUES ('log_entry', 'logbook/p001/001', 'logbook', 1, 'dans la fenêtre', 'transcribed', 'log_entry_date', '1999-06-01', '1999-06-01'),
+               ('log_entry', 'logbook/p002/001', 'logbook', 2, 'hors fenêtre', 'transcribed', 'log_entry_date', '2001-01-01', '2001-01-01'),
+               ('log_entry', 'logbook/p003/001', 'logbook', 3, 'sans date', 'transcribed', null, null, null)`);
+
+      const filtered = await app.server.inject({
+        method: 'GET', url: '/texts?documentId=logbook&dateFrom=1999-01-01&dateTo=1999-12-31',
+      });
+      const filteredBody = filtered.json<ListEnvelope<TextUnit>>();
+      // Seul le texte daté DANS la fenêtre compte — celui hors fenêtre n'est
+      // ni retenu ni compté comme « écarté pour absence de date » : il A une
+      // date, elle ne correspond juste pas. Seul l'absent compte ici.
+      expect(filteredBody.total).toBe(1);
+      expect(filteredBody.excludedCount).toBe(1);
+      expect(filteredBody.populationTotal).toBe(filteredBody.total + filteredBody.excludedCount);
+
+      const unfiltered = await app.server.inject({ method: 'GET', url: '/texts?documentId=logbook' });
+      const unfilteredBody = unfiltered.json<ListEnvelope<TextUnit>>();
+      expect(unfilteredBody.total).toBe(3);
+      expect(unfilteredBody.excludedCount).toBe(0);
+    } finally {
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'logbook'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
+    }
+  });
+
   test('kind=web_caption is accepted (front\'s real repro — used to 400), serves a real gallery match', async () => {
     const setup = testPool();
     app = await bootstrap(await completeEnv());
