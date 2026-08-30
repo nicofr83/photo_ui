@@ -55,6 +55,7 @@ export const INVARIANT_PAGES: readonly TextPage[] = [
     // distinct from `window` above — this page carries its own day, so a
     // reading (PAGE_DATE has two valid natures, dateKind.ts).
     date: { ...reading('1999-12-08'), source: DateSource.PAGE_DATE },
+    matchCount: null,
     spanSource: PageSpanSource.ENTRIES,
     imageUrl: '/pages/image?pageId=logbook/p003',
     regionsAvailable: false,
@@ -68,6 +69,7 @@ export const INVARIANT_PAGES: readonly TextPage[] = [
     // This page names no day and takes the previous one's — an inference,
     // same reasoning as spanSource: CARRIED below.
     date: { ...passageDate('1999-09-23'), kind: DateKind.INFERENCE, source: DateSource.PAGE_DATE },
+    matchCount: null,
     spanSource: PageSpanSource.CARRIED,
     imageUrl: '/pages/image?pageId=ma-vie/p007',
     regionsAvailable: false,

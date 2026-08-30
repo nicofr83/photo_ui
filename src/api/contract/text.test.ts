@@ -109,7 +109,7 @@ describe('pageSpanSource qualifies the PAGE window, not the date', () => {
 describe('v1.5 — TextPage.date, the page dating cascade (register → notes → carried)', () => {
   const page = {
     id: 'ma-vie/p002', documentId: 'ma-vie', ordinal: 2, label: null,
-    width: 870, height: 1226, window: null, spanSource: 'carried',
+    width: 870, height: 1226, window: null, matchCount: null, spanSource: 'carried',
     imageUrl: '/pages/image?pageId=ma-vie%2Fp002', regionsAvailable: false,
   };
 

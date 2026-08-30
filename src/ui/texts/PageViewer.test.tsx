@@ -9,7 +9,7 @@ import { PageViewer } from './PageViewer';
 const page: TextPage = {
   id: 'logbook/p003', documentId: 'logbook', ordinal: 3, label: 'p003',
   width: 810, height: 1250,
-  window: null, date: null, spanSource: PageSpanSource.ENTRIES,
+  window: null, date: null, matchCount: null, spanSource: PageSpanSource.ENTRIES,
   imageUrl: '/pages/image?pageId=logbook/p003',
   regionsAvailable: false,
 };

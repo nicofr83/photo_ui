@@ -205,6 +205,12 @@ export const TextPageSchema = z.strictObject({
    * neither replaces the other.
    */
   date: ResolvedDateSchema.nullable(),
+  /**
+   * v1.5, Task 14: count of this page's texts matching `GET /pages?q=…`.
+   * Filled only when `q` is present (same convention as `TextUnit.highlights`)
+   * — `null` otherwise, never `0` standing in for "no query".
+   */
+  matchCount: z.number().int().nullable(),
   spanSource: z.enum(PageSpanSource).nullable(),
   imageUrl: z.string(),
   /**
