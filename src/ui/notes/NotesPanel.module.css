@@ -4,7 +4,20 @@
 .note { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.6rem; border: 1px solid #e5e7eb; }
 .noteTitle { margin: 0; font-weight: 600; }
 .noteText { margin: 0; white-space: pre-wrap; }
-.remove { min-height: var(--tap-target); align-self: flex-start; padding: 0 0.75rem; cursor: pointer; }
+/* V1.6, Nicolas: same red treatment as the image/text "Retirer" buttons
+   (ui/review/ReviewList.module.css) — three removal controls, discoverable
+   the same way. */
+.remove {
+  min-height: var(--tap-target);
+  align-self: flex-start;
+  padding: 0 0.75rem;
+  cursor: pointer;
+  color: #b91c1c;
+  border: 1px solid #b91c1c;
+  background: #fef2f2;
+  font-weight: 600;
+}
+.remove:hover { background: #fee2e2; }
 .form { display: flex; flex-direction: column; gap: 0.4rem; max-width: 32rem; }
 .field { display: flex; flex-direction: column; gap: 0.2rem; }
 .control { min-height: var(--tap-target); padding: 0 0.5rem; font: inherit; }

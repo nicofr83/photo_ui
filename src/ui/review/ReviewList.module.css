@@ -12,7 +12,22 @@
 .thumbButton { padding: 0; border: none; background: none; cursor: pointer; line-height: 0; }
 .move { min-height: var(--tap-target); padding: 0 0.5rem; cursor: pointer; }
 .move:disabled { cursor: default; opacity: 0.4; }
-.remove { min-height: var(--tap-target); padding: 0 0.75rem; margin-left: auto; cursor: pointer; }
+/* V1.6, Nicolas: "c'est deja fait avec le bouton retirer que je n'avais pas
+   vu" — a control that works but is never seen does not exist for him.
+   Same red treatment on every removal control in the app (here and
+   NotesPanel's own "Supprimer") so all three are discoverable the same way,
+   distinct from the neutral grey of Monter/Descendre beside it. */
+.remove {
+  min-height: var(--tap-target);
+  padding: 0 0.75rem;
+  margin-left: auto;
+  cursor: pointer;
+  color: #b91c1c;
+  border: 1px solid #b91c1c;
+  background: #fef2f2;
+  font-weight: 600;
+}
+.remove:hover { background: #fee2e2; }
 .note { margin: 0; color: #6b7280; font-size: 0.85rem; }
 .brief { display: flex; flex-direction: column; gap: 0.25rem; }
 .briefInput { min-height: 6rem; padding: 0.5rem; }
