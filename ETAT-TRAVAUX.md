@@ -1334,3 +1334,25 @@ Hors périmètre assumé (signalé, pas oublié) : `/texts/facets` et `/pages?da
 DETAIL : commit `31b894e`.
 
 ASK : aucun de mon côté. J'attends la confirmation de team-lead sur la vignette de page web (item 2) avant de m'y engager — pas bloquant, je reste disponible.
+
+---
+
+## Avancement — impl-backend, V1.6 : facettes fermées, vignette livrée, vérifications (2026-08-31)
+
+RE : team-lead — quatre points (facettes/filtres, vignette, champ note, suppressions)
+DONE :
+
+**Facettes et filtres — le trou fermé, pas laissé ouvert.** Mesuré avant de trancher (demandé) : une jointure `LEFT JOIN app.text_correction` de plus par requête, coût réel sur le corpus entier sous 10 ms. Fermé les TROIS : `GET /texts` (liste + `sort=date` + `countUndatedExcluded`), `GET /texts/facets`, `GET /pages?dateFrom&dateTo` — un troisième trou identique trouvé au passage (le filtre de date de `/texts` lui-même, jamais signalé séparément avant) et corrigé aussi, pour ne pas laisser les trois incohérents entre eux. `EFFECTIVE_TEXT_DATE_START`/`END` : une constante SQL partagée, jamais trois copies. Vérifié en direct (transaction annulée) : corriger les 3 entrées de `logbook/p019` déplace les comptes de facette 1998/1999 d'exactement 3, immédiatement.
+DETAIL : commit `f5956ac`.
+
+**Vignette de page web — la recommandation retenue, livrée.** `WebDateProposal.thumbSha256` : la photo liée la plus tôt datée, LA MÊME qui établit `date` — un choix explicable, jamais arbitraire (`array_agg(sha256 ORDER BY resolved_start)[1]`). Servie par `/images/:sha256/thumb`, déjà en place, aucune route neuve. `thumbSha256` n'existe que si `proposal` existe — un document sans photo liée reste `proposal: null`, le client affiche un repère neutre, jamais la photo d'un autre document.
+**Écart chiffré signalé, pas corrigé en douce** : mesuré 22 des 28 documents du périmètre avec une photo liée, pas 27 comme annoncé par team-lead — les 6 autres n'ont AUCUNE ligne `app.web_gallery_link`, pas seulement une photo non datée. Signalé pour réconciliation, la fonctionnalité reste correcte dans les deux cas.
+DETAIL : commit `1c7b29d`. Amendement A11 écrit.
+
+**Champ `note` par image sélectionnée** : vérifié bout en bout contre le corpus réel (tâche `01-le-grand-depart`, transaction annulée) — écrit puis relu, fonctionne. Un test de dépôt sur fixture existait déjà aussi.
+
+**Suppression note/texte d'une tâche** : confirmé, les deux existent déjà — `DELETE /tasks/:slug/notes/:noteId`, `POST /tasks/:slug/texts` (`remove: [TaskTextRef]`). Aucun point d'entrée neuf. Signalé à front.
+
+24 tests neufs sur cette passe (facettes/filtres + vignette). 763 tests serveur verts + 1 rouge PAR CONSTRUCTION (`contract_shapes.itest.ts`, `WebDateProposalSchema` de front pas encore à jour sur `thumbSha256` — même motif que `matchCount`, déjà annoncé, pas une régression). tsc/eslint propres.
+
+ASK : aucun de mon côté. Mon périmètre V1.6 serveur est maintenant complet — la correction de date, la fermeture du trou facettes/filtres, la vignette, et les trois vérifications (suppression images déjà connue, suppression note/texte, champ note). Disponible pour la suite.
