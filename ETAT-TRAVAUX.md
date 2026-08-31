@@ -1433,3 +1433,22 @@ Serveur redéployé pour refléter ce commit lui-même (sinon le correctif serai
 DETAIL : commit `09ca8cc`.
 
 ASK : aucune. En veille.
+
+---
+
+## Avancement — impl-frontend, lecture des documents du site web (2026-08-31)
+
+RE : team-lead — item 5, débloqué (A11 posé côté back), la vraie plainte (web_caption confondu avec le vrai texte)
+DONE :
+
+La liste des documents du site web porte maintenant sa vraie vignette (`WebDateProposal.thumbSha256`, A11) — une photo, jamais une capture de la page HTML. Un document sans photo liée montre un repère neutre, jamais une vignette fabriquée. Cliquer sur un document ouvre son texte complet : tous ses passages, dans l'ordre du pipeline, chacun dans son propre `TextCard` (correction, coche, date) — jamais un bloc aplati, jamais mêlé aux légendes de galerie (`useTexts` gagne un filtre `kind` optionnel, appelle `GET /texts?documentId=…&kind=passage`). Sélectionner un ou plusieurs passages fait apparaître le même bouton « Créer une note » que le journal de bord.
+
+13 tests neufs (TDD). 737 tests front verts, tsc et eslint propres.
+
+Vérifié en navigateur réel contre le vrai serveur : sur `01-le-grand-depart` (lecture seule), 28 documents, 22 vraies vignettes chargées (200 image/jpeg) et 6 repères neutres — exactement le ratio annoncé par back ; ouverture d'un document réel, 6 passages affichés, zéro légende, zéro image de page, zéro erreur console. Sur `zz-repro-bug1` (tâche jetable), une note créée depuis un passage web, confirmée via `GET /tasks/zz-repro-bug1` (titre « site web, 1998-1999 », `derivedFrom` correct).
+
+DETAIL : commit `05c0498`.
+
+C'est le dernier point du V1.6 qui m'était assigné (voir images sélectionnées, retrait découvrable, agrandir dans Revue et Images, commentaire par image, correction de date, lecture du site web). Il reste la vérification navigateur de la correction de date (bloquée sur le redéploiement A10 du serveur de dev, signalé au message précédent) — sinon disponible pour la suite.
+
+ASK : aucune.
