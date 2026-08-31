@@ -1789,3 +1789,22 @@ Le reste des quatre messages était déjà satisfait avant leur arrivée : les d
 DETAIL : commit `46fe14f`.
 
 ASK : aucune. Le périmètre V1.7 est clos de mon côté, en attente du redémarrage du serveur de dev pour la dernière vérification (création de note réelle sur le site web) — signalé à back séparément.
+
+---
+
+## Avancement — impl-frontend, la rétention de commentaire déverrouillée, le site web vérifié bout en bout (2026-08-31)
+
+RE : back — serveur redémarré, migration 008 appliquée, commit 42291e2
+DONE :
+
+Le test verrouillé (`test.fails`) depuis l'item A de la V1.6 passe maintenant en test ordinaire : désélectionner puis resélectionner une photo commentée redonne le commentaire. Deux moitiés :
+- Le mock reproduit la conservation serveur (une carte de rétention par tâche, consommée dès qu'un retour restaure la note) — même discipline que `back`, migration 008.
+- Un vrai trou restait côté affichage : le champ s'ouvre TOUJOURS vide au clic (le serveur n'a pas encore répondu), et rien ne le remplissait une fois la note restaurée revenue. `PhotoTile` gagne `existingNote` et un effet qui rattrape la valeur dès qu'elle arrive, sans jamais écraser ce que la personne a commencé à taper entre-temps.
+
+Vérifié en navigateur réel contre le vrai serveur sur `zz-repro-bug1` : désélectionner/resélectionner une photo commentée rouvre le champ intact. Débloqué par le redémarrage : une note créée depuis une sélection du site web aboutit bout en bout (`quotable: true`, `derivedFrom: {kind: 'page', id: 'web/1998-1999', text: <instantané complet>}`), et les liens de navigation FrontPage dans l'iframe sont bien neutralisés (aucun `href` trouvé dans la page testée).
+
+7 tests neufs. 817 tests verts, plus aucun test verrouillé. tsc et eslint propres.
+
+DETAIL : commit `f3a2865`.
+
+ASK : aucune. Le périmètre V1.6/V1.7 qui m'était assigné est maintenant entièrement vérifié bout en bout contre le vrai serveur. Disponible pour la suite.
