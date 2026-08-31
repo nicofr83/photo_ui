@@ -1319,3 +1319,18 @@ DETAIL : commits `69eed8e` (A), `376e03d` (B), `002d077` (C), `42cf9da` (D).
 **La V1.6 (mon périmètre) est complète.**
 
 ASK : aucune. La 5ᵉ demande (visualisation des pages du site) reste hors de mon périmètre, en attente de `back` comme convenu. Disponible sinon.
+
+---
+
+## Avancement — impl-backend, V1.6 item 1 livré : corriger la date d'un texte (2026-08-31)
+
+RE : team-lead — le besoin le plus important
+DONE : `PUT /corrections` gagne `date?: {start, end} | null` sur `app.text_correction` (pas une seconde table — un correctif, un `revert`). Omis = ne touche pas ; `null` = efface ; `{start,end}` = pose (start=end obligatoire, D11, sinon 400). Date corrigée = EFFECTIVE sur `TextUnit.date` (`source: 'annotation'`, `kind: 'decision'` — aligné sur `dateKind.ts` de front sans qu'il ait rien à changer). `TextUnit.dateOriginal` nouveau, la lecture amont TOUJOURS, même paire que `text`/`textOriginal`. Témoin capturé SEULEMENT s'il y avait une date à préserver (une date ajoutée où il n'y en avait aucune ne garde aucun témoin).
+**Propagation automatique, pas spéciale-casée** : `recomputePageDates` lit désormais `coalesce(correction, amont)` et se redéclenche après chaque pose/effacement de date — la cascade entière se recalcule, donc l'héritage `carried` suit sans code dédié.
+**Trouvé et corrigé en cours de route** : une SECONDE copie manuelle du SELECT texte+correction (`listOverlappingTexts`, la branche de recouvrement par date) n'avait pas reçu les nouvelles colonnes — régression réelle immédiatement attrapée par la suite existante (`hasDateCorrection` faux-positif sur des colonnes absentes plutôt que nulles). Corrigée. Duplication pré-existante, pas introduite par moi, mais qui mordait maintenant.
+**Vérifié contre le corpus réel, en transaction annulée (jamais commitée)** : corriger `logbook/p019` a révélé que l'anomalie n'est PAS un seul outlier — 10 de ses 19 entrées portent l'année 1999 au lieu de 1998, dont 3 exactement sur la date max qui casse la fenêtre à 365 jours. Corriger ces 3 seules a fait passer la fenêtre de la page de `1998-11-16→1999-11-16` à `1998-11-16→1999-11-15` — recalculée en direct, exactement l'effet voulu. Nicolas devra corriger plusieurs entrées par page anormale, pas une seule — signalé à team-lead.
+Hors périmètre assumé (signalé, pas oublié) : `/texts/facets` et `/pages?dateFrom&dateTo` continuent de lire la date amont.
+16 tests neufs (schéma, dépôt, HTTP). 758 tests serveur, tsc/eslint propres. Amendement A10 écrit.
+DETAIL : commit `31b894e`.
+
+ASK : aucun de mon côté. J'attends la confirmation de team-lead sur la vignette de page web (item 2) avant de m'y engager — pas bloquant, je reste disponible.
