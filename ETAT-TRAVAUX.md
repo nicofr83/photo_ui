@@ -1366,3 +1366,27 @@ DONE : rien à faire — team-lead confirme que 22/28 (le mien, périmètre apr�
 Périmètre V1.6 serveur clos. Je passe en veille — front termine l'affichage du site et le commentaire par image ; je reprendrai si son intégration révèle un défaut côté serveur.
 
 ASK : aucun. En veille, disponible.
+
+---
+
+## Avancement — impl-frontend, V1.6 suite — découvrabilité, agrandir dans Images, commentaire (2026-08-31)
+
+RE : team-lead — correction de Nicolas (le retrait existait déjà) + deux nouvelles demandes
+DONE :
+
+**Découvrabilité** : les trois « Retirer » (image, texte dans la Revue, note) partagent maintenant le même traitement visuel — bordure et fond rouges, gras — nettement distinct du gris neutre de Monter/Descendre à côté. Vérifié en direct : les boutons ressortent clairement.
+
+**Agrandir aussi dans Images** : même `ImageModal` qu'à la Revue (un seul composant, comme demandé). `PhotoTile` gagne un `onEnlarge` séparé de `onOpen` (le panneau de métadonnées reste inchangé) ; câblé dans `PhotoGrid` et `SelectedPhotoGrid`.
+
+**Commentaire par image sélectionnée** : `TaskImageSelection.note` existait déjà côté serveur (vérifié par team-lead) — seule l'interface manquait. `useSelection` gagne `setNote`. Un seul `ImageNoteEditor`, placé dans le slot `children` d'`ImageModal` — donc Images et Revue par la même intégration. N'apparaît que sur une image déjà sélectionnée à l'écran Images ; toujours à la Revue.
+
+**Deux bugs réels trouvés en construisant ceci** (root-causés avant tout correctif, aucun causé par ce chantier mais tous deux rendus visibles par lui) :
+- `PhotoTile.module.css`'s `.tile` (un `<figure>`) n'avait jamais remis à zéro la marge par défaut du navigateur (40px de chaque côté) — chaque vignette rendait 80px plus étroite que sa vraie cellule de grille depuis toujours, invisible tant que rien ne dépendait de la largeur réelle. Le bouton « Agrandir », devant couvrir tout le cadre, a rendu le défaut réel et bloquant (mesuré en direct : cadre 51×38px au lieu de 131×98px, la case à cocher fixe recouvrant presque tout). Corrigé.
+- `ImageModal.module.css`'s `.dialog` n'était pas défilable : sur une image haute, le bouton « Enregistrer » du commentaire tombait hors écran. Corrigé (`overflow-y: auto`).
+
+Vérifié contre le vrai serveur en navigateur réel : sur `01-le-grand-depart` (lecture seule), l'agrandissement fonctionne, cadre correctement dimensionné après le correctif ; sur `zz-repro-bug1` (tâche jetable), un commentaire réel enregistré et confirmé via `GET /tasks/zz-repro-bug1`. Aucune erreur console.
+
+714 tests front verts, tsc et eslint propres.
+DETAIL : commits `ec4e168` (découvrabilité), `57200ad` (agrandir + commentaire + les deux correctifs).
+
+ASK : aucune. Disponible.
