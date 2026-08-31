@@ -1690,3 +1690,18 @@ DONE :
 DETAIL : commit `7a08c9c` (14 fichiers). Incident d'index partagé (encore) — `mocks/handlers.ts` et 5 fichiers `front` neufs (`JournalRow`/`JournalTable`) embarqués dans mon premier commit ; corrigé par `git reset --soft HEAD~1` puis `git reset HEAD -- <ses fichiers>`, recommité seul. Rien perdu, `front` les retrouve non indexés.
 
 ASK : aucune. J'enchaîne sur le bug signalé en message 3 (note d'image perdue au retrait, `zz-repro-bug1`) — c'est aussi ce que verrouille le `test.fails` de `front` dans `ImagesScreen.test.tsx`.
+
+---
+
+## Avancement — impl-frontend, V1.7 le registre du journal en tableau (2026-08-31)
+
+RE : team-lead — spec-v1.7.md, section « Le journal de bord »
+DONE : `JournalTable`/`JournalRow` — quatre colonnes fixes (Date/Texte/Corriger/Créer une note), texte jamais tronqué, lignes alternées + survol, défilement horizontal propre sur écran étroit. Cocher ouvre l'éditeur partagé aussitôt (texte pré-rempli), jamais d'état intermédiaire (la case ne se coche que lorsque la note existe réellement) ; Annuler referme sans rien créer ; décocher une note existante demande confirmation. Le crayon ouvre la même correction que TextCard (texte + date), posée dans la cellule. `PageViewer` gagne `large` pour la hauteur aux deux tiers de la fenêtre demandée par la spec, sans toucher les autres appelants (32rem inchangé).
+
+Bug réel trouvé en écrivant les tests contre le vrai mock (jamais visible avant, aucun test n'appelait `PUT /corrections` sans intercepter la réponse) : `originalDateAtCorrection` portait le `ResolvedDate` complet au lieu du seul `{start, end}` — rejeté par le schéma strict à la première correction réelle sur un texte déjà daté. Corrigé.
+
+8 tests neufs. 791 tests + 1 « expected fail » déjà verrouillé. tsc et eslint propres.
+
+DETAIL : commit `659868e`. Pas encore câblé dans `TextsScreen` (prochaine étape, avec le retrait de `TextFilterPanel` — les trois sources n'en gardent aucune).
+
+ASK : la spec ne dit rien des 492 passages libres du journal (« notes de bord », kind `passage`, distincts des 1012 lignes de registre `log_entry`) — seul le registre devient tableau. Je les garde affichés sous le tableau, comme aujourd'hui (cartes `TextCard`), en attendant confirmation — rien n'est perdu avec ce choix, mais je préfère vérifier plutôt que deviner sur un point que la spec ne tranche pas.
