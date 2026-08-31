@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 
@@ -17,6 +17,7 @@ import { sourceOf, TEXT_SOURCE_TITLES, TextSource } from '../domain/textSource';
 import { NotesPanel } from '../ui/notes/NotesPanel';
 import { ErrorBanner } from '../ui/primitives/ErrorBanner';
 import { FixedHeader } from '../ui/primitives/FixedHeader';
+import { ImageModal } from '../ui/primitives/ImageModal';
 import scrollStyles from '../ui/primitives/FixedHeader.module.css';
 import { TaskNav } from '../ui/primitives/TaskNav';
 import { Chronology } from '../ui/review/Chronology';
@@ -107,6 +108,9 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
   const systemStatus = useSystemStatus();
   const volumeUnavailable = systemStatus.data !== undefined && originalsUnavailable(systemStatus.data);
   const [activeWarning, setActiveWarning] = useState<keyof TaskReviewWarnings | null>(null);
+  // V1.6, Nicolas #3: click a thumbnail, see it enlarged in a modal.
+  const [modalPhoto, setModalPhoto] = useState<string | null>(null);
+  const modalTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   if (task.error !== null) return <ErrorBanner error={task.error} />;
   if (task.isPending) return <p role="status">Chargement de la tâche…</p>;
@@ -118,6 +122,10 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
   // fetched above — never a second request just to get a src.
   const thumbUrlFor = (cloudAssetId: string): string | undefined =>
     review.data?.images.find((i) => i.cloudAssetId === cloudAssetId)?.thumbUrl;
+  // Already on `review.data.images` (PhotoListItem shape) — no second
+  // request just to open the modal.
+  const renderUrlFor = (cloudAssetId: string): string | undefined =>
+    review.data?.images.find((i) => i.cloudAssetId === cloudAssetId)?.renderUrl;
   const textGroups = review.data === undefined ? [] : groupTextsBySource(review.data.texts);
 
   return (
@@ -158,12 +166,22 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
             key={image.cloudAssetId}
             data-testid={`review-image-${image.cloudAssetId}`}
           >
-            <img
-              className={styles['thumb']}
-              src={thumbUrlFor(image.cloudAssetId)}
-              alt={`Vignette ${image.cloudAssetId.slice(0, 8)}`}
-              width={64}
-            />
+            <button
+              className={styles['thumbButton']}
+              type="button"
+              aria-label={`Agrandir ${image.cloudAssetId.slice(0, 8)}`}
+              onClick={(event) => {
+                modalTriggerRef.current = event.currentTarget;
+                setModalPhoto(image.cloudAssetId);
+              }}
+            >
+              <img
+                className={styles['thumb']}
+                src={thumbUrlFor(image.cloudAssetId)}
+                alt={`Vignette ${image.cloudAssetId.slice(0, 8)}`}
+                width={64}
+              />
+            </button>
             <span>{image.cloudAssetId.slice(0, 8)}</span>
             <button
               className={styles['move']}
@@ -289,6 +307,17 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
 
       <NotesPanel slug={slug} />
       </div>
+
+      {modalPhoto === null ? null : (
+        <ImageModal
+          src={renderUrlFor(modalPhoto) ?? ''}
+          alt={`Vignette ${modalPhoto.slice(0, 8)}`}
+          onClose={() => {
+            setModalPhoto(null);
+            modalTriggerRef.current?.focus();
+          }}
+        />
+      )}
     </section>
   );
 }

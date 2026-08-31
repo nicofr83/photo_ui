@@ -105,6 +105,45 @@ describe('§5.6 — what is held is shown', () => {
   });
 });
 
+describe('V1.6, Nicolas #3 — clicking a thumbnail opens the image in a modal', () => {
+  test('clicking the thumbnail opens the modal with the full render', async () => {
+    const user = userEvent.setup();
+    setup();
+    const row = await screen.findByTestId('review-image-e8bc80b75e254b7db2e1454222416813');
+    await user.click(within(row).getByRole('button', { name: /agrandir/i }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('img')).toHaveAttribute(
+      'src', expect.stringContaining('/render'),
+    );
+  });
+
+  test('closing returns focus to the thumbnail that opened it', async () => {
+    const user = userEvent.setup();
+    setup();
+    const row = await screen.findByTestId('review-image-e8bc80b75e254b7db2e1454222416813');
+    const trigger = within(row).getByRole('button', { name: /agrandir/i });
+    await user.click(trigger);
+
+    await user.click(await screen.findByRole('button', { name: 'Fermer' }));
+
+    await waitFor(() => { expect(screen.queryByRole('dialog')).not.toBeInTheDocument(); });
+    expect(trigger).toHaveFocus();
+  });
+
+  test('Escape closes the modal from here too', async () => {
+    const user = userEvent.setup();
+    setup();
+    const row = await screen.findByTestId('review-image-e8bc80b75e254b7db2e1454222416813');
+    await user.click(within(row).getByRole('button', { name: /agrandir/i }));
+    await screen.findByRole('dialog');
+
+    await user.keyboard('{Escape}');
+
+    await waitFor(() => { expect(screen.queryByRole('dialog')).not.toBeInTheDocument(); });
+  });
+});
+
 describe('spec §5.6/Q6 — the manifest order is reorderable', () => {
   test('the single image cannot move: both controls are disabled', async () => {
     setup();
