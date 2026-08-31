@@ -26,6 +26,44 @@ existants du projet.
 >
 ### Amendements depuis le gel
 
+### A10 — corriger la date d'un texte, comme on corrige son texte *(2026-08-31, V1.6)*
+
+`PUT /corrections` accepte un `date` optionnel — **omis** : ne touche pas une
+correction de date existante (un appel texte-seul reste texte-seul, rétro-
+compatible). **`null`** : efface la correction de date, le texte n'est pas
+concerné. **`{start, end}`** : la pose — `start` doit égaler `end` (D11, un
+texte affirme un jour ou rien), les deux doivent être de vrais jours civils,
+sinon 400 `INVALID_PARAMETER`.
+
+Corriger une date, c'est ARBITRER entre la lecture et ce que Nicolas sait —
+`DateSource.ANNOTATION` est la SEULE source de nature `decision` (`dateKind.ts`,
+front) ; une date corrigée porte donc `source: 'annotation'`, `kind: 'decision'`,
+et c'est la valeur EFFECTIVE de `TextUnit.date`. `TextUnit.dateOriginal` est
+nouveau — la lecture amont, TOUJOURS, jamais la correction, la même paire que
+`text`/`textOriginal`. `TextCorrection` gagne `date` (la correction posée,
+`null` si seul le texte a été corrigé) et `originalDateAtCorrection` (le
+TÉMOIN — `null` aussi quand le texte n'avait originellement aucune date : une
+correction qui EN AJOUTE une ne détruit rien à préserver). `POST /corrections/revert`
+efface les deux d'un seul geste, comme avant pour le texte seul.
+
+`app.text_correction` (schéma) porte les 4 nouvelles colonnes — jamais une
+seconde table : corriger le texte et corriger la date restent UN SEUL geste.
+
+**Propagation vers `app.page_date`** (tâche 8, v1.5) : chaque correction ou
+révocation de date redéclenche `recomputePageDates`, qui lit déjà
+`coalesce(correction, lecture amont)` — la cascade (registre → notes →
+héritage) se recalcule en entier, donc une page qui HÉRITAIT (`carried`)
+d'une page corrigée reflète automatiquement la correction, sans logique de
+propagation dédiée. `page_date` reste `reading`/`inference` seulement,
+JAMAIS `decision` — la cascade elle-même n'arbitre toujours rien (`dateKind.ts`
+l'exclut explicitement pour `page_date`), qu'elle lise une entrée corrigée
+ou non.
+
+**Hors périmètre, délibérément** : `GET /texts/facets` et `GET /pages?dateFrom&dateTo`
+continuent de lire la date amont, pas la corrigée — cette fonctionnalité est
+neuve, rien n'était incohérent avant elle. Un futur amendement pourra les
+aligner si le besoin se confirme.
+
 ### A9 — la période d'un document du site n'a plus qu'une borne de début *(2026-08-30, v1.5)*
 
 `PUT /ref/web-span` acceptait `{ documentId, dateFrom, dateTo, note }` ; `dateTo`
@@ -1163,8 +1201,15 @@ export interface TextUnit {
    * propriété du schéma au lieu d'une approximation.
    *
    * L'interface affiche `indéterminée`, jamais une date devinée.
+   *
+   * V1.6 : EFFECTIVE — corrigée si elle l'a été (`kind: 'decision'`,
+   * `source: 'annotation'`, la seule source de cette nature), sinon la
+   * lecture amont ci-dessous. `dateOriginal` reste TOUJOURS la lecture,
+   * jamais la correction, même paire que `text`/`textOriginal`.
    */
   readonly date: ResolvedDate | null;
+  /** La lecture amont, TOUJOURS — jamais la correction, même quand `date` en porte une (V1.6). */
+  readonly dateOriginal: ResolvedDate | null;
 
   /**
    * Qualifie la fenêtre de la PAGE, celle qui sert au recouvrement — jamais la
@@ -1222,11 +1267,32 @@ export interface TextCorrection {
    * signalée — jamais appliquée en silence, jamais supprimée (Q3, défaut (a)).
    */
   readonly status: CorrectionStatus;
+  /** La date corrigée (V1.6) — `null` quand seul le texte a été corrigé. */
+  readonly date: SingleDayRange | null;
+  /**
+   * Le TÉMOIN — la lecture amont telle qu'elle était au moment de corriger.
+   * `null` : soit aucune date n'a été corrigée, soit le texte n'avait
+   * originellement aucune date — une correction qui EN AJOUTE une ne
+   * détruit rien à préserver.
+   */
+  readonly originalDateAtCorrection: SingleDayRange | null;
+}
+
+/** Un jour seul (D11) — `start` et `end` sont toujours égaux, gardés en paire pour rester au format des autres bornes du contrat. */
+export interface SingleDayRange {
+  readonly start: string;
+  readonly end: string;
 }
 
 export interface TextCorrectionInput {
   readonly ref: TextRef;
   readonly text: string;   // vide ou blanc ⇒ 422 EMPTY_CORRECTION
+  /**
+   * V1.6 — omis : ne touche pas. `null` : efface la correction de date.
+   * `{start, end}` : la pose — `start === end` obligatoire (D11), 400
+   * `INVALID_PARAMETER` sinon.
+   */
+  readonly date?: SingleDayRange | null;
 }
 ```
 

@@ -3,11 +3,12 @@ import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 
 import { runMigrations } from '../db/migrate.ts';
+import type { PoolClient } from '../db/pool.ts';
 import { createLog, LogLevel } from '../log/log.ts';
 import { closeTestPool, testPool, withRollback } from '../../test/helpers/db.ts';
 import {
   deleteWebSpan, getPageImageRelpath, listDocuments, listOverlappingTexts, listPages, listTexts, listWebDocuments,
-  putWebSpan,
+  putCorrection, putWebSpan, revertCorrection,
 } from './text_repository.ts';
 
 const MIGRATIONS = fileURLToPath(new URL('../../db/migrations', import.meta.url));
@@ -704,6 +705,107 @@ describe('listTexts — kind: web_caption', () => {
 
       const { items } = await listTexts(client, { kind: 'web_caption' });
       expect(items[0]?.overlappingPhotoCount).toBe(0);
+    });
+  });
+});
+
+describe('putCorrection — correcting a date (V1.6)', () => {
+  async function seedDatedLogEntry(client: PoolClient): Promise<void> {
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('logbook', 'handwritten', 'x', true)`);
+    await client.query(`INSERT INTO pipeline.page (id, document_id, ordinal, image_relpath, width, height)
+                        VALUES ('logbook/p019', 'logbook', 19, 'p.jpg', 1, 1)`);
+    await client.query(`INSERT INTO pipeline.text_unit
+      (kind, id, document_id, page_id, ordinal, body, confidence, date_source, date_start, date_end)
+      VALUES ('log_entry', 'logbook/p019/001', 'logbook', 'logbook/p019', 1, 'x', 'transcribed', 'log_entry_date', '1999-11-16', '1999-11-16')`);
+  }
+
+  test('a corrected date is effective, decision/annotation — the original reading stays separate', async () => {
+    await withRollback(async (client) => {
+      await seedDatedLogEntry(client);
+
+      const unit = await putCorrection(client, {
+        ref: { kind: 'log_entry', id: 'logbook/p019/001' }, text: 'x', date: { start: '1998-11-16', end: '1998-11-16' },
+      });
+      expect(unit?.date).toEqual({
+        start: '1998-11-16', end: '1998-11-16', precision: 'day', kind: 'decision', source: 'annotation', bracketHours: null,
+      });
+      expect(unit?.dateOriginal).toEqual({
+        start: '1999-11-16', end: '1999-11-16', precision: 'day', kind: 'reading', source: 'log_entry_date', bracketHours: null,
+      });
+      expect(unit?.correction?.date).toEqual({ start: '1998-11-16', end: '1998-11-16' });
+      expect(unit?.correction?.originalDateAtCorrection).toEqual({ start: '1999-11-16', end: '1999-11-16' });
+    });
+  });
+
+  test('omitting date leaves an existing date correction untouched — only text-only calls stay text-only', async () => {
+    await withRollback(async (client) => {
+      await seedDatedLogEntry(client);
+      const ref = { kind: 'log_entry', id: 'logbook/p019/001' };
+      await putCorrection(client, { ref, text: 'x', date: { start: '1998-11-16', end: '1998-11-16' } });
+
+      const unit = await putCorrection(client, { ref, text: 'texte corrigé' });
+      expect(unit?.text).toBe('texte corrigé');
+      expect(unit?.date).toEqual(expect.objectContaining({ start: '1998-11-16', source: 'annotation' }));
+    });
+  });
+
+  test('date: null clears the date correction, the text correction stays', async () => {
+    await withRollback(async (client) => {
+      await seedDatedLogEntry(client);
+      const ref = { kind: 'log_entry', id: 'logbook/p019/001' };
+      await putCorrection(client, { ref, text: 'texte corrigé', date: { start: '1998-11-16', end: '1998-11-16' } });
+
+      const unit = await putCorrection(client, { ref, text: 'texte corrigé', date: null });
+      expect(unit?.text).toBe('texte corrigé');
+      expect(unit?.date).toEqual(expect.objectContaining({ source: 'log_entry_date', kind: 'reading', start: '1999-11-16' }));
+      expect(unit?.correction?.date).toBeNull();
+    });
+  });
+
+  test('a date added where none existed keeps no witness — nothing to destroy', async () => {
+    await withRollback(async (client) => {
+      await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('ma-vie', 'handwritten', 'x', true)`);
+      await client.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+                          VALUES ('passage', 'ma-vie/1', 'ma-vie', 1, 'x', 'transcribed')`);
+
+      const unit = await putCorrection(client, {
+        ref: { kind: 'passage', id: 'ma-vie/1' }, text: 'x', date: { start: '1999-08-04', end: '1999-08-04' },
+      });
+      expect(unit?.date?.kind).toBe('decision');
+      expect(unit?.dateOriginal).toBeNull();
+      expect(unit?.correction?.originalDateAtCorrection).toBeNull();
+    });
+  });
+
+  test('revertCorrection removes the date correction along with the text correction, in one gesture', async () => {
+    await withRollback(async (client) => {
+      await seedDatedLogEntry(client);
+      const ref = { kind: 'log_entry', id: 'logbook/p019/001' };
+      await putCorrection(client, { ref, text: 'texte corrigé', date: { start: '1998-11-16', end: '1998-11-16' } });
+
+      const unit = await revertCorrection(client, ref);
+      expect(unit?.text).toBe('x');
+      expect(unit?.date).toEqual(expect.objectContaining({ source: 'log_entry_date', start: '1999-11-16' }));
+      expect(unit?.correction).toBeNull();
+    });
+  });
+
+  test('correcting a date recomputes app.page_date — the whole point, fixing the anomalous page window', async () => {
+    await withRollback(async (client) => {
+      await seedDatedLogEntry(client);
+      // La deuxième entrée de la page reste à sa date propre : sans correction,
+      // la page couvrirait 365 jours (l'anomalie réelle, logbook/p019).
+      await client.query(`INSERT INTO pipeline.text_unit
+        (kind, id, document_id, page_id, ordinal, body, confidence, date_source, date_start, date_end)
+        VALUES ('log_entry', 'logbook/p019/002', 'logbook', 'logbook/p019', 2, 'x', 'transcribed', 'log_entry_date', '1998-11-17', '1998-11-17')`);
+
+      await putCorrection(client, {
+        ref: { kind: 'log_entry', id: 'logbook/p019/001' }, text: 'x', date: { start: '1998-11-16', end: '1998-11-16' },
+      });
+
+      const { rows } = await client.query<{ date_start: string; date_end: string }>(
+        `SELECT date_start::text, date_end::text FROM app.page_date WHERE page_id = 'logbook/p019'`);
+      expect(rows[0]).toEqual({ date_start: '1998-11-16', date_end: '1998-11-17' });
     });
   });
 });

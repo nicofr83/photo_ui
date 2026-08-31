@@ -16,7 +16,7 @@ import {
   getPageImageRelpath, listCorrections, listDocuments, listPages, listTexts, putCorrection, revertCorrection,
   type PageFilters, type TextCorrectionInput, type TextFilters,
 } from '../repository/text_repository.ts';
-import { parseQueryParams, type ParamSpec } from './query_params.ts';
+import { isRealCalendarDay, parseQueryParams, type ParamSpec } from './query_params.ts';
 
 /** Vocabulaire FERMÉ (contrat §6.1) — une valeur libre laisserait un visiteur remplir le disque de variantes. */
 const PAGE_THUMB_EDGE_VALUES = ['160', '320', '640'] as const;
@@ -107,13 +107,40 @@ function parseTextRef(value: unknown, parameter: string): { kind: string; id: st
   return { kind, id };
 }
 
+/**
+ * `date` omis (`undefined`) : ne touche pas une correction de date existante.
+ * `date: null` : l'efface. `{start, end}` : la pose — `start` doit égaler
+ * `end` (D11, un texte affirme un jour ou rien) et les deux doivent être de
+ * vrais jours civils, jamais seulement le bon format (V1.6).
+ */
+function parseCorrectionDate(value: unknown): { readonly start: string; readonly end: string } | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  if (typeof value !== 'object') {
+    throw invalidParameter('date', JSON.stringify(value), 'date doit être { start, end } ou null');
+  }
+  const { start, end } = value as Record<string, unknown>;
+  if (typeof start !== 'string' || typeof end !== 'string') {
+    throw invalidParameter('date', JSON.stringify(value), 'date.start et date.end doivent être des chaînes');
+  }
+  if (!isRealCalendarDay(start)) throw invalidParameter('date.start', start, 'date.start doit être un jour civil réel');
+  if (!isRealCalendarDay(end)) throw invalidParameter('date.end', end, 'date.end doit être un jour civil réel');
+  if (start !== end) {
+    throw invalidParameter('date.end', end, 'date.start doit égaler date.end — un texte affirme un jour ou rien (D11)');
+  }
+  return { start, end };
+}
+
 function parseCorrectionInput(body: unknown): TextCorrectionInput {
   if (typeof body !== 'object' || body === null) {
     throw invalidParameter('body', JSON.stringify(body), 'corps de requête invalide');
   }
-  const { ref, text } = body as Record<string, unknown>;
+  const { ref, text, date } = body as Record<string, unknown>;
   if (typeof text !== 'string') throw invalidParameter('text', JSON.stringify(text), 'text doit être une chaîne');
-  return { ref: parseTextRef(ref, 'ref'), text };
+  const parsedDate = parseCorrectionDate(date);
+  return parsedDate === undefined
+    ? { ref: parseTextRef(ref, 'ref'), text }
+    : { ref: parseTextRef(ref, 'ref'), text, date: parsedDate };
 }
 
 export function registerTextsRoutes(server: FastifyInstance, deps: TextsRoutesDeps): void {

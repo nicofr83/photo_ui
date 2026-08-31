@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 
 import { runMigrations } from '../db/migrate.ts';
+import type { PoolClient } from '../db/pool.ts';
 import { createLog, LogLevel } from '../log/log.ts';
 import { must } from '../../test/helpers/assert.ts';
 import { closeTestPool, testPool, withRollback } from '../../test/helpers/db.ts';
@@ -433,6 +434,88 @@ describe('006 — the v1.5 amendments', () => {
       await expect(client.query(
         `INSERT INTO ref.web_span (document_id, date_from, date_to) VALUES ('web/x', '2000-01-10', '2000-01-01')`))
         .rejects.toThrow(/web_span_ordered/);
+    });
+  });
+});
+
+describe('007 — correcting a text\'s date', () => {
+  test('app.text_correction carries a corrected date and its witness, alongside the text', async () => {
+    await withRollback(async (client) => {
+      const { rows } = await client.query<{ column_name: string; is_nullable: string }>(`
+        SELECT column_name, is_nullable FROM information_schema.columns
+         WHERE table_schema = 'app' AND table_name = 'text_correction'
+           AND column_name LIKE '%date%' ORDER BY column_name`);
+      expect(rows).toEqual([
+        { column_name: 'corrected_date_end', is_nullable: 'YES' },
+        { column_name: 'corrected_date_start', is_nullable: 'YES' },
+        { column_name: 'original_date_end_at_correction', is_nullable: 'YES' },
+        { column_name: 'original_date_start_at_correction', is_nullable: 'YES' },
+      ]);
+    });
+  });
+
+  async function insertTextCorrection(
+    client: PoolClient,
+    dates: Partial<{
+      correctedStart: string; correctedEnd: string; witnessStart: string; witnessEnd: string;
+    }>,
+  ): Promise<unknown> {
+    return client.query(`
+      INSERT INTO app.text_correction
+        (text_kind, text_id, corrected_text, original_at_correction,
+         corrected_date_start, corrected_date_end, original_date_start_at_correction, original_date_end_at_correction)
+      VALUES ('log_entry', 'logbook/p001/001', 'x', 'y', $1, $2, $3, $4)`,
+      [dates.correctedStart ?? null, dates.correctedEnd ?? null, dates.witnessStart ?? null, dates.witnessEnd ?? null]);
+  }
+
+  test('a correction with no date at all is still accepted — text-only, as before', async () => {
+    await withRollback(async (client) => {
+      await expect(insertTextCorrection(client, {})).resolves.toBeDefined();
+    });
+  });
+
+  test('a corrected date with only a start, no end, is refused', async () => {
+    await withRollback(async (client) => {
+      await expect(insertTextCorrection(client, { correctedStart: '1998-11-16' }))
+        .rejects.toThrow(/text_correction_date_pair/);
+    });
+  });
+
+  test('a witness with only a start, no end, is refused', async () => {
+    await withRollback(async (client) => {
+      await expect(insertTextCorrection(client, {
+        correctedStart: '1998-11-16', correctedEnd: '1998-11-16', witnessStart: '1999-11-16',
+      })).rejects.toThrow(/text_correction_date_witness_pair/);
+    });
+  });
+
+  test('a witness without a correction is refused — nothing to witness for', async () => {
+    await withRollback(async (client) => {
+      await expect(insertTextCorrection(client, { witnessStart: '1999-11-16', witnessEnd: '1999-11-16' }))
+        .rejects.toThrow(/text_correction_date_witness_requires_correction/);
+    });
+  });
+
+  test('a corrected date spanning more than one day is refused — D11, a text asserts one day or none', async () => {
+    await withRollback(async (client) => {
+      await expect(insertTextCorrection(client, { correctedStart: '1998-11-16', correctedEnd: '1998-11-17' }))
+        .rejects.toThrow(/text_correction_date_single_day/);
+    });
+  });
+
+  test('a complete, single-day correction with its witness is accepted', async () => {
+    await withRollback(async (client) => {
+      await expect(insertTextCorrection(client, {
+        correctedStart: '1998-11-16', correctedEnd: '1998-11-16',
+        witnessStart: '1999-11-16', witnessEnd: '1999-11-16',
+      })).resolves.toBeDefined();
+    });
+  });
+
+  test('a correction that ADDS a date where the text had none is accepted — no witness required', async () => {
+    await withRollback(async (client) => {
+      await expect(insertTextCorrection(client, { correctedStart: '1998-11-16', correctedEnd: '1998-11-16' }))
+        .resolves.toBeDefined();
     });
   });
 });

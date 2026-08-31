@@ -59,12 +59,32 @@ export interface LogEntryFields {
   readonly remarkConfidence: TranscriptionConfidence;
 }
 
+/** Un jour seul (D11) — `start` et `end` sont toujours égaux, mais la paire reste explicite pour rester au format des autres bornes du contrat. */
+export interface SingleDayRange {
+  readonly start: string;
+  readonly end: string;
+}
+
 export interface TextCorrection {
   readonly ref: TextRef;
   readonly text: string;
   readonly originalAtCorrection: string;
   readonly correctedAt: string;
   readonly status: CorrectionStatus;
+  /**
+   * La date corrigée (V1.6) — `null` quand seul le texte a été corrigé.
+   * Corriger une date, c'est ARBITRER entre la lecture et ce que Nicolas
+   * sait : la seule source de nature `decision` est `annotation`, la même
+   * que pour les photos (`dateKind.ts`, front).
+   */
+  readonly date: SingleDayRange | null;
+  /**
+   * Le TÉMOIN — la lecture amont telle qu'elle était au moment de corriger,
+   * comme `originalAtCorrection` pour le texte. `null` : soit aucune date
+   * n'a été corrigée, soit le texte n'avait originellement aucune date —
+   * une correction qui EN AJOUTE une ne détruit rien à préserver.
+   */
+  readonly originalDateAtCorrection: SingleDayRange | null;
 }
 
 export interface OverlapInfo {
@@ -109,7 +129,15 @@ export interface TextUnit {
   readonly textOriginal: string;
   readonly correction: TextCorrection | null;
   readonly confidence: TranscriptionConfidence;
+  /**
+   * La date EFFECTIVE (V1.6) — corrigée si elle l'a été (`kind: 'decision'`,
+   * `source: 'annotation'`), sinon la lecture amont. Même paire que
+   * `text`/`textOriginal` : `dateOriginal` ci-dessous reste TOUJOURS la
+   * lecture, jamais la correction.
+   */
   readonly date: ResolvedDate | null;
+  /** La lecture amont, TOUJOURS — jamais la correction, même quand `date` en porte une. */
+  readonly dateOriginal: ResolvedDate | null;
   readonly pageSpanSource: PageSpanSource | null;
   readonly overlappingPhotoCount: number;
   readonly highlights: readonly TextRange[];

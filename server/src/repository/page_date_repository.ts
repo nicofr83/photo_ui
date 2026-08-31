@@ -21,16 +21,26 @@ interface PageDateSourceRow {
  * naturellement la branche « notes » de la cascade, sans cas particulier
  * dans le code. `resolvePageDates` (pure) tourne SÉPARÉMENT par document :
  * l'ordinal d'une page est relatif à SON document, jamais un ordre global.
+ *
+ * `coalesce(c.corrected_date_start, t.date_start)` (V1.6) : la date CORRIGÉE
+ * d'un texte prime sur sa lecture — c'est ce qui fait qu'une correction
+ * (`putCorrection`, `text_repository.ts`) se propage à la page qui la
+ * contient, et à toute page qui en HÉRITE (`carried`), SANS logique de
+ * propagation dédiée : ce recalcul est déjà un recalcul complet du document,
+ * corriger l'entrée puis le redéclencher suffit.
  */
 export async function recomputePageDates(client: PoolClient): Promise<number> {
   const { rows } = await client.query<PageDateSourceRow>(`
     SELECT p.id AS page_id, p.document_id, p.ordinal,
-           coalesce(array_agg(DISTINCT t.date_start::text)
-                      FILTER (WHERE t.kind = 'log_entry' AND t.date_start IS NOT NULL), '{}') AS register_dates,
-           coalesce(array_agg(DISTINCT t.date_start::text)
-                      FILTER (WHERE t.kind = 'passage' AND t.date_start IS NOT NULL), '{}') AS note_dates
+           coalesce(array_agg(DISTINCT coalesce(c.corrected_date_start, t.date_start)::text)
+                      FILTER (WHERE t.kind = 'log_entry' AND coalesce(c.corrected_date_start, t.date_start) IS NOT NULL),
+                    '{}') AS register_dates,
+           coalesce(array_agg(DISTINCT coalesce(c.corrected_date_start, t.date_start)::text)
+                      FILTER (WHERE t.kind = 'passage' AND coalesce(c.corrected_date_start, t.date_start) IS NOT NULL),
+                    '{}') AS note_dates
       FROM pipeline.page p
       LEFT JOIN pipeline.text_unit t ON t.page_id = p.id
+      LEFT JOIN app.text_correction c ON c.text_kind = t.kind AND c.text_id = t.id
      GROUP BY p.id, p.document_id, p.ordinal`);
 
   const byDocument = new Map<string, PageInput[]>();

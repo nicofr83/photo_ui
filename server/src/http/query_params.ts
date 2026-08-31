@@ -49,8 +49,8 @@ function toText(value: unknown): string {
   );
 }
 
-/** `1999-02-30` a le bon format et n'est pas un jour. */
-function isRealCalendarDay(raw: string): boolean {
+/** `1999-02-30` a le bon format et n'est pas un jour — partagé avec les corps de requête (`texts_controller.ts`, V1.6), pas seulement les paramètres de requête. */
+export function isRealCalendarDay(raw: string): boolean {
   if (!ISO_DATE.test(raw)) return false;
   const [year, month, day] = raw.split('-').map(Number) as [number, number, number];
   const date = new Date(Date.UTC(year, month - 1, day));

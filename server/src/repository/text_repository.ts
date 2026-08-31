@@ -1,8 +1,9 @@
 import { OverlapRule, TextKind, TranscriptionConfidence, type DateSource } from '@shared/enums';
 import type { PoolClient } from '../db/pool.ts';
+import type { ResolvedDate } from '../contract/photo_interface.ts';
 import type {
-  LogEntryFields, OverlapInfo, OverlapSummary, TextCorrection, TextDocument, TextPage, TextUnit, TextWithOverlap,
-  WebDocumentRow,
+  LogEntryFields, OverlapInfo, OverlapSummary, SingleDayRange, TextCorrection, TextDocument, TextPage, TextUnit,
+  TextWithOverlap, WebDocumentRow,
 } from '../contract/text_interface.ts';
 import { computeOverlapInfo, spanDays } from '../metier/overlap/overlap_info.ts';
 import {
@@ -11,6 +12,7 @@ import {
 } from '../metier/overlap/overlap_sql.ts';
 import { cleanSearchQuery } from '../metier/search/clean_query.ts';
 import { highlight } from '../metier/search/highlight.ts';
+import { recomputePageDates } from './page_date_repository.ts';
 import { listWebProposals } from './web_proposal_repository.ts';
 
 interface DocumentRow {
@@ -239,6 +241,10 @@ interface TextRow {
   corrected_text: string | null;
   original_at_correction: string | null;
   corrected_at: string | null;
+  corrected_date_start: string | null;
+  corrected_date_end: string | null;
+  original_date_start_at_correction: string | null;
+  original_date_end_at_correction: string | null;
   confidence: string;
   date_source: string | null;
   date_start: string | null;
@@ -259,7 +265,14 @@ interface TextRow {
   remark_confidence: string | null;
 }
 
+/** `null` seulement si `start`/`end` le sont TOUS LES DEUX — la paire ne se coupe jamais en deux (D11). */
+function singleDayRange(start: string | null, end: string | null): SingleDayRange | null {
+  return start === null || end === null ? null : { start, end };
+}
+
 function mapTextRow(row: TextRow): TextUnit {
+  const hasDateCorrection = row.corrected_date_start !== null && row.corrected_date_end !== null;
+
   const correction: TextCorrection | null = row.original_at_correction === null || row.corrected_at === null
     ? null
     : {
@@ -270,6 +283,9 @@ function mapTextRow(row: TextRow): TextUnit {
         // Le statut de dérive (needs_review/orphaned) se calcule contre le texte
         // AMONT actuel — tâche 24. Ici : présente, donc appliquée par défaut.
         status: row.original_at_correction === row.body ? 'applied' : 'needs_review',
+        date: singleDayRange(row.corrected_date_start, row.corrected_date_end),
+        originalDateAtCorrection: singleDayRange(
+          row.original_date_start_at_correction, row.original_date_end_at_correction),
       };
 
   const logEntry: LogEntryFields | null = row.kind !== 'log_entry' ? null : {
@@ -281,6 +297,23 @@ function mapTextRow(row: TextRow): TextUnit {
     remarkConfidence: (row.remark_confidence ?? row.confidence) as LogEntryFields['remarkConfidence'],
   };
 
+  // La lecture amont — TOUJOURS, jamais la correction (comme `textOriginal`).
+  const dateOriginal: ResolvedDate | null =
+    row.date_source === null || row.date_start === null || row.date_end === null ? null : {
+      start: row.date_start, end: row.date_end, precision: 'day', kind: 'reading',
+      source: row.date_source as DateSource, bracketHours: null,
+    };
+
+  // EFFECTIVE : corrigée si corrigée — `decision`/`annotation`, la seule
+  // source de cette nature (Nicolas via team-lead, alignée sur `dateKind.ts`
+  // de front) — sinon la lecture amont telle quelle.
+  const date: ResolvedDate | null = hasDateCorrection
+    ? {
+        start: row.corrected_date_start as string, end: row.corrected_date_end as string,
+        precision: 'day', kind: 'decision', source: 'annotation' as DateSource, bracketHours: null,
+      }
+    : dateOriginal;
+
   return {
     ref: { kind: row.kind, id: row.id },
     documentId: row.document_id,
@@ -290,10 +323,8 @@ function mapTextRow(row: TextRow): TextUnit {
     textOriginal: row.body,
     correction,
     confidence: row.confidence as TextUnit['confidence'],
-    date: row.date_source === null || row.date_start === null || row.date_end === null ? null : {
-      start: row.date_start, end: row.date_end, precision: 'day', kind: 'reading',
-      source: row.date_source as DateSource, bracketHours: null,
-    },
+    date,
+    dateOriginal,
     pageSpanSource: row.page_span_source as TextUnit['pageSpanSource'],
     overlappingPhotoCount: row.overlapping_photo_count,
     highlights: [],
@@ -312,6 +343,8 @@ function mapTextRow(row: TextRow): TextUnit {
 const TEXT_UNIT_SELECT = `
     SELECT t.kind, t.id, t.document_id, t.page_id, t.ordinal, t.body,
            tc.corrected_text, tc.original_at_correction, tc.corrected_at,
+           tc.corrected_date_start, tc.corrected_date_end,
+           tc.original_date_start_at_correction, tc.original_date_end_at_correction,
            t.confidence, t.date_source, t.date_start, t.date_end, t.date_kind, t.page_span_source,
            (SELECT count(*)::int FROM pipeline.photo p
              WHERE ${overlapPredicate('p')}) AS overlapping_photo_count,
@@ -387,6 +420,7 @@ function mapGalleryLinkRow(row: GalleryLinkRow): TextUnit {
     // jamais de date, la sienne vient de la photo qu'elle légende, par lien
     // DIRECT (règle GALLERY_MATCH), jamais par recouvrement de plage.
     date: null,
+    dateOriginal: null,
     pageSpanSource: null,
     overlappingPhotoCount: row.overlapping_photo_count,
     highlights: [],
@@ -617,6 +651,8 @@ export async function listOverlappingTexts(client: PoolClient, cloudAssetId: str
     }>(`
       SELECT t.kind, t.id, t.document_id, t.page_id, t.ordinal, t.body,
              tc.corrected_text, tc.original_at_correction, tc.corrected_at,
+             tc.corrected_date_start, tc.corrected_date_end,
+             tc.original_date_start_at_correction, tc.original_date_end_at_correction,
              t.confidence, t.date_source, t.date_start, t.date_end, t.date_kind, t.page_span_source,
              (SELECT count(*)::int FROM pipeline.photo p2
                WHERE p2.resolved_range IS NOT NULL AND ${EFFECTIVE_COVERS_RANGE} IS NOT NULL
@@ -672,6 +708,13 @@ async function refreshTextSearch(client: PoolClient): Promise<void> {
 export interface TextCorrectionInput {
   readonly ref: { readonly kind: string; readonly id: string };
   readonly text: string;
+  /**
+   * V1.6 — omis : ne touche pas une correction de date existante (un appel
+   * texte-seul reste texte-seul). `null` : efface la correction de date, le
+   * texte n'est pas concerné. `{start, end}` : pose la correction — `start`
+   * et `end` DOIVENT être égaux (D11), vérifié à la frontière HTTP.
+   */
+  readonly date?: SingleDayRange | null;
 }
 
 /**
@@ -679,23 +722,49 @@ export interface TextCorrectionInput {
  * TEL QU'IL ÉTAIT au moment de corriger (contrat §4.4) : c'est lui, et lui
  * seul, qui permet de détecter une dérive plus tard. `null` : la cible
  * n'existe pas dans `pipeline` — rien à corriger.
+ *
+ * `date` suit le MÊME témoin, dans la MÊME ligne (V1.6) — jamais une seconde
+ * table : corriger le texte et corriger la date sont un seul geste, un seul
+ * `revert`. Quand une date est posée ou effacée, `recomputePageDates` est
+ * redéclenché : la cascade de page (tâche 8) lit déjà la date corrigée en
+ * priorité (`page_date_repository.ts`), donc la propagation à d'éventuelles
+ * pages héritées (`carried`) est automatique — jamais de logique dédiée.
  */
 export async function putCorrection(client: PoolClient, input: TextCorrectionInput): Promise<TextUnit | null> {
-  const { rows } = await client.query<{ body: string }>(
-    `SELECT body FROM pipeline.text_unit WHERE kind = $1 AND id = $2`, [input.ref.kind, input.ref.id]);
+  const { rows } = await client.query<{ body: string; date_start: string | null; date_end: string | null }>(
+    `SELECT body, date_start, date_end FROM pipeline.text_unit WHERE kind = $1 AND id = $2`,
+    [input.ref.kind, input.ref.id]);
   const current = rows[0];
   if (current === undefined) return null;
 
+  const touchDate = input.date !== undefined;
+  const correctedDateStart = input.date?.start ?? null;
+  const correctedDateEnd = input.date?.end ?? null;
+  // Le témoin ne se capture QUE quand on pose une date (jamais quand on l'efface) —
+  // et seulement s'il y en avait une à préserver.
+  const witnessStart = touchDate && correctedDateStart !== null ? current.date_start : null;
+  const witnessEnd = touchDate && correctedDateEnd !== null ? current.date_end : null;
+
   await client.query(
-    `INSERT INTO app.text_correction (text_kind, text_id, corrected_text, original_at_correction, corrected_at)
-     VALUES ($1, $2, $3, $4, now())
+    `INSERT INTO app.text_correction
+       (text_kind, text_id, corrected_text, original_at_correction, corrected_at,
+        corrected_date_start, corrected_date_end, original_date_start_at_correction, original_date_end_at_correction)
+     VALUES ($1, $2, $3, $4, now(), $5, $6, $7, $8)
      ON CONFLICT (text_kind, text_id) DO UPDATE
        SET corrected_text = EXCLUDED.corrected_text,
            original_at_correction = EXCLUDED.original_at_correction,
-           corrected_at = now()`,
-    [input.ref.kind, input.ref.id, input.text, current.body],
+           corrected_at = now(),
+           corrected_date_start = CASE WHEN $9 THEN EXCLUDED.corrected_date_start ELSE app.text_correction.corrected_date_start END,
+           corrected_date_end = CASE WHEN $9 THEN EXCLUDED.corrected_date_end ELSE app.text_correction.corrected_date_end END,
+           original_date_start_at_correction = CASE WHEN $9 THEN EXCLUDED.original_date_start_at_correction ELSE app.text_correction.original_date_start_at_correction END,
+           original_date_end_at_correction = CASE WHEN $9 THEN EXCLUDED.original_date_end_at_correction ELSE app.text_correction.original_date_end_at_correction END`,
+    [
+      input.ref.kind, input.ref.id, input.text, current.body,
+      correctedDateStart, correctedDateEnd, witnessStart, witnessEnd, touchDate,
+    ],
   );
   await refreshTextSearch(client);
+  if (touchDate) await recomputePageDates(client);
   return await getTextUnit(client, input.ref);
 }
 
@@ -705,6 +774,9 @@ export async function revertCorrection(
 ): Promise<TextUnit | null> {
   await client.query(`DELETE FROM app.text_correction WHERE text_kind = $1 AND text_id = $2`, [ref.kind, ref.id]);
   await refreshTextSearch(client);
+  // Bon marché (155 pages) et sûr par construction : un revert qui portait
+  // une date corrigée doit repropager, exactement comme la pose (V1.6).
+  await recomputePageDates(client);
   return await getTextUnit(client, ref);
 }
 
@@ -714,6 +786,10 @@ interface CorrectionRow {
   corrected_text: string;
   original_at_correction: string;
   corrected_at: string;
+  corrected_date_start: string | null;
+  corrected_date_end: string | null;
+  original_date_start_at_correction: string | null;
+  original_date_end_at_correction: string | null;
   current_body: string | null;
 }
 
@@ -731,7 +807,10 @@ export async function listCorrections(
   client: PoolClient, status?: 'applied' | 'needs_review' | 'orphaned',
 ): Promise<readonly TextCorrection[]> {
   const { rows } = await client.query<CorrectionRow>(`
-    SELECT c.text_kind, c.text_id, c.corrected_text, c.original_at_correction, c.corrected_at, t.body AS current_body
+    SELECT c.text_kind, c.text_id, c.corrected_text, c.original_at_correction, c.corrected_at,
+           c.corrected_date_start, c.corrected_date_end,
+           c.original_date_start_at_correction, c.original_date_end_at_correction,
+           t.body AS current_body
       FROM app.text_correction c
       LEFT JOIN pipeline.text_unit t ON t.kind = c.text_kind AND t.id = c.text_id
      ORDER BY c.corrected_at DESC`);
@@ -742,6 +821,8 @@ export async function listCorrections(
     originalAtCorrection: row.original_at_correction,
     correctedAt: row.corrected_at,
     status: correctionStatus(row),
+    date: singleDayRange(row.corrected_date_start, row.corrected_date_end),
+    originalDateAtCorrection: singleDayRange(row.original_date_start_at_correction, row.original_date_end_at_correction),
   }));
   return status === undefined ? corrections : corrections.filter((c) => c.status === status);
 }

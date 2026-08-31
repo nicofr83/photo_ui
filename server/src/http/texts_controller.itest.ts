@@ -472,6 +472,94 @@ describe('PUT /corrections', () => {
     });
     expect(response.statusCode).toBe(404);
   });
+
+  test('a corrected date spanning more than one day is a named 400 (Task V1.6, D11)', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                         VALUES ('logbook', 'handwritten', 'Journal', true)`);
+      await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+                         VALUES ('log_entry', 'logbook/p001/001', 'logbook', 1, 'amont', 'transcribed')`);
+
+      const response = await app.server.inject({
+        method: 'PUT', url: '/corrections',
+        payload: {
+          ref: { kind: 'log_entry', id: 'logbook/p001/001' }, text: 'x',
+          date: { start: '1998-11-16', end: '1998-11-17' },
+        },
+      });
+      expect(response.statusCode).toBe(400);
+      expect(response.json<{ error: { code: string } }>().error.code).toBe('INVALID_PARAMETER');
+    } finally {
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'logbook'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
+    }
+  });
+
+  test('a date that is not a real calendar day is a named 400', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                         VALUES ('logbook', 'handwritten', 'Journal', true)`);
+      await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+                         VALUES ('log_entry', 'logbook/p001/001', 'logbook', 1, 'amont', 'transcribed')`);
+
+      const response = await app.server.inject({
+        method: 'PUT', url: '/corrections',
+        payload: {
+          ref: { kind: 'log_entry', id: 'logbook/p001/001' }, text: 'x',
+          date: { start: '1999-02-30', end: '1999-02-30' },
+        },
+      });
+      expect(response.statusCode).toBe(400);
+    } finally {
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'logbook'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
+    }
+  });
+
+  test('correcting a date round-trips as decision/annotation, the original reading kept aside, revert restores both (V1.6)', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages)
+                         VALUES ('logbook', 'handwritten', 'Journal', true)`);
+      await setup.query(`INSERT INTO pipeline.text_unit
+        (kind, id, document_id, ordinal, body, confidence, date_source, date_start, date_end)
+        VALUES ('log_entry', 'logbook/p001/001', 'logbook', 1, 'amont', 'transcribed', 'log_entry_date', '1999-11-16', '1999-11-16')`);
+
+      const put = await app.server.inject({
+        method: 'PUT', url: '/corrections',
+        payload: {
+          ref: { kind: 'log_entry', id: 'logbook/p001/001' }, text: 'amont',
+          date: { start: '1998-11-16', end: '1998-11-16' },
+        },
+      });
+      expect(put.statusCode).toBe(200);
+      const putBody = put.json<TextUnit>();
+      expect(putBody.date).toEqual({
+        start: '1998-11-16', end: '1998-11-16', precision: 'day', kind: 'decision', source: 'annotation', bracketHours: null,
+      });
+      expect(putBody.dateOriginal).toEqual({
+        start: '1999-11-16', end: '1999-11-16', precision: 'day', kind: 'reading', source: 'log_entry_date', bracketHours: null,
+      });
+      expect(putBody.correction?.date).toEqual({ start: '1998-11-16', end: '1998-11-16' });
+      expect(putBody.correction?.originalDateAtCorrection).toEqual({ start: '1999-11-16', end: '1999-11-16' });
+
+      const reverted = await app.server.inject({
+        method: 'POST', url: '/corrections/revert',
+        payload: { ref: { kind: 'log_entry', id: 'logbook/p001/001' } },
+      });
+      const revertedBody = reverted.json<TextUnit>();
+      expect(revertedBody.date).toEqual(putBody.dateOriginal);
+      expect(revertedBody.correction).toBeNull();
+    } finally {
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'logbook'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
+    }
+  });
 });
 
 describe('GET /corrections', () => {
