@@ -33,6 +33,7 @@ async function completeEnv(): Promise<NodeJS.ProcessEnv> {
     PAGES_ROOT: await dir('pages'),
     ANNOTATIONS_DIR: await dir('annotations'),
     WEB_GALLERY_ROOT: await dir('web-gallery'),
+    WEB_SITE_ROOT: await dir('web-site'),
     RENDER_CACHE_ROOT: await dir('render-cache'),
     TASKS_ROOT: await dir('tasks'),
   };

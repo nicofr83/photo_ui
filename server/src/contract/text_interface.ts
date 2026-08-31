@@ -198,3 +198,17 @@ export interface TextDateFacets {
   readonly months: readonly FacetBucket[];
   readonly days: readonly FacetBucket[];
 }
+
+/**
+ * `GET /texts/web/pages` (V1.7) — les 5 pages HTML d'origine du site, lues
+ * en place. `id` = nom de fichier (`1998-1999.htm`), `title` = le
+ * `<title>` de la page (ce qu'elle affirme d'elle-même), `label` = les deux
+ * années telles qu'écrites dans le NOM DE FICHIER — les deux divergent
+ * parfois : `1900-1988.htm` porte `<title>1958-1998</title>`, une
+ * relecture narrative distincte de son propre nom.
+ */
+export interface WebSitePage {
+  readonly id: string;
+  readonly title: string;
+  readonly label: string;
+}

@@ -33,7 +33,7 @@ async function completeEnv(): Promise<NodeJS.ProcessEnv> {
     DATABASE_URL: process.env.DATABASE_URL_TEST,
     ORIGINALS_ROOT: await dir('originals'), THUMBS_ROOT: await dir('thumbs'),
     PIPELINE_DB_ROOT: await dir('pipeline-db'), PAGES_ROOT: await dir('pages'),
-    ANNOTATIONS_DIR: await dir('annotations'), WEB_GALLERY_ROOT: await dir('web-gallery'),
+    ANNOTATIONS_DIR: await dir('annotations'), WEB_GALLERY_ROOT: await dir('web-gallery'), WEB_SITE_ROOT: await dir('web-site'),
     RENDER_CACHE_ROOT: await dir('render-cache'), TASKS_ROOT: await dir('tasks'),
   };
 }

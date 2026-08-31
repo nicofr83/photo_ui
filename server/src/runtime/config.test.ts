@@ -11,6 +11,7 @@ const complete = {
   PAGES_ROOT: '/tmp/pages',
   ANNOTATIONS_DIR: '/tmp/annotations',
   WEB_GALLERY_ROOT: '/tmp/web-gallery',
+  WEB_SITE_ROOT: '/tmp/web-site',
   RENDER_CACHE_ROOT: '/tmp/cache',
   TASKS_ROOT: '/tmp/tasks',
 };
@@ -65,7 +66,7 @@ describe('loadConfig', () => {
     const config = loadConfig(complete);
     expect(config.writableRoots).toEqual(['/tmp/cache', '/tmp/tasks']);
     expect(config.readOnlyRoots)
-      .toEqual(['/tmp/originals', '/tmp/thumbs', '/tmp/work', '/tmp/pages', '/tmp/web-gallery']);
+      .toEqual(['/tmp/originals', '/tmp/thumbs', '/tmp/work', '/tmp/pages', '/tmp/web-gallery', '/tmp/web-site']);
   });
 
   test('the annotations dir becomes WRITABLE only behind the flag', () => {

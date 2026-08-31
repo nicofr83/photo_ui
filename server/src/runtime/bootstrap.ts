@@ -50,10 +50,16 @@ export async function bootstrap(env: NodeJS.ProcessEnv): Promise<App> {
     ['RENDER_CACHE_ROOT', config.renderCacheRoot], ['TASKS_ROOT', config.tasksRoot],
     ...(config.featureDatingExport ? [['ANNOTATIONS_DIR', config.annotationsDir] as const] : []),
     ['PIPELINE_DB_ROOT', config.pipelineDbRoot], ['PAGES_ROOT', config.pagesRoot],
+    ['WEB_SITE_ROOT', config.webSiteRoot],
   ];
+  let webSiteRootCanonical = '';
   for (const [envVar, rootPath] of requiredRoots) {
     try {
-      await realpath(rootPath);
+      const real = await realpath(rootPath);
+      // Capturée ici, sous sa forme CANONIQUE — `resolveUnderRoot`
+      // (V1.7, sécurité) la réutilise telle quelle, jamais recalculée par
+      // requête.
+      if (envVar === 'WEB_SITE_ROOT') webSiteRootCanonical = real;
     } catch {
       throw new Error(`${envVar} est introuvable : ${rootPath}`);
     }
@@ -91,7 +97,7 @@ export async function bootstrap(env: NodeJS.ProcessEnv): Promise<App> {
   registerTasksRoutes(server, { pool, jobStore, exportDeps });
   registerImagesRoutes(server, { pool, imageService });
   registerJobsRoutes(server, { pool, jobStore, config, imageService });
-  registerTextsRoutes(server, { pool, pagesRoot: config.pagesRoot, imageService });
+  registerTextsRoutes(server, { pool, pagesRoot: config.pagesRoot, webSiteRoot: webSiteRootCanonical, imageService });
   await server.ready();
 
   log.info('serveur prêt', { host: config.host, port: config.port });

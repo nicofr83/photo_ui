@@ -26,6 +26,24 @@ existants du projet.
 >
 ### Amendements depuis le gel
 
+### A13 — les 5 pages du site, lues en place *(2026-08-31, V1.7)*
+
+`GET /texts/web/pages` (liste), `GET /texts/web/page?id=…` (une page,
+transcodée `windows-1252` → UTF-8, `<script>` retirés à la source, actifs
+réécrits vers la route dédiée), `GET /texts/web/asset?path=…`
+(css/gif/jpg/png, une feuille de style étant elle-même transcodée et
+réécrite). Remplace la liste des passages extraits sur l'écran Textes/Site
+web — fragmentaire par nature (`kind=web_caption` seulement), jamais le
+texte complet d'une page.
+
+Nouvelle variable d'environnement `WEB_SITE_ROOT` — une copie locale
+distincte de `WEB_GALLERY_ROOT`, jamais le volume externe.
+
+Sécurité : `id` passe un motif de nom STRICT, `path` une liste blanche
+d'extensions, les deux ENSUITE résolus sous `WEB_SITE_ROOT` (canonicalisé
+une fois au démarrage) et revérifiés par `realpath` — jamais seulement par
+le motif ou la liste blanche. Détail complet en §4.3.
+
 ### A12 — `SystemStatus.commit`, à l'usage de l'équipe *(2026-08-31, hors V1.6)*
 
 Deux instances périmées le même jour (un agent a diagnostiqué un rouge qui
@@ -1846,6 +1864,9 @@ nom est un `UNKNOWN_PARAMETER`.
 | `GET` | `/pages/thumb?pageId=…&edge=…` | **image/jpeg**, le scan entier réduit (v1.5) |
 | `GET` | `/texts` | `ListEnvelope<TextUnit>` |
 | `GET` | `/texts/facets?documentId=…` | `TextDateFacets` (v1.5) |
+| `GET` | `/texts/web/pages` | `{ items: WebSitePage[] }` (V1.7) |
+| `GET` | `/texts/web/page?id=…` | **text/html; charset=utf-8**, transcodée (V1.7) |
+| `GET` | `/texts/web/asset?path=…` | **image/gif·jpeg·png** ou **text/css; charset=utf-8** (V1.7) |
 
 **Paramètres de `/texts`** : `documentId`, `pageId`, `kind`, `dateFrom`,
 `dateTo`, `q`, `overlapsPhoto` (`CloudAssetId`), `confidence`, `hasCorrection`,
@@ -1870,6 +1891,42 @@ d'un coup : c'est quelques centaines de kilo-octets sur la boucle locale, et
 l'écran navigue ensuite sans nouvel appel. **`kind` n'est pas facultatif quand
 on désigne un texte précis** — sur `logbook/p003`, les identifiants `001` à
 `005` désignent chacun deux textes différents.
+
+**Les 5 pages du site, lues en place (V1.7).** L'écran Textes/Site web
+n'affiche plus la liste des passages extraits (fragmentaire, `kind=web_caption`
+seulement) — Nicolas lit les 5 pages HTML d'origine (`WEB_SITE_ROOT`, une
+copie locale distincte de `WEB_GALLERY_ROOT`, jamais le volume externe),
+sélectionne du texte à la souris, en fait une note.
+
+- `GET /texts/web/pages` — les 5 pages (motif de nom `^\d{4}-\d{4}\.html?$`),
+  triées par ordre alphabétique de fichier. `id` = nom de fichier, `title` = le
+  `<title>` de la page, `label` = les deux années DU NOM DE FICHIER — les deux
+  divergent parfois : `1900-1988.htm` porte `<title>1958-1998</title>`, une
+  relecture narrative distincte de son propre nom.
+- `GET /texts/web/page?id=…` — la page transcodée `windows-1252` → UTF-8, ses
+  `<script>` retirés À LA SOURCE (l'iframe côté client n'aura de toute façon
+  pas `allow-scripts`, mais un document d'archive ne doit pas non plus PORTER
+  de script actif), les `src`/`href` d'`<img>`/`<link>` réécrits vers la route
+  d'actifs — **rien d'autre modifié** : document d'archive, le texte reste au
+  mot près. Les `<a href>` de navigation entre pages restent intacts, hors
+  périmètre.
+- `GET /texts/web/asset?path=…` — css/gif/jpg/png sous `WEB_SITE_ROOT`. Une
+  feuille de style CSS est elle-même transcodée et réécrite : un thème
+  FrontPage référence ses propres images par `url(…)` relatif à SON DOSSIER
+  (pas à celui de la page qui la charge), donc `path` sert de base à la
+  résolution de ses propres `url(…)`.
+
+**Sécurité — le point qui compte le plus.** `id` et `path` viennent du
+client. `id` passe d'abord un motif de nom STRICT (jamais de `/`, jamais de
+`..` possible). `path` passe d'abord une liste blanche d'EXTENSIONS
+(exactement `.css .gif .jpg .png`, jamais plus). Les DEUX sont ensuite
+résolus sous `WEB_SITE_ROOT` (canonicalisé une fois au démarrage) puis
+revérifiés par `realpath` — un `..` normalisé par `path.join` ou un lien
+symbolique qui ressortirait de la racine est refusé, jamais seulement par le
+motif. Un chemin qui échappe et une cible qui n'existe pas répondent tous
+deux `404 NOT_FOUND`, sans indiquer lequel des deux — un `id`/`path` mal
+formé (hors motif/liste blanche) répond `400 INVALID_PARAMETER` avant tout
+accès disque.
 
 **Le recouvrement a exactement deux entrées, une par direction, et aucun
 doublon** *(tranché avec `impl-frontend`)* :
@@ -2086,6 +2143,20 @@ export interface TextDateFacets {
   readonly years: readonly FacetBucket[];
   readonly months: readonly FacetBucket[];
   readonly days: readonly FacetBucket[];
+}
+
+/**
+ * `GET /texts/web/pages` (V1.7) — les 5 pages HTML d'origine du site, lues
+ * en place. `id` = nom de fichier (`1998-1999.htm`), `title` = le
+ * `<title>` de la page (ce qu'elle affirme d'elle-même), `label` = les deux
+ * années telles qu'écrites dans le NOM DE FICHIER — les deux divergent
+ * parfois : `1900-1988.htm` porte `<title>1958-1998</title>`, une
+ * relecture narrative distincte de son propre nom.
+ */
+export interface WebSitePage {
+  readonly id: string;
+  readonly title: string;
+  readonly label: string;
 }
 
 export interface CountryRow {

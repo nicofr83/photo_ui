@@ -17,6 +17,12 @@ export interface Config {
   readonly annotationsDir: string;
   /** Le dump FrontPage du site — docs/spike-dhash-galeries.md. Lu seulement. */
   readonly webGalleryRoot: string;
+  /**
+   * Les 5 pages du site lues en place (V1.7) — copie identique du site sous
+   * `webGalleryRoot` ci-dessus, mais un chemin DISTINCT : un sous-répertoire
+   * local d'`adobe_mcp`, jamais le volume externe. Lu seulement.
+   */
+  readonly webSiteRoot: string;
   readonly renderCacheRoot: string;
   readonly tasksRoot: string;
 
@@ -66,6 +72,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
   const pagesRoot = required('PAGES_ROOT');
   const annotationsDir = required('ANNOTATIONS_DIR');
   const webGalleryRoot = required('WEB_GALLERY_ROOT');
+  const webSiteRoot = required('WEB_SITE_ROOT');
   const renderCacheRoot = required('RENDER_CACHE_ROOT');
   const tasksRoot = required('TASKS_ROOT');
 
@@ -95,6 +102,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
     pagesRoot,
     annotationsDir,
     webGalleryRoot,
+    webSiteRoot,
     renderCacheRoot,
     tasksRoot,
 
@@ -112,6 +120,6 @@ export function loadConfig(env: NodeJS.ProcessEnv): Config {
     writableRoots: featureDatingExport
       ? [renderCacheRoot, tasksRoot, annotationsDir]
       : [renderCacheRoot, tasksRoot],
-    readOnlyRoots: [originalsRoot, thumbsRoot, pipelineDbRoot, pagesRoot, webGalleryRoot],
+    readOnlyRoots: [originalsRoot, thumbsRoot, pipelineDbRoot, pagesRoot, webGalleryRoot, webSiteRoot],
   };
 }

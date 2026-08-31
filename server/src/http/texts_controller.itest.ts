@@ -17,6 +17,10 @@ const MIGRATIONS = fileURLToPath(new URL('../../db/migrations', import.meta.url)
 // Un vrai scan de page (adobe_mcp, lecture seule) — jamais un fixture synthétique
 // pour un test qui doit faire tourner un VRAI `sips`.
 const REAL_PAGE_SCAN = '/Users/nico/projects/adobe_mcp/docs/pages/journal-de-bord/p010.jpg';
+// Les 5 vraies pages du site (V1.7, adobe_mcp, lecture seule) — un test de
+// transcodage/réécriture sur un fixture synthétique ne prouverait rien sur
+// le vrai `cp1252` ou les vrais chemins d'actifs FrontPage.
+const REAL_WEB_SITE_ROOT = '/Users/nico/projects/adobe_mcp/docs/web_site';
 
 beforeAll(async () => {
   await runMigrations(testPool(), createLog(LogLevel.ERROR), MIGRATIONS);
@@ -28,7 +32,7 @@ let app: App | undefined;
 let pagesRoot = '';
 let renderCacheRoot = '';
 
-async function completeEnv(): Promise<NodeJS.ProcessEnv> {
+async function completeEnv(overrides: Partial<NodeJS.ProcessEnv> = {}): Promise<NodeJS.ProcessEnv> {
   const base = await mkdtemp(path.join(tmpdir(), 'texts-controller-'));
   const dir = async (name: string): Promise<string> => {
     const p = path.join(base, name);
@@ -41,8 +45,9 @@ async function completeEnv(): Promise<NodeJS.ProcessEnv> {
     DATABASE_URL: process.env.DATABASE_URL_TEST,
     ORIGINALS_ROOT: await dir('originals'), THUMBS_ROOT: await dir('thumbs'),
     PIPELINE_DB_ROOT: await dir('pipeline-db'), PAGES_ROOT: pagesRoot,
-    ANNOTATIONS_DIR: await dir('annotations'), WEB_GALLERY_ROOT: await dir('web-gallery'),
+    ANNOTATIONS_DIR: await dir('annotations'), WEB_GALLERY_ROOT: await dir('web-gallery'), WEB_SITE_ROOT: await dir('web-site'),
     RENDER_CACHE_ROOT: renderCacheRoot, TASKS_ROOT: await dir('tasks'),
+    ...overrides,
   };
 }
 
@@ -586,5 +591,107 @@ describe('GET /corrections', () => {
       await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'logbook'`);
       await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
     }
+  });
+});
+
+describe('GET /texts/web/pages (V1.7)', () => {
+  test('lists exactly the 5 real pages, sorted alphabetically by filename', async () => {
+    app = await bootstrap(await completeEnv({ WEB_SITE_ROOT: REAL_WEB_SITE_ROOT }));
+    const response = await app.server.inject({ method: 'GET', url: '/texts/web/pages' });
+    expect(response.statusCode).toBe(200);
+    const { items } = response.json<{ items: { id: string; title: string; label: string }[] }>();
+    expect(items.map((i) => i.id)).toEqual([
+      '1900-1988.htm', '1998-1999.htm', '1999-2002.htm', '2003-2004.htm', '2005-2006.htm',
+    ]);
+  });
+
+  test('title and label can genuinely differ — 1900-1988.htm titles itself "1958-1998"', async () => {
+    app = await bootstrap(await completeEnv({ WEB_SITE_ROOT: REAL_WEB_SITE_ROOT }));
+    const response = await app.server.inject({ method: 'GET', url: '/texts/web/pages' });
+    const { items } = response.json<{ items: { id: string; title: string; label: string }[] }>();
+    const page = items.find((i) => i.id === '1900-1988.htm');
+    expect(page?.label).toBe('1900-1988');
+    expect(page?.title).toBe('1958-1998');
+  });
+});
+
+describe('GET /texts/web/page (V1.7)', () => {
+  test('serves a real page transcoded to UTF-8, scripts stripped, asset URLs rewritten', async () => {
+    app = await bootstrap(await completeEnv({ WEB_SITE_ROOT: REAL_WEB_SITE_ROOT }));
+    const response = await app.server.inject({ method: 'GET', url: '/texts/web/page?id=1998-1999.htm' });
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['content-type']).toBe('text/html; charset=utf-8');
+    const body = response.body;
+    // cp1252 correctement transcodé — pas de mojibake sur l'accent.
+    expect(body).toContain('Découverte de');
+    // Retiré à la source.
+    expect(body).not.toMatch(/<script/i);
+    // L'ancre entre pages reste intacte (hors périmètre) ...
+    expect(body).toContain('href="1900-1988.htm"');
+    // ... mais la feuille de style et les images pointent vers la route d'actifs.
+    expect(body).toContain('href="/texts/web/asset?path=_themes%2Ffunfun2-98%2Ffunf1011.css"');
+    expect(body).toContain('src="/texts/web/asset?path=_derived%2F1998-1999.htm_cmp_funfun2-98010_bnr.gif"');
+  });
+
+  test('an id that does not match the strict pattern is a named 400, never touches the filesystem', async () => {
+    app = await bootstrap(await completeEnv({ WEB_SITE_ROOT: REAL_WEB_SITE_ROOT }));
+    const response = await app.server.inject({
+      method: 'GET', url: `/texts/web/page?id=${encodeURIComponent('../../../etc/passwd')}`,
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json<{ error: { code: string } }>().error.code).toBe('INVALID_PARAMETER');
+  });
+
+  test('a well-formed id with no matching real file is a named 404', async () => {
+    app = await bootstrap(await completeEnv({ WEB_SITE_ROOT: REAL_WEB_SITE_ROOT }));
+    const response = await app.server.inject({ method: 'GET', url: '/texts/web/page?id=1000-1001.htm' });
+    expect(response.statusCode).toBe(404);
+    expect(response.json<{ error: { code: string } }>().error.code).toBe('NOT_FOUND');
+  });
+});
+
+describe('GET /texts/web/asset (V1.7)', () => {
+  test('serves a real theme stylesheet, transcoded, with its own url() rewritten relative to ITS OWN directory', async () => {
+    app = await bootstrap(await completeEnv({ WEB_SITE_ROOT: REAL_WEB_SITE_ROOT }));
+    const response = await app.server.inject({
+      method: 'GET', url: `/texts/web/asset?path=${encodeURIComponent('_themes/funfun2-98/funf1011.css')}`,
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['content-type']).toBe('text/css; charset=utf-8');
+    // Mesuré sur le vrai fichier : `url(anetrule.gif)` doit devenir le
+    // chemin complet depuis la racine du site, pas depuis la page.
+    expect(response.body).toContain('/texts/web/asset?path=_themes%2Ffunfun2-98%2Fanetrule.gif');
+  });
+
+  test('serves a real binary asset (gif) with the right content-type', async () => {
+    app = await bootstrap(await completeEnv({ WEB_SITE_ROOT: REAL_WEB_SITE_ROOT }));
+    const response = await app.server.inject({
+      method: 'GET',
+      url: `/texts/web/asset?path=${encodeURIComponent('_derived/1998-1999.htm_cmp_funfun2-98010_bnr.gif')}`,
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['content-type']).toBe('image/gif');
+  });
+
+  test('a disallowed extension is a named 400, never touches the filesystem', async () => {
+    app = await bootstrap(await completeEnv({ WEB_SITE_ROOT: REAL_WEB_SITE_ROOT }));
+    const response = await app.server.inject({
+      method: 'GET', url: `/texts/web/asset?path=${encodeURIComponent('.ftpquota')}`,
+    });
+    expect(response.statusCode).toBe(400);
+  });
+
+  test('a path-traversal attempt is refused — the point that matters most (team-lead)', async () => {
+    app = await bootstrap(await completeEnv({ WEB_SITE_ROOT: REAL_WEB_SITE_ROOT }));
+    // Un fichier RÉEL, avec une extension AUTORISÉE, qui existe vraiment
+    // juste hors de WEB_SITE_ROOT (adobe_mcp/docs/pages, une autre racine
+    // de ce même projet) — si la garde `realpath` ne travaillait pas
+    // vraiment, cette requête réussirait et fuiterait un scan du journal.
+    const response = await app.server.inject({
+      method: 'GET',
+      url: `/texts/web/asset?path=${encodeURIComponent('../pages/journal-de-bord/p001.jpg')}`,
+    });
+    expect(response.statusCode).toBe(404);
+    expect(response.json<{ error: { code: string } }>().error.code).toBe('NOT_FOUND');
   });
 });

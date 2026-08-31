@@ -1,4 +1,4 @@
-import { access, readFile } from 'node:fs/promises';
+import { access, readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import type { FastifyInstance } from 'fastify';
@@ -6,11 +6,17 @@ import type { FastifyInstance } from 'fastify';
 import { CorrectionStatus, ErrorCode, TextKind, TranscriptionConfidence } from '@shared/enums';
 import { AppError } from '../contract/error_interface.ts';
 import type { ListEnvelope } from '../contract/filter_interface.ts';
-import type { TextCorrection, TextDateFacets, TextDocument, TextPage, TextUnit } from '../contract/text_interface.ts';
+import type {
+  TextCorrection, TextDateFacets, TextDocument, TextPage, TextUnit, WebSitePage,
+} from '../contract/text_interface.ts';
 import type { Pool } from '../db/pool.ts';
 import { withTransaction } from '../db/transaction.ts';
 import type { ImageServiceDeps } from '../metier/images/image_service.ts';
 import { getPageThumb, type PageThumbDeps } from '../metier/pages/thumb_service.ts';
+import {
+  isAllowedAssetExtension, isValidPageId, labelFromPageId, resolveUnderRoot,
+} from '../metier/web_site/web_site_path.ts';
+import { extractTitle, rewriteAssetUrls, rewriteCssUrls, stripScripts } from '../metier/web_site/web_site_html.ts';
 import { getTextDateFacets } from '../repository/text_facets.ts';
 import {
   getPageImageRelpath, listCorrections, listDocuments, listPages, listTexts, putCorrection, revertCorrection,
@@ -21,9 +27,16 @@ import { isRealCalendarDay, parseQueryParams, type ParamSpec } from './query_par
 /** Vocabulaire FERMÉ (contrat §6.1) — une valeur libre laisserait un visiteur remplir le disque de variantes. */
 const PAGE_THUMB_EDGE_VALUES = ['160', '320', '640'] as const;
 
+/** Le motif des 5 pages, réutilisé pour la LISTE (`readdir` + filtre) — jamais les 5 noms codés en dur, jamais une deuxième version du motif (`web_site_path.ts` en porte la validation). */
+const WEB_PAGE_FILENAME = /^\d{4}-\d{4}\.html?$/;
+
+const ASSET_ROUTE_BASE = '/texts/web/asset?path=';
+
 export interface TextsRoutesDeps {
   readonly pool: Pool;
   readonly pagesRoot: string;
+  /** Canonicalisée UNE FOIS au démarrage (`bootstrap.ts`) — la base de toute résolution `resolveUnderRoot` (V1.7, sécurité). */
+  readonly webSiteRoot: string;
   readonly imageService: ImageServiceDeps;
 }
 
@@ -144,7 +157,7 @@ function parseCorrectionInput(body: unknown): TextCorrectionInput {
 }
 
 export function registerTextsRoutes(server: FastifyInstance, deps: TextsRoutesDeps): void {
-  const { pool, pagesRoot, imageService } = deps;
+  const { pool, pagesRoot, webSiteRoot, imageService } = deps;
   const pageThumbDeps: PageThumbDeps = {
     renderCacheRoot: imageService.renderCacheRoot, safeFs: imageService.safeFs, inFlight: imageService.inFlight,
   };
@@ -290,5 +303,84 @@ export function registerTextsRoutes(server: FastifyInstance, deps: TextsRoutesDe
     } finally {
       client.release();
     }
+  });
+
+  // --- Les 5 pages du site, lues en place (V1.7). Document d'archive : le
+  // texte reste au mot près, seuls l'encodage, les scripts et les URL
+  // d'actifs sont touchés.
+
+  server.get('/texts/web/pages', async (): Promise<{ items: readonly WebSitePage[] }> => {
+    const entries = await readdir(webSiteRoot);
+    const ids = entries.filter((name) => WEB_PAGE_FILENAME.test(name)).sort();
+    const items = await Promise.all(ids.map(async (id): Promise<WebSitePage> => {
+      const raw = await readFile(path.join(webSiteRoot, id));
+      const html = new TextDecoder('windows-1252').decode(raw);
+      const label = labelFromPageId(id) ?? id;
+      return { id, title: extractTitle(html) ?? label, label };
+    }));
+    return { items };
+  });
+
+  server.get('/texts/web/page', async (request, reply) => {
+    const parsed = parseQueryParams(request.query as Record<string, unknown>, {
+      id: { kind: 'open' },
+    });
+    const id = parsed.id as string | undefined;
+    // Motif de nom STRICT avant tout accès disque (V1.7, sécurité) — un
+    // `id` mal formé est refusé sans jamais toucher au système de fichiers.
+    if (id === undefined || !isValidPageId(id)) {
+      throw invalidParameter('id', JSON.stringify(id), 'id doit être une des pages du site (AAAA-AAAA.htm)');
+    }
+
+    const resolved = await resolveUnderRoot(webSiteRoot, id);
+    if (resolved === null) {
+      throw new AppError(ErrorCode.NOT_FOUND, `page du site introuvable : ${id}`, 404, { resource: 'web_page', id });
+    }
+
+    const raw = await readFile(resolved);
+    const html = new TextDecoder('windows-1252').decode(raw);
+    // Retirés à la source (team-lead) puis les URL d'actifs réécrites —
+    // rien d'autre : document d'archive, le texte reste au mot près.
+    const rendered = rewriteAssetUrls(stripScripts(html), ASSET_ROUTE_BASE);
+
+    void reply.header('Content-Type', 'text/html; charset=utf-8');
+    return rendered;
+  });
+
+  server.get('/texts/web/asset', async (request, reply) => {
+    const parsed = parseQueryParams(request.query as Record<string, unknown>, {
+      path: { kind: 'open' },
+    });
+    const rawPath = parsed.path as string | undefined;
+    // Liste blanche d'EXTENSIONS avant tout accès disque (V1.7, sécurité) —
+    // exactement ce que les pages référencent, jamais plus.
+    if (rawPath === undefined || !isAllowedAssetExtension(rawPath)) {
+      throw invalidParameter('path', JSON.stringify(rawPath), 'path doit désigner un actif css/gif/jpg/png');
+    }
+
+    // Le point qui compte le plus (team-lead) : résolu puis vérifié par
+    // `realpath` sous la racine — un `..` normalisé ou un lien symbolique
+    // qui en ressortirait est refusé ici, jamais seulement par le motif.
+    const resolved = await resolveUnderRoot(webSiteRoot, rawPath);
+    if (resolved === null) {
+      throw new AppError(ErrorCode.NOT_FOUND, `actif du site introuvable : ${rawPath}`, 404,
+        { resource: 'web_asset', id: rawPath });
+    }
+
+    void reply.header('Cache-Control', 'public, max-age=31536000, immutable');
+    const extension = path.extname(rawPath).toLowerCase();
+    if (extension === '.css') {
+      // Une feuille de thème référence ses PROPRES images par un `url(…)`
+      // relatif à SON dossier, jamais à celui de la page qui la charge.
+      const raw = await readFile(resolved);
+      const css = new TextDecoder('windows-1252').decode(raw);
+      const cssRelativeDir = path.posix.dirname(rawPath);
+      void reply.header('Content-Type', 'text/css; charset=utf-8');
+      return rewriteCssUrls(css, cssRelativeDir, ASSET_ROUTE_BASE);
+    }
+
+    const contentType = extension === '.gif' ? 'image/gif' : extension === '.jpg' ? 'image/jpeg' : 'image/png';
+    void reply.type(contentType);
+    return await readFile(resolved);
   });
 }
