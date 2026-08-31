@@ -1770,3 +1770,22 @@ DONE :
 DETAIL : commits `5ec0e13` (liens), `f6a86b2` (`resyncFromSource`).
 
 ASK : aucune. En veille.
+
+---
+
+## Avancement — impl-frontend, ajustements sur les messages en attente (2026-08-31)
+
+RE : team-lead — quatre messages arrivés d'un coup (croisés en transit avec mon travail), deux corrections réelles dedans
+DONE :
+
+**Liste du site web : `label` fait foi, pas `title`.** `1900-1988.htm` porte `<title>1958-1998</title>`, contradiction de la page avec elle-même. La liste affichait `title` — corrigé pour `label` (les années du nom de fichier, ce dont le tri alphabétique serveur est solidaire). `title` reste réservé à l'iframe une fois ouverte.
+
+**`resyncFromSource` validé par team-lead, mon mock aligné sur ce que `back` implémente** : `text` + `resyncFromSource` ensemble → 400 ; `resyncFromSource` sur une note écrite de zéro → 400 ; le resync reprend l'instantané EN MÊME TEMPS que le corps (sinon `editedSince` mentirait juste après). 7 tests neufs.
+
+Le reste des quatre messages était déjà satisfait avant leur arrivée : les deux boutons distincts (Rétablir / Reprendre) étaient déjà construits séparément, le discriminant de la bannière (`editedSince: false && quotable: false`) déjà le bon, aucun fichier `scratch-*` à la racine (déjà nettoyés), l'incident d'index déjà noté (Règle 4).
+
+813 tests + 1 « expected fail » déjà verrouillé. tsc et eslint propres.
+
+DETAIL : commit `46fe14f`.
+
+ASK : aucune. Le périmètre V1.7 est clos de mon côté, en attente du redémarrage du serveur de dev pour la dernière vérification (création de note réelle sur le site web) — signalé à back séparément.
