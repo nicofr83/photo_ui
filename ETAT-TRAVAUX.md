@@ -1266,3 +1266,37 @@ Périmètre confirmé par team-lead : 4 tâches à moi (par ordre de valeur), la
 Méthode : TDD, un commit par tâche, chemins explicites — `back` travaille en parallèle sur la même branche.
 
 ASK : aucune. J'implémente dans l'ordre A → B → C → D.
+
+---
+
+## Plan — impl-backend, V1.6 (part serveur), 2026-08-31
+
+RE : team-lead — trois besoins serveur pour la V1.6
+
+### 1. Corriger la date d'un texte (le plus important)
+
+**Mesuré avant de trancher, comme demandé :**
+- Les 12 pages du registre >60 jours sont confirmées (`logbook/p019` = exactement 365 jours, `logbook/p027`…`p038`) — mesure identique à `docs/questions-v1.5.md`.
+- **Propagation en cascade : mesurée, non spéciale-casée.** `app.page_date` par document/source : `logbook` = 49 `register` + 3 `notes`, **0 `carried`** — aucune page du registre n'hérite jamais d'une autre, donc corriger un `log_entry` a un rayon de zéro page en aval dans `logbook`. `ma-vie` a 22 pages `carried` — une correction de `passage` PEUT là changer une chaîne d'héritage. Pas besoin de code spécial : `recomputePageDates` (tâche 8) recalcule déjà TOUT le document depuis `pipeline.text_unit` à chaque appel — le brancher pour lire la date corrigée en priorité (`coalesce(correction, upstream)`) et le redéclencher après chaque correction de date propage automatiquement et correctement, y compris l'héritage `ma-vie`, sans logique de propagation dédiée.
+
+**Design** (aligné sur team-lead : `annotation`/`decision`, original conservé) :
+- `app.text_correction` (déjà la table de correction de TEXTE) gagne 4 colonnes : `corrected_date_start/end`, `original_date_start/end_at_correction` — une correction de texte et une correction de date sont LE MÊME geste (une ligne, un `revert` unique qui efface les deux), jamais deux tables.
+- `PUT /corrections` gagne `date?: {start, end} | null` — omis = ne touche pas, `null` = efface la correction de date (revert du seul champ date), `{start,end}` = pose la correction. `start === end` obligatoire (D11, un jour) → 422 sinon.
+- `TextUnit.date` devient EFFECTIF (corrigé si corrigé, source `annotation`, kind `decision` — la seule source de cette nature, alignée sur `dateKind.ts` de front, aucun changement requis côté client). `TextUnit.dateOriginal` nouveau, TOUJOURS la lecture amont, jamais la correction — même paire que `text`/`textOriginal`.
+- `recomputePageDates` lit `coalesce(correction.corrected_date_start, t.date_start)` — la cascade page ne distingue jamais un `log_entry` corrigé d'un lu (page_date reste `reading`/`inference`, jamais `decision` — la cascade elle-même n'arbitre toujours rien, exactement le modèle de `dateKind.ts`).
+
+**Hors périmètre, assumé** : `/texts/facets` et `/pages?dateFrom&dateTo` continuent de lire la date AMONT, pas la corrigée — cette fonctionnalité est neuve, rien n'était incohérent avant elle. Je le signale à team-lead plutôt que d'agrandir silencieusement le chantier ou de laisser le trou muet.
+
+### 2. Texte complet d'un document du site — pas un problème serveur
+
+`GET /texts?documentId=web/1999/Transat&kind=passage` renvoie déjà les 49 paragraphes réels, dans l'ordre, complets, jamais tronqués (aucun `limit` par défaut) — un vrai récit cohérent, vérifié en lisant les 49 lignes. **Ce que Nicolas voit aujourd'hui ce sont les LÉGENDES DE GALERIE (`kind=web_caption`, fragments courts par nature), jamais le texte narratif** — `TextsScreen.tsx` (front) n'appelle JAMAIS `/texts?documentId=…` pour un document web, seulement `/documents` (liste) et `/texts?kind=web_caption` (toutes galeries confondues). Cliquer une ligne de document web ne mène nulle part — `PageDetail` (qui ferait le bon appel) n'est jamais atteint pour un doc web. **Rien à corriger côté serveur pour le texte lui-même** — signalé à front, c'est un écran à construire côté client avec l'API déjà là.
+
+**Vignette de page web — recommandation, pas encore engagée** : j'ai regardé `WEB_GALLERY_ROOT` (vrai volume externe, `cp1252`, FrontPage, chemins relatifs `images/…`, `_themes`/`_derived`). Capturer une vraie miniature demanderait un navigateur headless — dépendance neuve, poids réel, fragile hors montage du volume. **Alternative quasi gratuite** : chaque document lié a déjà des photos via `app.web_gallery_link` (Task 10) — servir la vignette de LA PREMIÈRE photo liée comme vignette de page, en réutilisant `/images/:sha256/thumb` déjà en place. Zéro nouvelle dépendance. Je recommande cette option et j'attends confirmation avant de l'implémenter (c'est un choix produit visible, pas une évidence technique).
+
+### 3. Supprimer image/note/texte d'une tâche — déjà livré
+
+`POST /tasks/:slug/images` (`remove: [cloudAssetId]`), `POST /tasks/:slug/texts` (`remove: [TaskTextRef]`), `DELETE /tasks/:slug/notes/:noteId` — les trois existent, testés, en prod depuis cette session. Aucun nouveau point d'entrée. Signalé à front.
+
+**J'implémente 1 maintenant (TDD), j'attends confirmation de team-lead sur la vignette (2) avant de m'engager dessus.**
+
+ASK : confirmation sur la vignette de page web (photo liée vs capture HTML) — pas bloquant, je continue sur (1) en attendant.
