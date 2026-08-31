@@ -1,4 +1,4 @@
-import { TaskNoteCreateInputSchema, TaskNoteSchema } from './task';
+import { TaskNoteCreateInputSchema, TaskNotePatchInputSchema, TaskNoteSchema } from './task';
 
 const note = {
   id: 'note_01', title: 'Titre', text: 'Corps',
@@ -95,5 +95,20 @@ describe('V1.7 — derivedFrom accepts a whole PAGE, the only new vocabulary of 
         derivedFrom: { kind: 'page', id: 'ma-vie/p007', text: 'Ce que le client croit être la source.' },
       }),
     ).toThrow();
+  });
+});
+
+describe('V1.7, "le cas tordu" — resyncFromSource, approved shape', () => {
+  test('text and resyncFromSource together are refused — two readings of the same body', () => {
+    const result = TaskNotePatchInputSchema.safeParse({ text: 'Corps', resyncFromSource: true });
+    expect(result.success).toBe(false);
+  });
+
+  test('resyncFromSource alone is valid', () => {
+    expect(TaskNotePatchInputSchema.parse({ resyncFromSource: true }).resyncFromSource).toBe(true);
+  });
+
+  test('text alone, without resyncFromSource, is still valid — the ordinary edit path', () => {
+    expect(TaskNotePatchInputSchema.parse({ text: 'Corps' }).text).toBe('Corps');
   });
 });

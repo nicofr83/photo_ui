@@ -22,8 +22,8 @@ import {
   PhotoSort, TaskState,
 } from '../src/shared/enums';
 import {
-  TaskImagesMutationSchema, TaskNoteCreateInputSchema, TaskPatchInputSchema, TaskTextsMutationSchema,
-  type TaskDetail, type TaskNote,
+  TaskImagesMutationSchema, TaskNoteCreateInputSchema, TaskNotePatchInputSchema, TaskPatchInputSchema,
+  TaskTextsMutationSchema, type TaskDetail, type TaskNote,
 } from '../src/api/contract/task';
 import type { Album } from '../src/api/contract/album';
 import type { Job } from '../src/api/contract/job';
@@ -1339,14 +1339,32 @@ export const handlers = [
         resource: 'note', id: String(params['noteId']),
       });
     }
-    const body = (await request.json()) as {
-      title?: string; text?: string; resyncFromSource?: true;
-    };
+    const parsed = TaskNotePatchInputSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      const path = issue?.path.join('.') ?? '<root>';
+      return error(400, ErrorCode.INVALID_PARAMETER, `${path} : ${issue?.message ?? 'forme invalide'}`, {
+        parameter: path, received: null, accepted: null,
+      });
+    }
+    const body = parsed.data;
+
+    // team-lead: a resync on a note with no source is refused — nothing to
+    // resync FROM. The input schema alone can't see this (it only knows the
+    // patch, not the note it targets).
+    if (body.resyncFromSource === true && note.derivedFrom === null) {
+      return error(400, ErrorCode.INVALID_PARAMETER, 'resyncFromSource requiert une note dérivée d’une source.', {
+        parameter: 'resyncFromSource', received: 'true', accepted: null,
+      });
+    }
+
     if (body.title !== undefined) note.title = body.title;
     if (body.text !== undefined) note.text = body.text;
     // V1.7, "le cas tordu" — "Reprendre le texte corrigé": re-derive both
     // the note's body AND its snapshot from the source's CURRENT effective
-    // text. A fresh snapshot taken NOW, not a re-application of the old one.
+    // text. A fresh snapshot taken NOW, not a re-application of the old one
+    // — team-lead: without this, `editedSince` would read true right after,
+    // even though nobody wrote anything.
     if (body.resyncFromSource === true && note.derivedFrom !== null) {
       const fresh = sourceEffectiveText(note.derivedFrom, store);
       if (fresh !== null) {

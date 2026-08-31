@@ -1,6 +1,6 @@
 import { setupServer } from 'msw/node';
 
-import { apiDeleteWithBody, apiGet, apiPost, apiPut, ApiError } from '../src/api/client';
+import { apiDeleteWithBody, apiGet, apiPatch, apiPost, apiPut, ApiError } from '../src/api/client';
 import { PhotoOverlapEnvelopeSchema, TextOverlapEnvelopeSchema } from '../src/api/contract/overlap';
 import { ListEnvelopeSchema, PhotoFacetsSchema, PhotoListItemSchema } from '../src/api/contract/photo';
 import { AlbumSpanUpdateResultSchema, WebDocumentListSchema } from '../src/api/contract/ref';
@@ -46,6 +46,10 @@ const createNote = (
   input: { title: string; text: string; derivedFrom?: { kind: string; id: string } },
 ) => apiPost(`/tasks/${slug}/notes`, { ...input, attachedTo: { images: [], texts: [] } }, TaskNoteSchema);
 const getTask = (slug: string) => apiGet(`/tasks/${slug}`, TaskDetailSchema);
+const patchNote = (
+  slug: string, noteId: string,
+  patch: { title?: string; text?: string; resyncFromSource?: true },
+) => apiPatch(`/tasks/${slug}/notes/${noteId}`, patch, TaskNoteSchema);
 
 describe('the envelope obeys the contract', () => {
   test('an unfiltered call returns the whole hierarchy scope', async () => {
@@ -545,6 +549,45 @@ describe('V1.7, "la règle capitale" — editedSince and quotable are computed, 
     const reread = (await getTask('1999-transat')).notes.find((n) => n.id === note.id);
     expect(reread?.editedSince).toBe(false); // the snapshot itself never moves
     expect(reread?.quotable).toBe(false); // but it no longer matches the CURRENT source
+  });
+});
+
+describe('V1.7, "le cas tordu" — resyncFromSource, team-lead-approved shape', () => {
+  test('resyncing re-derives the body AND takes a fresh snapshot — editedSince false, quotable true after', async () => {
+    const note = await createNote('1999-transat', {
+      title: 'x', text: 'On a passé la nuit à réparer la pompe de cale.',
+      derivedFrom: { kind: 'passage', id: 'logbook/p003/001' },
+    });
+    const source = store.texts.find((t) => t.ref.kind === 'passage' && t.ref.id === 'logbook/p003/001');
+    if (source === undefined) throw new Error('fixture missing');
+    const corrected = 'On a passé la nuit à réparer les deux pompes de cale.';
+    source.text = corrected;
+
+    const resynced = await patchNote('1999-transat', note.id, { resyncFromSource: true });
+    expect(resynced.text).toBe(corrected);
+    // Not just the body — the snapshot too, or editedSince would read true
+    // right after even though nobody wrote anything (team-lead's point).
+    expect(resynced.editedSince).toBe(false);
+    expect(resynced.quotable).toBe(true);
+  });
+
+  test('text and resyncFromSource together are refused — 400, two readings of the same body', async () => {
+    const note = await createNote('1999-transat', {
+      title: 'x', text: 'On a passé la nuit à réparer la pompe de cale.',
+      derivedFrom: { kind: 'passage', id: 'logbook/p003/001' },
+    });
+    const thrown = (await patchNote(
+      '1999-transat', note.id, { text: 'Autre chose', resyncFromSource: true },
+    ).catch((e: unknown) => e)) as ApiError;
+    expect(thrown.status).toBe(400);
+  });
+
+  test('resyncing a note written from scratch (no source) is refused — 400', async () => {
+    const note = await createNote('1999-transat', { title: 'x', text: 'Une remarque à moi.' });
+    const thrown = (await patchNote(
+      '1999-transat', note.id, { resyncFromSource: true },
+    ).catch((e: unknown) => e)) as ApiError;
+    expect(thrown.status).toBe(400);
   });
 });
 

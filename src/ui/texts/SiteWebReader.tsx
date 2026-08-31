@@ -31,6 +31,10 @@ export function SiteWebReader({ slug }: Props): React.JSX.Element {
 
   if (open === undefined) {
     return (
+      // `label` (the filename's own years) identifies a page in the list,
+      // never `title` — a page can contradict itself (`1900-1988.htm`
+      // carries `<title>1958-1998</title>`), and `label` is what the sort
+      // order (alphabetical, server-side) is already keyed on.
       <ul className={styles['list']} aria-label="Pages du site">
         {pages.data.items.map((page) => (
           <li key={page.id}>
@@ -39,7 +43,7 @@ export function SiteWebReader({ slug }: Props): React.JSX.Element {
               type="button"
               onClick={() => { setOpenId(page.id); }}
             >
-              {page.title}
+              {page.label}
             </button>
           </li>
         ))}

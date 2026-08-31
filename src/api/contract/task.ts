@@ -107,14 +107,26 @@ export const TaskNotePatchInputSchema = z.strictObject({
   title: z.string().optional(),
   text: z.string().optional(),
   /**
-   * V1.7, spec "le cas tordu": "Reprendre le texte corrigé" — PROPOSED,
-   * pending back's sign-off (flagged, not yet confirmed against the real
-   * contract). Re-derives `text` AND the `derivedFrom` snapshot from the
-   * source's CURRENT effective text, server-side — never combined with
-   * `text`: the client does not know, and must not guess, what the
-   * corrected source now says. A no-op (refused) without `derivedFrom`.
+   * V1.7, spec "le cas tordu": "Reprendre le texte corrigé" — approved by
+   * team-lead, back implementing the real thing. Re-derives `text` AND the
+   * `derivedFrom` snapshot from the source's CURRENT effective text,
+   * server-side — a fresh snapshot taken NOW, so `editedSince` reads
+   * `false` right after (nobody wrote anything) and `quotable` reads
+   * `true`. Mutually exclusive with `text`: the two are two different
+   * readings of "what should the body become", and the client does not
+   * know — must not guess — what the corrected source now says. A 400
+   * without `derivedFrom` on the note (checked server-side; this schema
+   * only sees the patch, not the note it targets).
    */
   resyncFromSource: z.literal(true).optional(),
+}).superRefine((input, ctx) => {
+  if (input.text !== undefined && input.resyncFromSource === true) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['resyncFromSource'],
+      message: 'text et resyncFromSource sont exclusifs — deux lectures possibles du même corps.',
+    });
+  }
 });
 export type TaskNotePatchInput = z.infer<typeof TaskNotePatchInputSchema>;
 

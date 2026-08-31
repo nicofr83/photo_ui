@@ -9,12 +9,13 @@ const SLUG = '1999-transat';
 const setup = () => renderWithProviders(<SiteWebReader slug={SLUG} />);
 
 describe('V1.7 — le site web, cinq pages, sans filtre', () => {
-  test('lists the 5 real pages by their own title, no filter offered', async () => {
+  test('lists the 5 real pages by their reliable label, never the self-reported title', async () => {
     setup();
     expect(await screen.findByRole('button', { name: '1998-1999' })).toBeInTheDocument();
-    // 1900-1988.htm's own <title> diverges from its filename — the LIST
-    // shows the title, not the filename.
-    expect(screen.getByRole('button', { name: '1958-1998' })).toBeInTheDocument();
+    // 1900-1988.htm's own <title> contradicts its filename ("1958-1998") —
+    // the list shows `label` (the filename's years), never `title`.
+    expect(screen.getByRole('button', { name: '1900-1988' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '1958-1998' })).not.toBeInTheDocument();
     expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
   });
 
