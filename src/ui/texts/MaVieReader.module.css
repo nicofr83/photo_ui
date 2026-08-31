@@ -1,0 +1,6 @@
+.reader { display: flex; flex-direction: column; gap: 1rem; }
+.text { display: flex; flex-direction: column; gap: 0.15rem; max-width: 42rem; }
+/* Spec: "une phrase par ligne" — each sentence its own block, no gap large
+   enough to read as a paragraph break the source does not have. */
+.sentence { margin: 0; }
+.createButton { min-height: var(--tap-target); align-self: flex-start; padding: 0 0.75rem; cursor: pointer; }
