@@ -26,6 +26,48 @@ existants du projet.
 >
 ### Amendements depuis le gel
 
+### A17 — `resyncFromSource`, le remède au cas tordu *(2026-08-31, V1.7)*
+
+`PATCH /tasks/:slug/notes/:noteId` accepte `resyncFromSource: true`. Le
+serveur re-dérive `text` depuis le texte EFFECTIF ACTUEL de la source
+nommée par `derivedFrom`, et reprend l'instantané dans le MÊME mouvement.
+Après l'appel : `editedSince` faux, `quotable` vrai.
+
+```ts
+export interface TaskNotePatchInput {
+  // … champs existants (A6) …
+  readonly resyncFromSource?: true;
+}
+```
+
+Côté serveur, jamais côté client : le client n'a pas de moyen propre de
+savoir ce que dit une correction sans réimplémenter la résolution de texte,
+et surtout, un aller-retour lecture-puis-écriture ouvrirait une fenêtre où
+la source bouge entre les deux — recalculé DANS la même transaction,
+corrélé sur les colonnes de la note elle-même (`derived_from_kind/id`),
+jamais un kind/id fourni par le client : la garantie infalsifiable (le
+client ne poste jamais le texte d'origine) vaut aussi au resync.
+
+Deux refus nommés, **400 `INVALID_PARAMETER`** :
+- `text` et `resyncFromSource` ensemble — deux modes exclusifs, une requête
+  qui porte les deux a deux lectures possibles, jamais résolu par priorité
+  silencieuse.
+- `resyncFromSource` sur une note dont `derivedFrom` est `null` — rien à
+  re-dériver.
+
+**Un trou connu, laissé ouvert délibérément** : une note RÉÉCRITE dont la
+source a ensuite été corrigée porte `editedSince: true, quotable: false` —
+indiscernable d'une simple réécriture, Nicolas n'est donc pas averti que la
+source a bougé. Distinguer les deux demanderait de comparer l'instantané à
+la source actuelle, la troisième question que `quotable`/`editedSince`
+excluent délibérément (A14) — et casserait la citation tronquée par le même
+mécanisme. Assumé : cas rare, et la note n'est de toute façon pas citable.
+
+Et `resyncFromSource` n'est pas un correctif permanent : une note
+resynchronisée qui n'est plus touchée quand la source change une SECONDE
+fois retombe dans le cas tordu — normal, `quotable` compare toujours au
+texte ACTUEL, pas à « la dernière fois qu'on a vérifié ».
+
 ### A16 — les liens de navigation du site sont neutralisés à la source *(2026-08-31, V1.7)*
 
 Corrige A13, trouvé par team-lead en testant les 3 routes en direct contre

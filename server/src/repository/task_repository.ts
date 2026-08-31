@@ -724,6 +724,19 @@ export async function patchTaskNote(
     values.push(patch.text);
     sets.push(`body = $${String(values.length)}`);
   }
+  if (patch.resyncFromSource === true) {
+    // Re-dérive le corps ET reprend l'instantané dans le MÊME mouvement
+    // (V1.7, « le cas tordu ») : reprendre l'un sans l'autre ferait mentir
+    // `editedSince` dans le sens inverse de celui qu'on protège. Corrélé
+    // sur les colonnes DE LA NOTE elle-même, jamais un kind/id fourni par
+    // le client — la garantie infalsifiable (le client ne poste jamais le
+    // texte d'origine) vaut aussi au resync, pas seulement à la création.
+    // `text`/`resyncFromSource` ensemble et `resyncFromSource` sans
+    // `derivedFrom` sont refusés en amont, côté contrôleur (mêmes gardes
+    // que le verrou de préfixe d'attribution).
+    const sourceExpr = derivedSourceTextSql('derived_from_kind', 'derived_from_id');
+    sets.push(`body = (${sourceExpr})`, `derived_text_original = (${sourceExpr})`);
+  }
   if (sets.length > 0) {
     sets.push(`updated_at = now()`);
     values.push(slug, noteId);

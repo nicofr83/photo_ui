@@ -321,7 +321,7 @@ function parseNotePatchInput(body: unknown): TaskNotePatchInput {
   if (typeof body !== 'object' || body === null) {
     throw invalidParameter('body', JSON.stringify(body), 'corps de requête invalide');
   }
-  const { title, text, attachedTo } = body as Record<string, unknown>;
+  const { title, text, attachedTo, resyncFromSource } = body as Record<string, unknown>;
   const patch: TaskNotePatchInput = {};
   if (title !== undefined) {
     if (typeof title !== 'string') throw invalidParameter('title', JSON.stringify(title), 'title doit être une chaîne');
@@ -332,6 +332,19 @@ function parseNotePatchInput(body: unknown): TaskNotePatchInput {
     Object.assign(patch, { text });
   }
   if (attachedTo !== undefined) Object.assign(patch, { attachedTo: parseAttachedTo(attachedTo) });
+  if (resyncFromSource !== undefined) {
+    if (resyncFromSource !== true) {
+      throw invalidParameter('resyncFromSource', JSON.stringify(resyncFromSource), 'resyncFromSource ne peut être que true');
+    }
+    // Deux modes exclusifs, jamais un côté qui gagne en silence (team-lead) :
+    // le client ne connaît jamais le texte corrigé, poser les deux à la fois
+    // n'a qu'une lecture ambiguë — refusée, pas résolue par priorité.
+    if (text !== undefined) {
+      throw invalidParameter('resyncFromSource', 'true',
+        'resyncFromSource et text sont exclusifs — le serveur relit la source lui-même');
+    }
+    Object.assign(patch, { resyncFromSource: true as const });
+  }
   return patch;
 }
 
@@ -474,15 +487,21 @@ export function registerTasksRoutes(server: FastifyInstance, deps: TasksRoutesDe
     const patch = parseNotePatchInput(request.body);
 
     const note = await withTransaction(pool, async (client) => {
-      // Le verrou de préfixe d'attribution est tenu ICI, pas côté client : un
-      // titre est le SEUL porteur de provenance de `textes/notes.md` (contrat
-      // A6, spec v1.5).
-      if (patch.title !== undefined) {
+      // Les deux gardes qui ont besoin de l'état ACTUEL de la note partagent
+      // la même lecture — jamais deux allers-retours pour deux vérifications.
+      if (patch.title !== undefined || patch.resyncFromSource === true) {
         const current = await loadNoteById(client, noteId);
-        if (current !== null && !titleKeepsPrefix(current.title, patch.title)) {
+        // Le verrou de préfixe d'attribution est tenu ICI, pas côté client :
+        // un titre est le SEUL porteur de provenance de `textes/notes.md`
+        // (contrat A6, spec v1.5).
+        if (current !== null && patch.title !== undefined && !titleKeepsPrefix(current.title, patch.title)) {
           const prefix = attributionPrefix(current.title);
           throw new AppError(ErrorCode.ATTRIBUTION_PREFIX_REMOVED,
             "le préfixe d'attribution d'une note ne peut pas être retiré", 422, { noteId, prefix });
+        }
+        // Rien à re-dériver sans source nommée (V1.7, team-lead).
+        if (current !== null && patch.resyncFromSource === true && current.derivedFrom === null) {
+          throw invalidParameter('resyncFromSource', 'true', 'resyncFromSource exige une note dérivée (derivedFrom)');
         }
       }
       return await patchTaskNote(client, slug, noteId, patch);

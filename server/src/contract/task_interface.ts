@@ -216,6 +216,15 @@ export interface TaskNotePatchInput {
   readonly title?: string;
   readonly text?: string;
   readonly attachedTo?: { readonly images: readonly string[]; readonly texts: readonly TaskTextRef[] };
+  /**
+   * V1.7, spec « le cas tordu » : re-dérive `text` ET reprend l'instantané
+   * (`derivedFrom.text`) depuis le texte EFFECTIF ACTUEL de la source, dans
+   * le même mouvement — après l'appel, `editedSince` est faux et `quotable`
+   * vrai. Jamais combiné avec `text` (400) : le client ne connaît jamais le
+   * texte corrigé, c'est ce qui rend la provenance infalsifiable. 400 aussi
+   * sans `derivedFrom` — rien à re-dériver.
+   */
+  readonly resyncFromSource?: true;
 }
 
 /**

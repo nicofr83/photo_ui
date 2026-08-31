@@ -560,6 +560,125 @@ describe('POST /tasks/:slug/notes', () => {
     }
   });
 
+  test('resyncFromSource together with text is a named 400 — the client never knows the corrected source', async () => {
+    app = await bootstrap(await completeEnv());
+    await app.server.inject({ method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null } });
+    const created = await app.server.inject({
+      method: 'POST', url: '/tasks/x/notes',
+      payload: { title: 'x', text: 'écrite de zéro', attachedTo: { images: [], texts: [] } },
+    });
+    const noteId = created.json<{ id: string }>().id;
+
+    const response = await app.server.inject({
+      method: 'PATCH', url: `/tasks/x/notes/${noteId}`, payload: { text: 'autre chose', resyncFromSource: true },
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json<{ error: { code: string } }>().error.code).toBe('INVALID_PARAMETER');
+  });
+
+  test('resyncFromSource on a note with no derivedFrom is a named 400 — nothing to resync from', async () => {
+    app = await bootstrap(await completeEnv());
+    await app.server.inject({ method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null } });
+    const created = await app.server.inject({
+      method: 'POST', url: '/tasks/x/notes',
+      payload: { title: 'x', text: 'écrite de zéro', attachedTo: { images: [], texts: [] } },
+    });
+    const noteId = created.json<{ id: string }>().id;
+
+    const response = await app.server.inject({
+      method: 'PATCH', url: `/tasks/x/notes/${noteId}`, payload: { resyncFromSource: true },
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json<{ error: { code: string } }>().error.code).toBe('INVALID_PARAMETER');
+  });
+
+  test('resyncFromSource cures the twisted case — re-derives the body AND re-takes the snapshot in the same movement', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('logbook', 'handwritten', 'Journal', true)`);
+      await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+        VALUES ('log_entry', 'logbook/p003/001', 'logbook', 1, 'Nous avons vu deux ns dans la baie.', 'transcribed')`);
+      await app.server.inject({ method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null } });
+      const ref = { kind: 'log_entry', id: 'logbook/p003/001' };
+
+      const created = await app.server.inject({
+        method: 'POST', url: '/tasks/x/notes',
+        payload: {
+          title: 'x', text: 'Nous avons vu deux ns dans la baie.', attachedTo: { images: [], texts: [] }, derivedFrom: ref,
+        },
+      });
+      const noteId = created.json<{ id: string }>().id;
+
+      await app.server.inject({
+        method: 'PUT', url: '/corrections', payload: { ref, text: 'Nous avons vu deux ris dans la baie.' },
+      });
+      const twisted = await app.server.inject({ method: 'GET', url: '/tasks/x' });
+      const twistedNote = twisted.json<{ notes: { id: string; editedSince: boolean; quotable: boolean }[] }>()
+        .notes.find((n) => n.id === noteId);
+      expect(twistedNote).toMatchObject({ editedSince: false, quotable: false });
+
+      const resynced = await app.server.inject({
+        method: 'PATCH', url: `/tasks/x/notes/${noteId}`, payload: { resyncFromSource: true },
+      });
+      expect(resynced.statusCode).toBe(200);
+      const body = resynced.json<{
+        text: string; editedSince: boolean; quotable: boolean; derivedFrom: { text: string } | null;
+      }>();
+      expect(body.text).toBe('Nous avons vu deux ris dans la baie.');
+      expect(body.derivedFrom?.text).toBe('Nous avons vu deux ris dans la baie.');
+      expect(body.editedSince).toBe(false);
+      expect(body.quotable).toBe(true);
+    } finally {
+      await setup.query(`DELETE FROM app.text_correction`);
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'logbook'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
+    }
+  });
+
+  test('the source changing a SECOND time after a resync reopens the gap — resync is a snapshot refresh, not a permanent fix', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('logbook', 'handwritten', 'Journal', true)`);
+      await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+        VALUES ('log_entry', 'logbook/p003/001', 'logbook', 1, 'Nous avons vu deux ns dans la baie.', 'transcribed')`);
+      await app.server.inject({ method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null } });
+      const ref = { kind: 'log_entry', id: 'logbook/p003/001' };
+
+      const created = await app.server.inject({
+        method: 'POST', url: '/tasks/x/notes',
+        payload: {
+          title: 'x', text: 'Nous avons vu deux ns dans la baie.', attachedTo: { images: [], texts: [] }, derivedFrom: ref,
+        },
+      });
+      const noteId = created.json<{ id: string }>().id;
+
+      await app.server.inject({
+        method: 'PUT', url: '/corrections', payload: { ref, text: 'Nous avons vu deux ris dans la baie.' },
+      });
+      await app.server.inject({ method: 'PATCH', url: `/tasks/x/notes/${noteId}`, payload: { resyncFromSource: true } });
+
+      // La source change UNE SECONDE fois — la note, resynchronisée sur la
+      // version précédente, n'a pas bougé depuis : le trou se rouvre tout
+      // seul. Un mot changé au milieu, pas ajouté en bout de phrase : sans
+      // quoi le corps resynchronisé resterait un PRÉFIXE de la nouvelle
+      // source, donc encore une sous-chaîne contiguë — `quotable` resterait
+      // vrai pour la mauvaise raison, le test ne prouverait rien.
+      await app.server.inject({
+        method: 'PUT', url: '/corrections', payload: { ref, text: 'Nous avons vu deux oiseaux dans la baie.' },
+      });
+      const reread = await app.server.inject({ method: 'GET', url: '/tasks/x' });
+      const rereadNote = reread.json<{ notes: { id: string; editedSince: boolean; quotable: boolean }[] }>()
+        .notes.find((n) => n.id === noteId);
+      expect(rereadNote).toMatchObject({ editedSince: false, quotable: false });
+    } finally {
+      await setup.query(`DELETE FROM app.text_correction`);
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'logbook'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
+    }
+  });
+
   test('derivedFrom accepts a page — the free selection on Ma vie/the site has no single passage (V1.7)', async () => {
     const setup = testPool();
     app = await bootstrap(await completeEnv());
