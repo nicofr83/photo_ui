@@ -1654,3 +1654,20 @@ DONE : rien à changer dans le comportement déjà livré (déjà exactement ce 
 DETAIL : commit à suivre.
 
 ASK : aucune. Je passe aux écrans Textes (V1.7, spec-v1.7.md).
+
+---
+
+## Avancement — impl-frontend, V1.7 le contrat de la règle capitale (2026-08-31)
+
+RE : team-lead — spec-v1.7.md lue en entier, démarrage sur la règle capitale (piège #2 : jamais de texte d'origine posté)
+DONE :
+
+Contrat rattrapé : `TaskNote.quotable: boolean` (toujours présent, calculé à la lecture) et `derivedFrom` gagne le seul vocabulaire neuf de la 1.7 — `{kind: 'page', id}` pour la sélection libre sur « Ma vie » et le site, qui ne nomme aucun passage précis. Deux schémas distincts : l'entrée (`{kind, id}`, jamais de texte — le client ne poste jamais l'original) et la sortie (`{kind, id, text}`, l'instantané pris à la copie, ce qui permet « Rétablir le texte d'origine » même après une correction ultérieure — le cas tordu de la spec).
+
+Mock : `editedSince`/`quotable` calculés à la lecture, jamais stockés (même discipline que `outOfPeriod`), avec normalisation des espaces avant comparaison (piège #1 vérifié par test dédié — une sélection verbatim avec retours à la ligne ne lève jamais le drapeau). 17 tests neufs (10 contrat, 7 mock, dont le cas tordu vérifié bout en bout : corriger la source après coup fait perdre `quotable` à une note inchangée, sans toucher `editedSince`). 774 tests + 1 « expected fail » déjà verrouillé (V1.6). tsc et eslint propres.
+
+DETAIL : commit `f04ffab`.
+
+Je passe au composant partagé de rendu des trois états (extrait fidèle / réécrit / note de zéro), puis l'écran du journal (tableau), puis Ma vie, puis le site web — commits séparés comme demandé.
+
+ASK : aucune.
