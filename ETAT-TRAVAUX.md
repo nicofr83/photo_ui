@@ -1390,3 +1390,24 @@ Vérifié contre le vrai serveur en navigateur réel : sur `01-le-grand-depart` 
 DETAIL : commits `ec4e168` (découvrabilité), `57200ad` (agrandir + commentaire + les deux correctifs).
 
 ASK : aucune. Disponible.
+
+---
+
+## Avancement — impl-frontend, correction de date dans TextCard (2026-08-31)
+
+RE : team-lead — point tranché (une date corrigée s'affiche comme decision, l'originale reste visible) ; back — contrat A10 posé
+DONE :
+
+`TextCard` : l'édition d'un texte offre un champ date à côté du champ texte — préremplie depuis la date effective, vide pour un texte qui n'en affirme aucune (jamais un jour inventé). `save()` calcule les trois états attendus par A10 (omis / vidé / posé à `{start, end}`) et les envoie avec le texte dans le même appel à `/corrections`.
+
+Une date corrigée s'affiche comme une decision (violet gras, `ResolvedDateView`) et la lecture d'origine reste visible juste en dessous — même appariement que text/textOriginal. N'apparaît que quand cette correction a touché la date ET qu'il existait une lecture à témoigner (une date ajoutée là où il n'y en avait aucune n'a rien à montrer). Rétablir efface les deux dans le même geste.
+
+7 tests neufs (TDD, rouge vérifié pour la bonne raison avant implémentation). 727 tests front verts, tsc et eslint propres.
+
+Vérification en navigateur réel non faite : le serveur de dev tourne encore pré-A10 (`GET /texts` ne renvoie pas `dateOriginal`), confirmé via `npm run test:live` (rouge attendu, même motif que `matchCount` avant — pas une régression). Referai cette passe dès que back aura redéployé.
+
+DETAIL : commit `a221e58`.
+
+Je passe à l'écran de lecture des documents web (item 5) — je dois d'abord faire gagner `thumbSha256` à `WebDateProposalSchema` (contrat A11).
+
+ASK : aucune pour l'instant. Signale si le redéploiement A10 traîne — j'ai besoin du serveur à jour pour boucler la vérification navigateur de ce chantier.
