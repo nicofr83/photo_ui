@@ -70,7 +70,7 @@ describe('wiring (v1.5, post-plan) — NoteFromTextButton reuses the same checkb
         return HttpResponse.json({
           id: 'note-x', title: 'x', text: 'x', createdAt: '2026-08-30T00:00:00.000Z',
           updatedAt: '2026-08-30T00:00:00.000Z', attachedTo: { images: [], texts: [] },
-          derivedFrom: null, editedSince: false,
+          derivedFrom: null, editedSince: false, quotable: false,
         });
       }),
     );

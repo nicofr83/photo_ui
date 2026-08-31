@@ -23,7 +23,7 @@ import {
 } from '../src/shared/enums';
 import {
   TaskImagesMutationSchema, TaskNoteCreateInputSchema, TaskPatchInputSchema, TaskTextsMutationSchema,
-  type TaskDetail,
+  type TaskDetail, type TaskNote,
 } from '../src/api/contract/task';
 import type { Album } from '../src/api/contract/album';
 import type { Job } from '../src/api/contract/job';
@@ -368,6 +368,46 @@ function bucketize(
 const NOW = '2026-08-29T10:00:00.000Z' as TaskDetail['createdAt'];
 /** v1.5, Task 13: the server's write allowlist for a task's export directory. */
 const TASKS_ROOT = '/var/photo_ui/tasks';
+
+// V1.7, "la règle capitale": whitespace-only differences never trip
+// `editedSince`/`quotable` — "Ma vie" shows one sentence per line, so a
+// verbatim selection arrives with newlines the source itself does not
+// carry.
+function normalizeSpaces(text: string): string {
+  return text.replace(/\s+/g, ' ').trim();
+}
+
+// A `derivedFrom` ref names either a single text (kind = passage/log_entry/
+// web_caption) or a whole PAGE (kind = 'page', V1.7's only new vocabulary)
+// — a real scanned page (`pageId`) OR a web document (no scanned page,
+// `documentId` only). Returns the source's CURRENT effective text, or
+// `null` if it can no longer be found.
+function sourceEffectiveText(ref: { kind: string; id: string }, snapshotStore: typeof store): string | null {
+  if (ref.kind === 'page') {
+    const passages = snapshotStore.texts
+      .filter((t) => t.pageId === ref.id || t.documentId === ref.id)
+      .sort((a, b) => a.ordinal - b.ordinal);
+    return passages.length === 0 ? null : passages.map((t) => t.text).join('\n\n');
+  }
+  const unit = snapshotStore.texts.find((t) => t.ref.kind === ref.kind && t.ref.id === ref.id);
+  return unit?.text ?? null;
+}
+
+// V1.7: "le drapeau se calcule, il ne se stocke pas" — both flags are
+// derived fresh from the CURRENT store on every read. `task.notes` holds
+// `false`/`false` placeholders (same pattern as `TaskImageSelection.
+// outOfPeriod` above: never read from the store directly, only ever through
+// this).
+function materializeNote(note: TaskNote): TaskNote {
+  if (note.derivedFrom === null) {
+    return { ...note, editedSince: false, quotable: false };
+  }
+  const body = normalizeSpaces(note.text);
+  const editedSince = body !== normalizeSpaces(note.derivedFrom.text);
+  const current = sourceEffectiveText(note.derivedFrom, store);
+  const quotable = current !== null && normalizeSpaces(current).includes(body);
+  return { ...note, editedSince, quotable };
+}
 
 export const handlers = [
   // Contract §4.1/§9: consulted at startup, polled during long operations.
@@ -944,7 +984,7 @@ export const handlers = [
     const { images: _images, texts: _texts, brief: _brief, notes: taskNotes, ...summary } = task;
 
     return HttpResponse.json({
-      task: summary, images, texts, notes: taskNotes, warnings, timeline,
+      task: summary, images, texts, notes: taskNotes.map(materializeNote), warnings, timeline,
     });
   }),
 
@@ -964,6 +1004,7 @@ export const handlers = [
           task.period,
         ),
       })),
+      notes: task.notes.map(materializeNote),
     });
   }),
 
@@ -1235,24 +1276,32 @@ export const handlers = [
     // real server would refuse.
     const body = TaskNoteCreateInputSchema.parse(await request.json());
 
-    const note = {
+    // V1.7, "la règle capitale": the client posts only `{kind, id}` — the
+    // SNAPSHOT is read from the source's own current text, server-side,
+    // never trusted from the request body. `derivedFrom: undefined` (a
+    // text-only call) stays `null`; a ref naming a source this mock cannot
+    // find falls back to the posted text rather than crashing the mock.
+    const derivedFrom = body.derivedFrom === undefined ? null : {
+      ...body.derivedFrom,
+      text: sourceEffectiveText(body.derivedFrom, store) ?? body.text,
+    };
+
+    const note: TaskNote = {
       id: `note_${Math.random().toString(36).slice(2, 10)}`,
       title: body.title,
       text: body.text,
       createdAt: NOW,
       updatedAt: NOW,
       attachedTo: body.attachedTo,
-      derivedFrom: body.derivedFrom ?? null,
-      // A freshly created note's body IS exactly what was copied (or empty,
-      // written from scratch) — never edited yet. The PATCH handler below
-      // does not yet flip this on a later text edit (task 11's concern, not
-      // task 1's): a known simplification, not a lie about THIS note's
-      // current state.
+      derivedFrom,
+      // Placeholders — `materializeNote` below recomputes both on every
+      // serve, never reads them back from here.
       editedSince: false,
+      quotable: false,
     };
     task.notes.push(note);
     task.noteCount = task.notes.length;
-    return HttpResponse.json(note, { status: 201 });
+    return HttpResponse.json(materializeNote(note), { status: 201 });
   }),
 
   http.patch('*/tasks/:slug/notes/:noteId', async ({ params, request }) => {
@@ -1267,7 +1316,7 @@ export const handlers = [
     if (body.title !== undefined) note.title = body.title;
     if (body.text !== undefined) note.text = body.text;
     note.updatedAt = NOW;
-    return HttpResponse.json(note);
+    return HttpResponse.json(materializeNote(note));
   }),
 
   http.delete('*/tasks/:slug/notes/:noteId', ({ params }) => {

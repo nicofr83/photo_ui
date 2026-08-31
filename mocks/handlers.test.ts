@@ -5,7 +5,7 @@ import { PhotoOverlapEnvelopeSchema, TextOverlapEnvelopeSchema } from '../src/ap
 import { ListEnvelopeSchema, PhotoFacetsSchema, PhotoListItemSchema } from '../src/api/contract/photo';
 import { AlbumSpanUpdateResultSchema, WebDocumentListSchema } from '../src/api/contract/ref';
 import { TaskReviewSchema } from '../src/api/contract/review';
-import { TaskDeleteResultSchema, TaskDetailSchema } from '../src/api/contract/task';
+import { TaskDeleteResultSchema, TaskDetailSchema, TaskNoteSchema } from '../src/api/contract/task';
 import { TextDocumentSchema } from '../src/api/contract/text';
 import { SystemStatusSchema } from '../src/api/contract/system';
 import { parseIsoDate, parseIsoTimestamp } from '../src/shared/date_interface';
@@ -41,6 +41,11 @@ const putWebSpan = (input: {
   }, TextDocumentSchema);
 const review = (slug: string) => apiGet(`/tasks/${slug}/review`, TaskReviewSchema);
 const systemStatus = () => apiGet('/system/status', SystemStatusSchema);
+const createNote = (
+  slug: string,
+  input: { title: string; text: string; derivedFrom?: { kind: string; id: string } },
+) => apiPost(`/tasks/${slug}/notes`, { ...input, attachedTo: { images: [], texts: [] } }, TaskNoteSchema);
+const getTask = (slug: string) => apiGet(`/tasks/${slug}`, TaskDetailSchema);
 
 describe('the envelope obeys the contract', () => {
   test('an unfiltered call returns the whole hierarchy scope', async () => {
@@ -463,6 +468,83 @@ describe('contract §4.5 — duplicating and deleting a task', () => {
     const thrown = (await apiDeleteWithBody('/tasks/nope', {}, TaskDeleteResultSchema)
       .catch((e: unknown) => e)) as ApiError;
     expect(thrown.status).toBe(404);
+  });
+});
+
+describe('V1.7, "la règle capitale" — editedSince and quotable are computed, never trusted from the client', () => {
+  test('a verbatim copy is quotable, and not edited since', async () => {
+    const note = await createNote('1999-transat', {
+      title: 'x', text: 'On a passé la nuit à réparer la pompe de cale.',
+      derivedFrom: { kind: 'passage', id: 'logbook/p003/001' },
+    });
+    expect(note.derivedFrom).toEqual({
+      kind: 'passage', id: 'logbook/p003/001', text: 'On a passé la nuit à réparer la pompe de cale.',
+    });
+    expect(note.editedSince).toBe(false);
+    expect(note.quotable).toBe(true);
+  });
+
+  // team-lead's trap #1: "Ma vie" shows one sentence per line — a verbatim
+  // selection arrives with newlines the page itself does not contain.
+  test('whitespace differences alone never trip editedSince — "Ma vie" shows one sentence per line', async () => {
+    const note = await createNote('1999-transat', {
+      title: 'x', text: 'On a passé la nuit\nà réparer   la pompe de cale.  ',
+      derivedFrom: { kind: 'passage', id: 'logbook/p003/001' },
+    });
+    expect(note.editedSince).toBe(false);
+    expect(note.quotable).toBe(true);
+  });
+
+  test('an actually rewritten body is edited since, and no longer quotable', async () => {
+    const note = await createNote('1999-transat', {
+      title: 'x', text: 'On a réparé la pompe toute la nuit.',
+      derivedFrom: { kind: 'passage', id: 'logbook/p003/001' },
+    });
+    expect(note.editedSince).toBe(true);
+    expect(note.quotable).toBe(false);
+  });
+
+  test('a note written from scratch carries derivedFrom: null and quotable: false, never omitted', async () => {
+    const note = await createNote('1999-transat', { title: 'x', text: 'Une remarque à moi.' });
+    expect(note.derivedFrom).toBeNull();
+    expect(note.editedSince).toBe(false);
+    expect(note.quotable).toBe(false);
+  });
+
+  test('derivedFrom names a PAGE for a free selection spanning two passages', async () => {
+    const note = await createNote('1999-transat', {
+      title: 'x',
+      text: 'La transat commence vraiment ce matin.\n\nGaëtan prend le quart de nuit.',
+      derivedFrom: { kind: 'page', id: 'ma-vie/p007' },
+    });
+    expect(note.derivedFrom?.kind).toBe('page');
+    expect(note.quotable).toBe(true);
+  });
+
+  test('a truncated excerpt stays quotable — cutting is an editor\'s gesture, not an author\'s', async () => {
+    const note = await createNote('1999-transat', {
+      title: 'x', text: 'La transat commence vraiment ce matin.',
+      derivedFrom: { kind: 'page', id: 'ma-vie/p007' },
+    });
+    expect(note.quotable).toBe(true);
+  });
+
+  // Spec, "le cas tordu": the source is corrected AFTER the note was made.
+  // The snapshot (editedSince's own comparison) never moves; quotable does.
+  test('a source corrected after the fact makes an untouched note stop being quotable', async () => {
+    const note = await createNote('1999-transat', {
+      title: 'x', text: 'On a passé la nuit à réparer la pompe de cale.',
+      derivedFrom: { kind: 'passage', id: 'logbook/p003/001' },
+    });
+    expect(note.quotable).toBe(true);
+
+    const source = store.texts.find((t) => t.ref.kind === 'passage' && t.ref.id === 'logbook/p003/001');
+    if (source === undefined) throw new Error('fixture missing');
+    source.text = 'On a passé la nuit à réparer les deux pompes de cale.';
+
+    const reread = (await getTask('1999-transat')).notes.find((n) => n.id === note.id);
+    expect(reread?.editedSince).toBe(false); // the snapshot itself never moves
+    expect(reread?.quotable).toBe(false); // but it no longer matches the CURRENT source
   });
 });
 

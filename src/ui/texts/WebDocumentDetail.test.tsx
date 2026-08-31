@@ -50,7 +50,7 @@ describe('V1.6 — selecting web text and saving it as a note, same gesture as t
         return HttpResponse.json({
           id: 'note-web', title: 'x', text: 'x', createdAt: '2026-08-31T00:00:00.000Z',
           updatedAt: '2026-08-31T00:00:00.000Z', attachedTo: { images: [], texts: [] },
-          derivedFrom: null, editedSince: false,
+          derivedFrom: null, editedSince: false, quotable: false,
         });
       }),
     );

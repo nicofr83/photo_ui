@@ -21,7 +21,7 @@ describe('v1.5, Task 11 — creating a note from a checked text', () => {
         return HttpResponse.json({
           id: 'note-1', title: 'x', text: 'x', createdAt: '2026-08-30T00:00:00.000Z',
           updatedAt: '2026-08-30T00:00:00.000Z', attachedTo: { images: [], texts: [] },
-          derivedFrom: null, editedSince: false,
+          derivedFrom: null, editedSince: false, quotable: false,
         });
       }),
       http.post('*/tasks/tache-a/texts', () => { textsCalls += 1; return HttpResponse.json({}); }),

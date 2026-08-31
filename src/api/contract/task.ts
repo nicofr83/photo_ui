@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { SelectionReason, TaskState } from '../../shared/enums';
 
 import { CivilDayRangeSchema, CloudAssetIdSchema, IsoTimestampSchema } from './common';
-import { TextRefSchema } from './text';
+import { DerivedFromInputRefSchema, DerivedFromRefSchema, TextRefSchema } from './text';
 
 export const TaskSummarySchema = z.strictObject({
   slug: z.string(),
@@ -74,10 +74,21 @@ export const TaskNoteSchema = z.strictObject({
     images: z.array(CloudAssetIdSchema),
     texts: z.array(TextRefSchema),
   }),
-  /** v1.5: the period text this note was copied from. `null` = written from scratch. */
-  derivedFrom: TextRefSchema.nullable(),
-  /** v1.5: the body no longer matches the copied text verbatim. Always `false` without `derivedFrom`. */
+  /** v1.5; V1.7 gains the page form. The period text (or page) this note was
+   * copied from, with its snapshot. `null` = written from scratch. */
+  derivedFrom: DerivedFromRefSchema.nullable(),
+  /** v1.5: the body no longer matches the copied SNAPSHOT verbatim (spaces
+   * normalized). Always `false` without `derivedFrom`. */
   editedSince: z.boolean(),
+  /**
+   * V1.7: "le générateur peut-il citer ceci comme voix d'époque ?" — the
+   * body, spaces normalized, is a contiguous excerpt of the source's
+   * CURRENT effective text (never the snapshot — a source corrected since
+   * makes an unedited note stop being quotable, spec's "cas tordu").
+   * Computed at read time, never stored — always present, `false` for a
+   * note written from scratch, never omitted.
+   */
+  quotable: z.boolean(),
 });
 export type TaskNote = z.infer<typeof TaskNoteSchema>;
 
@@ -88,7 +99,7 @@ export const TaskNoteCreateInputSchema = z.strictObject({
     images: z.array(CloudAssetIdSchema),
     texts: z.array(TextRefSchema),
   }),
-  derivedFrom: TextRefSchema.optional(),
+  derivedFrom: DerivedFromInputRefSchema.optional(),
 });
 export type TaskNoteCreateInput = z.infer<typeof TaskNoteCreateInputSchema>;
 

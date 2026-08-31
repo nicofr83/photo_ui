@@ -24,6 +24,39 @@ export const TextRefSchema = z.strictObject({
 export type TextRef = z.infer<typeof TextRefSchema>;
 
 /**
+ * V1.7, spec "la sélection libre, et pourquoi elle ne casse pas la garantie":
+ * the only new vocabulary of 1.7. A free-text selection on "Ma vie" or the
+ * web site can cover two passages, or half of one — it names no `TextRef`.
+ * `derivedFrom` on a note born that way names the PAGE instead; the server
+ * still verifies the selection against the page's own full text, so the
+ * guarantee (a client can never assert what the server does not check)
+ * holds exactly as it does for a single passage.
+ */
+export const PageRefSchema = z.strictObject({ kind: z.literal('page'), id: z.string() });
+export type PageRef = z.infer<typeof PageRefSchema>;
+
+/**
+ * `TaskNoteCreateInput.derivedFrom`: `{kind, id}` only — never `text`. The
+ * server reads the source's OWN current effective text itself; a client
+ * that could post its own copy would be exactly the hole the "infalsifiable"
+ * guarantee (spec, la règle capitale) closes.
+ */
+export const DerivedFromInputRefSchema = z.union([TextRefSchema, PageRefSchema]);
+export type DerivedFromInputRef = z.infer<typeof DerivedFromInputRefSchema>;
+
+/**
+ * `TaskNote.derivedFrom`: the reference AND the snapshot taken at copy time
+ * — `text`. Never re-fetched live: the snapshot is what lets "Rétablir le
+ * texte d'origine" show what was actually copied, even after the source has
+ * since been corrected (spec, "le cas tordu").
+ */
+export const DerivedFromRefSchema = z.union([
+  TextRefSchema.extend({ text: z.string() }),
+  PageRefSchema.extend({ text: z.string() }),
+]);
+export type DerivedFromRef = z.infer<typeof DerivedFromRefSchema>;
+
+/**
  * The two date sources a TEXT may legitimately carry BEFORE any correction. A
  * page window and a web span qualify a PAGE or a DOCUMENT — never what a text
  * asserts about itself.
