@@ -10,6 +10,7 @@ import { useJob } from '../api/hooks/useJob';
 import { useSelection } from '../api/hooks/useSelection';
 import { useSystemStatus } from '../api/hooks/useSystemStatus';
 import { useTaskReview } from '../api/hooks/useTaskReview';
+import { useTextSelection } from '../api/hooks/useTextSelection';
 import { overlaps } from '../domain/interval';
 import { originalsUnavailable } from '../domain/systemStatus';
 import { sourceOf, TEXT_SOURCE_TITLES, TextSource } from '../domain/textSource';
@@ -93,6 +94,7 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
     queryFn: ({ signal }) => apiGet(`/tasks/${slug}`, TaskDetailSchema, signal),
   });
   const selection = useSelection(slug);
+  const textSelection = useTextSelection(slug);
   const exportTask = useExport(slug);
   // POST /tasks/:slug/export ALWAYS answers 202 with a queued/running job —
   // the outcome (report or "directory exists") only exists once this poll
@@ -201,6 +203,18 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
               {group.texts.map((text) => (
                 <div role="listitem" key={`${text.ref.kind}:${text.ref.id}`}>
                   <TextCard unit={text} />
+                  {/* V1.6, Nicolas #2: "ajoute une option pour supprimer...
+                      la note, [le texte]" — removing an image and a note
+                      already existed (the "Retirer" button above,
+                      NotesPanel's "Supprimer"); this was the one retraction
+                      missing from the Revue. */}
+                  <button
+                    className={styles['remove']}
+                    type="button"
+                    onClick={() => { void textSelection.remove([text.ref]); }}
+                  >
+                    Retirer {text.ref.id}
+                  </button>
                 </div>
               ))}
             </section>

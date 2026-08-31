@@ -43,6 +43,24 @@ describe('§5.6 — what is held is shown', () => {
     expect(screen.getByRole('heading', { name: 'Journal de bord' })).toBeInTheDocument();
   });
 
+  test('V1.6, Nicolas #2: a retained text can be removed from here directly', async () => {
+    const user = userEvent.setup();
+    const task = store.tasks.get('1999-transat');
+    task?.texts.push({
+      ref: { kind: 'log_entry', id: 'logbook/p003/001' },
+      order: 0, selectedAt: parseIsoTimestamp('2026-08-29T10:00:00.000Z'), orphaned: false,
+      startOffset: null, endOffset: null,
+    });
+
+    setup();
+    await screen.findByRole('list', { name: 'Textes de la tâche' });
+    await user.click(screen.getByRole('button', { name: /Retirer logbook\/p003\/001/ }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('list', { name: 'Textes de la tâche' })).not.toBeInTheDocument();
+    });
+  });
+
   test('v1.5, Task 7: the brief is recalled read-only, with a link to edit it', async () => {
     setup();
     const recall = await screen.findByTestId('brief-recall');
