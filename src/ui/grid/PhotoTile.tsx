@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { PhotoListItem } from '../../api/contract/photo';
 import { ResolvedDateView } from '../date/ResolvedDate';
@@ -23,6 +23,16 @@ export interface PhotoTileProps {
    * `SelectedPhotoGrid` fetched internally.
    */
   readonly onEnlarge?: (photo: PhotoListItem) => void;
+  /**
+   * V1.7, Nicolas: "en sélectionnant une photo un commentaire devrait etre
+   * demandé" — tranché: an inline field, never a modal (selecting forty
+   * photos in a row has to stay fluid). Fires only when the field closes on
+   * Enter with non-blank text; Escape and an empty Enter write nothing —
+   * the SAME `note` as V1.6 (`TaskImageSelection.note`), no new field.
+   * Omitted where the gesture is not offered (the Revue's already-selected
+   * list only ever deselects here, never selects for the first time).
+   */
+  readonly onComment?: (cloudAssetId: string, note: string) => void;
 }
 
 export function PhotoTile({
@@ -31,9 +41,29 @@ export function PhotoTile({
   onToggle,
   onOpen,
   onEnlarge,
+  onComment,
 }: PhotoTileProps): React.JSX.Element {
   const [thumbFailed, setThumbFailed] = useState(false);
   const heldElsewhere = photo.inTaskSlugs.length > 0;
+
+  // V1.7: local to THIS click, never derived from the `selected` prop — a
+  // prop-watching effect would also fire for an already-selected photo
+  // freshly mounted (scrolled into view, or a bulk "select all"), stealing
+  // focus from whatever the user was actually doing. Only the checkbox's own
+  // onChange, below, ever opens it.
+  const [commenting, setCommenting] = useState(false);
+  const [draft, setDraft] = useState('');
+  const checkboxRef = useRef<HTMLInputElement>(null);
+  const fieldRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (commenting) fieldRef.current?.focus();
+  }, [commenting]);
+
+  const closeField = (): void => {
+    setCommenting(false);
+    checkboxRef.current?.focus();
+  };
 
   const thumb = thumbFailed ? (
     // Spec §5.2: never a void. Naming the file is what makes the failure
@@ -68,13 +98,21 @@ export function PhotoTile({
         )}
 
         <input
+          ref={checkboxRef}
           className={styles['check']}
           type="checkbox"
           checked={selected}
           aria-label={`Sélectionner ${photo.fileName}`}
           onChange={(event) => {
             const native = event.nativeEvent as unknown as { shiftKey?: boolean };
+            const justSelected = !selected;
             onToggle(photo.cloudAssetId, native.shiftKey === true);
+            if (justSelected && onComment !== undefined) {
+              setDraft('');
+              setCommenting(true);
+            } else {
+              setCommenting(false);
+            }
           }}
         />
 
@@ -88,6 +126,32 @@ export function PhotoTile({
           </span>
         ) : null}
       </div>
+
+      {/* V1.7: "sous la vignette" — a normal-flow row below the frame, not
+          another absolute overlay on top of the thumbnail like `.check`/
+          `.marker` above. */}
+      {!commenting ? null : (
+        <input
+          ref={fieldRef}
+          className={styles['comment']}
+          type="text"
+          aria-label={`Commentaire pour ${photo.fileName}`}
+          placeholder="Commentaire (optionnel)"
+          value={draft}
+          onChange={(event) => { setDraft(event.target.value); }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              const trimmed = draft.trim();
+              if (trimmed !== '' && onComment !== undefined) onComment(photo.cloudAssetId, trimmed);
+              closeField();
+            } else if (event.key === 'Escape') {
+              event.preventDefault();
+              closeField();
+            }
+          }}
+        />
+      )}
 
       <figcaption className={styles['caption']}>
         <ResolvedDateView date={photo.date} />

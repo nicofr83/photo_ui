@@ -114,6 +114,11 @@ export function ImagesScreen(): React.JSX.Element {
               onSelectAll={(ids) => { void selection.add(ids, reasons()); }}
               onOpen={setOpenPhoto}
               onEnlarge={enlarge}
+              // V1.7, Nicolas: "en sélectionnant une photo un commentaire
+              // devrait etre demandé" — the SAME note field as V1.6
+              // (`selection.setNote`), asked for inline right at the moment
+              // of selecting rather than left for the Revue to fill in.
+              onComment={(cloudAssetId, note) => { void selection.setNote(cloudAssetId, note); }}
             />
           )}
 

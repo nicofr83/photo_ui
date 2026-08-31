@@ -119,6 +119,86 @@ describe('§5.2 — held by another task is information, not prohibition', () =>
   });
 });
 
+describe('V1.7, Nicolas — selecting a photo asks for a comment, inline', () => {
+  test('clicking to select opens an inline comment field, already focused', async () => {
+    const user = userEvent.setup();
+    render(<PhotoTile photo={byFile('PICT0042.jpg')} selected={false} onToggle={noop} onComment={noop} />);
+    await user.click(screen.getByRole('checkbox'));
+    expect(screen.getByRole('textbox', { name: /commentaire/i })).toHaveFocus();
+  });
+
+  test('an already-selected photo shows no field on mount — never a reopened editor', () => {
+    render(<PhotoTile photo={byFile('PICT0042.jpg')} selected onToggle={noop} onComment={noop} />);
+    expect(screen.queryByRole('textbox', { name: /commentaire/i })).not.toBeInTheDocument();
+  });
+
+  test('unchecking an already-selected photo does not open the field', async () => {
+    const user = userEvent.setup();
+    render(<PhotoTile photo={byFile('PICT0042.jpg')} selected onToggle={noop} onComment={noop} />);
+    await user.click(screen.getByRole('checkbox'));
+    expect(screen.queryByRole('textbox', { name: /commentaire/i })).not.toBeInTheDocument();
+  });
+
+  test('typing a comment and pressing Enter saves it and closes the field', async () => {
+    const user = userEvent.setup();
+    const calls: { id: string; note: string }[] = [];
+    render(
+      <PhotoTile
+        photo={byFile('PICT0042.jpg')}
+        selected={false}
+        onToggle={noop}
+        onComment={(id, note) => { calls.push({ id, note }); }}
+      />,
+    );
+    await user.click(screen.getByRole('checkbox'));
+    await user.type(screen.getByRole('textbox', { name: /commentaire/i }), 'Hugo à la barre{Enter}');
+    expect(calls).toEqual([{ id: '05b9a4fac5df4dd28dcc1002d7ec0074', note: 'Hugo à la barre' }]);
+    expect(screen.queryByRole('textbox', { name: /commentaire/i })).not.toBeInTheDocument();
+  });
+
+  test('Escape closes the field without saving — the photo stays selected without a comment', async () => {
+    const user = userEvent.setup();
+    const calls: unknown[] = [];
+    render(
+      <PhotoTile
+        photo={byFile('PICT0042.jpg')}
+        selected={false}
+        onToggle={noop}
+        onComment={(...args: unknown[]) => { calls.push(args); }}
+      />,
+    );
+    await user.click(screen.getByRole('checkbox'));
+    await user.type(screen.getByRole('textbox', { name: /commentaire/i }), 'brouillon');
+    await user.keyboard('{Escape}');
+    expect(calls).toEqual([]);
+    expect(screen.queryByRole('textbox', { name: /commentaire/i })).not.toBeInTheDocument();
+  });
+
+  test('pressing Enter with an empty draft writes nothing, just closes', async () => {
+    const user = userEvent.setup();
+    const calls: unknown[] = [];
+    render(
+      <PhotoTile
+        photo={byFile('PICT0042.jpg')}
+        selected={false}
+        onToggle={noop}
+        onComment={(...args: unknown[]) => { calls.push(args); }}
+      />,
+    );
+    await user.click(screen.getByRole('checkbox'));
+    await user.keyboard('{Enter}');
+    expect(calls).toEqual([]);
+    expect(screen.queryByRole('textbox', { name: /commentaire/i })).not.toBeInTheDocument();
+  });
+
+  test('without onComment, selecting never opens a field — opt-in, like onEnlarge/onOpen', async () => {
+    const user = userEvent.setup();
+    render(<PhotoTile photo={byFile('PICT0042.jpg')} selected={false} onToggle={noop} />);
+    await user.click(screen.getByRole('checkbox'));
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+  });
+});
+
 describe('V1.6, Nicolas — clicking the thumbnail enlarges it, same as the Revue', () => {
   test('without onEnlarge, the thumbnail is a plain image, not a button', () => {
     render(<PhotoTile photo={byFile('PICT0042.jpg')} selected={false} onToggle={noop} />);

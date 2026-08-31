@@ -15,6 +15,7 @@ interface Props {
   readonly onSelectAll: (cloudAssetIds: string[]) => void;
   readonly onOpen?: (cloudAssetId: string) => void;
   readonly onEnlarge?: (photo: PhotoListItem) => void;
+  readonly onComment?: (cloudAssetId: string, note: string) => void;
 }
 
 export function PhotoGrid({
@@ -24,6 +25,7 @@ export function PhotoGrid({
   onSelectAll,
   onOpen,
   onEnlarge,
+  onComment,
 }: Props): React.JSX.Element {
   const { data, error, isPending } = usePhotos(params);
 
@@ -64,6 +66,7 @@ export function PhotoGrid({
               onToggle={onToggle}
               {...(onOpen === undefined ? {} : { onOpen })}
               {...(onEnlarge === undefined ? {} : { onEnlarge })}
+              {...(onComment === undefined ? {} : { onComment })}
             />
           </li>
         ))}

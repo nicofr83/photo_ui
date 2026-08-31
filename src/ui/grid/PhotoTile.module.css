@@ -80,6 +80,14 @@
   font-size: 0.7rem;
 }
 
+/* V1.7: "sous la vignette", in normal flow — `.tile`'s own flex-column gap
+   already spaces it from the frame above and the caption below. */
+.comment {
+  min-height: var(--tap-target);
+  padding: 0 0.4rem;
+  font-size: 0.8rem;
+}
+
 .caption {
   display: flex;
   justify-content: space-between;

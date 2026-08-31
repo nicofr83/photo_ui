@@ -71,6 +71,59 @@ describe('selection round-trips through the task', () => {
   });
 });
 
+describe('V1.7, Nicolas — un commentaire est demandé à la sélection, inline', () => {
+  test('selecting a photo opens an inline field beneath the tile, focused', async () => {
+    const user = userEvent.setup();
+    setup();
+    const tile = await screen.findByLabelText(/Sélectionner PICT0311\.jpg/);
+    await user.click(tile);
+    expect(await screen.findByRole('textbox', { name: /Commentaire pour PICT0311\.jpg/i })).toHaveFocus();
+  });
+
+  test('Enter saves the typed comment as the same note the Revue shows', async () => {
+    const user = userEvent.setup();
+    setup();
+    const tile = await screen.findByLabelText(/Sélectionner PICT0311\.jpg/);
+    await user.click(tile);
+    const field = await screen.findByRole('textbox', { name: /Commentaire pour PICT0311\.jpg/i });
+    await user.type(field, 'Hugo à la barre, on venait de doubler le Bugio{Enter}');
+    await waitFor(() => {
+      expect(screen.queryByRole('textbox', { name: /Commentaire pour PICT0311\.jpg/i })).not.toBeInTheDocument();
+    });
+
+    // Démonter et remonter prouve que ça a atteint le serveur — même valeur
+    // que la Revue lit, contrat §4.5 inchangé.
+    const { unmount } = setup();
+    unmount();
+    const second = setup();
+    await user.click(await second.findByRole('button', { name: /Agrandir PICT0311\.jpg/ }));
+    expect(await second.findByLabelText('Commentaire')).toHaveValue(
+      'Hugo à la barre, on venait de doubler le Bugio',
+    );
+  });
+
+  test('Escape closes the field without writing anything — the photo stays selected', async () => {
+    const user = userEvent.setup();
+    setup();
+    const tile = await screen.findByLabelText(/Sélectionner PICT0311\.jpg/);
+    await user.click(tile);
+    const field = await screen.findByRole('textbox', { name: /Commentaire pour PICT0311\.jpg/i });
+    await user.type(field, 'brouillon jamais envoyé');
+    await user.keyboard('{Escape}');
+
+    expect(screen.queryByRole('textbox', { name: /Commentaire pour PICT0311\.jpg/i })).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Sélectionner PICT0311\.jpg/)).toBeChecked();
+    });
+
+    const { unmount } = setup();
+    unmount();
+    const second = setup();
+    await user.click(await second.findByRole('button', { name: /Agrandir PICT0311\.jpg/ }));
+    expect(await second.findByLabelText('Commentaire')).toHaveValue('');
+  });
+});
+
 describe('V1.6, Nicolas — voir les images sélectionnées', () => {
   test('the toggle exists, off by default', async () => {
     setup();
