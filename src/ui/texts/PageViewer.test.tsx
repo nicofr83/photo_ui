@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import type { TextPage } from '../../api/contract/text';
@@ -81,5 +81,60 @@ describe('spec §5.4 — facing page: 810×1250 handwriting needs zoom and pan',
     render(<PageViewer page={{ ...page, label: null }} />);
     const img = await screen.findByRole('img');
     expect(img).toHaveAccessibleName(/3/);
+  });
+});
+
+describe('V1.6, Nicolas #4 — the whole page is visible by default, never cropped', () => {
+  // jsdom never lays anything out (clientWidth/height stay 0 always), so the
+  // frame's real rendered size has to be simulated — the exact gap that let
+  // the original bug (measured live: a 782×514px frame showing a
+  // 780×1285px scan, only the top third ever visible) pass unnoticed.
+  function mockFrameSize(width: number, height: number): void {
+    vi.spyOn(HTMLDivElement.prototype, 'getBoundingClientRect').mockReturnValue({
+      width, height, top: 0, left: 0, right: width, bottom: height, x: 0, y: 0,
+      toJSON: () => ({}),
+    });
+  }
+
+  test('the default scale fits the WHOLE page inside the frame, not its native size', async () => {
+    mockFrameSize(400, 300); // page is 810×1250
+    render(<PageViewer page={page} />);
+    // fit = min(400/810, 300/1250) = min(0.494…, 0.24) = 0.24
+    await waitFor(() => {
+      expect(Number(screen.getByTestId('page-surface').dataset['scale'])).toBeCloseTo(0.24, 2);
+    });
+  });
+
+  test('"Zoom arrière" never goes below the fit scale — the whole page always stays reachable', async () => {
+    mockFrameSize(400, 300);
+    const user = userEvent.setup();
+    render(<PageViewer page={page} />);
+    await waitFor(() => {
+      expect(Number(screen.getByTestId('page-surface').dataset['scale'])).toBeCloseTo(0.24, 2);
+    });
+    const button = screen.getByRole('button', { name: /zoom arrière/i });
+    for (let i = 0; i < 20; i += 1) await user.click(button);
+    expect(Number(screen.getByTestId('page-surface').dataset['scale'])).toBeCloseTo(0.24, 2);
+  });
+
+  test('"Réinitialiser" returns to the fit scale, not to 1', async () => {
+    mockFrameSize(400, 300);
+    const user = userEvent.setup();
+    render(<PageViewer page={page} />);
+    await waitFor(() => {
+      expect(Number(screen.getByTestId('page-surface').dataset['scale'])).toBeCloseTo(0.24, 2);
+    });
+    await user.click(screen.getByRole('button', { name: /zoom avant/i }));
+    await user.click(screen.getByRole('button', { name: /réinitialiser/i }));
+    expect(Number(screen.getByTestId('page-surface').dataset['scale'])).toBeCloseTo(0.24, 2);
+  });
+
+  test('a page smaller than the frame is never upscaled by default', async () => {
+    mockFrameSize(2000, 2000); // far bigger than the 810×1250 page
+    render(<PageViewer page={page} />);
+    await waitFor(() => {
+      expect(screen.getByTestId('page-surface')).toHaveAttribute('data-scale');
+    });
+    expect(Number(screen.getByTestId('page-surface').dataset['scale'])).toBe(1);
   });
 });

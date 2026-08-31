@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { TextPage } from '../../api/contract/text';
 
@@ -8,7 +8,6 @@ interface Props {
   readonly page: TextPage;
 }
 
-const ZOOM_MIN = 1;
 const ZOOM_MAX = 4;
 const ZOOM_STEP = 0.25;
 
@@ -17,16 +16,49 @@ const ZOOM_STEP = 0.25;
  * dense to read at a panel's width without zoom and pan. Deliberately no
  * highlight of any kind: `pages.region` is NULL on every one of the 155
  * pages, so nothing here can promise to point at a passage on the image.
+ *
+ * V1.6, Nicolas #4: "afficher l'image du journal de bord ou de ma vie en
+ * entier" — the frame caps the image at 32rem tall with `overflow: hidden`
+ * (PageViewer.module.css), and the zoom floor used to be the image's own
+ * NATIVE size (1×) regardless of how much smaller the frame was — on a
+ * measured 782×514px frame showing a 780×1285px scan, only the top third
+ * was ever visible, with no way to zoom OUT far enough to see the rest.
+ * `fitScale` — measured from the frame's real rendered size, never assumed
+ * — is now both the default AND the zoom floor: the whole page is visible
+ * on open, and "Zoom arrière" can always return to it.
  */
 export function PageViewer({ page }: Props): React.JSX.Element {
-  const [scale, setScale] = useState(1);
+  const frameRef = useRef<HTMLDivElement>(null);
+  // Defaults to 1 (native size) — exactly the old, safe behaviour — until a
+  // real measurement lands; a frame that never lays out (some test
+  // environments never do) simply keeps this default forever.
+  const [fitScale, setFitScale] = useState(1);
+  // `null` — no manual zoom yet — tracks `fitScale` as the frame resizes;
+  // once the person zooms, the value is THEIRS until "Réinitialiser".
+  const [zoom, setZoom] = useState<number | null>(null);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const dragRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(null);
   const [dragging, setDragging] = useState(false);
 
-  const zoomIn = (): void => { setScale((s) => Math.min(ZOOM_MAX, roundStep(s + ZOOM_STEP))); };
-  const zoomOut = (): void => { setScale((s) => Math.max(ZOOM_MIN, roundStep(s - ZOOM_STEP))); };
-  const reset = (): void => { setScale(1); setPan({ x: 0, y: 0 }); };
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (frame === null) return;
+    const measure = (): void => {
+      const { width, height } = frame.getBoundingClientRect();
+      if (width === 0 || height === 0) return;
+      // Never upscale a small page past its own native size by default.
+      setFitScale(Math.min(width / page.width, height / page.height, 1));
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => { window.removeEventListener('resize', measure); };
+  }, [page.width, page.height]);
+
+  const scale = zoom ?? fitScale;
+
+  const zoomIn = (): void => { setZoom(Math.min(ZOOM_MAX, roundStep(scale + ZOOM_STEP))); };
+  const zoomOut = (): void => { setZoom(Math.max(fitScale, roundStep(scale - ZOOM_STEP))); };
+  const reset = (): void => { setZoom(null); setPan({ x: 0, y: 0 }); };
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>): void => {
     dragRef.current = {
@@ -61,6 +93,7 @@ export function PageViewer({ page }: Props): React.JSX.Element {
       </div>
 
       <div
+        ref={frameRef}
         className={styles['frame']}
         data-testid="page-surface"
         data-scale={scale}
