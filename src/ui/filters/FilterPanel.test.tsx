@@ -27,6 +27,7 @@ function setup(initial: FilterState = EMPTY_FILTERS) {
 
   function Harness(): React.JSX.Element {
     const [filters, setFilters] = useState(initial);
+    const [selectedOnly, setSelectedOnly] = useState(false);
     return (
       <FilterPanel
         filters={filters}
@@ -34,6 +35,8 @@ function setup(initial: FilterState = EMPTY_FILTERS) {
           changes.push(next);
           setFilters(fromSearchParams(toSearchParams(next)));
         }}
+        selectedOnly={selectedOnly}
+        onSelectedOnlyChange={setSelectedOnly}
       />
     );
   }
@@ -250,5 +253,21 @@ describe('T3 — hasPosition / hasOcr / hasCaption toggles', () => {
     const { latest } = setup();
     await user.click(screen.getByRole('checkbox', { name: /texte détecté/i }));
     expect(latest()?.hasOcr).toBe(true);
+  });
+});
+
+describe('V1.6, Nicolas — "voir les images sélectionnées" toggle', () => {
+  test('off by default, and toggling calls onSelectedOnlyChange, never onChange', async () => {
+    const user = userEvent.setup();
+    const { latest } = setup();
+    const toggle = screen.getByRole('checkbox', { name: /voir les images sélectionnées/i });
+    expect(toggle).not.toBeChecked();
+
+    await user.click(toggle);
+
+    // The harness's own state proves it: this axis is NOT part of FilterState
+    // (never reaches /photos) — clicking it must never produce a FilterState
+    // change.
+    expect(latest()).toBeUndefined();
   });
 });

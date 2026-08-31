@@ -71,6 +71,74 @@ describe('selection round-trips through the task', () => {
   });
 });
 
+describe('V1.6, Nicolas — voir les images sélectionnées', () => {
+  test('the toggle exists, off by default', async () => {
+    setup();
+    await screen.findByTestId('selection-header');
+    expect(screen.getByRole('checkbox', { name: /voir les images sélectionnées/i })).not.toBeChecked();
+  });
+
+  test('turning it on shows only the task’s own images, bypassing /photos filters', async () => {
+    const user = userEvent.setup();
+    setup();
+    await screen.findByLabelText(/Sélectionner scan-0007\.jpg/);
+    const otherTile = screen.getByLabelText(/Sélectionner PICT0042\.jpg/);
+    expect(otherTile).toBeInTheDocument();
+
+    await user.click(screen.getByRole('checkbox', { name: /voir les images sélectionnées/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByLabelText(/Sélectionner PICT0042\.jpg/)).not.toBeInTheDocument();
+    });
+    expect(screen.getByLabelText(/Sélectionner scan-0007\.jpg/)).toBeInTheDocument();
+  });
+
+  test('unchecking a tile in this view removes it from the task', async () => {
+    const user = userEvent.setup();
+    setup();
+    await user.click(await screen.findByRole('checkbox', { name: /voir les images sélectionnées/i }));
+    const tile = await screen.findByLabelText(/Sélectionner scan-0007\.jpg/);
+    expect(tile).toBeChecked();
+
+    await user.click(tile);
+
+    await waitFor(() => {
+      expect(screen.queryByLabelText(/Sélectionner scan-0007\.jpg/)).not.toBeInTheDocument();
+    });
+  });
+
+  test('the toggle survives a reload — the URL is read on mount', async () => {
+    setup('/images/1999-transat?selectedOnly=true');
+    await screen.findByLabelText(/Sélectionner scan-0007\.jpg/);
+    expect(screen.queryByLabelText(/Sélectionner PICT0042\.jpg/)).not.toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /voir les images sélectionnées/i })).toBeChecked();
+  });
+
+  test('turning it off restores the normal filtered grid, and other filters still work', async () => {
+    const user = userEvent.setup();
+    setup('/images/1999-transat?selectedOnly=true');
+    await screen.findByLabelText(/Sélectionner scan-0007\.jpg/);
+
+    await user.click(screen.getByRole('checkbox', { name: /voir les images sélectionnées/i }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Sélectionner PICT0042\.jpg/)).toBeInTheDocument();
+    });
+  });
+
+  test('changing another filter never clears the toggle', async () => {
+    const user = userEvent.setup();
+    setup('/images/1999-transat?selectedOnly=true');
+    await screen.findByLabelText(/Sélectionner scan-0007\.jpg/);
+
+    const sort = screen.getByLabelText(/trier par/i);
+    await user.selectOptions(sort, 'date_desc');
+
+    expect(screen.getByRole('checkbox', { name: /voir les images sélectionnées/i })).toBeChecked();
+    expect(screen.queryByLabelText(/Sélectionner PICT0042\.jpg/)).not.toBeInTheDocument();
+  });
+});
+
 describe('the detail panel opens from the grid', () => {
   test('opening a photo shows its detail, and closing returns to the grid', async () => {
     const user = userEvent.setup();

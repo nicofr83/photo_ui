@@ -16,6 +16,16 @@ import styles from './FilterPanel.module.css';
 interface Props {
   readonly filters: FilterState;
   readonly onChange: (next: FilterState) => void;
+  /**
+   * V1.6, Nicolas (live use): "voir les images sélectionnées" — composing a
+   * task with no way to see what is already in it. Deliberately NOT a
+   * `FilterState` field: it never reaches `/photos` (client-side only,
+   * `ImagesScreen` swaps its data source entirely instead of filtering),
+   * and `toSearchParams`'s own invariant test — every key it emits is in
+   * the server's allowlist — must stay true.
+   */
+  readonly selectedOnly: boolean;
+  readonly onSelectedOnlyChange: (value: boolean) => void;
 }
 
 const SORT_LABELS: Record<PhotoSort, string> = {
@@ -31,7 +41,9 @@ function toggled(list: readonly string[], value: string): string[] {
   return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
 }
 
-export function FilterPanel({ filters, onChange }: Props): React.JSX.Element {
+export function FilterPanel({
+  filters, onChange, selectedOnly, onSelectedOnlyChange,
+}: Props): React.JSX.Element {
   const albums = useAlbums();
   const sortedAlbums = albums.data === undefined ? [] : sortAlbumsByPath(albums.data.items);
   const [albumQuery, setAlbumQuery] = useState('');
@@ -88,6 +100,17 @@ export function FilterPanel({ filters, onChange }: Props): React.JSX.Element {
 
   return (
     <div className={styles['panel']}>
+      {/* V1.6, Nicolas: the most useful single addition in practice —
+          composing a task with no way to see what is already in it. */}
+      <label className={styles['album']}>
+        <input
+          type="checkbox"
+          checked={selectedOnly}
+          onChange={(e) => { onSelectedOnlyChange(e.target.checked); }}
+        />
+        Voir les images sélectionnées
+      </label>
+
       {tokens.length > 0 ? (
         <span className={styles['badge']} data-testid="active-filter-count">
           {tokens.length}
