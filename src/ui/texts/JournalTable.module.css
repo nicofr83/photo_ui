@@ -1,0 +1,8 @@
+/* Spec, "le registre en tableau": a narrow screen scrolls the TABLE, never
+   crushes the text column into the frame. */
+.scroller { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; }
+.table th { text-align: left; padding: 0.4rem; border-bottom: 2px solid #e5e7eb; }
+.date { width: 9rem; }
+.correct { width: 3rem; }
+.noteCell { width: 11rem; }

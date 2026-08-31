@@ -727,8 +727,13 @@ export const handlers = [
       date: nextDate,
       // The witness: `dateOriginal` never changes in this mock (no reimport
       // to drift against), so it is always the correct snapshot — `null`
-      // when there is no date correction to witness FOR.
-      originalDateAtCorrection: nextDate === null ? null : unit.dateOriginal,
+      // when there is no date correction to witness FOR, or when the text
+      // never had a reading to witness in the first place. `SingleDayRange`
+      // only ({start, end}) — never the full `ResolvedDate` `dateOriginal`
+      // itself carries (bug found live: the extra keys broke the contract).
+      originalDateAtCorrection: nextDate === null || unit.dateOriginal === null
+        ? null
+        : { start: unit.dateOriginal.start, end: unit.dateOriginal.end },
       correctedAt: NOW,
       status: CorrectionStatus.APPLIED,
     };

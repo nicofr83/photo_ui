@@ -6,6 +6,11 @@ import styles from './PageViewer.module.css';
 
 interface Props {
   readonly page: TextPage;
+  /** V1.7, spec journal: "toute la largeur disponible, et sa hauteur va
+   * jusqu'à environ les deux tiers de la fenêtre" — a page open on its own
+   * screen reads better bigger than the 32rem cap every other caller (the
+   * facing-page panel beside a text) still uses. */
+  readonly large?: boolean;
 }
 
 const ZOOM_MAX = 4;
@@ -27,7 +32,7 @@ const ZOOM_STEP = 0.25;
  * — is now both the default AND the zoom floor: the whole page is visible
  * on open, and "Zoom arrière" can always return to it.
  */
-export function PageViewer({ page }: Props): React.JSX.Element {
+export function PageViewer({ page, large = false }: Props): React.JSX.Element {
   const frameRef = useRef<HTMLDivElement>(null);
   // Defaults to 1 (native size) — exactly the old, safe behaviour — until a
   // real measurement lands; a frame that never lays out (some test
@@ -94,7 +99,7 @@ export function PageViewer({ page }: Props): React.JSX.Element {
 
       <div
         ref={frameRef}
-        className={styles['frame']}
+        className={[styles['frame'], large ? styles['large'] : null].filter(Boolean).join(' ')}
         data-testid="page-surface"
         data-scale={scale}
         data-pan-x={pan.x}

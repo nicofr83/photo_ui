@@ -1,0 +1,31 @@
+/* Spec, "le registre en tableau": alternating rows, hover lightens — on
+   twenty-five tight rows, this is what lets an eye follow one row to its
+   checkbox. Content aligned to the top so a long remark never floats its
+   date in the middle of empty space. */
+.row { vertical-align: top; }
+.row:nth-child(even) { background: #fafafa; }
+.row:hover { background: #f3f4f6; }
+
+.date { width: 9rem; padding: 0.4rem; }
+.text { padding: 0.4rem; }
+/* Never truncated (spec) — no ellipsis, no max-height, no overflow clip. */
+.textBody { margin: 0; white-space: pre-wrap; }
+.original { margin: 0.25rem 0 0; padding-left: 0.5rem; border-left: 2px solid #e5e7eb; color: #9ca3af; }
+.correct { width: 3rem; padding: 0.4rem; text-align: center; }
+.noteCell { width: 11rem; padding: 0.4rem; }
+
+.pencil {
+  min-height: var(--tap-target);
+  min-width: var(--tap-target);
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.checkLabel { display: inline-flex; align-items: center; min-height: var(--tap-target); }
+
+.editing { display: flex; flex-direction: column; gap: 0.35rem; }
+.draft { min-height: 3.5rem; padding: 0.4rem; font: inherit; }
+.dateField { display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.85rem; align-items: flex-start; }
+.dateInput { min-height: var(--tap-target); padding: 0 0.4rem; }
+.editingActions { display: flex; gap: 0.5rem; }
+.button { min-height: var(--tap-target); padding: 0 0.6rem; cursor: pointer; }

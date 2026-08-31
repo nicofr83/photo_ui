@@ -25,6 +25,13 @@
   cursor: grab;
 }
 
+/* V1.7, journal: the page open on its own screen — "environ les deux tiers
+   de la fenêtre". */
+.frame.large {
+  max-height: 66vh;
+  width: 100%;
+}
+
 .frame:active {
   cursor: grabbing;
 }
