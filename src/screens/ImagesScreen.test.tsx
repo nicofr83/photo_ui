@@ -122,6 +122,45 @@ describe('V1.7, Nicolas — un commentaire est demandé à la sélection, inline
     await user.click(await second.findByRole('button', { name: /Agrandir PICT0311\.jpg/ }));
     expect(await second.findByLabelText('Commentaire')).toHaveValue('');
   });
+
+  // team-lead's ruling: a note surviving deselect→reselect is (a), server-
+  // side, never a front-only cache (a cache lives in one tab; a reload would
+  // silently discard the guarantee, and the front would become the keeper of
+  // a human text the server itself erased — backwards, and a second source
+  // of truth for the one thing this system has no other copy of). LOCKED
+  // here, deliberately left red until back ships retention — the mock
+  // still hard-deletes the note on remove (mocks/handlers.ts, matching the
+  // real server verified live), so this fails for the true, current reason,
+  // not a front bug.
+  test.fails('deselecting then reselecting keeps an already-written comment — locked pending back (server hard-deletes on remove, verified live)', async () => {
+    const user = userEvent.setup();
+    setup();
+    const tile = await screen.findByLabelText(/Sélectionner PICT0311\.jpg/);
+    await user.click(tile);
+    const field = await screen.findByRole('textbox', { name: /Commentaire pour PICT0311\.jpg/i });
+    await user.type(field, 'Hugo à la barre{Enter}');
+    await waitFor(() => {
+      expect(screen.queryByRole('textbox', { name: /Commentaire pour PICT0311\.jpg/i })).not.toBeInTheDocument();
+    });
+
+    // Deselect, then reselect the same photo.
+    await user.click(screen.getByLabelText(/Sélectionner PICT0311\.jpg/));
+    await waitFor(() => { expect(screen.getByLabelText(/Sélectionner PICT0311\.jpg/)).not.toBeChecked(); });
+    await user.click(screen.getByLabelText(/Sélectionner PICT0311\.jpg/));
+
+    // Team-lead's ruling: Escape never writes, never erases — on a
+    // reselection it leaves the RESTORED comment intact, closing the field
+    // and nothing else.
+    const reopened = await screen.findByRole('textbox', { name: /Commentaire pour PICT0311\.jpg/i });
+    expect(reopened).toHaveValue('Hugo à la barre');
+    await user.keyboard('{Escape}');
+
+    const { unmount } = setup();
+    unmount();
+    const second = setup();
+    await user.click(await second.findByRole('button', { name: /Agrandir PICT0311\.jpg/ }));
+    expect(await second.findByLabelText('Commentaire')).toHaveValue('Hugo à la barre');
+  });
 });
 
 describe('V1.6, Nicolas — voir les images sélectionnées', () => {

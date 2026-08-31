@@ -388,6 +388,27 @@ DETAIL: besoin pour T2.4. Attendu: {caption, page, distance, margin, verified}[]
 Elle ne relaie plus. Elle n'écrit qu'une décision de Nicolas ou un arrêt. Ses
 messages suivent le même format.
 
+### Règle 4 — l'index git est partagé, l'historique n'est pas à toi *(2026-08-31)*
+
+Plusieurs agents, un seul arbre de travail, un seul index. Trois incidents sur le
+mandat 1.7 : un commit par chemin explicite reste la seule protection, et
+`git add -A` reste interdit.
+
+**Quand tu découvres tes fichiers dans le commit d'un autre, ne touche pas à
+l'historique.** `git reset --soft` déplace HEAD et *supprime le commit de la
+branche* — le 2026-08-31 il a fait disparaître `bb578f2` (le correctif des
+opérandes de `spec-v15`) de l'historique. Le contenu a survécu dans l'arbre par
+chance seulement : un `git checkout` sur ce fichier entre-temps, et le travail
+partait sans trace, l'objet n'étant plus référencé que par le reflog. Restauré
+en `1d6984e`.
+
+Pour désindexer les fichiers d'un autre : `git restore --staged <chemins>`.
+Jamais `reset`, qui touche à l'historique commun.
+
+**Et avant de reprocher un commit à quelqu'un, lis `git log` :** l'incident du
+2026-08-31 a été attribué à la session pilote, qui n'avait fait aucun commit —
+les commits sur `docs/spec-v1.7.md` étaient tous de `spec-v15`.
+
 ---
 
 ## Avancement — impl-frontend, T2 (2026-08-29)
@@ -1620,3 +1641,16 @@ Deux bugs réels trouvés et corrigés en vérifiant en direct (invisibles en js
 DETAIL : commits `bcdddca` (A), `a7ce6cd` (B).
 
 ASK : la décision sur le point signalé en (A) — server-side ou cache-restauration côté client, et le comportement d'Échap dans ce cas.
+
+---
+
+## Avancement — impl-frontend, verrou du cas note-restaurée (2026-08-31)
+
+RE : team-lead — arbitrage (a) côté serveur, jamais un cache front ; Échap n'écrit ni n'efface, jamais
+DONE : rien à changer dans le comportement déjà livré (déjà exactement ce que l'arbitrage décrit). Ajouté le test qui verrouille le cas : désélectionner puis resélectionner PICT0311.jpg, le commentaire déjà écrit doit revenir dans le champ, Échap le laisse intact. Volontairement rouge pour l'instant — le mock reproduit fidèlement le vrai serveur (`mocks/handlers.ts`, retrait = suppression complète de la ligne, y compris `note`), donc le test échoue pour la vraie raison actuelle, pas un bug front. Enveloppé en `test.fails(...)` : la suite reste verte tant que le comportement manque, et bascule au rouge le jour où `back` livre la conservation — signal automatique pour retirer l'enveloppe et vérifier normalement.
+
+761 tests + 1 « expected fail » (le test verrouillé). tsc et eslint propres.
+
+DETAIL : commit à suivre.
+
+ASK : aucune. Je passe aux écrans Textes (V1.7, spec-v1.7.md).
