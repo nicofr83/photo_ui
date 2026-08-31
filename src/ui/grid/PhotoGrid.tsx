@@ -16,6 +16,9 @@ interface Props {
   readonly onOpen?: (cloudAssetId: string) => void;
   readonly onEnlarge?: (photo: PhotoListItem) => void;
   readonly onComment?: (cloudAssetId: string, note: string) => void;
+  /** V1.6/V1.7: a retained comment, keyed by cloudAssetId — only entries
+   * for currently-selected photos with a non-null note. */
+  readonly notes?: ReadonlyMap<string, string>;
 }
 
 export function PhotoGrid({
@@ -26,6 +29,7 @@ export function PhotoGrid({
   onOpen,
   onEnlarge,
   onComment,
+  notes,
 }: Props): React.JSX.Element {
   const { data, error, isPending } = usePhotos(params);
 
@@ -67,6 +71,7 @@ export function PhotoGrid({
               {...(onOpen === undefined ? {} : { onOpen })}
               {...(onEnlarge === undefined ? {} : { onEnlarge })}
               {...(onComment === undefined ? {} : { onComment })}
+              existingNote={notes?.get(photo.cloudAssetId) ?? null}
             />
           </li>
         ))}

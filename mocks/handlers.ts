@@ -1179,6 +1179,16 @@ export const handlers = [
       });
     }
     const body = parsed.data;
+    const slug = String(params['slug']);
+
+    // V1.6/V1.7: a per-image comment survives deselecting then reselecting
+    // — team-lead's ruling, server-side, never a front cache. Matches
+    // back's migration 008 (`task_image_note_retention`).
+    let retained = store.imageNoteRetention.get(slug);
+    if (retained === undefined) {
+      retained = new Map();
+      store.imageNoteRetention.set(slug, retained);
+    }
 
     const held = new Set(task.images.map((i) => i.cloudAssetId));
     const added: string[] = [];
@@ -1194,8 +1204,13 @@ export const handlers = [
       if (held.has(item.cloudAssetId)) { merged.push(item.cloudAssetId); continue; }
       held.add(item.cloudAssetId);
       added.push(item.cloudAssetId);
+      // A retained comment wins over the request's own `note` — nothing in
+      // this add gesture ever knows a note it did not just write itself.
+      const restoredNote = retained.get(item.cloudAssetId);
+      retained.delete(item.cloudAssetId);
       task.images.push({
-        cloudAssetId: item.cloudAssetId, order: task.images.length, note: item.note ?? null,
+        cloudAssetId: item.cloudAssetId, order: task.images.length,
+        note: restoredNote ?? item.note ?? null,
         selectedBecause: item.selectedBecause,
         selectedAt: NOW, orphaned: false,
         // Placeholder: both GET handlers recompute this live against the
@@ -1206,6 +1221,11 @@ export const handlers = [
 
     const removing = new Set(body.remove ?? []);
     const removed = task.images.filter((i) => removing.has(i.cloudAssetId)).map((i) => i.cloudAssetId);
+    for (const image of task.images) {
+      if (removing.has(image.cloudAssetId) && image.note !== null) {
+        retained.set(image.cloudAssetId, image.note);
+      }
+    }
     task.images = task.images.filter((i) => !removing.has(i.cloudAssetId));
     task.imageCount = task.images.length;
 

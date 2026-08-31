@@ -199,6 +199,65 @@ describe('V1.7, Nicolas — selecting a photo asks for a comment, inline', () =>
   });
 });
 
+describe('V1.6/V1.7 — a comment retained across a deselect-then-reselect catches up once it arrives', () => {
+  test('the field opens blank, then fills in once existingNote arrives — the server round-trip is not instant', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <PhotoTile photo={byFile('PICT0042.jpg')} selected={false} onToggle={noop} onComment={noop} />,
+    );
+    await user.click(screen.getByRole('checkbox'));
+    const field = screen.getByRole('textbox', { name: /commentaire/i });
+    expect(field).toHaveValue('');
+
+    // The `add` mutation settles strictly AFTER the click — this is the
+    // parent re-rendering with the restored note, same component instance.
+    rerender(
+      <PhotoTile
+        photo={byFile('PICT0042.jpg')}
+        selected={false}
+        onToggle={noop}
+        onComment={noop}
+        existingNote="Hugo à la barre"
+      />,
+    );
+    expect(field).toHaveValue('Hugo à la barre');
+  });
+
+  test('never overwrites what the person already started typing before it arrived', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <PhotoTile photo={byFile('PICT0042.jpg')} selected={false} onToggle={noop} onComment={noop} />,
+    );
+    await user.click(screen.getByRole('checkbox'));
+    const field = screen.getByRole('textbox', { name: /commentaire/i });
+    await user.type(field, 'Mon propre texte');
+
+    rerender(
+      <PhotoTile
+        photo={byFile('PICT0042.jpg')}
+        selected={false}
+        onToggle={noop}
+        onComment={noop}
+        existingNote="Hugo à la barre"
+      />,
+    );
+    expect(field).toHaveValue('Mon propre texte');
+  });
+
+  test('an already-selected photo with a note on mount does not open the field either — same "no reopened editor" rule', () => {
+    render(
+      <PhotoTile
+        photo={byFile('PICT0042.jpg')}
+        selected
+        onToggle={noop}
+        onComment={noop}
+        existingNote="Hugo à la barre"
+      />,
+    );
+    expect(screen.queryByRole('textbox', { name: /commentaire/i })).not.toBeInTheDocument();
+  });
+});
+
 describe('V1.6, Nicolas — clicking the thumbnail enlarges it, same as the Revue', () => {
   test('without onEnlarge, the thumbnail is a plain image, not a button', () => {
     render(<PhotoTile photo={byFile('PICT0042.jpg')} selected={false} onToggle={noop} />);

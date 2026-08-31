@@ -33,6 +33,15 @@ export interface PhotoTileProps {
    * list only ever deselects here, never selects for the first time).
    */
   readonly onComment?: (cloudAssetId: string, note: string) => void;
+  /**
+   * V1.6/V1.7: the CURRENT server-known note for this photo, if it is
+   * already selected — `null`/omitted otherwise. A comment retained across
+   * a deselect-then-reselect (team-lead's ruling, server-side) only
+   * arrives once the `add` mutation settles, strictly AFTER the field has
+   * already opened with an empty draft — the effect below catches up once
+   * it lands, never overwriting anything the person has since typed.
+   */
+  readonly existingNote?: string | null;
 }
 
 export function PhotoTile({
@@ -42,6 +51,7 @@ export function PhotoTile({
   onOpen,
   onEnlarge,
   onComment,
+  existingNote = null,
 }: PhotoTileProps): React.JSX.Element {
   const [thumbFailed, setThumbFailed] = useState(false);
   const heldElsewhere = photo.inTaskSlugs.length > 0;
@@ -59,6 +69,15 @@ export function PhotoTile({
   useEffect(() => {
     if (commenting) fieldRef.current?.focus();
   }, [commenting]);
+
+  // A retained comment restores server-side, strictly after the field has
+  // already opened blank — catch up once it lands, but never clobber
+  // whatever the person has typed since.
+  useEffect(() => {
+    if (commenting && draft === '' && existingNote !== null && existingNote !== '') {
+      setDraft(existingNote);
+    }
+  }, [commenting, existingNote]);
 
   const closeField = (): void => {
     setCommenting(false);

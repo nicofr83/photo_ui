@@ -119,6 +119,14 @@ export function ImagesScreen(): React.JSX.Element {
               // (`selection.setNote`), asked for inline right at the moment
               // of selecting rather than left for the Revue to fill in.
               onComment={(cloudAssetId, note) => { void selection.setNote(cloudAssetId, note); }}
+              // V1.6/V1.7: a comment retained across a deselect-then-
+              // reselect (server-side) — lets the inline field catch up to
+              // it once the reselect settles, instead of showing blank.
+              notes={new Map(
+                selection.images
+                  .filter((i): i is typeof i & { note: string } => i.note !== null)
+                  .map((i) => [i.cloudAssetId, i.note]),
+              )}
             />
           )}
 

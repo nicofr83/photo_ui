@@ -22,6 +22,15 @@ export interface Store {
   /** Mutable so PUT/DELETE /ref/web-span make a real round trip. */
   documents: TextDocument[];
   tasks: Map<string, TaskDetail>;
+  /**
+   * V1.6/V1.7: a photo's per-image comment survives deselecting then
+   * reselecting it (team-lead's ruling — server-side, never a front cache:
+   * "une garantie qui dépend d'un onglet resté ouvert n'en est pas une").
+   * Keyed by task slug, then cloudAssetId; consumed (deleted) the moment a
+   * re-add restores it — matches back's migration 008, `task_image_note_
+   * retention`.
+   */
+  imageNoteRetention: Map<string, Map<string, string>>;
   /** Identifies the import that produced this data. Contract §9. */
   importId: string;
   /** Set by a test to make TASKS_ROOT unreachable. Spec §5.1. */
@@ -62,6 +71,7 @@ function seed(): Store {
     albums: structuredClone(INVARIANT_ALBUMS) as Album[],
     documents: structuredClone(INVARIANT_DOCUMENTS) as TextDocument[],
     tasks: new Map([['1999-transat', seedTask()]]),
+    imageNoteRetention: new Map(),
     importId: 'import_mock',
     tasksRootAvailable: true,
     exportDirectoryExists: false,

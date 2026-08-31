@@ -127,12 +127,12 @@ describe('V1.7, Nicolas — un commentaire est demandé à la sélection, inline
   // side, never a front-only cache (a cache lives in one tab; a reload would
   // silently discard the guarantee, and the front would become the keeper of
   // a human text the server itself erased — backwards, and a second source
-  // of truth for the one thing this system has no other copy of). LOCKED
-  // here, deliberately left red until back ships retention — the mock
-  // still hard-deletes the note on remove (mocks/handlers.ts, matching the
-  // real server verified live), so this fails for the true, current reason,
-  // not a front bug.
-  test.fails('deselecting then reselecting keeps an already-written comment — locked pending back (server hard-deletes on remove, verified live)', async () => {
+  // of truth for the one thing this system has no other copy of). Was
+  // LOCKED (`test.fails`) pending back's retention — landed (migration 008,
+  // verified live on zz-repro-bug1: remove then re-add now keeps the note),
+  // the mock updated to match (`mocks/handlers.ts`'s own retention map) —
+  // unlocked, runs as an ordinary test now.
+  test('deselecting then reselecting keeps an already-written comment', async () => {
     const user = userEvent.setup();
     setup();
     const tile = await screen.findByLabelText(/Sélectionner PICT0311\.jpg/);
