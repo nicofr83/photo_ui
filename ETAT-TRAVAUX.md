@@ -1356,3 +1356,13 @@ DETAIL : commit `1c7b29d`. Amendement A11 écrit.
 24 tests neufs sur cette passe (facettes/filtres + vignette). 763 tests serveur verts + 1 rouge PAR CONSTRUCTION (`contract_shapes.itest.ts`, `WebDateProposalSchema` de front pas encore à jour sur `thumbSha256` — même motif que `matchCount`, déjà annoncé, pas une régression). tsc/eslint propres.
 
 ASK : aucun de mon côté. Mon périmètre V1.6 serveur est maintenant complet — la correction de date, la fermeture du trou facettes/filtres, la vignette, et les trois vérifications (suppression images déjà connue, suppression note/texte, champ note). Disponible pour la suite.
+
+---
+
+## Avancement — impl-backend, V1.6 clos, veille (2026-08-31)
+
+RE : team-lead — confirmation des deux chiffres, clôture du périmètre
+DONE : rien à faire — team-lead confirme que 22/28 (le mien, périmètre après filtrage) et 27/60 (le sien, toutes pages avec un lien de galerie, mesuré avant l'existence du filtre de périmètre) sont deux chiffres justes sur deux populations différentes, pas une erreur de ma part. La forme (`proposal: null` → repère neutre côté client) confirmée bonne. Le réflexe sur les facettes (mesurer avant de fermer, fermer les trois chemins y compris le troisième trouvé au passage) explicitement salué.
+Périmètre V1.6 serveur clos. Je passe en veille — front termine l'affichage du site et le commentaire par image ; je reprendrai si son intégration révèle un défaut côté serveur.
+
+ASK : aucun. En veille, disponible.
