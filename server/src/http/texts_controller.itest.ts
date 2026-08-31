@@ -624,11 +624,15 @@ describe('GET /texts/web/page (V1.7)', () => {
     const body = response.body;
     // cp1252 correctement transcodé — pas de mojibake sur l'accent.
     expect(body).toContain('Découverte de');
-    // Retiré à la source.
+    // Retirés à la source.
     expect(body).not.toMatch(/<script/i);
-    // L'ancre entre pages reste intacte (hors périmètre) ...
-    expect(body).toContain('href="1900-1988.htm"');
-    // ... mais la feuille de style et les images pointent vers la route d'actifs.
+    // V1.7 (team-lead, testé en direct) : un <a href> intact aurait 404 sur
+    // 48 des 53 pages liées, ou pire, désynchronisé liste et iframe sur les
+    // 5 servies — la provenance nommerait alors la mauvaise page.
+    expect(body).not.toMatch(/<a\b[^>]*\bhref\s*=/i);
+    // Le TEXTE du lien de fil d'Ariane survit, au mot près — seule la cible disparaît.
+    expect(body).toContain('>1958-1998</A>');
+    // La feuille de style et les images, elles, pointent vers la route d'actifs.
     expect(body).toContain('href="/texts/web/asset?path=_themes%2Ffunfun2-98%2Ffunf1011.css"');
     expect(body).toContain('src="/texts/web/asset?path=_derived%2F1998-1999.htm_cmp_funfun2-98010_bnr.gif"');
   });

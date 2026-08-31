@@ -26,6 +26,27 @@ existants du projet.
 >
 ### Amendements depuis le gel
 
+### A16 — les liens de navigation du site sont neutralisés à la source *(2026-08-31, V1.7)*
+
+Corrige A13, trouvé par team-lead en testant les 3 routes en direct contre
+le vrai serveur : `GET /texts/web/page?id=…` réécrivait `src`/`href`
+d'`<img>`/`<link>` mais laissait les `<a href>` de navigation intacts,
+« hors périmètre ». En pratique, un clic dans l'iframe soit 404 (48 des 53
+pages liées ne sont jamais servies — `favorite.htm`, les sous-pages
+`1999/…`/`2003/…`, refusées par le motif strict de `id`), soit — plus
+grave — affiche une des 4 AUTRES pages servies sans que la liste de gauche
+ne le sache : un lecteur qui surligne du texte fabrique alors une note dont
+`derivedFrom` nomme la page qu'il CROIT lire, pas celle réellement
+affichée. La provenance est l'épine dorsale de la 1.7 ; cette
+désynchronisation silencieuse entre ce qui est lu et ce qui est cité est
+exactement l'accident qu'elle doit empêcher.
+
+Corrigé : `href` retiré de tout `<a>`, à la source, jamais réécrit vers
+l'une des 5 pages (qui rouvrirait la même désynchronisation). Le lien reste
+dans le HTML, texte inchangé au mot près — seul le comportement de
+navigation disparaît. Aucun type ne change, un test de plus (aucun `<a
+href>` ne sort de la route) en plus de celui sur les `<script>`.
+
 ### A15 — la note d'une image survit à son retrait de la tâche *(2026-08-31, V1.7)*
 
 Bug signalé par `impl-frontend` (`zz-repro-bug1`) : `POST /tasks/:slug/images`
@@ -2013,8 +2034,15 @@ sélectionne du texte à la souris, en fait une note.
   pas `allow-scripts`, mais un document d'archive ne doit pas non plus PORTER
   de script actif), les `src`/`href` d'`<img>`/`<link>` réécrits vers la route
   d'actifs — **rien d'autre modifié** : document d'archive, le texte reste au
-  mot près. Les `<a href>` de navigation entre pages restent intacts, hors
-  périmètre.
+  mot près. Les `href` des `<a>` sont eux aussi retirés à la source, jamais
+  réécrits vers l'une des 5 pages (trouvé par team-lead en testant en direct
+  — un `<a href>` intact 404 sur 48 des 53 pages liées, ou pire, désynchronise
+  la liste et l'iframe sur les 5 servies : un clic changerait ce qui s'affiche
+  sans que la sélection ne le sache, et `derivedFrom` nommerait la page qu'on
+  CROIT lire, pas celle réellement affichée — la provenance est l'épine
+  dorsale de la 1.7, cette désynchronisation silencieuse est exactement
+  l'accident qu'elle doit empêcher). Le lien reste dans le HTML, texte
+  inchangé, seule sa cible disparaît.
 - `GET /texts/web/asset?path=…` — css/gif/jpg/png sous `WEB_SITE_ROOT`. Une
   feuille de style CSS est elle-même transcodée et réécrite : un thème
   FrontPage référence ses propres images par `url(…)` relatif à SON DOSSIER

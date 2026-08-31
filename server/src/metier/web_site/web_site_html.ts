@@ -12,6 +12,30 @@ export function stripScripts(html: string): string {
   return html.replace(SCRIPT_TAG, '');
 }
 
+const A_TAG = /<(a)\b([^>]*)>/gi;
+const HREF_ATTR = /\s*\bhref\s*=\s*"[^"]*"/gi;
+
+/**
+ * Retire `href` de tout `<a>` — à LA SOURCE, jamais réécrit vers l'une des 5
+ * pages (V1.7, team-lead, trouvé en testant en direct). Le texte reste au
+ * mot près, seul le comportement de navigation disparaît : le lien reste
+ * dans le HTML, juste sans cible.
+ *
+ * Ce n'est pas cosmétique. Un `<a href>` laissé intact pointe soit vers une
+ * des 48 pages jamais servies (`favorite.htm`, les sous-pages `1999/…`,
+ * `2003/…` — refusées par `isValidPageId`, 400/404 mesuré), soit — pire —
+ * vers une des 5 AUTRES pages servies : un clic dans l'iframe changerait
+ * alors ce qui s'affiche sans que la liste de gauche ne le sache, et
+ * `derivedFrom` nommerait la page qu'on CROIT lire, pas celle réellement
+ * affichée. La provenance est l'épine dorsale de la 1.7 ; cette
+ * désynchronisation silencieuse est exactement l'accident qu'elle doit
+ * empêcher — d'où neutraliser plutôt que réécrire vers les 5 pages.
+ */
+export function stripNavigationLinks(html: string): string {
+  return html.replace(A_TAG, (_fullTag: string, tagName: string, attrs: string) =>
+    `<${tagName}${attrs.replace(HREF_ATTR, '')}>`);
+}
+
 const TITLE_TAG = /<title[^>]*>([\s\S]*?)<\/title\s*>/i;
 
 /** `null` seulement si la page n'a vraiment aucun `<title>` — jamais vu sur les 5 réelles, mais jamais supposé non plus. */
@@ -30,9 +54,9 @@ const ASSET_ATTR = /\b(src|href)(\s*=\s*)"([^"]*)"/gi;
 
 /**
  * Réécrit UNIQUEMENT `src="…"` (`<img>`) et `href="…"` (`<link>`, les
- * feuilles de style) vers la route d'actifs — jamais un `<a href>` : la
- * navigation entre pages est hors périmètre, seul ce qui fait RENDRE la
- * page (V1.7) l'est. `assetRouteBase` inclut déjà `?path=`.
+ * feuilles de style) vers la route d'actifs — jamais un `<a href>`, qui
+ * n'arrive même plus jusqu'ici : `stripNavigationLinks` l'a déjà retiré.
+ * `assetRouteBase` inclut déjà `?path=`.
  */
 export function rewriteAssetUrls(html: string, assetRouteBase: string): string {
   return html.replace(TAG_WITH_ASSET_ATTR, (_fullTag: string, tagName: string, attrs: string) => {

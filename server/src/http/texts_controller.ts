@@ -16,7 +16,9 @@ import { getPageThumb, type PageThumbDeps } from '../metier/pages/thumb_service.
 import {
   isAllowedAssetExtension, isValidPageId, labelFromPageId, resolveUnderRoot,
 } from '../metier/web_site/web_site_path.ts';
-import { extractTitle, rewriteAssetUrls, rewriteCssUrls, stripScripts } from '../metier/web_site/web_site_html.ts';
+import {
+  extractTitle, rewriteAssetUrls, rewriteCssUrls, stripNavigationLinks, stripScripts,
+} from '../metier/web_site/web_site_html.ts';
 import { getTextDateFacets } from '../repository/text_facets.ts';
 import {
   getPageImageRelpath, listCorrections, listDocuments, listPages, listTexts, putCorrection, revertCorrection,
@@ -339,9 +341,11 @@ export function registerTextsRoutes(server: FastifyInstance, deps: TextsRoutesDe
 
     const raw = await readFile(resolved);
     const html = new TextDecoder('windows-1252').decode(raw);
-    // Retirés à la source (team-lead) puis les URL d'actifs réécrites —
-    // rien d'autre : document d'archive, le texte reste au mot près.
-    const rendered = rewriteAssetUrls(stripScripts(html), ASSET_ROUTE_BASE);
+    // Scripts et navigation retirés à la source (team-lead), puis les URL
+    // d'actifs réécrites — rien d'autre : document d'archive, le texte
+    // reste au mot près, seule la navigation disparaît (V1.7, la
+    // désynchronisation liste/iframe cassait la provenance elle-même).
+    const rendered = rewriteAssetUrls(stripNavigationLinks(stripScripts(html)), ASSET_ROUTE_BASE);
 
     void reply.header('Content-Type', 'text/html; charset=utf-8');
     return rendered;
