@@ -374,10 +374,25 @@ portant `null`, pas en omettant le champ.
 
 `derived_from` porte `{ kind, id, text }` — la référence **et** l'instantané pris
 à la copie. Et l'export émet **en plus** la source dans `texts[]`. Les deux, et
-ce n'est pas une redondance : l'instantané dit **ce qui a été copié**, figé ;
-l'entrée de `texts[]` dit **où en est la source aujourd'hui**. `quotable` est
-exactement la comparaison entre les deux, et un dossier qui n'en porterait qu'un
-seul côté ne permettrait pas de la refaire.
+ce n'est pas une redondance : ce sont les **deux points de comparaison** dont le
+dossier a besoin. L'instantané dit ce qui a été copié, figé ; l'entrée de
+`texts[]` dit où en est la source aujourd'hui.
+
+**Les deux drapeaux se contrôlent chacun contre l'un des deux, jamais l'un
+contre l'autre.** C'est toujours le **corps de la note** qui est l'opérande de
+gauche :
+
+| | Opérande de gauche | Opérande de droite |
+|:--|:--|:--|
+| `edited_since` | le corps de la note | l'**instantané** |
+| `quotable` | le corps de la note | la **source actuelle** |
+
+Comparer l'instantané à la source serait une troisième question, et personne ne
+la pose. La poser à la place de `quotable` casserait le cas de la citation
+tronquée : sur une sélection libre, l'instantané est un fragment de la page, donc
+il ne sera jamais égal à sa source, et aucune note tirée d'une page ne serait
+plus citable. Un dossier privé d'un des deux côtés rend l'un des deux drapeaux
+invérifiable — c'est pour ça qu'il porte les deux.
 
 `edited_since` et `quotable` disent deux choses différentes, et il faut les deux :
 
