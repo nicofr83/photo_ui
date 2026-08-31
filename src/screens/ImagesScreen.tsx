@@ -1,16 +1,19 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router';
 
 import { useSelection } from '../api/hooks/useSelection';
+import type { PhotoListItem } from '../api/contract/photo';
 import { fromSearchParams, toSearchParams } from '../domain/filterState';
 import { SelectionReason } from '../shared/enums';
 import { PhotoDetail } from '../ui/detail/PhotoDetail';
+import { ImageNoteEditor } from '../ui/detail/ImageNoteEditor';
 import { FilterPanel } from '../ui/filters/FilterPanel';
 import { PhotoGrid } from '../ui/grid/PhotoGrid';
 import { SelectedPhotoGrid } from '../ui/grid/SelectedPhotoGrid';
 import { ErrorBanner } from '../ui/primitives/ErrorBanner';
 import { FixedHeader } from '../ui/primitives/FixedHeader';
 import scrollStyles from '../ui/primitives/FixedHeader.module.css';
+import { ImageModal } from '../ui/primitives/ImageModal';
 import { TaskNav } from '../ui/primitives/TaskNav';
 
 import styles from './ImagesScreen.module.css';
@@ -19,6 +22,24 @@ export function ImagesScreen(): React.JSX.Element {
   const { slug = '' } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const [openPhoto, setOpenPhoto] = useState<string | null>(null);
+  // V1.6, Nicolas: "un clic sur une image devrait afficher l'image en
+  // grand" — the whole photo, not just its id: this screen does not
+  // otherwise hold what PhotoGrid/SelectedPhotoGrid fetched internally.
+  const [enlargedPhoto, setEnlargedPhoto] = useState<PhotoListItem | null>(null);
+  // The usual modal focus trap (team-lead): `document.activeElement` at the
+  // moment of opening IS the thumbnail button that was just clicked — no
+  // extra plumbing through PhotoTile/PhotoGrid needed to remember it.
+  const enlargeTriggerRef = useRef<HTMLElement | null>(null);
+  const enlarge = (photo: PhotoListItem): void => {
+    enlargeTriggerRef.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+    setEnlargedPhoto(photo);
+  };
+  const closeEnlarged = (): void => {
+    setEnlargedPhoto(null);
+    enlargeTriggerRef.current?.focus();
+  };
 
   // The URL is the single source of truth for the filters, and anything the
   // contract does not define is dropped on the way in — forwarding it would be
@@ -79,6 +100,7 @@ export function ImagesScreen(): React.JSX.Element {
               slug={slug}
               onToggle={(cloudAssetId) => { void selection.remove([cloudAssetId]); }}
               onOpen={setOpenPhoto}
+              onEnlarge={enlarge}
             />
           ) : (
             <PhotoGrid
@@ -91,11 +113,27 @@ export function ImagesScreen(): React.JSX.Element {
               }}
               onSelectAll={(ids) => { void selection.add(ids, reasons()); }}
               onOpen={setOpenPhoto}
+              onEnlarge={enlarge}
             />
           )}
 
           {openPhoto === null ? null : (
             <PhotoDetail cloudAssetId={openPhoto} onClose={() => { setOpenPhoto(null); }} />
+          )}
+
+          {enlargedPhoto === null ? null : (
+            <ImageModal src={enlargedPhoto.renderUrl} alt={enlargedPhoto.fileName} onClose={closeEnlarged}>
+              {/* V1.6, Nicolas: a comment only makes sense on a SELECTED
+                  image (TaskImageSelection.note) — browsing the general
+                  grid does not imply retaining it. */}
+              {selection.selected.has(enlargedPhoto.cloudAssetId) ? (
+                <ImageNoteEditor
+                  note={selection.images.find((i) => i.cloudAssetId === enlargedPhoto.cloudAssetId)?.note ?? null}
+                  isPending={selection.isPending}
+                  onSave={(note) => { void selection.setNote(enlargedPhoto.cloudAssetId, note); }}
+                />
+              ) : null}
+            </ImageModal>
           )}
         </main>
       </div>

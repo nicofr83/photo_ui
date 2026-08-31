@@ -22,7 +22,9 @@ interface ImageAddItem {
 interface Mutation {
   readonly add?: readonly ImageAddItem[];
   readonly remove?: readonly string[];
-  readonly update?: ReadonlyArray<{ readonly cloudAssetId: string; readonly order: number }>;
+  readonly update?: ReadonlyArray<
+    { readonly cloudAssetId: string; readonly order?: number; readonly note?: string | null }
+  >;
 }
 
 export interface Selection {
@@ -47,6 +49,14 @@ export interface Selection {
    */
   readonly moveUp: (cloudAssetId: string) => Promise<TaskImagesMutationResult> | undefined;
   readonly moveDown: (cloudAssetId: string) => Promise<TaskImagesMutationResult> | undefined;
+  /**
+   * V1.6, Nicolas: "je desire pouvoir entrer un commentaire sur les images
+   * selectionnees" — human-authored, today, per image (`TaskImageSelection.
+   * note`, exported as `manifest.json`'s `images[].user_note`) — never the
+   * period text, never the machine caption, contract §4.5's own `update`
+   * already accepts it.
+   */
+  readonly setNote: (cloudAssetId: string, note: string | null) => Promise<TaskImagesMutationResult>;
 }
 
 export function useSelection(slug: string): Selection {
@@ -103,5 +113,6 @@ export function useSelection(slug: string): Selection {
     remove: (cloudAssetIds) => mutation.mutateAsync({ remove: cloudAssetIds }),
     moveUp: (cloudAssetId) => swapWithNeighbour(cloudAssetId, -1),
     moveDown: (cloudAssetId) => swapWithNeighbour(cloudAssetId, 1),
+    setNote: (cloudAssetId, note) => mutation.mutateAsync({ update: [{ cloudAssetId, note }] }),
   };
 }

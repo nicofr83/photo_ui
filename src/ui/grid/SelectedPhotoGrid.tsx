@@ -1,4 +1,5 @@
 import { useTaskReview } from '../../api/hooks/useTaskReview';
+import type { PhotoListItem } from '../../api/contract/photo';
 import { ErrorBanner } from '../primitives/ErrorBanner';
 
 import { PhotoTile } from './PhotoTile';
@@ -8,6 +9,7 @@ interface Props {
   readonly slug: string;
   readonly onToggle: (cloudAssetId: string, shift: boolean) => void;
   readonly onOpen?: (cloudAssetId: string) => void;
+  readonly onEnlarge?: (photo: PhotoListItem) => void;
 }
 
 /**
@@ -22,7 +24,7 @@ interface Props {
  * deliberately separate, simpler component rather than PhotoGrid stretched
  * to cover a data source it was never about.
  */
-export function SelectedPhotoGrid({ slug, onToggle, onOpen }: Props): React.JSX.Element {
+export function SelectedPhotoGrid({ slug, onToggle, onOpen, onEnlarge }: Props): React.JSX.Element {
   const review = useTaskReview(slug);
 
   if (review.error !== null) return <ErrorBanner error={review.error} />;
@@ -48,6 +50,7 @@ export function SelectedPhotoGrid({ slug, onToggle, onOpen }: Props): React.JSX.
               selected
               onToggle={onToggle}
               {...(onOpen === undefined ? {} : { onOpen })}
+              {...(onEnlarge === undefined ? {} : { onEnlarge })}
             />
           </li>
         ))}

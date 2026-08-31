@@ -139,6 +139,56 @@ describe('V1.6, Nicolas — voir les images sélectionnées', () => {
   });
 });
 
+describe('V1.6, Nicolas — clicking a thumbnail enlarges it', () => {
+  test('opens the modal with the full-size render, and closing returns focus', async () => {
+    const user = userEvent.setup();
+    setup();
+    const trigger = await screen.findByRole('button', { name: /Agrandir PICT0042\.jpg/ });
+    await user.click(trigger);
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('img')).toHaveAttribute('src', expect.stringContaining('/render'));
+
+    await user.click(screen.getByRole('button', { name: 'Fermer' }));
+    await waitFor(() => { expect(screen.queryByRole('dialog')).not.toBeInTheDocument(); });
+    expect(trigger).toHaveFocus();
+  });
+
+  test('a selected image offers a comment field inside the modal', async () => {
+    const user = userEvent.setup();
+    setup();
+    await user.click(await screen.findByRole('button', { name: /Agrandir scan-0007\.jpg/ }));
+    expect(await screen.findByLabelText('Commentaire')).toHaveValue('');
+  });
+
+  test('an image not (yet) selected offers no comment field — the note lives on the selection', async () => {
+    const user = userEvent.setup();
+    setup();
+    await user.click(await screen.findByRole('button', { name: /Agrandir PICT0042\.jpg/ }));
+    await screen.findByRole('dialog');
+    expect(screen.queryByLabelText('Commentaire')).not.toBeInTheDocument();
+  });
+
+  test('saving the comment persists it', async () => {
+    const user = userEvent.setup();
+    setup();
+    await user.click(await screen.findByRole('button', { name: /Agrandir scan-0007\.jpg/ }));
+    const field = await screen.findByLabelText('Commentaire');
+    await user.type(field, 'Hugo à la barre, on venait de doubler le Bugio');
+    await user.click(screen.getByRole('button', { name: /enregistrer/i }));
+
+    // Démonter et remonter prouve que ça a atteint le serveur.
+    await waitFor(() => { expect(screen.getByRole('button', { name: /enregistrer/i })).toBeDisabled(); });
+    const { unmount } = setup();
+    unmount();
+    const second = setup();
+    await user.click(await second.findByRole('button', { name: /Agrandir scan-0007\.jpg/ }));
+    expect(await second.findByLabelText('Commentaire')).toHaveValue(
+      'Hugo à la barre, on venait de doubler le Bugio',
+    );
+  });
+});
+
 describe('the detail panel opens from the grid', () => {
   test('opening a photo shows its detail, and closing returns to the grid', async () => {
     const user = userEvent.setup();

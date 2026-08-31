@@ -14,6 +14,7 @@ import { useTextSelection } from '../api/hooks/useTextSelection';
 import { overlaps } from '../domain/interval';
 import { originalsUnavailable } from '../domain/systemStatus';
 import { sourceOf, TEXT_SOURCE_TITLES, TextSource } from '../domain/textSource';
+import { ImageNoteEditor } from '../ui/detail/ImageNoteEditor';
 import { NotesPanel } from '../ui/notes/NotesPanel';
 import { ErrorBanner } from '../ui/primitives/ErrorBanner';
 import { FixedHeader } from '../ui/primitives/FixedHeader';
@@ -316,7 +317,17 @@ export function ReviewScreen({ slug }: { readonly slug: string }): React.JSX.Ele
             setModalPhoto(null);
             modalTriggerRef.current?.focus();
           }}
-        />
+        >
+          {/* V1.6, Nicolas: "un commentaire sur les images sélectionnées" —
+              same editor as Images (team-lead: one component, both places).
+              Every image in this list is already retained, unlike Images'
+              general grid — no "is it selected" guard needed here. */}
+          <ImageNoteEditor
+            note={selection.images.find((i) => i.cloudAssetId === modalPhoto)?.note ?? null}
+            isPending={selection.isPending}
+            onSave={(note) => { void selection.setNote(modalPhoto, note); }}
+          />
+        </ImageModal>
       )}
     </section>
   );

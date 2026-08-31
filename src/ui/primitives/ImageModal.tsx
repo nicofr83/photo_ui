@@ -6,13 +6,20 @@ interface Props {
   readonly src: string;
   readonly alt: string;
   readonly onClose: () => void;
+  /** V1.6: an optional extra — e.g. the per-image note editor, wanted at
+   * both places this modal is used (Images and Revue) and "un bon endroit"
+   * for it (team-lead) since this is exactly when the photo fills the
+   * screen. `ImageModal` stays a plain "enlarge an image" component with no
+   * opinion on what that content is. */
+  readonly children?: React.ReactNode;
 }
 
 /**
  * V1.6, Nicolas #3: "un clic sur la miniature de l'image devrait afficher
  * dans une fenêtre modale l'image... avec bouton pour fermer la fenêtre" —
  * a modal over a second tab (his own alternative): a tab loses the task's
- * context and forces a trip back (team-lead).
+ * context and forces a trip back (team-lead). The SAME component at both
+ * Images and Revue (team-lead: two implementations would diverge).
  *
  * Closes on the button, Escape, or a click outside the image — never on a
  * click ON the image, which would make enlarging it to look closer
@@ -21,7 +28,7 @@ interface Props {
  * (the usual modal focus trap) — `ImageModal` has no way to know which
  * element that was.
  */
-export function ImageModal({ src, alt, onClose }: Props): React.JSX.Element {
+export function ImageModal({ src, alt, onClose, children }: Props): React.JSX.Element {
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -49,6 +56,9 @@ export function ImageModal({ src, alt, onClose }: Props): React.JSX.Element {
           Fermer
         </button>
         <img className={styles['image']} src={src} alt={alt} />
+        {children === undefined ? null : (
+          <div className={styles['extra']}>{children}</div>
+        )}
       </div>
     </div>
   );

@@ -142,6 +142,21 @@ describe('V1.6, Nicolas #3 — clicking a thumbnail opens the image in a modal',
 
     await waitFor(() => { expect(screen.queryByRole('dialog')).not.toBeInTheDocument(); });
   });
+
+  test('V1.6, Nicolas — the modal offers the same comment editor as Images', async () => {
+    const user = userEvent.setup();
+    setup();
+    const row = await screen.findByTestId('review-image-e8bc80b75e254b7db2e1454222416813');
+    await user.click(within(row).getByRole('button', { name: /agrandir/i }));
+
+    const dialog = await screen.findByRole('dialog');
+    const field = within(dialog).getByLabelText('Commentaire');
+    await user.type(field, 'Hugo à la barre, on venait de doubler le Bugio');
+    const saveButton = within(dialog).getByRole('button', { name: /enregistrer/i });
+    await user.click(saveButton);
+
+    await waitFor(() => { expect(saveButton).toBeDisabled(); });
+  });
 });
 
 describe('spec §5.6/Q6 — the manifest order is reorderable', () => {

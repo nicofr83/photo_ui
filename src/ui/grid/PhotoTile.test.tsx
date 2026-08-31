@@ -118,3 +118,27 @@ describe('§5.2 — held by another task is information, not prohibition', () =>
     expect(screen.queryByTestId('in-other-task')).not.toBeInTheDocument();
   });
 });
+
+describe('V1.6, Nicolas — clicking the thumbnail enlarges it, same as the Revue', () => {
+  test('without onEnlarge, the thumbnail is a plain image, not a button', () => {
+    render(<PhotoTile photo={byFile('PICT0042.jpg')} selected={false} onToggle={noop} />);
+    expect(screen.queryByRole('button', { name: /agrandir/i })).not.toBeInTheDocument();
+  });
+
+  test('with onEnlarge, clicking the thumbnail reports the whole photo, not the checkbox', async () => {
+    const user = userEvent.setup();
+    const enlarged: string[] = [];
+    render(
+      <PhotoTile
+        photo={byFile('PICT0042.jpg')}
+        selected={false}
+        onToggle={noop}
+        onEnlarge={(photo) => enlarged.push(photo.cloudAssetId)}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: /agrandir/i }));
+    expect(enlarged).toEqual(['05b9a4fac5df4dd28dcc1002d7ec0074']);
+    // The checkbox is untouched — enlarging is not selecting.
+    expect(screen.getByRole('checkbox')).not.toBeChecked();
+  });
+});

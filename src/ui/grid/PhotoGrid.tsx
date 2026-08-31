@@ -1,4 +1,5 @@
 import { usePhotos } from '../../api/hooks/usePhotos';
+import type { PhotoListItem } from '../../api/contract/photo';
 import { describeOverlap } from '../../domain/overlapSummary';
 import { ErrorBanner } from '../primitives/ErrorBanner';
 
@@ -13,6 +14,7 @@ interface Props {
   /** Receives every id of the FILTER, not of the visible page. Spec §5.2. */
   readonly onSelectAll: (cloudAssetIds: string[]) => void;
   readonly onOpen?: (cloudAssetId: string) => void;
+  readonly onEnlarge?: (photo: PhotoListItem) => void;
 }
 
 export function PhotoGrid({
@@ -21,6 +23,7 @@ export function PhotoGrid({
   onToggle,
   onSelectAll,
   onOpen,
+  onEnlarge,
 }: Props): React.JSX.Element {
   const { data, error, isPending } = usePhotos(params);
 
@@ -60,6 +63,7 @@ export function PhotoGrid({
               selected={selected.has(photo.cloudAssetId)}
               onToggle={onToggle}
               {...(onOpen === undefined ? {} : { onOpen })}
+              {...(onEnlarge === undefined ? {} : { onEnlarge })}
             />
           </li>
         ))}

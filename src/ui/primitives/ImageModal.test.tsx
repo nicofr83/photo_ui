@@ -52,3 +52,19 @@ describe('V1.6, Nicolas #3 — the enlarged image, in a modal', () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 });
+
+describe('V1.6, Nicolas — an optional extra slot, for the per-image note (and reuse at Images too)', () => {
+  test('renders whatever the caller passes as children', () => {
+    render(
+      <ImageModal src="/x" alt="scan.jpg" onClose={() => {}}>
+        <p>Commentaire</p>
+      </ImageModal>,
+    );
+    expect(screen.getByText('Commentaire')).toBeInTheDocument();
+  });
+
+  test('renders nothing extra when no children are given', () => {
+    render(<ImageModal src="/x" alt="scan.jpg" onClose={() => {}} />);
+    expect(screen.queryByText('Commentaire')).not.toBeInTheDocument();
+  });
+});

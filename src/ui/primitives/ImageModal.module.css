@@ -17,6 +17,10 @@
   flex-direction: column;
   gap: 0.5rem;
   align-items: flex-end;
+  /* V1.6: found live — the note editor's own "Enregistrer" button rendered
+     entirely off-screen, unreachable, when a tall image left it below the
+     fold with no way to scroll to it. */
+  overflow-y: auto;
 }
 
 .close {
@@ -29,4 +33,11 @@
   max-width: 100%;
   max-height: calc(100vh - 8rem);
   object-fit: contain;
+}
+
+.extra {
+  align-self: stretch;
+  background: white;
+  padding: 0.75rem;
+  border-radius: 0.25rem;
 }

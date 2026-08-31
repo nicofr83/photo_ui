@@ -1,8 +1,16 @@
+/* V1.6: root-caused live (systematic-debugging) — `<figure>`'s UA default
+   margin (40px inline, 1em block) was never reset here, silently shrinking
+   every tile 80px narrower than its actual grid cell this whole time.
+   Harmless while nothing depended on the frame's real width; the moment
+   `.enlarge` (below) had to cover the WHOLE frame, the fixed 44px checkbox
+   suddenly occupied most of a 51px-wide frame and blocked it entirely —
+   confirmed via `getBoundingClientRect`, not by staring at the CSS. */
 .tile {
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  margin: 0;
 }
 
 /* A fixed box so the grid does not reflow as thumbnails arrive, and
@@ -21,6 +29,21 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+/* `inset: 0` against `.frame`'s `position: relative`, never `width/height:
+   100%` — a <button> sizing itself off a PERCENTAGE height whose only
+   source is `.frame`'s `aspect-ratio` collapsed the whole tile to ~51×38px
+   in Chromium (measured live, V1.6): the classic percentage-height-off-
+   aspect-ratio quirk on a replaced-like element. `.check`, `.marker` already
+   use the same `position: absolute` pattern for the same reason. */
+.enlarge {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
 }
 
 .unavailable {
