@@ -9,6 +9,7 @@ import type {
   TaskTimelineEntry,
 } from '../contract/task_interface.ts';
 import { contentHash, type TaskContent } from '../metier/tasks/content_hash.ts';
+import { isEditedSince, isQuotable } from '../metier/tasks/note_provenance.ts';
 import { EFFECTIVE_COVERS_END, EFFECTIVE_COVERS_START, overlapPredicate, WEB_SPAN_JOIN } from '../metier/overlap/overlap_sql.ts';
 import { listPhotos } from './photo_repository.ts';
 import { listTaskTexts } from './text_repository.ts';
@@ -55,20 +56,56 @@ interface NoteRow {
   updated_at: string;
   derived_from_kind: string | null;
   derived_from_id: string | null;
-  /**
-   * CALCULÉ à la lecture — jamais un booléen stocké, qui pourrait mentir
-   * après une écriture directe en base (contrat, amendement A4).
-   */
-  edited_since: boolean;
+  /** L'INSTANTANÉ pris à la copie — jamais recalculé, jamais la source actuelle. `editedSince`/`quotable` (V1.7) sont calculés depuis lui en TypeScript, jamais stockés (amendement A4, étendu 1.7). */
+  derived_text_original: string | null;
+  /** Le texte EFFECTIF actuel de la source nommée par `derived_from_*` — un texte seul, ou la concaténation ordonnée des passages d'une PAGE (V1.7, sélection libre). `null` sans `derivedFrom`. */
+  current_source_text: string | null;
   image_ids: readonly string[];
   text_refs: readonly { kind: string; id: string }[];
+}
+
+/**
+ * Le texte source EFFECTIF pour `{kind, id}` — un texte SEUL (passage,
+ * entrée de registre) ou, pour `kind = 'page'` (V1.7, sélection libre sur
+ * Ma vie et le site, aucun passage précis), la concaténation ORDONNÉE de
+ * tous les passages de cette page. Utilisée IDENTIQUE à la copie
+ * (`derived_text_original`, figée une fois) et à la lecture
+ * (`current_source_text`, pour `quotable`) — jamais deux versions qui
+ * pourraient diverger. `kindSql`/`idSql` sont des expressions SQL
+ * (paramètre ou colonne), jamais une valeur interpolée.
+ *
+ * `id` d'une « page » désigne DEUX choses réelles selon la source : un
+ * vrai `pipeline.page.id` (« Ma vie », un scan) OU, pour le site (aucun
+ * objet page, D9), le `pipeline.document.id` lui-même (`web/1998-1999`).
+ * `t.page_id = id OR t.document_id = id` couvre les deux sans ambiguïté :
+ * l'espace des identifiants ne se recoupe jamais entre les deux formes.
+ */
+function derivedSourceTextSql(kindSql: string, idSql: string): string {
+  return `
+    CASE ${kindSql}
+      WHEN 'page' THEN (
+        SELECT string_agg(coalesce(c.corrected_text, t.body), ' ' ORDER BY t.ordinal)
+          FROM pipeline.text_unit t
+          LEFT JOIN app.text_correction c ON c.text_kind = t.kind AND c.text_id = t.id
+         WHERE (t.page_id = ${idSql} OR t.document_id = ${idSql}) AND t.kind = 'passage'
+      )
+      -- derived_from_kind NULL : ni page, ni le WHERE ci-dessous ne matche
+      -- jamais (kind = NULL est toujours NULL, jamais vrai) — la sous-
+      -- requête ne renvoie aucune ligne, NULL en sort naturellement.
+      ELSE (
+        SELECT coalesce(c.corrected_text, t.body)
+          FROM pipeline.text_unit t
+          LEFT JOIN app.text_correction c ON c.text_kind = t.kind AND c.text_id = t.id
+         WHERE t.kind = ${kindSql} AND t.id = ${idSql}
+      )
+    END`;
 }
 
 /** Même projection partout où une ligne `TaskNote` complète est nécessaire — jamais une seconde forme qui pourrait diverger. */
 const NOTE_SELECT = `
     SELECT n.id, n.title, n.body, n.created_at, n.updated_at,
-           n.derived_from_kind, n.derived_from_id,
-           (n.derived_text_original IS NOT NULL AND n.body <> n.derived_text_original) AS edited_since,
+           n.derived_from_kind, n.derived_from_id, n.derived_text_original,
+           ${derivedSourceTextSql('n.derived_from_kind', 'n.derived_from_id')} AS current_source_text,
            coalesce(array_agg(DISTINCT ni.cloud_asset_id) FILTER (WHERE ni.cloud_asset_id IS NOT NULL), '{}')
              AS image_ids,
            coalesce(jsonb_agg(DISTINCT jsonb_build_object('kind', nt.text_kind, 'id', nt.text_id))
@@ -189,9 +226,10 @@ function toTaskNote(note: NoteRow): TaskNote {
   return {
     id: note.id, title: note.title, text: note.body, createdAt: note.created_at, updatedAt: note.updated_at,
     attachedTo: { images: note.image_ids, texts: note.text_refs },
-    derivedFrom: note.derived_from_kind === null || note.derived_from_id === null
-      ? null : { kind: note.derived_from_kind, id: note.derived_from_id },
-    editedSince: note.edited_since,
+    derivedFrom: note.derived_from_kind === null || note.derived_from_id === null || note.derived_text_original === null
+      ? null : { kind: note.derived_from_kind, id: note.derived_from_id, text: note.derived_text_original },
+    editedSince: isEditedSince(note.body, note.derived_text_original),
+    quotable: isQuotable(note.body, note.current_source_text),
   };
 }
 
@@ -592,16 +630,16 @@ export async function createTaskNote(
   if (row === null) return null;
 
   const id = `note_${ulid()}`;
-  // `derived_text_original` porte le texte EFFECTIF (corrigé s'il l'a été) au
-  // moment de la recopie — jamais recalculé plus tard, sinon une correction
-  // ultérieure du texte source ferait bouger `editedSince` sans qu'aucune
-  // écriture n'ait touché la note elle-même.
+  // `derived_text_original` porte le texte EFFECTIF (corrigé s'il l'a été)
+  // au moment de la recopie — un passage seul, ou la page ENTIÈRE quand
+  // `derivedFrom` en nomme une (V1.7, sélection libre) — jamais recalculé
+  // plus tard, sinon une correction ultérieure du texte source ferait
+  // bouger `editedSince` sans qu'aucune écriture n'ait touché la note
+  // elle-même. MÊME expression que `NOTE_SELECT` (`derivedSourceTextSql`) :
+  // les deux ne doivent jamais diverger sur ce qu'est « le texte source ».
   await client.query(
     `INSERT INTO app.task_note (id, task_slug, title, body, derived_from_kind, derived_from_id, derived_text_original)
-     SELECT $1, $2, $3, $4, $5::text, $6::text,
-            (SELECT coalesce(c.corrected_text, t.body) FROM pipeline.text_unit t
-               LEFT JOIN app.text_correction c ON c.text_kind = t.kind AND c.text_id = t.id
-              WHERE t.kind = $5 AND t.id = $6)`,
+     SELECT $1, $2, $3, $4, $5::text, $6::text, ${derivedSourceTextSql('$5::text', '$6::text')}`,
     [id, slug, input.title, input.text, input.derivedFrom?.kind ?? null, input.derivedFrom?.id ?? null],
   );
   for (const cloudAssetId of input.attachedTo.images) {

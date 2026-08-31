@@ -79,16 +79,37 @@ export interface ManifestText {
   readonly user_note: string | null;
 }
 
+export interface ManifestNoteDerivedFrom {
+  readonly kind: string;
+  readonly id: string;
+  /** L'INSTANTANÉ figé à la copie — jamais le texte actuel de la source (`texts[]` le porte, à part). */
+  readonly text: string;
+}
+
 export interface ManifestNote {
   readonly id: string;
   readonly created_at: string;
   readonly title: string;
   readonly text: string;
   readonly attached_to: { readonly images: readonly string[]; readonly texts: readonly string[] };
+  /** `null` : note écrite de zéro (amendement A4, V1.7). */
+  readonly derived_from: ManifestNoteDerivedFrom | null;
+  /** Corps ≠ instantané, espaces normalisés. Toujours `false` si `derived_from` est `null`. */
+  readonly edited_since: boolean;
+  /** Corps citable comme voix d'époque contre la source ACTUELLE — jamais l'instantané. Toujours `false` si `derived_from` est `null`. */
+  readonly quotable: boolean;
 }
 
 export interface Manifest {
-  readonly schema_version: 1;
+  /**
+   * `2` depuis V1.7 (amendement A4/A14) : `notes[].derived_from` porte
+   * désormais `{kind, id, text}` au lieu de rien, et `notes[].edited_since`/
+   * `.quotable` sont NOUVEAUX, toujours présents. Un dossier déjà exporté en
+   * `1` reste `1` pour toujours — jamais réécrit rétroactivement ; seuls les
+   * exports FUTURS portent `2`. Un générateur qui lit `1` sait qu'il n'a pas
+   * ces trois clés et doit s'en passer, jamais deviner leur absence.
+   */
+  readonly schema_version: 2;
   readonly task: {
     readonly slug: string;
     readonly title: string;
@@ -170,6 +191,9 @@ export interface ManifestInputNote {
   readonly text: string;
   readonly attachedToImages: readonly string[];
   readonly attachedToTexts: readonly string[];
+  readonly derivedFrom: ManifestNoteDerivedFrom | null;
+  readonly editedSince: boolean;
+  readonly quotable: boolean;
 }
 
 export interface ManifestInput {
@@ -213,7 +237,7 @@ function toManifestCaption(caption: ManifestInputCaption | null): ManifestCaptio
 
 export function buildManifest(input: ManifestInput): Manifest {
   return {
-    schema_version: 1,
+    schema_version: 2,
     task: {
       slug: input.task.slug,
       title: input.task.title,
@@ -256,6 +280,9 @@ export function buildManifest(input: ManifestInput): Manifest {
       title: note.title,
       text: note.text,
       attached_to: { images: note.attachedToImages, texts: note.attachedToTexts },
+      derived_from: note.derivedFrom,
+      edited_since: note.editedSince,
+      quotable: note.quotable,
     })),
   };
 }

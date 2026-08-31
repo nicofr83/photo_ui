@@ -232,7 +232,7 @@ test('duplicateTask: a derived note keeps its provenance — the copy is still a
     const result = await duplicateTask(client, 'src', { title: 'x v2', slug: 'src-v2' });
     if (result.kind !== 'created') throw new Error('unreachable');
 
-    expect(result.task.notes[0]?.derivedFrom).toEqual({ kind: 'passage', id: 'doc/p1' });
+    expect(result.task.notes[0]?.derivedFrom).toEqual({ kind: 'passage', id: 'doc/p1', text: 'Départ de Figueira.' });
     expect(result.task.notes[0]?.editedSince).toBe(false);
   });
 });

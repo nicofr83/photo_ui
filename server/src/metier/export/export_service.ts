@@ -9,13 +9,16 @@ import type { Pool, PoolClient } from '../../db/pool.ts';
 import type { SafeFs } from '../../io/safe_fs.ts';
 import {
   loadCoversImages, loadExportDocuments, loadExportImages, loadExportTexts, loadPageImageRelpaths,
+  loadPagePassages, type ExportPagePassage,
 } from '../../repository/export_repository.ts';
 import { getTaskDetail, markTaskExported } from '../../repository/task_repository.ts';
+import { locatePassagesForSelection } from '../tasks/note_provenance.ts';
 import { getRender, type ImageServiceDeps } from '../images/image_service.ts';
 import type { RenderFailure } from '../images/render_availability.ts';
 import { serialise } from './canonical.ts';
 import {
   buildManifest, type ManifestInputImage, type ManifestInputNote, type ManifestInputText,
+  type ManifestNoteDerivedFrom,
 } from './manifest.ts';
 
 const RENDER_EDGE = 1400;
@@ -134,7 +137,52 @@ export async function exportTask(
   // exclus en silence : le manifeste est autosuffisant, il ne référence
   // jamais rien qui n'existe plus (§7.4 point 4).
   const nonOrphanedTexts = task.texts.filter((text) => !text.orphaned);
-  const refs = nonOrphanedTexts.map((text) => text.ref);
+  const attachedRefs = nonOrphanedTexts.map((text) => text.ref);
+
+  // `note.derivedFrom.text` EST déjà l'instantané figé (public `TaskNote`,
+  // V1.7) — jamais recalculé ni relu séparément ici, la même valeur nourrit
+  // directement `manifest.notes[].derived_from.text` plus bas.
+  const notesWithDerivation = task.notes.filter((note) => note.derivedFrom !== null);
+
+  // `texts[]` doit porter la source de TOUTE note qui en dérive, même si
+  // elle n'est pas par ailleurs attachée à la tâche (V1.7, message 1 point
+  // 2 — sans quoi une référence morte). Pour une dérivation `{kind:'page'}`,
+  // seuls les passages RECOUVERTS par la sélection actuelle y entrent —
+  // "et eux seuls" (message 2) — jamais la page entière ; on les localise en
+  // rejouant la même concaténation ordonnée que `quotable` côté SQL
+  // (`locatePassagesForSelection`, cohérent par construction avec
+  // `derivedSourceTextSql`). Une page/document sans doublon de requête :
+  // plusieurs notes peuvent en dériver, un cache par id suffit.
+  const pagePassagesCache = new Map<string, readonly ExportPagePassage[]>();
+  async function passagesFor(pageOrDocumentId: string): Promise<readonly ExportPagePassage[]> {
+    const cached = pagePassagesCache.get(pageOrDocumentId);
+    if (cached !== undefined) return cached;
+    const passages = await loadFromClient(deps.pool, (client2) => loadPagePassages(client2, pageOrDocumentId));
+    pagePassagesCache.set(pageOrDocumentId, passages);
+    return passages;
+  }
+
+  const derivedRefs = new Map<string, { readonly kind: string; readonly id: string }>();
+  for (const note of notesWithDerivation) {
+    const derivedFrom = note.derivedFrom;
+    if (derivedFrom === null) continue;
+    if (derivedFrom.kind === 'page') {
+      const passages = await passagesFor(derivedFrom.id);
+      const located = locatePassagesForSelection(note.text, passages);
+      for (const ref of located.refs) derivedRefs.set(`${ref.kind}/${ref.id}`, ref);
+    } else {
+      derivedRefs.set(`${derivedFrom.kind}/${derivedFrom.id}`, derivedFrom);
+    }
+  }
+
+  // Union dédupliquée : attachée + dérivée, une seule entrée par `kind/id`
+  // même si deux notes dérivent de la même source, ou si une source dérivée
+  // est PAR AILLEURS attachée (message 1 : « au plus une fois »).
+  const refsByKey = new Map<string, { readonly kind: string; readonly id: string }>();
+  for (const ref of attachedRefs) refsByKey.set(`${ref.kind}/${ref.id}`, ref);
+  for (const [key, ref] of derivedRefs) refsByKey.set(key, ref);
+  const refs = [...refsByKey.values()];
+
   const [exportTexts, coversByText] = await loadFromClient(deps.pool, async (client2) => [
     await loadExportTexts(client2, refs),
     await loadCoversImages(client2, refs, exportedCloudAssetIds),
@@ -149,8 +197,8 @@ export async function exportTask(
   const writtenPageIds = new Set<string>();
   let pagesWritten = 0;
 
-  for (const selection of nonOrphanedTexts) {
-    const key = `${selection.ref.kind}/${selection.ref.id}`;
+  for (const ref of refs) {
+    const key = `${ref.kind}/${ref.id}`;
     const exportText = exportTexts.get(key);
     if (exportText === undefined) continue;
 
@@ -193,10 +241,17 @@ export async function exportTask(
     }
   }
 
-  const manifestNotes: ManifestInputNote[] = task.notes.map((note) => ({
-    id: note.id, createdAt: note.createdAt, title: note.title, text: note.text,
-    attachedToImages: note.attachedTo.images, attachedToTexts: note.attachedTo.texts.map((t) => `${t.kind}/${t.id}`),
-  }));
+  const manifestNotes: ManifestInputNote[] = task.notes.map((note) => {
+    const derivedFrom = note.derivedFrom;
+    const manifestDerivedFrom: ManifestNoteDerivedFrom | null = derivedFrom === null ? null : {
+      kind: derivedFrom.kind, id: derivedFrom.id, text: derivedFrom.text,
+    };
+    return {
+      id: note.id, createdAt: note.createdAt, title: note.title, text: note.text,
+      attachedToImages: note.attachedTo.images, attachedToTexts: note.attachedTo.texts.map((t) => `${t.kind}/${t.id}`),
+      derivedFrom: manifestDerivedFrom, editedSince: note.editedSince, quotable: note.quotable,
+    };
+  });
 
   const manifest = buildManifest({
     task: {

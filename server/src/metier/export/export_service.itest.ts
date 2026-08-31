@@ -267,4 +267,124 @@ describe('exportTask', () => {
       await setup.query(`DELETE FROM pipeline.photo WHERE cloud_asset_id = $1`, [cloudAssetId]);
     }
   });
+
+  test('V1.7 — a note derived from a text NOT separately attached still gets its source in texts[], closing the dead-reference gap', async () => {
+    const setup = testPool();
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('logbook', 'handwritten', 'Journal', false)`);
+      await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+                         VALUES ('log_entry', 'logbook/p001/001', 'logbook', 1, 'Depart a cinq heures', 'transcribed')`);
+      await setup.query(`INSERT INTO app.task (slug, title, brief) VALUES ('x', 'Titre', '')`);
+      await setup.query(`INSERT INTO app.task_note (id, task_slug, title, body, derived_from_kind, derived_from_id, derived_text_original)
+                         VALUES ('note_01', 'x', 'Une note', 'Depart a cinq heures', 'log_entry', 'logbook/p001/001', 'Depart a cinq heures')`);
+      // AUCUNE ligne app.task_text : la source n'est PAS attachée par ailleurs.
+
+      const report = await exportTask(deps, 'x', {});
+      const manifest = JSON.parse(await readFile(report.manifestPath, 'utf8')) as {
+        texts: { id: string }[];
+        notes: { derived_from: { kind: string; id: string; text: string } | null; edited_since: boolean; quotable: boolean }[];
+      };
+      expect(manifest.texts.map((t) => t.id)).toEqual(['logbook/p001/001']);
+      expect(manifest.notes[0]?.derived_from).toEqual({ kind: 'log_entry', id: 'logbook/p001/001', text: 'Depart a cinq heures' });
+      expect(manifest.notes[0]?.edited_since).toBe(false);
+      expect(manifest.notes[0]?.quotable).toBe(true);
+    } finally {
+      await setup.query(`DELETE FROM app.task_note WHERE task_slug = 'x'`);
+      await setup.query(`DELETE FROM app.task WHERE slug = 'x'`);
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE kind = 'log_entry' AND id = 'logbook/p001/001'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
+    }
+  });
+
+  test('V1.7 — two notes deriving from the same source produce exactly one texts[] entry', async () => {
+    const setup = testPool();
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('logbook', 'handwritten', 'Journal', false)`);
+      await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+                         VALUES ('log_entry', 'logbook/p001/001', 'logbook', 1, 'Depart a cinq heures', 'transcribed')`);
+      await setup.query(`INSERT INTO app.task (slug, title, brief) VALUES ('x', 'Titre', '')`);
+      await setup.query(`INSERT INTO app.task_note (id, task_slug, title, body, derived_from_kind, derived_from_id, derived_text_original)
+                         VALUES ('note_01', 'x', 'Note A', 'Depart', 'log_entry', 'logbook/p001/001', 'Depart a cinq heures')`);
+      await setup.query(`INSERT INTO app.task_note (id, task_slug, title, body, derived_from_kind, derived_from_id, derived_text_original)
+                         VALUES ('note_02', 'x', 'Note B', 'cinq heures', 'log_entry', 'logbook/p001/001', 'Depart a cinq heures')`);
+
+      const report = await exportTask(deps, 'x', {});
+      const manifest = JSON.parse(await readFile(report.manifestPath, 'utf8')) as { texts: { id: string }[]; notes: unknown[] };
+      expect(manifest.texts).toHaveLength(1);
+      expect(manifest.texts[0]?.id).toBe('logbook/p001/001');
+      expect(manifest.notes).toHaveLength(2);
+    } finally {
+      await setup.query(`DELETE FROM app.task_note WHERE task_slug = 'x'`);
+      await setup.query(`DELETE FROM app.task WHERE slug = 'x'`);
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE kind = 'log_entry' AND id = 'logbook/p001/001'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
+    }
+  });
+
+  test('V1.7 — a page-derived note (a web document, no page object) exports only the passages the selection overlaps, and only those', async () => {
+    const setup = testPool();
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('web/1998-1999', 'html', 'Site', false)`);
+      await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence) VALUES
+        ('passage', 'web/1998-1999/001', 'web/1998-1999', 1, 'Premier passage.', 'transcribed'),
+        ('passage', 'web/1998-1999/002', 'web/1998-1999', 2, 'Deuxième passage qui suit.', 'transcribed'),
+        ('passage', 'web/1998-1999/003', 'web/1998-1999', 3, 'Troisième, non concerné.', 'transcribed')`);
+      await setup.query(`INSERT INTO app.task (slug, title, brief) VALUES ('x', 'Titre', '')`);
+      // La sélection franchit la frontière entre les deux premiers passages, comme
+      // "Ma vie" l'affiche (une phrase par ligne) — la note en garde le retour à la ligne.
+      await setup.query(`INSERT INTO app.task_note (id, task_slug, title, body, derived_from_kind, derived_from_id, derived_text_original)
+                         VALUES ('note_01', 'x', 'Une note', 'passage.
+Deuxième', 'page', 'web/1998-1999', 'passage.
+Deuxième')`);
+
+      const report = await exportTask(deps, 'x', {});
+      const manifest = JSON.parse(await readFile(report.manifestPath, 'utf8')) as {
+        texts: { id: string; page: string | null; page_image: string | null }[];
+        notes: { derived_from: { kind: string; id: string; text: string } | null; quotable: boolean }[];
+      };
+      expect(manifest.texts.map((t) => t.id).sort()).toEqual(['web/1998-1999/001', 'web/1998-1999/002']);
+      // Le site n'a pas d'objet page (D9) : page et page_image restent null.
+      for (const text of manifest.texts) {
+        expect(text.page).toBeNull();
+        expect(text.page_image).toBeNull();
+      }
+      expect(manifest.notes[0]?.derived_from).toEqual({ kind: 'page', id: 'web/1998-1999', text: 'passage.\nDeuxième' });
+      expect(manifest.notes[0]?.quotable).toBe(true);
+    } finally {
+      await setup.query(`DELETE FROM app.task_note WHERE task_slug = 'x'`);
+      await setup.query(`DELETE FROM app.task WHERE slug = 'x'`);
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'web/1998-1999'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'web/1998-1999'`);
+    }
+  });
+
+  test('V1.7 — a page-derived note whose selection no longer matches the current source exports safely: no dead reference, no crash', async () => {
+    const setup = testPool();
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('web/1998-1999', 'html', 'Site', false)`);
+      await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+                         VALUES ('passage', 'web/1998-1999/001', 'web/1998-1999', 1, 'Premier passage.', 'transcribed')`);
+      await setup.query(`INSERT INTO app.task (slug, title, brief) VALUES ('x', 'Titre', '')`);
+      // L'instantané ne correspond plus à rien dans la source actuelle (réécriture
+      // amont, ou simplement un texte qui n'a jamais matché) — le cas "mort".
+      await setup.query(`INSERT INTO app.task_note (id, task_slug, title, body, derived_from_kind, derived_from_id, derived_text_original)
+                         VALUES ('note_01', 'x', 'Une note', 'Un texte qui ne matche plus rien.', 'page', 'web/1998-1999', 'Un texte qui ne matche plus rien.')`);
+
+      const report = await exportTask(deps, 'x', {});
+      const manifest = JSON.parse(await readFile(report.manifestPath, 'utf8')) as {
+        texts: unknown[];
+        notes: { derived_from: { kind: string; id: string; text: string } | null; quotable: boolean }[];
+      };
+      expect(manifest.texts).toEqual([]);
+      expect(manifest.notes[0]?.derived_from).toEqual({
+        kind: 'page', id: 'web/1998-1999', text: 'Un texte qui ne matche plus rien.',
+      });
+      expect(manifest.notes[0]?.quotable).toBe(false);
+    } finally {
+      await setup.query(`DELETE FROM app.task_note WHERE task_slug = 'x'`);
+      await setup.query(`DELETE FROM app.task WHERE slug = 'x'`);
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'web/1998-1999'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'web/1998-1999'`);
+    }
+  });
 });

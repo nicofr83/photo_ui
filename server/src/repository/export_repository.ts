@@ -153,6 +153,32 @@ export async function loadCoversImages(
   return coversByText;
 }
 
+export interface ExportPagePassage {
+  readonly kind: string;
+  readonly id: string;
+  readonly text: string;
+}
+
+/**
+ * Les passages ORDONNÉS d'une « page » de sélection libre (V1.7) — MÊME
+ * prédicat que `derivedSourceTextSql` côté `task_repository.ts` (page_id OU
+ * document_id, jamais les deux à vide : Ma vie a un vrai `pipeline.page.id`,
+ * le site n'a que `pipeline.document.id`, D9). Sert à LOCALISER quels
+ * passages une sélection recouvre (`locatePassagesForSelection`) — jamais à
+ * fabriquer un texte agrégé, déjà fait côté SQL pour `quotable`.
+ */
+export async function loadPagePassages(
+  client: PoolClient, pageOrDocumentId: string,
+): Promise<readonly ExportPagePassage[]> {
+  const { rows } = await client.query<{ kind: string; id: string; body: string; corrected_text: string | null }>(`
+    SELECT t.kind, t.id, t.body, tc.corrected_text
+      FROM pipeline.text_unit t
+      LEFT JOIN app.text_correction tc ON tc.text_kind = t.kind AND tc.text_id = t.id
+     WHERE (t.page_id = $1 OR t.document_id = $1) AND t.kind = 'passage'
+     ORDER BY t.ordinal`, [pageOrDocumentId]);
+  return rows.map((row) => ({ kind: row.kind, id: row.id, text: row.corrected_text ?? row.body }));
+}
+
 export interface ExportDocument {
   readonly id: string;
   readonly title: string;

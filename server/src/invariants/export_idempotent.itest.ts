@@ -99,3 +99,74 @@ test('INVARIANT 7 — re-exporting an unchanged task produces a byte-identical t
     await setup.query(`DELETE FROM pipeline.photo WHERE cloud_asset_id = $1`, [cloudAssetId]);
   }
 });
+
+test('INVARIANT 7 (V1.7) — a page-derived note and two notes sharing one source still re-export byte-identical, texts[] deduplicated', async () => {
+  const base = await mkdtemp(path.join(tmpdir(), 'invariant7-v17-'));
+  const tasksRoot = path.join(base, 'tasks');
+  const originalsRoot = path.join(base, 'originals');
+  const pagesRoot = path.join(base, 'pages');
+  const renderCacheRoot = path.join(base, 'render-cache');
+  await mkdir(tasksRoot);
+  await mkdir(originalsRoot);
+  await mkdir(pagesRoot);
+  await mkdir(renderCacheRoot);
+  const safeFs = await createSafeFs([tasksRoot, renderCacheRoot], createLog(LogLevel.ERROR, {}, () => undefined));
+  const deps: ExportServiceDeps = {
+    pool: testPool(), safeFs, tasksRoot, pagesRoot,
+    imageService: {
+      thumbsRoot: THUMBS_ROOT, originalsRoot, renderCacheRoot, safeFs, inFlight: new InFlightRenders(8),
+    },
+  };
+
+  const setup = testPool();
+  await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('web/y-doc', 'html', 'Site', false)`);
+  await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence) VALUES
+    ('passage', 'web/y-doc/001', 'web/y-doc', 1, 'Premier passage.', 'transcribed'),
+    ('passage', 'web/y-doc/002', 'web/y-doc', 2, 'Deuxième passage qui suit.', 'transcribed'),
+    ('passage', 'web/y-doc/003', 'web/y-doc', 3, 'Troisième, non concerné.', 'transcribed')`);
+  await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('logbook-y', 'handwritten', 'Journal', false)`);
+  await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+                     VALUES ('log_entry', 'logbook-y/p001/001', 'logbook-y', 1, 'Depart a cinq heures', 'transcribed')`);
+  await setup.query(`INSERT INTO app.task (slug, title, brief) VALUES ('y', 'Titre', 'un brief')`);
+  // Aucune n'est attachée par ailleurs (pas de app.task_text) : seule la
+  // dérivation les fait entrer dans `texts[]` — exactement le cas visé.
+  await setup.query(`INSERT INTO app.task_note (id, task_slug, title, body, derived_from_kind, derived_from_id, derived_text_original)
+                     VALUES ('note_page', 'y', 'Une note de page', 'passage.
+Deuxième', 'page', 'web/y-doc', 'passage.
+Deuxième')`);
+  await setup.query(`INSERT INTO app.task_note (id, task_slug, title, body, derived_from_kind, derived_from_id, derived_text_original)
+                     VALUES ('note_a', 'y', 'Note A', 'Depart', 'log_entry', 'logbook-y/p001/001', 'Depart a cinq heures')`);
+  await setup.query(`INSERT INTO app.task_note (id, task_slug, title, body, derived_from_kind, derived_from_id, derived_text_original)
+                     VALUES ('note_b', 'y', 'Note B', 'cinq heures', 'log_entry', 'logbook-y/p001/001', 'Depart a cinq heures')`);
+
+  try {
+    const first = await exportTask(deps, 'y', { directory: path.join(tasksRoot, 'first') });
+    const second = await exportTask(deps, 'y', { directory: path.join(tasksRoot, 'second') });
+
+    expect(await fileList(first.directory)).toEqual(await fileList(second.directory));
+
+    const firstManifest = JSON.parse(await readFile(path.join(first.directory, 'manifest.json'), 'utf8')) as {
+      texts: { id: string }[];
+    };
+    // Deux passages de web/y-doc (le troisième, hors sélection, en est exclu) +
+    // l'entrée de journal partagée par note_a/note_b, UNE seule fois.
+    expect(firstManifest.texts.map((t) => t.id).sort()).toEqual([
+      'logbook-y/p001/001', 'web/y-doc/001', 'web/y-doc/002',
+    ]);
+
+    for (const relPath of await fileList(first.directory)) {
+      const a = await readFile(path.join(first.directory, relPath));
+      const b = await readFile(path.join(second.directory, relPath));
+      if (relPath === 'manifest.json') {
+        expect(manifestWithoutTimestamp(a.toString('utf8'))).toEqual(manifestWithoutTimestamp(b.toString('utf8')));
+      } else {
+        expect(a.equals(b)).toBe(true);
+      }
+    }
+  } finally {
+    await setup.query(`DELETE FROM app.task_note WHERE task_slug = 'y'`);
+    await setup.query(`DELETE FROM app.task WHERE slug = 'y'`);
+    await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id IN ('web/y-doc', 'logbook-y')`);
+    await setup.query(`DELETE FROM pipeline.document WHERE id IN ('web/y-doc', 'logbook-y')`);
+  }
+});

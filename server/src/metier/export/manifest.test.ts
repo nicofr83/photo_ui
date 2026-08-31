@@ -87,15 +87,35 @@ test('caption is machine-only, never present in texts or notes — always null t
   expect(m.images[0]?.caption).toBeNull();
 });
 
+const generalNote = {
+  id: 'note_01', createdAt: 'c', title: 'Ce que le journal ne dit pas', text: 'x',
+  attachedToImages: [], attachedToTexts: [], derivedFrom: null, editedSince: false, quotable: false,
+};
+
 test('a note with an empty attachment on both sides is a GENERAL note, not an error', () => {
-  const generalNote = {
-    id: 'note_01', createdAt: 'c', title: 'Ce que le journal ne dit pas', text: 'x',
-    attachedToImages: [], attachedToTexts: [],
-  };
   const m = buildManifest({ ...task, notes: [generalNote] });
   expect(m.notes[0]?.attached_to).toEqual({ images: [], texts: [] });
 });
 
-test('schema_version is present and equal to 1', () => {
-  expect(buildManifest(task).schema_version).toBe(1);
+test('a note written from scratch carries derived_from null, edited_since and quotable both false (V1.7)', () => {
+  const m = buildManifest({ ...task, notes: [generalNote] });
+  expect(m.notes[0]?.derived_from).toBeNull();
+  expect(m.notes[0]?.edited_since).toBe(false);
+  expect(m.notes[0]?.quotable).toBe(false);
+});
+
+test('a derived note carries the frozen snapshot, distinct from the live edited_since/quotable booleans', () => {
+  const derivedNote = {
+    ...generalNote, id: 'note_02',
+    derivedFrom: { kind: 'passage', id: 'ma-vie/p007/002', text: 'Départ de Figueira.' },
+    editedSince: true, quotable: true,
+  };
+  const m = buildManifest({ ...task, notes: [derivedNote] });
+  expect(m.notes[0]?.derived_from).toEqual({ kind: 'passage', id: 'ma-vie/p007/002', text: 'Départ de Figueira.' });
+  expect(m.notes[0]?.edited_since).toBe(true);
+  expect(m.notes[0]?.quotable).toBe(true);
+});
+
+test('schema_version is present and equal to 2 — V1.7 adds notes[].derived_from.text, edited_since, quotable', () => {
+  expect(buildManifest(task).schema_version).toBe(2);
 });

@@ -32,6 +32,19 @@ export interface TaskTextRef {
   readonly id: string;
 }
 
+/**
+ * `TaskNote.derivedFrom` — la référence ET l'instantané pris à la copie
+ * (`text`), jamais recalculé. C'est ce qui permet à « Rétablir le texte
+ * d'origine » de montrer ce qui a VRAIMENT été recopié, même après que la
+ * source a été corrigée depuis (spec V1.7, « le cas tordu »). Distinct de
+ * `TaskNoteCreateInput.derivedFrom` (`TaskTextRef`, sans `text` : le client
+ * ne peut jamais poster sa propre copie, le serveur relit la source
+ * lui-même — la garantie « infalsifiable », spec, la règle capitale).
+ */
+export interface TaskNoteDerivedFrom extends TaskTextRef {
+  readonly text: string;
+}
+
 export interface TaskImageSelection {
   readonly cloudAssetId: string;
   readonly order: number;
@@ -61,14 +74,31 @@ export interface TaskNote {
     readonly images: readonly string[];
     readonly texts: readonly TaskTextRef[];
   };
-  /** Le texte d'époque recopié pour fabriquer cette note (amendement A4). `null` = écrite de zéro. */
-  readonly derivedFrom: TaskTextRef | null;
   /**
-   * Vrai quand le corps ne correspond plus au texte recopié. CALCULÉ à la
-   * lecture par comparaison, jamais stocké : un booléen stocké mentirait après
-   * une écriture directe en base. Toujours `false` si `derivedFrom` est `null`.
+   * Le texte d'époque recopié pour fabriquer cette note (amendement A4).
+   * `null` = écrite de zéro. Accepte `{kind: 'page', id}` depuis la V1.7 —
+   * la sélection libre sur « Ma vie » et le site ne correspond pas toujours
+   * à un passage précis ; le serveur vérifie alors contre le texte de la
+   * PAGE entière. Porte `text` — l'INSTANTANÉ, jamais la source actuelle.
+   */
+  readonly derivedFrom: TaskNoteDerivedFrom | null;
+  /**
+   * Vrai quand le corps ne correspond plus à l'INSTANTANÉ recopié à la
+   * copie — espaces normalisés (V1.7). CALCULÉ à la lecture par
+   * comparaison, jamais stocké : un booléen stocké mentirait après une
+   * écriture directe en base. Toujours `false` si `derivedFrom` est `null`.
    */
   readonly editedSince: boolean;
+  /**
+   * « Le générateur peut-il citer ceci comme voix d'époque ? » (V1.7) — le
+   * corps, espaces normalisés, est-il un extrait CONTIGU du texte effectif
+   * ACTUEL de sa source (jamais l'instantané, une question différente de
+   * `editedSince`). Se contrôle, ne se déclare pas : CALCULÉ à la lecture,
+   * jamais stocké — une correction ultérieure de la source retire la
+   * citabilité d'elle-même, sans règle dédiée. Toujours `false` si
+   * `derivedFrom` est `null`.
+   */
+  readonly quotable: boolean;
 }
 
 export interface TaskDetail extends TaskSummary {

@@ -177,7 +177,7 @@ test('a derived note names its source and reads as not-edited while the text has
       attachedTo: { images: [], texts: [{ kind: 'passage', id: 'logbook/p003/001' }] },
       derivedFrom: { kind: 'passage', id: 'logbook/p003/001' },
     });
-    expect(note?.derivedFrom).toEqual({ kind: 'passage', id: 'logbook/p003/001' });
+    expect(note?.derivedFrom).toEqual({ kind: 'passage', id: 'logbook/p003/001', text: 'Départ de Figueira.' });
     expect(note?.editedSince).toBe(false);
   });
 });

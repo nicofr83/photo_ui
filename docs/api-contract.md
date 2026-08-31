@@ -26,6 +26,89 @@ existants du projet.
 >
 ### Amendements depuis le gel
 
+### A14 — `quotable`, la provenance dans l'export, et un trou fermé sur `derivedFrom` *(2026-08-31, V1.7)*
+
+**Le trou fermé d'abord** : `TaskNote.derivedFrom` ne portait que `{kind,
+id}` (A6) — jamais le texte recopié lui-même. `impl-frontend` avait déjà
+livré son schéma Zod (`DerivedFromRefSchema`, `src/api/contract/text.ts`)
+avec un `text: z.string()` attendu en plus, en `strictObject` : un décalage
+de forme, pas encore vu au vol parce que `contract_shapes.itest.ts` cible
+une tâche réelle (`01-le-grand-depart`) dont aucune note n'a de
+`derivedFrom` — l'angle mort a été trouvé en lisant le schéma client
+directement, pas par un test rouge. Désormais :
+
+```ts
+export interface TaskNoteDerivedFrom extends TaskTextRef {
+  /** L'INSTANTANÉ pris à la copie — jamais la source actuelle (`editedSince`/`quotable` la comparent, séparément). */
+  readonly text: string;
+}
+
+export interface TaskNote {
+  // … champs existants (A6) …
+  readonly derivedFrom: TaskNoteDerivedFrom | null;
+  /** V1.7 : le corps est-il un extrait CONTIGU du texte EFFECTIF ACTUEL de sa source (espaces normalisés) — jamais l'instantané, une question différente d'`editedSince`. Calculé à la lecture. Toujours `false` si `derivedFrom` est `null`. */
+  readonly quotable: boolean;
+}
+```
+
+`TaskNoteCreateInput.derivedFrom` reste `TaskTextRef` (`{kind, id}`, jamais
+`text` — le client ne peut pas poster sa propre copie, le serveur relit la
+source lui-même, règle capitale de `docs/spec-v1.7.md`), mais accepte
+maintenant `kind: 'page'` : la sélection libre sur « Ma vie » et sur le site
+ne correspond pas toujours à un passage précis (elle peut chevaucher deux
+passages, ou n'en couvrir qu'une fraction) ; le serveur vérifie alors la
+sélection contre le texte de la PAGE ENTIÈRE — un vrai `pipeline.page.id`
+pour Ma vie, un `pipeline.document.id` pour le site (qui n'a pas d'objet
+page, D9 ; les deux espaces d'identifiants ne se recoupent jamais).
+L'instantané capturé pour une dérivation `{kind:'page'}` est le texte de la
+page entière à l'instant de la copie, jamais seulement la sélection reçue.
+
+`editedSince` (corps vs. INSTANTANÉ) et `quotable` (corps vs. source
+ACTUELLE) sont deux questions distinctes qui divergent sur un cas nommé :
+tronquer une citation garde `quotable: true` (couper est un geste
+d'éditeur) ; réécrire même un mot en sort. Et le « cas tordu » : une note
+jamais retouchée dont la source a été corrigée depuis perd `quotable`
+d'elle-même — aucune règle dédiée, seulement la sous-chaîne qui ne matche
+plus contre le texte actuel.
+
+**Dans l'export** — `Manifest.schema_version` passe de `1` à `2` :
+
+```ts
+export interface ManifestNote {
+  // … champs existants …
+  readonly derived_from: { readonly kind: string; readonly id: string; readonly text: string } | null;
+  readonly edited_since: boolean;
+  readonly quotable: boolean;
+}
+```
+
+Un dossier déjà exporté en `1` le reste pour toujours, jamais réécrit
+rétroactivement ; seuls les exports FUTURS portent `2`. Un générateur qui
+lit `1` sait qu'il n'a pas ces trois clés.
+
+`texts[]` porte désormais le texte source de TOUTE note qui en dérive,
+même si cette source n'est pas par ailleurs attachée à la tâche — fermant
+un risque de référence morte (le générateur pouvait recevoir
+`notes[].derived_from` sans pouvoir vérifier le texte cité contre rien).
+Pour une dérivation `{kind:'page'}`, seuls les passages que la sélection
+ACTUELLE recouvre entrent dans `texts[]` — et eux seuls, jamais la page
+entière — localisés en rejouant la même concaténation ordonnée que celle
+qui sert à calculer `quotable`. Une source ne compte qu'une fois dans
+`texts[]`, même quand deux notes en dérivent ou qu'elle est par ailleurs
+attachée. Une sélection qui ne matche plus rien (source réécrite depuis)
+ne fait entrer aucun passage supplémentaire dans `texts[]` — `quotable:
+false` le signale déjà au générateur, `derived_from.text` (l'instantané)
+reste présent, rien ne casse.
+
+Les 5 pages du site (A13) ne sont JAMAIS incluses dans le dossier
+d'export ; `page`/`page_image` restent `null` pour un texte web (le site
+n'a pas d'objet page, D9 — pas de fichier à écrire, pas de capture d'écran
+qui casserait l'idempotence octet-à-octet, dépendante de la police/du
+navigateur). Vérifié sur le corpus réel : `document` porte déjà la forme
+`web/<chemin-sans-extension>` attendue (`web/1998-1999`,
+`web/1999/Transat`) — c'est `pipeline.document.id` tel quel, aucun code à
+changer là.
+
 ### A13 — les 5 pages du site, lues en place *(2026-08-31, V1.7)*
 
 `GET /texts/web/pages` (liste), `GET /texts/web/page?id=…` (une page,

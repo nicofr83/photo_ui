@@ -410,8 +410,11 @@ describe('POST /tasks/:slug/notes', () => {
         },
       });
       expect(response.statusCode).toBe(201);
-      const body = response.json<{ derivedFrom: { kind: string; id: string }; editedSince: boolean }>();
-      expect(body.derivedFrom).toEqual({ kind: 'passage', id: 'logbook/p003/001' });
+      const body = response.json<{ derivedFrom: { kind: string; id: string; text: string }; editedSince: boolean }>();
+      // `text` PORTE l'instantané (V1.7) — jamais juste `{kind, id}` :
+      // c'est ce qui laisse « Rétablir le texte d'origine » fonctionner
+      // même après que la source a été corrigée depuis.
+      expect(body.derivedFrom).toEqual({ kind: 'passage', id: 'logbook/p003/001', text: 'Départ de Figueira.' });
       expect(body.editedSince).toBe(false);
     } finally {
       await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'logbook'`);
@@ -449,6 +452,140 @@ describe('POST /tasks/:slug/notes', () => {
     } finally {
       await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'logbook'`);
       await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
+    }
+  });
+
+  test('a verbatim copy is quotable; a truncated one stays quotable; a rewritten one is not (V1.7, team-lead)', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('logbook', 'handwritten', 'Journal', true)`);
+      await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+        VALUES ('log_entry', 'logbook/p003/001', 'logbook', 1, 'Départ de Figueira. Le vent se lève.', 'transcribed')`);
+      await app.server.inject({ method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null } });
+      const ref = { kind: 'log_entry', id: 'logbook/p003/001' };
+
+      const verbatim = await app.server.inject({
+        method: 'POST', url: '/tasks/x/notes',
+        payload: { title: 'x', text: 'Départ de Figueira. Le vent se lève.', attachedTo: { images: [], texts: [] }, derivedFrom: ref },
+      });
+      expect(verbatim.json<{ quotable: boolean }>().quotable).toBe(true);
+
+      const truncated = await app.server.inject({
+        method: 'POST', url: '/tasks/x/notes',
+        payload: { title: 'x', text: 'Départ de Figueira.', attachedTo: { images: [], texts: [] }, derivedFrom: ref },
+      });
+      expect(truncated.json<{ quotable: boolean }>().quotable).toBe(true);
+
+      const rewritten = await app.server.inject({
+        method: 'POST', url: '/tasks/x/notes',
+        payload: { title: 'x', text: 'Départ de Lisbonne.', attachedTo: { images: [], texts: [] }, derivedFrom: ref },
+      });
+      expect(rewritten.json<{ quotable: boolean }>().quotable).toBe(false);
+    } finally {
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'logbook'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
+    }
+  });
+
+  test('the twisted case: an unedited note loses quotability on its own when the source is corrected afterward', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('logbook', 'handwritten', 'Journal', true)`);
+      await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+        VALUES ('log_entry', 'logbook/p003/001', 'logbook', 1, 'Nous avons vu deux ns dans la baie.', 'transcribed')`);
+      await app.server.inject({ method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null } });
+      const ref = { kind: 'log_entry', id: 'logbook/p003/001' };
+
+      const created = await app.server.inject({
+        method: 'POST', url: '/tasks/x/notes',
+        payload: {
+          title: 'x', text: 'Nous avons vu deux ns dans la baie.', attachedTo: { images: [], texts: [] }, derivedFrom: ref,
+        },
+      });
+      const noteId = created.json<{ id: string; quotable: boolean }>().id;
+      expect(created.json<{ quotable: boolean }>().quotable).toBe(true);
+
+      // La source est corrigée globalement, plus tard — la note garde son
+      // instantané, ne touche à rien elle-même.
+      await app.server.inject({
+        method: 'PUT', url: '/corrections',
+        payload: { ref, text: 'Nous avons vu deux ris dans la baie.' },
+      });
+
+      const reread = await app.server.inject({ method: 'GET', url: '/tasks/x' });
+      const rereadNote = reread.json<{ notes: { id: string; editedSince: boolean; quotable: boolean }[] }>()
+        .notes.find((n) => n.id === noteId);
+      // Aucune règle dédiée : la sous-chaîne ne matche plus la source corrigée.
+      expect(rereadNote?.editedSince).toBe(false);
+      expect(rereadNote?.quotable).toBe(false);
+    } finally {
+      await setup.query(`DELETE FROM app.text_correction`);
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'logbook'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
+    }
+  });
+
+  test('derivedFrom accepts a page — the free selection on Ma vie/the site has no single passage (V1.7)', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('ma-vie', 'handwritten', 'x', true)`);
+      await setup.query(`INSERT INTO pipeline.page (id, document_id, ordinal, image_relpath, width, height)
+                         VALUES ('ma-vie/p007', 'ma-vie', 7, 'p.jpg', 1, 1)`);
+      await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, page_id, ordinal, body, confidence)
+        VALUES ('passage', 'ma-vie/p007/1', 'ma-vie', 'ma-vie/p007', 1, 'Premier passage de la page.', 'transcribed'),
+               ('passage', 'ma-vie/p007/2', 'ma-vie', 'ma-vie/p007', 2, 'Deuxième passage qui suit.', 'transcribed')`);
+      await app.server.inject({ method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null } });
+
+      // La sélection traverse la frontière entre les deux passages — ne
+      // correspond à AUCUN passage précis, seulement à la page entière.
+      const response = await app.server.inject({
+        method: 'POST', url: '/tasks/x/notes',
+        payload: {
+          title: 'x', text: 'passage de la page. Deuxième', attachedTo: { images: [], texts: [] },
+          derivedFrom: { kind: 'page', id: 'ma-vie/p007' },
+        },
+      });
+      expect(response.statusCode).toBe(201);
+      const body = response.json<{ derivedFrom: { kind: string; id: string; text: string }; quotable: boolean }>();
+      // L'instantané d'une dérivation `{kind:'page'}` est le texte de la PAGE
+      // ENTIÈRE à l'instant de la copie — jamais juste la sélection posée par
+      // le client, que le serveur ne reçoit d'ailleurs jamais (règle capitale).
+      expect(body.derivedFrom).toEqual({
+        kind: 'page', id: 'ma-vie/p007', text: 'Premier passage de la page. Deuxième passage qui suit.',
+      });
+      expect(body.quotable).toBe(true);
+    } finally {
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'ma-vie'`);
+      await setup.query(`DELETE FROM pipeline.page WHERE document_id = 'ma-vie'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'ma-vie'`);
+    }
+  });
+
+  test('a note taken with line breaks (as Ma vie displays sentence-per-line) is not "edited since" — whitespace is normalized', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('ma-vie', 'handwritten', 'x', true)`);
+      await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+        VALUES ('passage', 'ma-vie/1', 'ma-vie', 1, 'Un beau matin de printemps.', 'transcribed')`);
+      await app.server.inject({ method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null } });
+
+      const response = await app.server.inject({
+        method: 'POST', url: '/tasks/x/notes',
+        payload: {
+          title: 'x', text: 'Un beau\nmatin\nde printemps.', attachedTo: { images: [], texts: [] },
+          derivedFrom: { kind: 'passage', id: 'ma-vie/1' },
+        },
+      });
+      const body = response.json<{ editedSince: boolean; quotable: boolean }>();
+      expect(body.editedSince).toBe(false);
+      expect(body.quotable).toBe(true);
+    } finally {
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'ma-vie'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'ma-vie'`);
     }
   });
 
