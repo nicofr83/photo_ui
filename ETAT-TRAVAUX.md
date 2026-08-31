@@ -1597,3 +1597,26 @@ DETAIL : commit `38b6af3`. Serveur redéployé pour refléter ce commit, vérifi
 **Incident d'index partagé, corrigé sans casse (encore)** : mon `git add` (18 fichiers) a croisé un commit de team-lead sur `docs/spec-v1.7.md` — son commit a embarqué mes 18 fichiers avec les siens. Corrigé par `git reset --soft HEAD~1` puis `git reset HEAD -- ETAT-TRAVAUX.md docs/spec-v1.7.md` (rien perdu, son commit AVANT celui-ci reste intact dans l'historique), recommité avec mes 18 seuls. `docs/spec-v1.7.md` reste modifié, non indexé, pour lui.
 
 ASK : aucune. En veille.
+
+---
+
+## Avancement — impl-frontend, V1.7 items A et B (2026-08-31)
+
+RE : team-lead — deux demandes tranchées avec Nicolas, câblage immédiat
+DONE :
+
+**(A) Commentaire demandé à la sélection, inline.** Au clic sur « Sélectionner », un champ apparaît sous la vignette, déjà au focus — jamais une modale (fluide sur quarante sélections d'affilée). Entrée valide et referme ; Échap referme sans rien écrire ; une Entrée sur un champ vide n'écrit rien. Le champ n'apparaît que sur la transition précise de CETTE coche (jamais dérivé d'un effet sur la prop `selected`, qui volerait le focus pour une photo déjà sélectionnée qui défile simplement dans le champ de vue). Écrit dans le même `note` que la V1.6 — aucun changement de contrat. Vérifié en direct : champ bien placé, 20 sélections souris sans attente entre les clics + 5 au clavier, zéro erreur console.
+
+Point signalé à team-lead, pas résolu unilatéralement : désélectionner puis resélectionner perd réellement le commentaire — vérifié en direct, le serveur efface la note au retrait. Nécessite soit un changement serveur (conserver la note), soit un cache-restauration côté client dont le comportement à l'Échap reste à trancher. En attente de décision.
+
+**(B) Facettes cochées épinglées en tête, le reste alphabétique.** Tags, Personnes, Pays, Villes partagent un composant `PinnedFacetList` : coché → zone épinglée en tête (alphabétique entre elles), décoché → retour à sa place alphabétique dans le reste. Albums garde son mécanisme existant, non touché. Plafond retenu : 11rem (~4 lignes), au-delà la zone épinglée défile pour elle-même, le reste garde sa place.
+
+Deux bugs réels trouvés et corrigés en vérifiant en direct (invisibles en jsdom) :
+- Le focus ne suivait pas la facette entre les deux zones : `usePhotoFacets` n'a pas de `placeholderData`, un vrai aller-retour réseau rend au moins une fois sans aucune facette avant que la liste narrowed arrive — le mécanisme de restauration effaçait sa tentative même en échec. Corrigé : seul un focus réussi retire la valeur en attente.
+- La zone épinglée rendait à hauteur 0 malgré un `max-height` correct : un enfant flex avec `overflow-y: auto` a une hauteur automatique minimale de 0 dans un parent flex-colonne (CSS Flexbox §4.5). Corrigé avec `flex: none`.
+
+18 tests neufs (dont un test de régression confirmé rouge contre l'ancien code avant le correctif du focus). 761 tests front verts, tsc et eslint propres. Vérifié en navigateur réel sur `01-le-grand-depart` (lecture seule).
+
+DETAIL : commits `bcdddca` (A), `a7ce6cd` (B).
+
+ASK : la décision sur le point signalé en (A) — server-side ou cache-restauration côté client, et le comportement d'Échap dans ce cas.
