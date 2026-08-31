@@ -2,11 +2,28 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { z } from 'zod';
 
 import { apiGet } from '../client';
-import { TextDocumentListSchema, TextUnitListSchema } from '../contract/text';
+import { TextDocumentListSchema, TextUnitListSchema, WebSitePageListSchema } from '../contract/text';
 import type { TextKind } from '../../shared/enums';
 
 type TextEnvelope = z.infer<typeof TextUnitListSchema>;
 type DocumentList = z.infer<typeof TextDocumentListSchema>;
+type WebSitePageList = z.infer<typeof WebSitePageListSchema>;
+
+/** V1.7, contract A13: the 5 real site pages — a fixed, tiny list, cached
+ * like `useDocuments` (no filter ever narrows it, spec: "aucun filtre"). */
+export function useWebSitePages(): UseQueryResult<WebSitePageList> {
+  return useQuery({
+    queryKey: ['texts', 'web', 'pages'],
+    queryFn: ({ signal }) => apiGet('/texts/web/pages', WebSitePageListSchema, signal),
+    staleTime: Infinity,
+  });
+}
+
+/** The URL a sandboxed iframe loads directly — no network call here, same
+ * pattern as `usePageThumb`/`useImageThumb`. */
+export function webSitePageUrl(id: string): string {
+  return `/texts/web/page?id=${encodeURIComponent(id)}`;
+}
 
 export function useDocuments(): UseQueryResult<DocumentList> {
   return useQuery({

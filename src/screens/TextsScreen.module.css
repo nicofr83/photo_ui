@@ -4,8 +4,8 @@
 
 .back { min-height: var(--tap-target); padding: 0 0.6rem; cursor: pointer; }
 
-/* Wiring (v1.5, post-plan): the filters column, spec "les filtres" — same
-   26rem/1fr split as the images screen's own aside+main. */
+/* V1.7: the filters column is gone from all three sources (spec, "en
+   bref") — one full-width column, the room it used to take now goes to
+   the page image and the reading zone instead. */
 .layout { display: grid; grid-template-columns: 1fr; gap: 1rem; }
-@media (min-width: 64rem) { .layout { grid-template-columns: 20rem 1fr; } }
-.aside { align-self: start; }
+.full { min-width: 0; }

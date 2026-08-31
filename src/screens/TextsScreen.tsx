@@ -1,28 +1,20 @@
 import { useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
 
-import { useTextsByKind } from '../api/hooks/useTexts';
+import { usePages } from '../api/hooks/usePages';
 import type { TextRef } from '../api/contract/text';
-import { fromSearchParams, toSearchParams, type TextFilterState } from '../domain/textFilterState';
 import { TextSource } from '../domain/textSource';
-import { TextKind } from '../shared/enums';
 import { ErrorBanner } from '../ui/primitives/ErrorBanner';
 import { FixedHeader } from '../ui/primitives/FixedHeader';
 import scrollStyles from '../ui/primitives/FixedHeader.module.css';
 import { TaskNav } from '../ui/primitives/TaskNav';
-import { PageDetail } from '../ui/texts/PageDetail';
+import { JournalPageDetail } from '../ui/texts/JournalPageDetail';
+import { MaVieReader } from '../ui/texts/MaVieReader';
 import { PageList } from '../ui/texts/PageList';
+import { SiteWebReader } from '../ui/texts/SiteWebReader';
 import { SourcePicker } from '../ui/texts/SourcePicker';
-import { TextCard } from '../ui/texts/TextCard';
-import { TextFilterPanel } from '../ui/texts/TextFilterPanel';
-import styles from '../ui/texts/TextCard.module.css';
-import { WebDocumentDetail } from '../ui/texts/WebDocumentDetail';
 
 import screenStyles from './TextsScreen.module.css';
-
-/** The keys `textFilterState.ts`'s own `toSearchParams` owns — cleared and
- * rewritten together, `source` and `openPageId` untouched. */
-const FILTER_PARAM_KEYS = ['year', 'dateFrom', 'dateTo', 'q'];
 
 interface Props {
   /** Overridable for tests. Defaults to opening the grid pre-filtered on this
@@ -35,10 +27,17 @@ function isTextSource(value: string | null): value is TextSource {
 }
 
 /**
- * v1.5, Tasks 8-9: the refonte — one source at a time (spec §5.3), its pages
- * listed by date or by notebook order, opened one at a time into
- * `PageDetail`. Gallery captions stay reachable here, under the web source
- * only — they are not pages and never join the page list.
+ * V1.7, spec "en bref": the filter column is gone — "les filtres de gauche
+ * disparaissent là où ils ne servaient à rien" is true of all three
+ * sources now (the journal's own words: "elle disparaît de cet écran";
+ * "Ma vie": "même écran, même disparition"; the web: "aucun filtre").
+ * `TextFilterPanel` no longer has a caller here.
+ *
+ * Each source reads very differently now — the journal is a table, "Ma
+ * vie" one continuous text, the web its own five-page reader — so each
+ * gets its own detail component instead of one shared `PageDetail`. The
+ * web source manages its own list/detail navigation entirely (`SiteWebReader`,
+ * five fixed pages, never a `PageList` thumbnail list).
  */
 export function TextsScreen({ onShowPhotos }: Props): React.JSX.Element {
   const { slug = '' } = useParams();
@@ -48,29 +47,12 @@ export function TextsScreen({ onShowPhotos }: Props): React.JSX.Element {
 
   const rawSource = searchParams.get('source');
   const source = isTextSource(rawSource) ? rawSource : TextSource.LOGBOOK;
-  const filters = fromSearchParams(searchParams);
 
   const setSource = (next: TextSource): void => {
     setOpenPageId(null);
     setSearchParams((prev) => {
       const params = new URLSearchParams(prev);
       params.set('source', next);
-      // A year list (or facets) from one source rarely means anything for
-      // another — carrying it across a source switch would silently filter
-      // on a value the new source may not even contain.
-      for (const key of FILTER_PARAM_KEYS) params.delete(key);
-      return params;
-    });
-  };
-
-  // Same discipline as the images filter panel (domain/filterState.ts): the
-  // URL is the single source of truth, never a local `useState` a reload
-  // would silently drop.
-  const setFilters = (next: TextFilterState): void => {
-    setSearchParams((prev) => {
-      const params = new URLSearchParams(prev);
-      for (const key of FILTER_PARAM_KEYS) params.delete(key);
-      for (const [key, value] of toSearchParams(next)) params.append(key, value);
       return params;
     });
   };
@@ -93,17 +75,11 @@ export function TextsScreen({ onShowPhotos }: Props): React.JSX.Element {
       </FixedHeader>
       <div className={scrollStyles['scrolls']}>
         <div className={screenStyles['layout']}>
-          <aside className={screenStyles['aside']}>
-            <TextFilterPanel source={source} filters={filters} onChange={setFilters} />
-          </aside>
-          <main>
-            {openPageId === null ? (
-              <>
-                <PageList source={source} onOpen={setOpenPageId} filters={filters} />
-                {source === TextSource.WEB ? (
-                  <GalleryCaptions onShowPhotos={showPhotos} />
-                ) : null}
-              </>
+          <main className={screenStyles['full']}>
+            {source === TextSource.WEB ? (
+              <SiteWebReader slug={slug} />
+            ) : openPageId === null ? (
+              <PageList source={source} onOpen={setOpenPageId} />
             ) : (
               <>
                 <button
@@ -111,12 +87,12 @@ export function TextsScreen({ onShowPhotos }: Props): React.JSX.Element {
                   type="button"
                   onClick={() => { setOpenPageId(null); }}
                 >
-                  ← Retour à la liste
+                  ← Retour aux pages
                 </button>
-                {source === TextSource.WEB ? (
-                  <WebDocumentDetail documentId={openPageId} slug={slug} onShowPhotos={showPhotos} />
+                {source === TextSource.MA_VIE ? (
+                  <MaViePage pageId={openPageId} slug={slug} />
                 ) : (
-                  <PageDetail pageId={openPageId} slug={slug} onShowPhotos={showPhotos} />
+                  <JournalPageDetail pageId={openPageId} slug={slug} onShowPhotos={showPhotos} />
                 )}
               </>
             )}
@@ -128,28 +104,20 @@ export function TextsScreen({ onShowPhotos }: Props): React.JSX.Element {
 }
 
 /**
- * Spec, "ce que ce plan ne fait pas": indicative only — never selectable,
- * never filtered, never re-read. `TextCard` renders their checkbox/correct
- * affordances only when `onToggleSelect` is passed, so simply not passing it
- * here is what keeps them read-only.
+ * `MaVieReader` takes a `TextPage`, not an id — it needs the page's own
+ * date/ordinal for the note title, and `PageViewer` needs its full shape.
+ * Small enough to fetch inline rather than adding a fourth prop to thread
+ * a page down through the tree.
  */
-function GalleryCaptions({
-  onShowPhotos,
-}: {
-  readonly onShowPhotos: (ref: TextRef) => void;
-}): React.JSX.Element {
-  const captions = useTextsByKind(TextKind.WEB_CAPTION);
+function MaViePage({ pageId, slug }: { readonly pageId: string; readonly slug: string }): React.JSX.Element {
+  const documentId = pageId.slice(0, pageId.lastIndexOf('/'));
+  const pages = usePages(documentId);
 
-  return (
-    <section className={styles['section']} aria-label="Légendes de galerie">
-      <h3>Légendes de galerie</h3>
+  if (pages.error !== null) return <ErrorBanner error={pages.error} />;
+  if (pages.isPending) return <p role="status">Chargement de la page…</p>;
 
-      {captions.error !== null ? <ErrorBanner error={captions.error} /> : null}
-      {captions.isPending ? <p role="status">Chargement…</p> : null}
+  const page = pages.data.items.find((p) => p.id === pageId);
+  if (page === undefined) return <p role="alert">Page introuvable ({pageId}).</p>;
 
-      {captions.data?.items.map((unit) => (
-        <TextCard key={`${unit.ref.kind}:${unit.ref.id}`} unit={unit} onShowPhotos={onShowPhotos} />
-      ))}
-    </section>
-  );
+  return <MaVieReader page={page} slug={slug} />;
 }

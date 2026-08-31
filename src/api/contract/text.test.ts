@@ -1,6 +1,9 @@
 import { DateKind, DatePrecision, DateSource, TextKind } from '../../shared/enums';
 
-import { TextCorrectionInputSchema, TextCorrectionSchema, TextPageSchema, TextUnitSchema } from './text';
+import {
+  TextCorrectionInputSchema, TextCorrectionSchema, TextPageSchema, TextUnitSchema,
+  WebSitePageListSchema, WebSitePageSchema,
+} from './text';
 
 const unit = (over: Record<string, unknown> = {}) => ({
   ref: { kind: TextKind.LOG_ENTRY, id: 'logbook/p003/001' },
@@ -221,5 +224,19 @@ describe('v1.5 — TextPage.date, the page dating cascade (register → notes �
 
   test('a page with no date at all stays readable — the web site has none', () => {
     expect(TextPageSchema.parse({ ...page, date: null }).date).toBeNull();
+  });
+});
+
+describe('V1.7, contract A13 — GET /texts/web/pages, the 5 real site pages', () => {
+  test('title and label can genuinely diverge — the filename and the page’s own narrative reading', () => {
+    const parsed = WebSitePageSchema.parse({ id: '1900-1988.htm', title: '1958-1998', label: '1900-1988' });
+    expect(parsed.title).not.toBe(parsed.label);
+  });
+
+  test('the list envelope holds the 5 pages', () => {
+    const parsed = WebSitePageListSchema.parse({
+      items: [{ id: '1998-1999.htm', title: '1998-1999', label: '1998-1999' }],
+    });
+    expect(parsed.items).toHaveLength(1);
   });
 });

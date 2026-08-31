@@ -505,6 +505,28 @@ export const handlers = [
     return HttpResponse.json(result);
   }),
 
+  // V1.7, contract A13: the 5 real site pages, read in place. Fixed list —
+  // deterministic, matching the real corpus's own 5 filenames — never
+  // derived from `store.documents` (those are the 60-odd pipeline
+  // documents, a different namespace from the 5 raw HTML files on disk).
+  http.get('*/texts/web/pages', () => HttpResponse.json({
+    items: [
+      { id: '1900-1988.htm', title: '1958-1998', label: '1900-1988' },
+      { id: '1998-1999.htm', title: '1998-1999', label: '1998-1999' },
+      { id: '1999-2002.htm', title: '1999-2002', label: '1999-2002' },
+      { id: '2003-2004.htm', title: '2003-2004', label: '2003-2004' },
+      { id: '2005-2006.htm', title: '2005-2006', label: '2005-2006' },
+    ],
+  })),
+
+  http.get('*/texts/web/page', ({ request }) => {
+    const id = new URL(request.url).searchParams.get('id') ?? '';
+    return new HttpResponse(
+      `<!doctype html><html><body><p>Page archivée : ${id}</p></body></html>`,
+      { headers: { 'Content-Type': 'text/html; charset=utf-8' } },
+    );
+  }),
+
   // v1.5, Task 12. `scope=perimeter` (default): a path OR a proposal falling
   // in 1998-2004, with at least two passages — the threshold that excludes
   // rebuts (a Google-verification file, empty templates) without naming any

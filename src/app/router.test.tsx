@@ -36,22 +36,21 @@ describe('the texts screen is reachable, task-scoped', () => {
     );
   });
 
-  test('opening a gallery caption’s photo navigates to the grid, pre-filtered on its overlap window', async () => {
-    // v1.5, Task 8: a passage's own "N photos" button now lives behind
-    // opening its page (PageDetail, Task 9) — a gallery caption stays
-    // directly reachable under the web source, so it still proves this
-    // navigation without depending on that later task.
+  test('opening a passage’s photo navigates to the grid, pre-filtered on its overlap window', async () => {
+    // V1.7: the registre became a table with no "N images" button of its
+    // own (spec's four fixed columns) — the journal's free-prose passages
+    // (kept as `TextCard`s below the table, pending team-lead's answer on
+    // where they belong) still carry it, and still prove this navigation.
     const user = userEvent.setup();
-    setup('/textes/1999-transat?source=web');
+    setup('/textes/1999-transat?source=logbook');
 
-    const card = await screen.findByTestId(
-      'text-web_caption-web/2003/2003_gal_1/caption/000a86651c47',
-    );
-    await user.click(within(card).getByRole('button', { name: /1 images/ }));
+    const page = await screen.findByTestId('page-logbook/p003');
+    await user.click(within(page).getByRole('button'));
+    const card = await screen.findByTestId('text-passage-logbook/p003/001');
+    await user.click(within(card).getByRole('button', { name: /images/ }));
 
     expect(await screen.findByTestId('location')).toHaveTextContent(
-      '/images/1999-transat?overlapsTextKind=web_caption'
-      + '&overlapsTextId=web%2F2003%2F2003_gal_1%2Fcaption%2F000a86651c47',
+      '/images/1999-transat?overlapsTextKind=passage&overlapsTextId=logbook%2Fp003%2F001',
     );
   });
 });

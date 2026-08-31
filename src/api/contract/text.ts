@@ -324,3 +324,21 @@ export const TextFacetsSchema = z.strictObject({
   days: z.array(FacetBucketSchema),
 });
 export type TextFacets = z.infer<typeof TextFacetsSchema>;
+
+/**
+ * V1.7, contract A13: `GET /texts/web/pages` — the 5 real site pages, read
+ * in place. `id` is the filename (`1998-1999.htm`, what `GET /texts/web/
+ * page?id=…` takes); `title` is the page's own `<title>`; `label` is the
+ * two years as written in the FILENAME — the two sometimes diverge
+ * (`1900-1988.htm` carries `<title>1958-1998</title>`, a narrative reading
+ * distinct from its own name). `derivedFrom` for a note born here names the
+ * PIPELINE document, `web/${label}` — verified directly against the real
+ * corpus (`GET /documents`), never assumed from the filename alone.
+ */
+export const WebSitePageSchema = z.strictObject({
+  id: z.string(),
+  title: z.string(),
+  label: z.string(),
+});
+export type WebSitePage = z.infer<typeof WebSitePageSchema>;
+export const WebSitePageListSchema = z.strictObject({ items: z.array(WebSitePageSchema) });

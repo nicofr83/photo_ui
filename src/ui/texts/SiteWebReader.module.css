@@ -1,0 +1,10 @@
+.list { display: flex; flex-direction: column; gap: 0.25rem; padding: 0; margin: 0; list-style: none; }
+.pageButton { min-height: var(--tap-target); width: 100%; padding: 0 0.6rem; text-align: left; cursor: pointer; }
+.back { min-height: var(--tap-target); padding: 0 0.6rem; margin-bottom: 0.5rem; cursor: pointer; }
+.detail { display: flex; flex-direction: column; }
+.pageWrap { display: flex; flex-direction: column; gap: 0.5rem; }
+/* Spec: "toute la largeur disponible, la hauteur de la fenêtre moins
+   l'en-tête, et son propre ascenseur" — the iframe's own native scrolling
+   handles the "propre ascenseur" half for free. */
+.frame { width: 100%; height: calc(100vh - 8rem); border: 1px solid #e5e7eb; }
+.createButton { min-height: var(--tap-target); align-self: flex-start; padding: 0 0.75rem; cursor: pointer; }
