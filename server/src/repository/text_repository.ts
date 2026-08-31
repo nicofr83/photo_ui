@@ -108,6 +108,17 @@ const PAGE_FROM = `
     FROM pipeline.page p
     LEFT JOIN app.page_date d ON d.page_id = p.id`;
 
+/**
+ * La date EFFECTIVE d'un texte — corrigée si corrigée, sinon la lecture
+ * amont (V1.6). Une correction de date n'est pas cosmétique : un filtre ou
+ * un tri qui continuerait à lire `t.date_start` mentirait sur ce qu'il a
+ * gardé ou écarté — pire qu'un filtre absent (team-lead). Utilisé partout
+ * où une date de texte se compare, jamais `t.date_start` seul — suppose un
+ * `LEFT JOIN app.text_correction tc ON tc.text_kind = t.kind AND tc.text_id = t.id`.
+ */
+const EFFECTIVE_TEXT_DATE_START = 'coalesce(tc.corrected_date_start, t.date_start)';
+const EFFECTIVE_TEXT_DATE_END = 'coalesce(tc.corrected_date_end, t.date_end)';
+
 function mapPageRow(row: PageRow): TextPage {
   return {
     id: row.id,
@@ -168,8 +179,12 @@ export async function listPages(client: PoolClient, filters: PageFilters = {}): 
 
   const textConditions: string[] = [];
   if (filters.dateFrom !== undefined && filters.dateTo !== undefined) {
-    textConditions.push(`t.date_start IS NOT NULL `
-      + `AND daterange(t.date_start, t.date_end, '[]') && daterange(${param(filters.dateFrom)}, ${param(filters.dateTo)}, '[]')`);
+    // Date EFFECTIVE (corrigée si corrigée) — même règle que `listTexts`
+    // (V1.6) : une page ne doit jamais paraître absente d'une plage où sa
+    // correction l'a fait entrer.
+    textConditions.push(`${EFFECTIVE_TEXT_DATE_START} IS NOT NULL `
+      + `AND daterange(${EFFECTIVE_TEXT_DATE_START}, ${EFFECTIVE_TEXT_DATE_END}, '[]') `
+      + `&& daterange(${param(filters.dateFrom)}, ${param(filters.dateTo)}, '[]')`);
   }
   let qParam: string | null = null;
   if (filters.q !== undefined && filters.q.trim() !== '') {
@@ -184,6 +199,7 @@ export async function listPages(client: PoolClient, filters: PageFilters = {}): 
     conditions.push(`EXISTS (
       SELECT 1 FROM pipeline.text_unit t
         LEFT JOIN app.text_search ts ON ts.kind = t.kind AND ts.id = t.id
+        LEFT JOIN app.text_correction tc ON tc.text_kind = t.kind AND tc.text_id = t.id
        WHERE t.page_id = p.id AND ${textConditions.join(' AND ')})`);
   }
 
@@ -516,14 +532,15 @@ const TEXT_UNIT_COUNT_FROM = `
     FROM pipeline.text_unit t
     JOIN pipeline.document d ON d.id = t.document_id
     LEFT JOIN app.text_search ts ON ts.kind = t.kind AND ts.id = t.id
+    LEFT JOIN app.text_correction tc ON tc.text_kind = t.kind AND tc.text_id = t.id
     ${WEB_SPAN_JOIN}`;
 
 /**
  * Combien de textes seraient dans le résultat n'était l'absence de date —
- * ils satisfont TOUS les autres filtres, mais `t.date_start IS NULL` les
- * exclut de la borne `dateFrom`/`dateTo`. 0 sans filtre de date : « un
- * filtre rétrécit ou ne trouve rien, jamais il ne disparaît » (règle du
- * produit) ne s'applique qu'à la date elle-même, pas au reste.
+ * ils satisfont TOUS les autres filtres, mais la date EFFECTIVE (corrigée
+ * ou lue) les exclut de la borne `dateFrom`/`dateTo`. 0 sans filtre de
+ * date : « un filtre rétrécit ou ne trouve rien, jamais il ne disparaît »
+ * (règle du produit) ne s'applique qu'à la date elle-même, pas au reste.
  */
 async function countUndatedExcluded(client: PoolClient, filters: TextFilters): Promise<number> {
   if (filters.dateFrom === undefined || filters.dateTo === undefined) return 0;
@@ -534,7 +551,7 @@ async function countUndatedExcluded(client: PoolClient, filters: TextFilters): P
     return `$${String(values.length)}`;
   };
   const { conditions } = buildNonDateTextConditions(filters, param);
-  conditions.push('t.date_start IS NULL');
+  conditions.push(`${EFFECTIVE_TEXT_DATE_START} IS NULL`);
 
   const { rows } = await client.query<{ n: number }>(
     `SELECT count(*)::int AS n ${TEXT_UNIT_COUNT_FROM} WHERE ${conditions.join(' AND ')}`, values);
@@ -555,12 +572,13 @@ export async function listTexts(client: PoolClient, filters: TextFilters): Promi
 
   const { conditions, cleanedQuery } = buildNonDateTextConditions(filters, param);
   if (filters.dateFrom !== undefined && filters.dateTo !== undefined) {
-    conditions.push(`t.date_start IS NOT NULL `
-      + `AND daterange(t.date_start, t.date_end, '[]') && daterange(${param(filters.dateFrom)}, ${param(filters.dateTo)}, '[]')`);
+    conditions.push(`${EFFECTIVE_TEXT_DATE_START} IS NOT NULL `
+      + `AND daterange(${EFFECTIVE_TEXT_DATE_START}, ${EFFECTIVE_TEXT_DATE_END}, '[]') `
+      + `&& daterange(${param(filters.dateFrom)}, ${param(filters.dateTo)}, '[]')`);
   }
 
   const whereClause = conditions.length === 0 ? '' : `WHERE ${conditions.join(' AND ')}`;
-  const sortSql = filters.sort === 'date' ? 't.date_start ASC NULLS LAST, t.id'
+  const sortSql = filters.sort === 'date' ? `${EFFECTIVE_TEXT_DATE_START} ASC NULLS LAST, t.id`
     : filters.sort === 'relevance' && cleanedQuery !== null
       ? `ts_rank(ts.tsv, plainto_tsquery('public.fr_unaccent', ${param(cleanedQuery)})) DESC`
       : 'd.id, t.page_id, t.ordinal';

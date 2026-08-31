@@ -59,10 +59,17 @@ JAMAIS `decision` — la cascade elle-même n'arbitre toujours rien (`dateKind.t
 l'exclut explicitement pour `page_date`), qu'elle lise une entrée corrigée
 ou non.
 
-**Hors périmètre, délibérément** : `GET /texts/facets` et `GET /pages?dateFrom&dateTo`
-continuent de lire la date amont, pas la corrigée — cette fonctionnalité est
-neuve, rien n'était incohérent avant elle. Un futur amendement pourra les
-aligner si le besoin se confirme.
+**Fermé le jour même (team-lead)** : `GET /texts`, `GET /texts/facets` et
+`GET /pages?dateFrom&dateTo` lisent maintenant TOUS la date EFFECTIVE
+(`coalesce(correction, amont)`), jamais la lecture seule — un filtre ou un
+tri qui continuerait à voir l'ancienne date rendrait la correction de
+Nicolas cosmétique : il la corrige, filtre pour vérifier, et ne comprendrait
+pas pourquoi la page reste absente d'où il l'attend. Mesuré avant de fermer :
+une jointure de plus (`LEFT JOIN app.text_correction`) dans chacune des
+requêtes concernées — coût réel sur le corpus entier, moins de 10 ms.
+`GET /texts?sort=date` et le tri par défaut d'une page corrigée dans
+`countUndatedExcluded` en profitent aussi : un texte qui GAGNE une date par
+correction n'est plus compté comme écarté pour absence de date.
 
 ### A9 — la période d'un document du site n'a plus qu'une borne de début *(2026-08-30, v1.5)*
 

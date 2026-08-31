@@ -809,3 +809,84 @@ describe('putCorrection — correcting a date (V1.6)', () => {
     });
   });
 });
+
+describe('a corrected date is not a cosmetic fix — filters and sort read it too (V1.6, team-lead)', () => {
+  async function seedTextOutsideWindow(client: PoolClient): Promise<void> {
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('logbook', 'handwritten', 'x', true)`);
+    // Lue comme 1999, en réalité 1998 (le motif réel de logbook/p019) —
+    // hors d'une fenêtre 1998, tant que la correction n'est pas lue.
+    await client.query(`INSERT INTO pipeline.text_unit
+      (kind, id, document_id, ordinal, body, confidence, date_source, date_start, date_end)
+      VALUES ('log_entry', 'logbook/x/001', 'logbook', 1, 'x', 'transcribed', 'log_entry_date', '1999-11-16', '1999-11-16')`);
+  }
+
+  test('listTexts: dateFrom/dateTo sees the CORRECTED date, not the upstream one', async () => {
+    await withRollback(async (client) => {
+      await seedTextOutsideWindow(client);
+      const ref = { kind: 'log_entry', id: 'logbook/x/001' };
+
+      const before = await listTexts(client, { dateFrom: '1998-01-01', dateTo: '1998-12-31' });
+      expect(before.total).toBe(0);
+
+      await putCorrection(client, { ref, text: 'x', date: { start: '1998-11-16', end: '1998-11-16' } });
+      const after = await listTexts(client, { dateFrom: '1998-01-01', dateTo: '1998-12-31' });
+      expect(after.total).toBe(1);
+      // Et disparaît bien de la fenêtre où sa lecture amont l'aurait laissé.
+      const gone = await listTexts(client, { dateFrom: '1999-01-01', dateTo: '1999-12-31' });
+      expect(gone.total).toBe(0);
+    });
+  });
+
+  test('listTexts: sort=date orders by the corrected date, not the upstream one', async () => {
+    await withRollback(async (client) => {
+      await seedTextOutsideWindow(client);
+      await client.query(`INSERT INTO pipeline.text_unit
+        (kind, id, document_id, ordinal, body, confidence, date_source, date_start, date_end)
+        VALUES ('log_entry', 'logbook/x/002', 'logbook', 2, 'y', 'transcribed', 'log_entry_date', '1999-01-01', '1999-01-01')`);
+      // Corrigée à une date ANTÉRIEURE à x/002 — l'ordre doit s'inverser si le tri lit la correction.
+      await putCorrection(client, {
+        ref: { kind: 'log_entry', id: 'logbook/x/001' }, text: 'x', date: { start: '1998-01-01', end: '1998-01-01' },
+      });
+
+      const { items } = await listTexts(client, { documentId: 'logbook', sort: 'date' });
+      expect(items.map((i) => i.ref.id)).toEqual(['logbook/x/001', 'logbook/x/002']);
+    });
+  });
+
+  test('countUndatedExcluded: a text that GAINED a date via correction is no longer counted as undated', async () => {
+    await withRollback(async (client) => {
+      await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('logbook', 'handwritten', 'x', true)`);
+      await client.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+                          VALUES ('log_entry', 'logbook/x/001', 'logbook', 1, 'x', 'transcribed')`);
+      const ref = { kind: 'log_entry', id: 'logbook/x/001' };
+
+      const before = await listTexts(client, { dateFrom: '1998-01-01', dateTo: '1998-12-31' });
+      expect(before.undatedExcluded).toBe(1);
+
+      await putCorrection(client, { ref, text: 'x', date: { start: '1998-06-01', end: '1998-06-01' } });
+      const after = await listTexts(client, { dateFrom: '1998-01-01', dateTo: '1998-12-31' });
+      expect(after.undatedExcluded).toBe(0);
+      expect(after.total).toBe(1);
+    });
+  });
+
+  test('listPages: dateFrom/dateTo reads the corrected date, not the upstream one', async () => {
+    await withRollback(async (client) => {
+      await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('logbook', 'handwritten', 'x', true)`);
+      await client.query(`INSERT INTO pipeline.page (id, document_id, ordinal, image_relpath, width, height)
+                          VALUES ('logbook/x', 'logbook', 1, 'p.jpg', 1, 1)`);
+      await client.query(`INSERT INTO pipeline.text_unit
+        (kind, id, document_id, page_id, ordinal, body, confidence, date_source, date_start, date_end)
+        VALUES ('log_entry', 'logbook/x/001', 'logbook', 'logbook/x', 1, 'x', 'transcribed', 'log_entry_date', '1999-11-16', '1999-11-16')`);
+
+      const before = await listPages(client, { documentId: 'logbook', dateFrom: '1998-01-01', dateTo: '1998-12-31' });
+      expect(before).toEqual([]);
+
+      await putCorrection(client, {
+        ref: { kind: 'log_entry', id: 'logbook/x/001' }, text: 'x', date: { start: '1998-11-16', end: '1998-11-16' },
+      });
+      const after = await listPages(client, { documentId: 'logbook', dateFrom: '1998-01-01', dateTo: '1998-12-31' });
+      expect(after.map((p) => p.id)).toEqual(['logbook/x']);
+    });
+  });
+});

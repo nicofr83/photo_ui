@@ -5,6 +5,7 @@ import { afterAll, beforeAll, expect, test } from 'vitest';
 import { runMigrations } from '../db/migrate.ts';
 import { createLog, LogLevel } from '../log/log.ts';
 import { closeTestPool, testPool, withRollback } from '../../test/helpers/db.ts';
+import { putCorrection } from './text_repository.ts';
 import { getTextDateFacets } from './text_facets.ts';
 
 const MIGRATIONS = fileURLToPath(new URL('../../db/migrations', import.meta.url));
@@ -68,5 +69,21 @@ test('a documentId with no dated text at all is an empty envelope, never an erro
     await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('web/x', 'html', 'x', false)`);
     const facets = await getTextDateFacets(client, 'web/x');
     expect(facets).toEqual({ years: [], months: [], days: [] });
+  });
+});
+
+test('facets read the CORRECTED date, not the upstream one — a cosmetic fix is worse than no fix (team-lead)', async () => {
+  await withRollback(async (client) => {
+    await client.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('logbook', 'handwritten', 'x', true)`);
+    await insertDatedText(client, 'logbook/x/001', 'logbook', '1999-11-16');
+
+    const before = await getTextDateFacets(client, 'logbook');
+    expect(before.years).toEqual([{ value: '1999', count: 1 }]);
+
+    await putCorrection(client, {
+      ref: { kind: 'passage', id: 'logbook/x/001' }, text: 'x', date: { start: '1998-11-16', end: '1998-11-16' },
+    });
+    const after = await getTextDateFacets(client, 'logbook');
+    expect(after.years).toEqual([{ value: '1998', count: 1 }]);
   });
 });
