@@ -1671,3 +1671,22 @@ DETAIL : commit `f04ffab`.
 Je passe au composant partagé de rendu des trois états (extrait fidèle / réécrit / note de zéro), puis l'écran du journal (tableau), puis Ma vie, puis le site web — commits séparés comme demandé.
 
 ASK : aucune.
+
+---
+
+## Avancement — impl-backend, V1.7 : `quotable`, `derivedFrom` page, provenance à l'export (2026-08-31)
+
+RE : team-lead — les trois messages sur l'export (provenance dans `texts[]`, `quotable`/sélection de page, trou à fermer sur `derivedFrom`)
+DONE :
+
+**`quotable` et `derivedFrom:{kind:'page'}` livrés** (`note_provenance.ts`, pur, 16 tests) : `isQuotable(body, sourceActuelle)` — sous-chaîne CONTIGUE après normalisation des espaces, jamais l'instantané. `locatePassagesForSelection` rejoue la MÊME concaténation ordonnée que la requête SQL (`derivedSourceTextSql`, `page_id` OU `document_id` — le site n'a pas d'objet page, D9, deux espaces d'identifiants qui ne se recoupent jamais) pour trouver quels passages une sélection recouvre.
+
+**Export** : `schema_version` 1→2. `ManifestNote` gagne `derived_from{kind,id,text}`, `edited_since`, `quotable`, toujours présents. `texts[]` porte désormais la source de toute note qui en dérive, même non attachée par ailleurs (referme le risque de référence morte) ; pour une dérivation `{kind:'page'}`, seuls les passages RECOUVERTS par la sélection actuelle y entrent — et eux seuls — jamais toute la page. Une source ne compte qu'une fois, y compris quand deux notes en dérivent. `page`/`page_image` déjà `null` pour un texte web, `document` déjà `web/<chemin-sans-extension>` — vérifiés sur le corpus réel, rien à corriger là.
+
+**Un vrai trou fermé, pas juste implémenté** : `TaskNote.derivedFrom` ne portait que `{kind, id}` — mais `front` avait déjà livré son schéma Zod (`DerivedFromRefSchema`, `strictObject`) avec un `text` requis en plus. `contract_shapes.itest.ts` restait vert quand même : la tâche réelle qu'il cible (`01-le-grand-depart`) n'a aucune note dérivée, donc ne passe jamais par cette branche — angle mort trouvé en lisant le schéma client directement, pas par un test rouge. Corrigé : `TaskNote.derivedFrom` porte maintenant `{kind, id, text}` (`TaskNoteDerivedFrom`), l'instantané déjà en base (`derived_text_original`), sans requête supplémentaire à l'export — `note.derivedFrom.text` nourrit directement `manifest.notes[].derived_from.text`.
+
+15 tests neufs à l'export (dead-reference, deux notes même source, page recouvrement partiel, sélection morte, idempotence octet-à-octet avec dérivation), 4 itests existants ajustés à la nouvelle forme de `derivedFrom`. 821 tests serveur verts (87 fichiers), tsc et eslint propres. Amendement A14 écrit.
+
+DETAIL : commit `7a08c9c` (14 fichiers). Incident d'index partagé (encore) — `mocks/handlers.ts` et 5 fichiers `front` neufs (`JournalRow`/`JournalTable`) embarqués dans mon premier commit ; corrigé par `git reset --soft HEAD~1` puis `git reset HEAD -- <ses fichiers>`, recommité seul. Rien perdu, `front` les retrouve non indexés.
+
+ASK : aucune. J'enchaîne sur le bug signalé en message 3 (note d'image perdue au retrait, `zz-repro-bug1`) — c'est aussi ce que verrouille le `test.fails` de `front` dans `ImagesScreen.test.tsx`.
