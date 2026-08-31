@@ -372,9 +372,12 @@ portant `null`, pas en omettant le champ.
 | **Extrait fidèle** | `derived_from` renseigné, `quotable: true` | **Citable et attribuable**, exactement comme un `texts[]`. L'attribution est le document et la page nommés par `derived_from`. |
 | **Texte réécrit** | `derived_from` renseigné, `quotable: false` | **Jamais entre guillemets, jamais attribué à une voix d'époque.** Sa matière est utilisable ; ses mots ne sont pas ceux de la page. |
 
-`derived_from` porte `{ kind, id }` — la référence, sans le texte. Il n'a pas
-besoin de l'emporter, parce que **l'export émet la source elle-même dans
-`texts[]`** : voir « Ce que l'export doit émettre » ci-dessous.
+`derived_from` porte `{ kind, id, text }` — la référence **et** l'instantané pris
+à la copie. Et l'export émet **en plus** la source dans `texts[]`. Les deux, et
+ce n'est pas une redondance : l'instantané dit **ce qui a été copié**, figé ;
+l'entrée de `texts[]` dit **où en est la source aujourd'hui**. `quotable` est
+exactement la comparaison entre les deux, et un dossier qui n'en porterait qu'un
+seul côté ne permettrait pas de la refaire.
 
 `edited_since` et `quotable` disent deux choses différentes, et il faut les deux :
 
@@ -424,22 +427,28 @@ tomberait par la seule porte que personne ne surveillait : l'export.
 
 Trois choses à poser, et les trois sont nécessaires.
 
-**1. `notes[]` porte la provenance.** `derived_from: { kind, id } | null`,
+**1. `notes[]` porte la provenance.** `derived_from: { kind, id, text } | null`,
 `edited_since: boolean`, `quotable: boolean`. **Toujours présents**, `null` et
 `false` compris : une note écrite de zéro les porte explicitement. Un champ dont
 l'absence signifierait quelque chose se lirait un jour à l'envers.
 
 **2. L'export émet dans `texts[]` la source de toute note qui en dérive**, même
-si Nicolas n'a pas retenu ce texte. C'est ce qui referme le trou :
+si Nicolas ne l'a pas retenue — en plus des textes déjà attachés à la tâche.
+Trois raisons, dans cet ordre :
 
-- **Plus aucune référence morte.** `derived_from.id` et `attached_to.texts`
-  pointent vers des entrées présentes. L'autosuffisance du dossier, qui est une
-  garantie écrite, redevient vraie sans exception.
-- **`journal.md` retrouve du contenu.** Le texte d'époque revient à sa place,
-  dans le fichier de sa source, au lieu de n'exister que recopié dans les notes.
-- **Une seule commande alimente trois fichiers.** La case coche une note ; la
-  note tire sa source avec elle. Nicolas n'a jamais deux gestes à faire, et le
-  dossier reçoit quand même les trois natures de texte à leurs trois places.
+- **`quotable` redevient auditable.** Tout le raisonnement de cette spec tient
+  sur « ça se contrôle, ça ne se déclare pas ». Sans la source dans le dossier,
+  le générateur reçoit un booléen qu'il doit **croire** : la garantie s'arrête au
+  serveur et redevient déclarative à la sortie. Avec elle, il refait le test
+  lui-même — le texte de la note est-il un extrait contigu de celui de la
+  source ?
+- **Sans elle, le texte d'époque arriverait sans ancrage.** Une entrée de
+  `texts[]` porte sa `date` avec son `kind` et sa `source`, son `page_image`, et
+  ses `covers_images` — les propositions de rapprochement texte ↔ photo, qui sont
+  le produit de tout le travail de datation. Une note tirée d'une entrée de
+  journal, seule, perdrait la date de cette entrée et tous ses rapprochements.
+- **`journal.md` retrouve du contenu.** C'est vrai, et c'est la moindre des trois
+  raisons.
 
 Ce qui est émis dépend de ce que `derived_from` nomme. Un passage ou une ligne
 de registre : cette unité. Une **page** — le cas de la sélection libre — : les
@@ -448,9 +457,18 @@ connaît, puisqu'il a localisé l'extrait dans le texte de la page pour le
 vérifier. Une sélection de deux phrases ne fait donc pas entrer trente passages
 dans le dossier.
 
+**Un texte n'apparaît qu'une fois.** Deux notes tirées du même passage, ou un
+passage à la fois retenu par Nicolas et source d'une note, ne produisent qu'une
+seule entrée. `texts[]` reste une liste de textes, pas une liste de raisons de
+les inclure.
+
 Un texte émis pour cette raison est un `texts[]` ordinaire : rien ne le
 distingue, et rien ne doit le distinguer. Il **est** un texte d'époque, arrivé
 là par un autre chemin.
+
+**C'est une règle d'export, invisible à l'usage.** Nicolas ne fait toujours
+qu'un geste, l'écran ne change pas, et aucune case supplémentaire n'apparaît.
+Le dossier, lui, reçoit les trois natures de texte à leurs trois places.
 
 **3. La règle de citabilité, écrite pour le générateur.** C'est le tableau des
 trois états ci-dessus, et il **remplace** la phrase du contrat de livraison
@@ -568,11 +586,14 @@ sélection libre n'aurait aucune provenance vérifiable, et il faudrait croire l
 client sur parole.
 
 **Le manifeste porte la provenance d'une note, et l'export émet sa source.**
-`notes[]` gagne `derived_from: { kind, id } | null`, `edited_since: boolean` et
-`quotable: boolean` — **toujours présents**, `null` et `false` compris. Et
-l'export émet dans `texts[]` la source de toute note qui en dérive, même
-non retenue : sans quoi `derived_from.id` et `attached_to.texts` pointeraient
-hors du dossier, et l'autosuffisance — une garantie écrite — serait rompue.
+`notes[]` gagne `derived_from: { kind, id, text } | null`, `edited_since:
+boolean` et `quotable: boolean` — **toujours présents**, `null` et `false`
+compris. Et l'export émet dans `texts[]` la source de toute note qui en dérive,
+même non retenue, dédoublonnée avec les textes déjà attachés. Les deux sont
+nécessaires : l'instantané fige ce qui a été copié, l'entrée de `texts[]` porte
+l'état actuel de la source avec sa date et ses rapprochements, et `quotable` est
+la comparaison des deux — qu'un dossier privé de l'un des côtés ne permettrait
+plus de refaire.
 
 `quotable` est **calculé à la lecture**, jamais stocké : le texte de la note,
 espaces normalisés, est-il un extrait contigu du texte effectif actuel de sa

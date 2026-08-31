@@ -1541,3 +1541,22 @@ DONE : `docs/spec-v1.7.md` à 608 lignes. Vérifié moi-même avant d'écrire : 
 DETAIL : la question de périmètre est close — Nicolas l'a tranchée deux fois (il a renommé la colonne lui-même, et retenu « ouvre l'éditeur aussitôt »). La section « Question restée ouverte » devient « Le périmètre, tranché ». Trois amendements au contrat en tout : normalisation des espaces (adopté), `derivedFrom` acceptant une page, et la provenance au manifeste + l'émission de la source.
 
 ASK : aucune. `skills/bd_dossier` reste à mettre à jour par team-lead — je n'y ai pas touché.
+
+---
+
+## Avancement — spec-v1.5, V1.7 close : l'instantané ET le remplissage de `texts[]` (2026-08-31)
+
+RE : team-lead — arbitrage, il faut les deux, et la raison que je n'avais pas vue
+DONE : `docs/spec-v1.7.md` à 629 lignes. La 1.7 est close côté spécification.
+
+**J'avais posé le choix comme un dilemme, à tort.** J'avais résolu l'autosuffisance par l'instantané dans `derived_from`, puis adopté la solution inverse (émettre la source dans `texts[]`) en retirant l'instantané. Les deux sont nécessaires, et la raison décisive n'était dans aucune de mes deux versions : **sans la source dans le dossier, `quotable` n'est pas auditable**. Tout le raisonnement de cette spec tient sur « ça se contrôle, ça ne se déclare pas » — mais le générateur recevrait un booléen qu'il devrait croire, la garantie s'arrêtant au serveur pour redevenir déclarative à la sortie. Avec la source présente, il refait le test lui-même.
+
+**La deuxième raison est mécanique et je l'avais manquée aussi** : une entrée de `texts[]` porte `date` (avec son `kind` et sa `source`), `page_image` et `covers_images`. Une note tirée d'une entrée de journal, livrée seule, perdrait la date de cette entrée **et tous ses rapprochements texte ↔ photo** — le produit de tout le travail de datation. `journal.md` qui se remplit est la moindre des trois raisons, pas la première.
+
+**Les deux champs ne portent donc pas la même chose** : l'instantané dit ce qui a été copié, figé ; l'entrée de `texts[]` dit où en est la source aujourd'hui. `quotable` est exactement la comparaison des deux, et un dossier privé d'un des côtés ne permettrait plus de la refaire.
+
+Ajouté avec : un texte **n'apparaît qu'une fois** (deux notes tirées du même passage, ou un passage à la fois retenu et source d'une note, ne produisent qu'une entrée), et la mention explicite que **c'est une règle d'export, invisible à l'usage** — un seul geste de Nicolas, aucune case supplémentaire, l'écran ne change pas.
+
+DETAIL : commit `b12599a` puis celui-ci. Trois amendements au contrat : normalisation des espaces, `derivedFrom` acceptant une page, provenance au manifeste + émission de la source. Les 5 pages du site restent non embarquées, `page_image: null`.
+
+ASK : aucune. La 1.7 est posée, `front` est lâché sur les écrans Textes. `skills/bd_dossier` est à jour par team-lead, je n'y ai pas touché.
