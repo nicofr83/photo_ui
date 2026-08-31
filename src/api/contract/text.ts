@@ -6,7 +6,7 @@ import {
 } from '../../shared/enums';
 
 import {
-  IsoTimestampSchema, ResolvedDateSchema, Sha256Schema, TextRangeSchema,
+  IsoTimestampSchema, ResolvedDateSchema, Sha256Schema, SingleDayRangeSchema, TextRangeSchema,
 } from './common';
 import { FacetBucketSchema, ListEnvelopeSchema } from './photo';
 
@@ -24,8 +24,9 @@ export const TextRefSchema = z.strictObject({
 export type TextRef = z.infer<typeof TextRefSchema>;
 
 /**
- * The two date sources a TEXT may legitimately carry. A page window and a web
- * span qualify a PAGE or a DOCUMENT — never what a text asserts about itself.
+ * The two date sources a TEXT may legitimately carry BEFORE any correction. A
+ * page window and a web span qualify a PAGE or a DOCUMENT — never what a text
+ * asserts about itself.
  */
 const TEXT_DATE_SOURCES: readonly DateSource[] = [
   DateSource.LOG_ENTRY_DATE,
@@ -33,7 +34,67 @@ const TEXT_DATE_SOURCES: readonly DateSource[] = [
 ];
 
 /**
- * What the text asserts about itself, and NULL when it asserts nothing.
+ * v1.6, contract A10: correcting a text's date is the same act as correcting
+ * its transcription — Nicolas ARBITRATES between the reading and what he
+ * knows. `DateSource.ANNOTATION` is the one source `dateKind.ts` maps to
+ * `decision`, so the EFFECTIVE date (`TextUnit.date`) may now carry it,
+ * beside the two original reading sources.
+ */
+const TEXT_EFFECTIVE_DATE_SOURCES: readonly DateSource[] = [
+  ...TEXT_DATE_SOURCES,
+  DateSource.ANNOTATION,
+];
+
+/**
+ * A single day or nothing, at DAY precision — the shape every text date
+ * shares, corrected or not. `allowedSources`/`allowedKinds` are the only
+ * axis that differs between the ORIGINAL reading (`TextDateSchema`, below)
+ * and the EFFECTIVE, possibly-corrected value (`TextEffectiveDateSchema`) —
+ * kind/source PAIRING itself is already `ResolvedDateSchema`'s own job
+ * (`isKindConsistent`, domain/dateKind.ts), not re-checked here.
+ */
+function buildTextDateSchema(
+  allowedSources: readonly DateSource[],
+  allowedKinds: readonly DateKind[],
+) {
+  return ResolvedDateSchema.superRefine((date, ctx) => {
+    if (!allowedKinds.includes(date.kind)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['kind'],
+        message: `a text date must be ${allowedKinds.join(' or ')}, never a ${date.kind}`,
+      });
+    }
+    if (date.precision !== DatePrecision.DAY) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['precision'],
+        message: `a text date is always at day precision, never ${date.precision}`,
+      });
+    }
+    if (date.start !== date.end) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['end'],
+        message: `a text date covers a single day: start === end, got ${date.start}..${date.end}`,
+      });
+    }
+    if (!allowedSources.includes(date.source)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['source'],
+        message:
+          `"${date.source}" qualifies a page or a document, never what a text asserts. ` +
+          `A text date comes from ${allowedSources.join(', ')}.`,
+      });
+    }
+  });
+}
+
+/**
+ * What the text asserts about itself ORIGINALLY (`TextUnit.dateOriginal`),
+ * and NULL when it asserts nothing. NEVER a correction — always the reading,
+ * the same pairing as `text`/`textOriginal`.
  *
  * A passage that names no day asserts none. Giving it its page's window, even
  * labelled `inference`, makes it say what it does not say — the window is real
@@ -41,50 +102,26 @@ const TEXT_DATE_SOURCES: readonly DateSource[] = [
  *
  * Measured: of 2 871 units, 1 840 assert a day and 1 031 assert nothing. So
  * `null` is the normal case for more than a third, never an error case.
- *
- * When it is not null, three things hold, and they are checked rather than
- * assumed: the kind is always a READING, the precision is always DAY, and the
- * bounds are equal. The spec's sentence — the logbook and "Ma vie" dates are
- * the only certain dates of the corpus, written on the day, on the page —
- * becomes a property of the schema instead of an approximation.
  */
-export const TextDateSchema = ResolvedDateSchema.superRefine((date, ctx) => {
-  if (date.kind !== DateKind.READING) {
-    ctx.addIssue({
-      code: 'custom',
-      path: ['kind'],
-      message: `a text date is always a reading, never a ${date.kind}`,
-    });
-  }
-  if (date.precision !== DatePrecision.DAY) {
-    ctx.addIssue({
-      code: 'custom',
-      path: ['precision'],
-      message: `a text date is always at day precision, never ${date.precision}`,
-    });
-  }
-  if (date.start !== date.end) {
-    ctx.addIssue({
-      code: 'custom',
-      path: ['end'],
-      message: `a text date covers a single day: start === end, got ${date.start}..${date.end}`,
-    });
-  }
-  if (!TEXT_DATE_SOURCES.includes(date.source)) {
-    ctx.addIssue({
-      code: 'custom',
-      path: ['source'],
-      message:
-        `"${date.source}" qualifies a page or a document, never what a text asserts. ` +
-        `A text date comes from log_entry_date or passage_date_from.`,
-    });
-  }
-});
+export const TextDateSchema = buildTextDateSchema(TEXT_DATE_SOURCES, [DateKind.READING]);
 
-/** `PUT /corrections` body. Empty or blank ⇒ 422 EMPTY_CORRECTION (§9.6). */
+/**
+ * `TextUnit.date` — the EFFECTIVE value (contract A10): `coalesce(correction,
+ * reading)`. A `decision` (a corrected date, `source: 'annotation'`) is as
+ * legitimate here as the original `reading` — `dateOriginal` is what stays
+ * pinned to the reading alone.
+ */
+export const TextEffectiveDateSchema = buildTextDateSchema(
+  TEXT_EFFECTIVE_DATE_SOURCES, [DateKind.READING, DateKind.DECISION],
+);
+
+/** `PUT /corrections` body. Empty or blank ⇒ 422 EMPTY_CORRECTION (§9.6).
+ * `date` (v1.6, A10): omitted leaves an existing date correction untouched;
+ * `null` clears it; `{start, end}` sets it (start must equal end, D11). */
 export const TextCorrectionInputSchema = z.strictObject({
   ref: TextRefSchema,
   text: z.string(),
+  date: SingleDayRangeSchema.nullable().optional(),
 });
 export type TextCorrectionInput = z.infer<typeof TextCorrectionInputSchema>;
 
@@ -101,6 +138,12 @@ export const TextCorrectionSchema = z.strictObject({
    * every id after a re-cut page; only comparing this text reveals it.
    */
   originalAtCorrection: z.string(),
+  /** v1.6, A10: the date correction itself, `null` when only the text was corrected. */
+  date: SingleDayRangeSchema.nullable(),
+  /** The witness for `date`, same reasoning as `originalAtCorrection` — also
+   * `null` when the text had no date originally: a correction that ADDS one
+   * destroys nothing to preserve. */
+  originalDateAtCorrection: SingleDayRangeSchema.nullable(),
   correctedAt: IsoTimestampSchema,
   status: z.enum(CorrectionStatus),
 });
@@ -156,7 +199,12 @@ export const TextUnitSchema = z.strictObject({
   correction: TextCorrectionSchema.nullable(),
 
   confidence: z.enum(TranscriptionConfidence),
-  date: TextDateSchema.nullable(),
+  /** The EFFECTIVE date: `coalesce(correction, reading)` (v1.6, A10) — a
+   * `decision` when Nicolas has arbitrated it, a `reading` otherwise. */
+  date: TextEffectiveDateSchema.nullable(),
+  /** v1.6, A10: the upstream reading, ALWAYS — never the correction, the
+   * same pairing as `text`/`textOriginal`. */
+  dateOriginal: TextDateSchema.nullable(),
 
   /**
    * Qualifies the PAGE window used for overlap, never the date above.

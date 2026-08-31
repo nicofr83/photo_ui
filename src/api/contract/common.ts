@@ -120,6 +120,26 @@ export const CivilDayRangeSchema = z
     }
   });
 
+/**
+ * V1.6, contract A10: a text asserts a single civil day or nothing (D11) —
+ * `start` and `end` are always the same day, never a range. Used for a
+ * date CORRECTION's own bounds and its drift witness, never for what
+ * `ResolvedDate` already carries (kind/precision/source) — this is just the
+ * day itself.
+ */
+export const SingleDayRangeSchema = z
+  .strictObject({ start: IsoDateSchema, end: IsoDateSchema })
+  .superRefine((range, ctx) => {
+    if (range.start !== range.end) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['end'],
+        message: `a text date is a single day: start must equal end, got ${range.start}..${range.end}`,
+      });
+    }
+  });
+export type SingleDayRange = z.infer<typeof SingleDayRangeSchema>;
+
 export const FieldMatchSchema = z.strictObject({
   field: z.enum(MatchField),
   value: z.string(),

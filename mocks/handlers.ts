@@ -15,7 +15,7 @@ import {
   AlbumSpanDeleteInputSchema, AlbumSpanPutInputSchema, WebSpanDeleteInputSchema,
   WebSpanPutInputSchema, type AlbumSpanUpdateResult, type AlbumSpanWarning, type WebDocumentRow,
 } from '../src/api/contract/ref';
-import type { TextRef, TextUnit } from '../src/api/contract/text';
+import { TextCorrectionInputSchema, type TextRef, type TextUnit } from '../src/api/contract/text';
 import { isIsoDate, parseIsoDate, type IsoDate } from '../src/shared/date_interface';
 import {
   CorrectionStatus, DateKind, DatePrecision, DateSource, ErrorCode, MatchField, OverlapRule,
@@ -649,7 +649,15 @@ export const handlers = [
   // Contract §4.4: the ref travels in the BODY, never the path — it contains
   // `/` and is ambiguous without its kind (§2.6).
   http.put('*/corrections', async ({ request }) => {
-    const body = (await request.json()) as { ref: { kind: string; id: string }; text: string };
+    const parsed = TextCorrectionInputSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      const path = issue?.path.join('.') ?? '<root>';
+      return error(400, ErrorCode.INVALID_PARAMETER, `${path} : ${issue?.message ?? 'forme invalide'}`, {
+        parameter: path, received: null, accepted: null,
+      });
+    }
+    const body = parsed.data;
 
     if (body.text.trim() === '') {
       return error(422, ErrorCode.EMPTY_CORRECTION, 'La correction ne peut pas être vide.', {
@@ -664,14 +672,30 @@ export const handlers = [
       });
     }
 
+    // v1.6, contract A10: omitted leaves an existing date correction
+    // untouched (a text-only call stays text-only); `null` clears it;
+    // `{start, end}` sets it.
+    const nextDate = body.date === undefined ? (unit.correction?.date ?? null) : body.date;
+
     unit.correction = {
       ref: unit.ref,
       text: body.text,
       originalAtCorrection: unit.textOriginal,
+      date: nextDate,
+      // The witness: `dateOriginal` never changes in this mock (no reimport
+      // to drift against), so it is always the correct snapshot — `null`
+      // when there is no date correction to witness FOR.
+      originalDateAtCorrection: nextDate === null ? null : unit.dateOriginal,
       correctedAt: NOW,
       status: CorrectionStatus.APPLIED,
     };
     unit.text = body.text;
+    // The EFFECTIVE date: `coalesce(correction, reading)` — a `decision`
+    // when corrected, back to the reading the moment the correction clears.
+    unit.date = nextDate === null
+      ? unit.dateOriginal
+      : { ...nextDate, precision: DatePrecision.DAY, kind: DateKind.DECISION, source: DateSource.ANNOTATION, bracketHours: null };
+
     return HttpResponse.json(unit);
   }),
 
@@ -685,9 +709,11 @@ export const handlers = [
     }
 
     // Idempotent: reverting a text with no correction just confirms the
-    // current (already original) state rather than erroring.
+    // current (already original) state rather than erroring. Clears BOTH
+    // the text and the date correction together, same geste (A10).
     unit.correction = null;
     unit.text = unit.textOriginal;
+    unit.date = unit.dateOriginal;
     return HttpResponse.json(unit);
   }),
 

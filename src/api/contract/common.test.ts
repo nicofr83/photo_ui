@@ -2,7 +2,7 @@ import { DateKind, DatePrecision, DateSource, PositionSource } from '../../share
 
 import {
   CivilDayRangeSchema, IsoDateSchema, IsoTimestampSchema, LocalDateTimeSchema,
-  ResolvedDateSchema, ResolvedPositionSchema,
+  ResolvedDateSchema, ResolvedPositionSchema, SingleDayRangeSchema,
 } from './common';
 
 const day = (start: string, end: string = start) => ({
@@ -124,5 +124,21 @@ describe('CivilDayRange — what the user ASKS, not what the system asserts', ()
     const result = CivilDayRangeSchema.safeParse({ from: '2004-01-01', to: '1998-01-01' });
     expect(result.success).toBe(false);
     expect(result.error?.issues[0]?.path).toEqual(['to']);
+  });
+});
+
+describe('SingleDayRange — v1.6, contract A10: a text date correction, one day or nothing', () => {
+  test('equal start and end parse', () => {
+    expect(SingleDayRangeSchema.parse({ start: '1999-10-14', end: '1999-10-14' }).start)
+      .toBe('1999-10-14');
+  });
+  test('a range (start !== end) is refused — D11: a text asserts a day, never a span', () => {
+    const result = SingleDayRangeSchema.safeParse({ start: '1999-10-14', end: '1999-10-15' });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.path).toEqual(['end']);
+  });
+  test('a pre-formatted or invalid day is refused, same as IsoDateSchema everywhere else', () => {
+    expect(SingleDayRangeSchema.safeParse({ start: '14 octobre 1999', end: '14 octobre 1999' }).success)
+      .toBe(false);
   });
 });

@@ -1,6 +1,6 @@
 import { DateKind, DatePrecision, DateSource, TextKind } from '../../shared/enums';
 
-import { TextPageSchema, TextUnitSchema } from './text';
+import { TextCorrectionInputSchema, TextCorrectionSchema, TextPageSchema, TextUnitSchema } from './text';
 
 const unit = (over: Record<string, unknown> = {}) => ({
   ref: { kind: TextKind.LOG_ENTRY, id: 'logbook/p003/001' },
@@ -12,6 +12,12 @@ const unit = (over: Record<string, unknown> = {}) => ({
   correction: null,
   confidence: 'transcribed',
   date: {
+    start: '1999-12-08', end: '1999-12-08', precision: DatePrecision.DAY,
+    kind: DateKind.READING, source: DateSource.LOG_ENTRY_DATE, bracketHours: null,
+  },
+  // v1.6, A10: the upstream reading, same default as `date` above — most
+  // tests here are about `date` (the effective value) and leave this alone.
+  dateOriginal: {
     start: '1999-12-08', end: '1999-12-08', precision: DatePrecision.DAY,
     kind: DateKind.READING, source: DateSource.LOG_ENTRY_DATE, bracketHours: null,
   },
@@ -92,6 +98,84 @@ describe('INVARIANT — every text date the system holds is a READING at DAY pre
     expect(() =>
       TextUnitSchema.parse(unit({ date: { ...unit().date, source: DateSource.WEB_SPAN } })),
     ).toThrow();
+  });
+});
+
+describe('v1.6, contract A10 — a corrected date is a decision, the reading stays pinned', () => {
+  const decision = {
+    start: '2003-11-04', end: '2003-11-04', precision: DatePrecision.DAY,
+    kind: DateKind.DECISION, source: DateSource.ANNOTATION, bracketHours: null,
+  };
+
+  test('the EFFECTIVE date accepts a correction — a decision, source annotation', () => {
+    expect(TextUnitSchema.parse(unit({ date: decision })).date?.kind).toBe('decision');
+  });
+
+  test('dateOriginal is always pinned to a reading — a decision there is refused', () => {
+    expect(() => TextUnitSchema.parse(unit({ dateOriginal: decision }))).toThrow(/reading/i);
+  });
+
+  test('dateOriginal stays null when the text never asserted a date, correction or not', () => {
+    expect(TextUnitSchema.parse(unit({ dateOriginal: null })).dateOriginal).toBeNull();
+  });
+});
+
+describe('v1.6, contract A10 — PUT /corrections carries an optional date', () => {
+  const ref = { kind: TextKind.LOG_ENTRY, id: 'logbook/p003/001' } as const;
+
+  test('date omitted — a text-only call, unchanged from before A10', () => {
+    expect(TextCorrectionInputSchema.parse({ ref, text: 'Départ.' })).not.toHaveProperty('date');
+  });
+
+  test('date: null clears an existing date correction, the text is not concerned', () => {
+    expect(TextCorrectionInputSchema.parse({ ref, text: 'Départ.', date: null }).date).toBeNull();
+  });
+
+  test('date: {start, end} sets it', () => {
+    const parsed = TextCorrectionInputSchema.parse({
+      ref, text: 'Départ.', date: { start: '2003-11-04', end: '2003-11-04' },
+    });
+    expect(parsed.date).toEqual({ start: '2003-11-04', end: '2003-11-04' });
+  });
+
+  test('D11 — start must equal end, a text asserts a day or nothing', () => {
+    const result = TextCorrectionInputSchema.safeParse({
+      ref, text: 'Départ.', date: { start: '2003-11-04', end: '2003-11-05' },
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('v1.6, contract A10 — TextCorrection carries the date correction and its witness', () => {
+  const ref = { kind: TextKind.LOG_ENTRY, id: 'logbook/p003/001' } as const;
+  const base = {
+    ref, text: 'Départ.', originalAtCorrection: 'Dpart.',
+    correctedAt: '2026-08-31T09:00:00.000Z', status: 'applied',
+  };
+
+  test('a text-only correction carries null for both date fields', () => {
+    const parsed = TextCorrectionSchema.parse({ ...base, date: null, originalDateAtCorrection: null });
+    expect(parsed.date).toBeNull();
+    expect(parsed.originalDateAtCorrection).toBeNull();
+  });
+
+  test('a date correction carries the posed value and its witness', () => {
+    const parsed = TextCorrectionSchema.parse({
+      ...base,
+      date: { start: '2003-11-04', end: '2003-11-04' },
+      originalDateAtCorrection: { start: '2003-11-05', end: '2003-11-05' },
+    });
+    expect(parsed.date).toEqual({ start: '2003-11-04', end: '2003-11-04' });
+    expect(parsed.originalDateAtCorrection).toEqual({ start: '2003-11-05', end: '2003-11-05' });
+  });
+
+  test('a date ADDED where none existed originally — the witness is null, nothing to preserve', () => {
+    const parsed = TextCorrectionSchema.parse({
+      ...base,
+      date: { start: '2003-11-04', end: '2003-11-04' },
+      originalDateAtCorrection: null,
+    });
+    expect(parsed.originalDateAtCorrection).toBeNull();
   });
 });
 
