@@ -1421,3 +1421,15 @@ DONE : serveur redémarré (l'instance vivante datait d'avant A10). Vérifié en
 **Proposition envoyée à team-lead, pas construite** (« ne le construis pas sans mon accord ») : `SystemStatus.commit: {sha, dirty} | null`, calculé une fois au démarrage (`git rev-parse HEAD` + `git status --porcelain`), `null` si git indisponible. N'importe qui compare `curl /system/status` à `git log -1` pour savoir si l'instance qui tourne est à jour — coût nul par requête, un seul `execSync` au boot. J'attends l'accord avant de construire.
 
 ASK : aucune. En veille.
+
+---
+
+## Avancement — impl-backend, SystemStatus.commit construit (2026-08-31)
+
+RE : team-lead — accord donné, deux réserves
+DONE : `SystemStatus.commit: { sha, dirty } | null` — `build_info.ts` (`getCommitInfo`, injection du runner git pour le test, jamais un mock du module), calculé UNE FOIS dans `bootstrap.ts`, jamais par requête. Les deux réserves respectées : champ système seul (jamais montré à Nicolas, commenté dans le code ET le contrat), `sha` est le champ qui répond à la question, `dirty` reste une information écrite comme telle, jamais une alerte. Commentaire explicite : ne se met jamais à jour tout seul tant que le process tourne.
+Serveur redéployé pour refléter ce commit lui-même (sinon le correctif serait servi par une instance déjà périmée dès sa propre livraison). Vérifié en direct : `curl /system/status` → `commit.sha` == `git rev-parse HEAD` exact.
+6 tests neufs (3 unitaires purs sur `getCommitInfo`, 1 HTTP). 768 tests serveur verts, tsc/eslint propres. Amendement A12 écrit, marqué hors V1.6.
+DETAIL : commit `09ca8cc`.
+
+ASK : aucune. En veille.
