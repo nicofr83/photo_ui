@@ -404,6 +404,9 @@ export const handlers = [
         webDocumentsWithoutSpan: store.documents.filter((d) => d.kind === 'html' && d.span === null).length,
       },
       features: { datingExport: false },
+      // A12: system-only, never shown to Nicolas — `null` here, same as a
+      // deployment with no `.git`, since the mock has no real commit.
+      commit: null,
     });
   }),
 

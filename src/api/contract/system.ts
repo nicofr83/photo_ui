@@ -56,5 +56,12 @@ export const SystemStatusSchema = z.strictObject({
     /** §8.1: dating-annotation export. Off by default. */
     datingExport: z.boolean(),
   }),
+  /**
+   * A12 (2026-08-31): the commit the running instance started on — a
+   * SYSTEM field for the team, never shown to Nicolas. `null` when git is
+   * unavailable (a deployment with no `.git`). Lets a stale-server red be
+   * diagnosed in one `curl` instead of guessed at.
+   */
+  commit: z.strictObject({ sha: z.string(), dirty: z.boolean() }).nullable(),
 });
 export type SystemStatus = z.infer<typeof SystemStatusSchema>;
