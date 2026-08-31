@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 
 import { useAlbums } from '../../api/hooks/useAlbums';
 import { usePhotoFacets } from '../../api/hooks/usePhotoFacets';
-import type { FacetBucket } from '../../api/contract/photo';
 import { sortAlbumsByPath } from '../../domain/albumOrder';
 import { matchesSearch } from '../../domain/searchFold';
 import {
@@ -12,6 +11,7 @@ import { firstDayOfMonth, lastDayOfMonth, toMonthInput } from '../../domain/mont
 import { PhotoSort } from '../../shared/enums';
 
 import styles from './FilterPanel.module.css';
+import { PinnedFacetList } from './PinnedFacetList';
 
 interface Props {
   readonly filters: FilterState;
@@ -250,34 +250,32 @@ export function FilterPanel({
         </div>
       </fieldset>
 
-      {/* Contract §5.4: sorted by selectivity — the rarest tag first. The 42
-          over 500 photos are never hidden, only de-emphasised (spec §7.3). */}
+      {/* V1.7, Nicolas: checked facets pinned to the top of their own list,
+          the rest alphabetical — `PinnedFacetList` owns both the ordering
+          and the pinned zone's own capped, independently-scrolling height
+          (team-lead: twenty checked facets cannot eat the screen). The 42
+          tags over 500 photos are never hidden, only de-emphasised (spec
+          §7.3) — `deemphasised` carries that through unchanged. */}
       <fieldset className={styles['group']}>
         <legend className={styles['legend']}>Tags</legend>
         <div className={styles['albums']}>
-          {facets.data?.tags.map((bucket) => (
-            <BucketCheckbox
-              key={bucket.value}
-              bucket={bucket}
-              checked={filters.tags.includes(bucket.value)}
-              deemphasised={bucket.tooBroad === true}
-              onToggle={() => { onChange({ ...filters, tags: toggled(filters.tags, bucket.value) }); }}
-            />
-          ))}
+          <PinnedFacetList
+            buckets={facets.data?.tags ?? []}
+            checked={filters.tags}
+            deemphasised={(bucket) => bucket.tooBroad === true}
+            onToggle={(value) => { onChange({ ...filters, tags: toggled(filters.tags, value) }); }}
+          />
         </div>
       </fieldset>
 
       <fieldset className={styles['group']}>
         <legend className={styles['legend']}>Personnes</legend>
         <div className={styles['albums']}>
-          {facets.data?.people.map((bucket) => (
-            <BucketCheckbox
-              key={bucket.value}
-              bucket={bucket}
-              checked={filters.people.includes(bucket.value)}
-              onToggle={() => { onChange({ ...filters, people: toggled(filters.people, bucket.value) }); }}
-            />
-          ))}
+          <PinnedFacetList
+            buckets={facets.data?.people ?? []}
+            checked={filters.people}
+            onToggle={(value) => { onChange({ ...filters, people: toggled(filters.people, value) }); }}
+          />
         </div>
       </fieldset>
 
@@ -293,26 +291,18 @@ export function FilterPanel({
           </p>
         )}
         <div className={styles['albums']}>
-          {facets.data?.countries.map((bucket) => (
-            <BucketCheckbox
-              key={bucket.value}
-              bucket={bucket}
-              checked={filters.countries.includes(bucket.value)}
-              disabled={placeDisabled}
-              onToggle={() => {
-                onChange({ ...filters, countries: toggled(filters.countries, bucket.value) });
-              }}
-            />
-          ))}
-          {facets.data?.cities.map((bucket) => (
-            <BucketCheckbox
-              key={bucket.value}
-              bucket={bucket}
-              checked={filters.cities.includes(bucket.value)}
-              disabled={placeDisabled}
-              onToggle={() => { onChange({ ...filters, cities: toggled(filters.cities, bucket.value) }); }}
-            />
-          ))}
+          <PinnedFacetList
+            buckets={facets.data?.countries ?? []}
+            checked={filters.countries}
+            disabled={placeDisabled}
+            onToggle={(value) => { onChange({ ...filters, countries: toggled(filters.countries, value) }); }}
+          />
+          <PinnedFacetList
+            buckets={facets.data?.cities ?? []}
+            checked={filters.cities}
+            disabled={placeDisabled}
+            onToggle={(value) => { onChange({ ...filters, cities: toggled(filters.cities, value) }); }}
+          />
         </div>
       </fieldset>
 
@@ -345,25 +335,5 @@ export function FilterPanel({
         </label>
       </fieldset>
     </div>
-  );
-}
-
-function BucketCheckbox({
-  bucket, checked, onToggle, deemphasised = false, disabled = false,
-}: {
-  readonly bucket: FacetBucket;
-  readonly checked: boolean;
-  readonly onToggle: () => void;
-  readonly deemphasised?: boolean;
-  readonly disabled?: boolean;
-}): React.JSX.Element {
-  return (
-    <label
-      className={[styles['album'], deemphasised ? styles['broad'] : null].filter(Boolean).join(' ')}
-    >
-      <input type="checkbox" checked={checked} disabled={disabled} onChange={onToggle} />
-      <span>{bucket.value}</span>
-      <span className={styles['count']}>({bucket.count})</span>
-    </label>
   );
 }

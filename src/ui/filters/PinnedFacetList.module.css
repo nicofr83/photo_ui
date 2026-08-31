@@ -1,0 +1,28 @@
+/* V1.7: cap chosen as ~4 rows (4 × var(--tap-target), 44px each = 176px,
+   11rem) before the pinned zone scrolls on its own — enough to see several
+   checked facets at a glance without the twenty-checked case (team-lead's
+   own stress scenario) pushing the alphabetical list below off the panel. */
+.pinned {
+  /* `.albums` (the parent) is itself a column flex container — a flex
+     item with `overflow-y: auto` and no explicit size defaults its
+     AUTOMATIC minimum height to 0 (CSS Flexbox §4.5), collapsing it to a
+     sliver regardless of `max-height`. `flex: none` opts it out of the
+     flex algorithm's sizing entirely, so it sizes to its own content up to
+     `max-height` like a normal block — confirmed live: computed height
+     was 0px before this, despite `max-height: 176px` already correct. */
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-height: 11rem;
+  overflow-y: auto;
+  margin-bottom: 0.35rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.row { display: flex; align-items: flex-start; gap: 0.5rem; min-height: var(--tap-target); padding: 0.2rem 0; }
+.count { color: #6b7280; }
+/* Spec §7.3: the 42 tags over 500 photos are never hidden, only never
+   highlighted — a lighter weight, not a warning colour. */
+.broad { opacity: 0.6; }

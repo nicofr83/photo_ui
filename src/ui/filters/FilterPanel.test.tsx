@@ -213,8 +213,8 @@ describe('T3 — full text search', () => {
   });
 });
 
-describe('T3 — tags, sorted by selectivity, the broadest never highlighted', () => {
-  test('tags from the current result are offered, rarest first', async () => {
+describe('T3 — tags, the broadest never highlighted', () => {
+  test('tags from the current result are offered', async () => {
     setup();
     const list = await screen.findByRole('group', { name: /tags/i });
     const options = await within(list).findAllByRole('checkbox');
@@ -232,6 +232,25 @@ describe('T3 — tags, sorted by selectivity, the broadest never highlighted', (
     setup();
     await screen.findByRole('group', { name: /tags/i });
     expect(screen.queryByRole('checkbox', { name: /^italy/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('V1.7, Nicolas — checked tags/personnes/lieu pinned to the top of their own list', () => {
+  test('checking a tag pins it to the top of the Tags list', async () => {
+    const user = userEvent.setup();
+    setup();
+    await user.click(await screen.findByRole('checkbox', { name: /ruines/ }));
+    const list = screen.getByRole('group', { name: /tags/i });
+    expect(within(list).getByTestId('pinned-facets')).toBeInTheDocument();
+    expect(within(within(list).getByTestId('pinned-facets')).getByRole('checkbox', { name: /ruines/ }))
+      .toBeInTheDocument();
+  });
+
+  test('countries and cities pin independently — the two axes never mix', async () => {
+    setup();
+    const list = await screen.findByRole('group', { name: /lieu/i });
+    expect((await within(list).findAllByRole('checkbox')).length).toBeGreaterThan(0);
+    expect(within(list).queryByTestId('pinned-facets')).not.toBeInTheDocument();
   });
 });
 

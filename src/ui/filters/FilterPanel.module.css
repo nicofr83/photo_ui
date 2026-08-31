@@ -16,9 +16,6 @@
 .albumText { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 0.4rem; row-gap: 0.1rem; }
 .count { color: #6b7280; }
 .suspect { color: #b7791f; font-size: 0.75rem; }
-/* Spec §7.3: the 42 tags over 500 photos are never hidden, only never
-   highlighted — a lighter weight, not a warning colour. */
-.broad { opacity: 0.6; }
 .tokens { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0; margin: 0; list-style: none; }
 .token { display: flex; align-items: center; gap: 0.35rem; padding: 0 0.5rem; min-height: var(--tap-target); border: 1px solid #d1d5db; border-radius: 999px; }
 .remove { min-width: var(--tap-target); min-height: var(--tap-target); border: 0; background: none; cursor: pointer; font-size: 1rem; }
