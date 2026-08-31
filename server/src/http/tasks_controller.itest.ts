@@ -419,6 +419,39 @@ describe('POST /tasks/:slug/notes', () => {
     }
   });
 
+  test('text can be edited by hand AT CREATION, before ever saving a verbatim copy — editedSince is true immediately (V1.7, team-lead)', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    try {
+      await setup.query(`INSERT INTO pipeline.document (id, kind, title, has_pages) VALUES ('logbook', 'handwritten', 'Journal', true)`);
+      await setup.query(`INSERT INTO pipeline.text_unit (kind, id, document_id, ordinal, body, confidence)
+        VALUES ('passage', 'logbook/p003/001', 'logbook', 1, 'Depart de Figueira.', 'transcribed')`);
+      await app.server.inject({ method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null } });
+
+      // L'utilisateur corrige à la main AU MOMENT de créer la note — jamais
+      // une copie verbatim d'abord. `text` (le corps) est déjà différent de
+      // la source ; rien à contourner, le champ existe déjà (`TaskNoteCreateInput.text`
+      // est libre, `derivedFrom` ne fait que nommer la provenance).
+      const response = await app.server.inject({
+        method: 'POST', url: '/tasks/x/notes',
+        payload: {
+          title: 'journal de bord, page 3 du 09/07/1998', text: 'Départ de Figueira.',
+          attachedTo: { images: [], texts: [] }, derivedFrom: { kind: 'passage', id: 'logbook/p003/001' },
+        },
+      });
+      expect(response.statusCode).toBe(201);
+      const body = response.json<{ text: string; editedSince: boolean }>();
+      expect(body.text).toBe('Départ de Figueira.');
+      // Vrai DÈS LA CRÉATION, jamais seulement après une PATCH ultérieure —
+      // la règle capitale (un texte édité n'est plus une lecture) s'applique
+      // au moment même où l'édition existe, pas à un geste distinct plus tard.
+      expect(body.editedSince).toBe(true);
+    } finally {
+      await setup.query(`DELETE FROM pipeline.text_unit WHERE document_id = 'logbook'`);
+      await setup.query(`DELETE FROM pipeline.document WHERE id = 'logbook'`);
+    }
+  });
+
   test('PATCH refuses a title that erases the attribution prefix', async () => {
     const setup = testPool();
     app = await bootstrap(await completeEnv());
