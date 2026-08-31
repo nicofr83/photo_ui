@@ -402,6 +402,48 @@ async function nextFreePosition(client: PoolClient, slug: string): Promise<numbe
 }
 
 /**
+ * La note d'une image EN ATTENTE d'une resélection (migration 008, bug
+ * signalé par `front` sur `zz-repro-bug1`) — `app.task_image_note`, jamais
+ * lue par l'export ni par `contentHash` (aucun des deux ne la joint) : une
+ * ligne en attente est inerte PAR CONSTRUCTION, pas par un filtre à
+ * respecter ailleurs.
+ */
+async function loadArchivedImageNotes(
+  client: PoolClient, slug: string, ids: readonly string[],
+): Promise<Map<string, string>> {
+  const archived = new Map<string, string>();
+  if (ids.length === 0) return archived;
+  const { rows } = await client.query<{ cloud_asset_id: string; note: string }>(
+    `SELECT cloud_asset_id, note FROM app.task_image_note WHERE task_slug = $1 AND cloud_asset_id = ANY($2::char(32)[])`,
+    [slug, ids]);
+  for (const row of rows) archived.set(row.cloud_asset_id, row.note);
+  return archived;
+}
+
+/**
+ * Au retrait d'une image : la note CONNUE au moment du retrait remplace
+ * toujours l'archive (jamais un empilement — une ligne par couple, réécrite
+ * au retrait le plus récent). Sans note à préserver, la ligne d'archive est
+ * SUPPRIMÉE plutôt que réécrite à `NULL` — sans quoi une note plus ancienne,
+ * déjà remplacée en base par une note vidée avant ce retrait, referait
+ * surface à la prochaine resélection.
+ */
+async function archiveRemovedImageNote(
+  client: PoolClient, slug: string, cloudAssetId: string, note: string | null,
+): Promise<void> {
+  if (note === null) {
+    await client.query(`DELETE FROM app.task_image_note WHERE task_slug = $1 AND cloud_asset_id = $2`,
+      [slug, cloudAssetId]);
+  } else {
+    await client.query(`
+      INSERT INTO app.task_image_note (task_slug, cloud_asset_id, note)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (task_slug, cloud_asset_id) DO UPDATE SET note = EXCLUDED.note, archived_at = now()`,
+      [slug, cloudAssetId, note]);
+  }
+}
+
+/**
  * `add`, `remove` et `update` dans UN seul appel : sélectionner un album de
  * 286 photos est un geste, pas 286 requêtes — mais l'enregistrement fait bien
  * une ligne par photo (tâche 17). Rien n'échoue en silence : chaque entrée
@@ -422,6 +464,7 @@ export async function mutateTaskImages(
 
   const photoInfo = await loadPhotoInfo(client, idList, row.period_from, row.period_to);
   const existing = await loadExistingSelections(client, slug, idList);
+  const archivedNotes = await loadArchivedImageNotes(client, slug, idList);
   let nextPosition = await nextFreePosition(client, slug);
 
   let added = 0;
@@ -449,13 +492,18 @@ export async function mutateTaskImages(
       merged++;
     } else {
       const dedupedBecause = [...new Set(item.selectedBecause)];
+      // Une note fournie l'emporte toujours ; sans elle, la dernière note
+      // laissée en attente par un retrait précédent revient VERBATIM
+      // (migration 008) — jamais silencieuse : le champ existe déjà,
+      // seule sa provenance change selon ce que le client a fourni.
+      const restoredNote = item.note ?? archivedNotes.get(item.cloudAssetId) ?? null;
       await client.query(
         `INSERT INTO app.task_image (task_slug, cloud_asset_id, position, note, selected_because)
          VALUES ($1, $2, $3, $4, $5)`,
-        [slug, item.cloudAssetId, nextPosition, item.note ?? null, dedupedBecause],
+        [slug, item.cloudAssetId, nextPosition, restoredNote, dedupedBecause],
       );
       existing.set(item.cloudAssetId, {
-        cloud_asset_id: item.cloudAssetId, note: item.note ?? null,
+        cloud_asset_id: item.cloudAssetId, note: restoredNote,
         selected_because: dedupedBecause, position: nextPosition,
       });
       nextPosition++;
@@ -465,10 +513,12 @@ export async function mutateTaskImages(
   }
 
   for (const cloudAssetId of mutation.remove ?? []) {
-    if (!existing.has(cloudAssetId)) {
+    const current = existing.get(cloudAssetId);
+    if (current === undefined) {
       rejected.push({ cloudAssetId, reason: 'not_selected' });
       continue;
     }
+    await archiveRemovedImageNote(client, slug, cloudAssetId, current.note);
     await client.query(`DELETE FROM app.task_image WHERE task_slug = $1 AND cloud_asset_id = $2`,
       [slug, cloudAssetId]);
     existing.delete(cloudAssetId);

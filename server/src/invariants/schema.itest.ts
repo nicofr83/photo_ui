@@ -519,3 +519,37 @@ describe('007 — correcting a text\'s date', () => {
     });
   });
 });
+
+describe('008 — a note in waiting for a removed image', () => {
+  async function insertTaskImageNote(client: PoolClient, note: string | null): Promise<unknown> {
+    await client.query(`INSERT INTO app.task (slug, title, brief) VALUES ('x', 'x', '')`);
+    return client.query(
+      `INSERT INTO app.task_image_note (task_slug, cloud_asset_id, note) VALUES ('x', $1, $2)`,
+      ['a'.repeat(32), note]);
+  }
+
+  test('a note is required — nothing to archive without one', async () => {
+    await withRollback(async (client) => {
+      await expect(insertTaskImageNote(client, null)).rejects.toThrow(/null value|not-null/i);
+    });
+  });
+
+  test('one row per (task, image) — a second insert on the same pair is refused, ON CONFLICT is the caller\'s job', async () => {
+    await withRollback(async (client) => {
+      await insertTaskImageNote(client, 'une note');
+      await expect(client.query(
+        `INSERT INTO app.task_image_note (task_slug, cloud_asset_id, note) VALUES ('x', $1, 'une autre')`,
+        ['a'.repeat(32)],
+      )).rejects.toThrow(/duplicate key|task_image_note_pkey/i);
+    });
+  });
+
+  test('deleting the task cascades — a note in waiting never outlives its task, same as everything else', async () => {
+    await withRollback(async (client) => {
+      await insertTaskImageNote(client, 'une note');
+      await client.query(`DELETE FROM app.task WHERE slug = 'x'`);
+      const { rows } = await client.query(`SELECT 1 FROM app.task_image_note WHERE task_slug = 'x'`);
+      expect(rows).toEqual([]);
+    });
+  });
+});

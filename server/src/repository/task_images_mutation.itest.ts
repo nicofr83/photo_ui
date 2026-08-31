@@ -6,7 +6,7 @@ import type { PoolClient } from '../db/pool.ts';
 import { runMigrations } from '../db/migrate.ts';
 import { createLog, LogLevel } from '../log/log.ts';
 import { closeTestPool, testPool, withRollback } from '../../test/helpers/db.ts';
-import { createTask, getTaskDetail, mutateTaskImages } from './task_repository.ts';
+import { createTask, deleteTask, getTaskDetail, mutateTaskImages } from './task_repository.ts';
 
 const MIGRATIONS = fileURLToPath(new URL('../../db/migrations', import.meta.url));
 
@@ -158,5 +158,104 @@ test('add, remove and update in the SAME call, one transaction, contentHash refl
     const detail = await getTaskDetail(client, 'x');
     expect([...(detail?.images.map((i) => i.cloudAssetId) ?? [])].sort()).toEqual([keep, noted].sort());
     expect(detail?.contentHash).toBe(result?.contentHash);
+  });
+});
+
+// V1.7 — migration 008 : removing an image used to hard-delete its note
+// (zz-repro-bug1, found by `front`); reselecting started from `note: null`.
+test('a removed image\'s note is preserved and comes back VERBATIM on reselection', async () => {
+  await withRollback(async (client) => {
+    const id = 'a'.repeat(32);
+    await insertPhoto(client, id);
+    await createTask(client, { title: 'x', slug: 'x', brief: '', period: null });
+    await mutateTaskImages(client, 'x', {
+      add: [{ cloudAssetId: id, selectedBecause: ['manual'], note: 'un commentaire' }],
+    });
+
+    await mutateTaskImages(client, 'x', { remove: [id] });
+    const afterRemoval = await getTaskDetail(client, 'x');
+    expect(afterRemoval?.images).toEqual([]); // retirée pour de vrai — pas juste masquée
+
+    await mutateTaskImages(client, 'x', { add: [{ cloudAssetId: id, selectedBecause: ['manual'] }] });
+    const afterReselection = await getTaskDetail(client, 'x');
+    expect(afterReselection?.images[0]?.note).toBe('un commentaire');
+  });
+});
+
+test('reselecting WITH an explicit note overrides the preserved one, never silently ignored', async () => {
+  await withRollback(async (client) => {
+    const id = 'a'.repeat(32);
+    await insertPhoto(client, id);
+    await createTask(client, { title: 'x', slug: 'x', brief: '', period: null });
+    await mutateTaskImages(client, 'x', { add: [{ cloudAssetId: id, selectedBecause: ['manual'], note: 'ancien' }] });
+    await mutateTaskImages(client, 'x', { remove: [id] });
+
+    await mutateTaskImages(client, 'x', {
+      add: [{ cloudAssetId: id, selectedBecause: ['manual'], note: 'nouveau' }],
+    });
+    const detail = await getTaskDetail(client, 'x');
+    expect(detail?.images[0]?.note).toBe('nouveau');
+  });
+});
+
+test('removing an image that never had a note restores nothing on reselection — never a stale note from further back', async () => {
+  await withRollback(async (client) => {
+    const id = 'a'.repeat(32);
+    await insertPhoto(client, id);
+    await createTask(client, { title: 'x', slug: 'x', brief: '', period: null });
+    await mutateTaskImages(client, 'x', { add: [{ cloudAssetId: id, selectedBecause: ['manual'] }] });
+    await mutateTaskImages(client, 'x', { remove: [id] });
+
+    await mutateTaskImages(client, 'x', { add: [{ cloudAssetId: id, selectedBecause: ['manual'] }] });
+    const detail = await getTaskDetail(client, 'x');
+    expect(detail?.images[0]?.note).toBeNull();
+  });
+});
+
+test('clearing a note (update note:null) THEN removing preserves nothing — the archive reflects the note as it stood at removal, never an older one', async () => {
+  await withRollback(async (client) => {
+    const id = 'a'.repeat(32);
+    await insertPhoto(client, id);
+    await createTask(client, { title: 'x', slug: 'x', brief: '', period: null });
+    await mutateTaskImages(client, 'x', { add: [{ cloudAssetId: id, selectedBecause: ['manual'], note: 'un commentaire' }] });
+    await mutateTaskImages(client, 'x', { update: [{ cloudAssetId: id, note: null }] });
+    await mutateTaskImages(client, 'x', { remove: [id] });
+
+    await mutateTaskImages(client, 'x', { add: [{ cloudAssetId: id, selectedBecause: ['manual'] }] });
+    const detail = await getTaskDetail(client, 'x');
+    expect(detail?.images[0]?.note).toBeNull();
+  });
+});
+
+test('a note preserved across a remove/reselect round trip never moves contentHash — an inert note is invisible to it', async () => {
+  await withRollback(async (client) => {
+    const id = 'a'.repeat(32);
+    await insertPhoto(client, id);
+    await createTask(client, { title: 'x', slug: 'x', brief: '', period: null });
+    const before = await mutateTaskImages(client, 'x', {
+      add: [{ cloudAssetId: id, selectedBecause: ['manual'], note: 'un commentaire' }],
+    });
+
+    await mutateTaskImages(client, 'x', { remove: [id] });
+    const after = await mutateTaskImages(client, 'x', { add: [{ cloudAssetId: id, selectedBecause: ['manual'] }] });
+
+    // Même sélection, même note, retrouvée à l'identique : le hash retombe
+    // exactement là où il était — la table d'attente n'existe nulle part
+    // dans son calcul (`getTaskDetail`/`content_hash.ts` ne la lisent pas).
+    expect(after?.contentHash).toBe(before?.contentHash);
+  });
+});
+
+test('a note left in waiting for a removed image is purged when the task itself is deleted, same as everything else', async () => {
+  await withRollback(async (client) => {
+    const id = 'a'.repeat(32);
+    await insertPhoto(client, id);
+    await createTask(client, { title: 'x', slug: 'x', brief: '', period: null });
+    await mutateTaskImages(client, 'x', { add: [{ cloudAssetId: id, selectedBecause: ['manual'], note: 'un commentaire' }] });
+    await mutateTaskImages(client, 'x', { remove: [id] });
+
+    await deleteTask(client, 'x');
+    const { rows } = await client.query(`SELECT 1 FROM app.task_image_note WHERE task_slug = 'x'`);
+    expect(rows).toEqual([]);
   });
 });

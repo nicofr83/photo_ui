@@ -268,6 +268,26 @@ describe('exportTask', () => {
     }
   });
 
+  test('V1.7 — a note left in waiting for a removed image (migration 008) never appears in an export while the image is not in the task', async () => {
+    const setup = testPool();
+    try {
+      await setup.query(`INSERT INTO app.task (slug, title, brief) VALUES ('x', 'Titre', '')`);
+      // Aucune ligne app.task_image : l'image N'EST PAS dans la tâche — sa
+      // note en attente d'une resélection ne doit jamais fuiter, ni comme
+      // image (rien à rendre) ni ailleurs dans le manifeste.
+      await setup.query(`INSERT INTO app.task_image_note (task_slug, cloud_asset_id, note)
+                         VALUES ('x', $1, 'un commentaire en attente')`, ['a'.repeat(32)]);
+
+      const report = await exportTask(deps, 'x', {});
+      const manifest = JSON.parse(await readFile(report.manifestPath, 'utf8')) as { images: unknown[] };
+      expect(manifest.images).toEqual([]);
+      expect(report.skippedImages).toEqual([]);
+    } finally {
+      await setup.query(`DELETE FROM app.task_image_note WHERE task_slug = 'x'`);
+      await setup.query(`DELETE FROM app.task WHERE slug = 'x'`);
+    }
+  });
+
   test('V1.7 — a note derived from a text NOT separately attached still gets its source in texts[], closing the dead-reference gap', async () => {
     const setup = testPool();
     try {

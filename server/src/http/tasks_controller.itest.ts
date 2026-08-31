@@ -267,6 +267,39 @@ describe('POST /tasks/:slug/images', () => {
     expect(response.json<{ rejected: { cloudAssetId: string; reason: string }[] }>().rejected)
       .toEqual([{ cloudAssetId: id, reason: 'unknown_photo' }]);
   });
+
+  test('remove then re-add over the full HTTP path restores the note verbatim (V1.7, migration 008 — the zz-repro-bug1 reproduction)', async () => {
+    const setup = testPool();
+    app = await bootstrap(await completeEnv());
+    const id = 'a'.repeat(32);
+    try {
+      await setup.query(`INSERT INTO pipeline.photo
+        (cloud_asset_id, sha256, relative_path, file_name, format, raw_date_source)
+        VALUES ($1, $2, 'x/p.jpg', 'p.jpg', 'jpg', 'none')`, [id, 'b'.repeat(64)]);
+      await app.server.inject({ method: 'POST', url: '/tasks', payload: { title: 'x', slug: 'x', brief: '', period: null } });
+      await app.server.inject({
+        method: 'POST', url: '/tasks/x/images',
+        payload: { add: [{ cloudAssetId: id, selectedBecause: ['manual'], note: 'PICT0311' }] },
+      });
+
+      const removeResponse = await app.server.inject({
+        method: 'POST', url: '/tasks/x/images', payload: { remove: [id] },
+      });
+      expect(removeResponse.statusCode).toBe(200);
+      const afterRemove = await app.server.inject({ method: 'GET', url: '/tasks/x' });
+      expect(afterRemove.json<{ images: unknown[] }>().images).toEqual([]);
+
+      await app.server.inject({
+        method: 'POST', url: '/tasks/x/images',
+        payload: { add: [{ cloudAssetId: id, selectedBecause: ['manual'] }] },
+      });
+      const afterReselect = await app.server.inject({ method: 'GET', url: '/tasks/x' });
+      const images = afterReselect.json<{ images: { cloudAssetId: string; note: string | null }[] }>().images;
+      expect(images).toEqual([expect.objectContaining({ cloudAssetId: id, note: 'PICT0311' })]);
+    } finally {
+      await setup.query('DELETE FROM pipeline.photo');
+    }
+  });
 });
 
 describe('POST /tasks/:slug/export', () => {

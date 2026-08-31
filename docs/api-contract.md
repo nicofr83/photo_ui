@@ -26,6 +26,28 @@ existants du projet.
 >
 ### Amendements depuis le gel
 
+### A15 — la note d'une image survit à son retrait de la tâche *(2026-08-31, V1.7)*
+
+Bug signalé par `impl-frontend` (`zz-repro-bug1`) : `POST /tasks/:slug/images`
+avec `remove` faisait un vrai `DELETE` de la ligne `app.task_image`, qui
+emportait `note` avec elle — resélectionner l'image repartait de `note:
+null`. Aucun type ne change (`TaskImageSelection.note` existait déjà) ;
+seule la persistance change.
+
+`app.task_image` reste inchangée (migration 008) : le retrait reste un vrai
+`DELETE`, jamais un drapeau à filtrer partout où la table est déjà jointe
+(galerie, revue, export, `contentHash`). Une table séparée,
+`app.task_image_note`, clée sur `(task_slug, cloud_asset_id)`, garde
+l'unique note en attente d'une resélection — jamais lue par l'export ni par
+le calcul de `contentHash` : une note en attente est inerte PAR
+CONSTRUCTION (aucun code ne la joint sur ces deux chemins), pas par un
+filtre à y ajouter. Resélectionner SANS note explicite restaure la
+dernière en attente verbatim ; une note fournie l'emporte toujours. Purge :
+`ON DELETE CASCADE` sur la tâche, comme `app.task_image`/`app.task_note` —
+supprimer la tâche supprime ses notes en attente, aucun code de nettoyage
+séparé. Au sein d'une tâche vivante, pas de purge distincte : une ligne par
+image un jour retirée, jamais illimitée, jamais lue hors de ce mécanisme.
+
 ### A14 — `quotable`, la provenance dans l'export, et un trou fermé sur `derivedFrom` *(2026-08-31, V1.7)*
 
 **Le trou fermé d'abord** : `TaskNote.derivedFrom` ne portait que `{kind,
