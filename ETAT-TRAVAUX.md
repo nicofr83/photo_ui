@@ -1239,3 +1239,30 @@ DETAIL : commit `d035cb4`.
 **La V1.5 est livrée — les 15 tâches, les 8 tranches, et ce câblage de fermeture.**
 
 ASK : aucune. J'attends votre confirmation, sinon je reste disponible.
+
+---
+
+## Plan — V1.6, cinq demandes de Nicolas (2026-08-31)
+
+RE : team-lead — V1.6, plan court avant implémentation
+Périmètre confirmé par team-lead : 4 tâches à moi (par ordre de valeur), la 5ᵉ (visualisation des pages du site) attend `back` — je n'y touche pas. Le point d'entrée de correction de date, le texte complet des documents web et leurs images sont côté `back`.
+
+**Vérifié avant d'écrire ce plan** (pour ne pas construire ce qui existe déjà, comme demandé) :
+- Retirer une image d'une tâche depuis la Revue : **déjà fait** (`ReviewScreen.tsx`, bouton « Retirer {id} », Task 7).
+- Supprimer une note depuis la Revue : **déjà fait** (`NotesPanel.tsx`, bouton « Supprimer », déjà monté dans `ReviewScreen`).
+- Retirer un **texte** retenu depuis la Revue : **manquant** — la liste des textes de la Revue (`textGroups`) rend `<TextCard unit={text} />` en lecture seule, sans `onToggleSelect`. C'est le seul des trois retraits qui n'existe pas.
+- L'image du scan en entier (écran Textes) : **bug confirmé en navigateur réel**, root-cause trouvée avant tout correctif (méthode systematic-debugging) — `PageViewer.module.css`, `.frame { max-height: 32rem; overflow: hidden }` combiné à `ZOOM_MIN = 1` (jamais en-dessous de l'échelle native) : sur une page 780×1285, le cadre ne montre que le tiers supérieur, et rien ne permet de dézoomer pour voir le reste. Mesuré : cadre 782×514px, image rendue 780×1285px (native, jamais mise à l'échelle).
+
+**A. Voir les images sélectionnées** (Images) — `FilterState.selectedOnly: boolean`, bascule dans `FilterPanel`, état dans l'URL (`selectedOnly=true`) comme les autres axes. Quand actif, l'écran rend `useTaskReview(slug).images` (déjà au bon format `PhotoListItem`, déjà chargé ailleurs dans l'appli — aucun nouveau point d'entrée) au lieu d'interroger `/photos` : les autres filtres restent visibles mais n'affectent pas cette vue, et redeviennent actifs dès la bascule désactivée. Décocher une vignette dans cette vue retire l'image de la tâche (même geste `onToggle` que la grille normale).
+
+**B. Retirer un texte depuis la Revue** — un bouton « Retirer » par `TextCard` de la liste des textes, `useTextSelection(slug).remove([ref])` (mutation déjà existante, utilisée par `PageDetail`/`TextsScreen`).
+
+**C. Clic sur une vignette → image en grand, en modale** (Revue) — nouveau `ImageModal` : ferme au bouton, à Échap, au clic hors de l'image ; le focus revient sur la vignette d'origine à la fermeture. `renderUrl` est déjà sur `review.data.images` (`PhotoListItem`) — aucun nouvel appel réseau.
+
+**D. Image de page entière, écran Textes** — `PageViewer.tsx` : l'échelle par défaut et le plancher de zoom deviennent `fit = min(cadre.largeur / image.largeur, cadre.hauteur / image.hauteur)` au lieu de l'échelle native fixe — la page entière est visible au premier rendu, et « Zoom arrière » peut y revenir.
+
+**Différé, pas oublié** : la règle « date corrigée = decision, violet gras ✓, original affiché à côté » (point tranché par team-lead) s'applique quand `back` livre le point d'entrée de correction de date — rien à construire ici tant qu'il n'existe pas.
+
+Méthode : TDD, un commit par tâche, chemins explicites — `back` travaille en parallèle sur la même branche.
+
+ASK : aucune. J'implémente dans l'ordre A → B → C → D.
