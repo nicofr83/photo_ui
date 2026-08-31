@@ -543,7 +543,9 @@ test('listWebDocuments carries the linked-photo proposal, independent of the ent
 
     const docs = await listWebDocuments(client);
     const doc = docs.find((d) => d.documentId === 'web/2003/gal');
-    expect(doc?.proposal).toEqual({ date: '2004-10-05', photoCount: 1, datedToDayCount: 1, spanDays: 0 });
+    expect(doc?.proposal).toEqual({
+      date: '2004-10-05', photoCount: 1, datedToDayCount: 1, spanDays: 0, thumbSha256: 'b'.repeat(64),
+    });
     // La proposition ne remplit JAMAIS `span` — deux champs indépendants
     // (Task 10) : aucun `putWebSpan` n'a été appelé ici.
     expect(doc?.span).toBeNull();

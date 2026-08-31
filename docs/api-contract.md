@@ -26,6 +26,23 @@ existants du projet.
 >
 ### Amendements depuis le gel
 
+### A11 — la vignette d'un document du site est une photo, jamais une capture d'écran *(2026-08-31, V1.6)*
+
+`WebDateProposal` gagne `thumbSha256: string` — la photo liée par appariement
+de galerie (`app.web_gallery_link`) la plus tôt datée, la même qui établit
+`date`. Choix délibéré contre une capture de la page HTML : `spec-v15` a
+mesuré que l'extrait censé identifier un document est identique à son titre
+sur 45 des 60 — les pages du site sortent toutes du même gabarit FrontPage,
+leurs captures se ressembleraient. Une vraie photo se reconnaît d'un coup
+d'œil, sans dépendance neuve (pas de navigateur headless) et sans dépendre du
+volume externe monté.
+
+`thumbSha256` n'existe QUE quand `proposal` existe — un document sans photo
+liée (mesuré : 22 des 28 documents du périmètre en ont une, pas tous) a
+`proposal: null`, donc aucune vignette du tout. Le client affiche un repère
+neutre, JAMAIS la photo d'un autre document. Servie via
+`GET /images/:sha256/thumb`, déjà en place — aucune route neuve.
+
 ### A10 — corriger la date d'un texte, comme on corrige son texte *(2026-08-31, V1.6)*
 
 `PUT /corrections` accepte un `date` optionnel — **omis** : ne touche pas une
@@ -2012,6 +2029,15 @@ export interface WebDateProposal {
   readonly photoCount: number;
   readonly datedToDayCount: number;
   readonly spanDays: number;
+  /**
+   * La vignette du document (V1.6) — la photo la plus tôt datée, la même
+   * qui établit `date`. Jamais absent quand `proposal` l'est aussi : un
+   * document sans photo liée a `proposal: null` (`WebDocumentRow`), donc
+   * aucune vignette du tout — un repère neutre côté client, jamais un
+   * repère fabriqué ni la photo d'un autre document. Servie via
+   * `GET /images/:sha256/thumb`, déjà en place, aucune route neuve.
+   */
+  readonly thumbSha256: string;
 }
 
 export interface WebDocumentRow {

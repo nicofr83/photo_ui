@@ -28,8 +28,26 @@ test('a document proposes the smallest date among its linked photos, and says wh
 
     const proposals = await listWebProposals(client);
     expect(proposals.get('web/2003/gal')).toEqual({
-      date: '2004-10-05', photoCount: 2, datedToDayCount: 2, spanDays: 8,
+      date: '2004-10-05', photoCount: 2, datedToDayCount: 2, spanDays: 8, thumbSha256: 'b'.repeat(64),
     });
+  });
+});
+
+test('the thumbnail is the earliest-dated linked photo — the same one that establishes the proposed date', async () => {
+  await withRollback(async (client) => {
+    await client.query(`INSERT INTO pipeline.photo
+      (cloud_asset_id, sha256, relative_path, file_name, format, raw_date_source, resolved_from, resolved_start, resolved_end, resolved_precision)
+      VALUES ($1, $2, 'x/late.jpg', 'late.jpg', 'jpg', 'exif', 'exif_arbitrated', '2004-10-13', '2004-10-13', 'day'),
+             ($3, $4, 'x/early.jpg', 'early.jpg', 'jpg', 'exif', 'exif_arbitrated', '2004-10-05', '2004-10-05', 'day')`,
+      ['a'.repeat(32), 'b'.repeat(64), 'c'.repeat(32), 'd'.repeat(64)]);
+    // Insérés dans l'ordre alphabétique INVERSE de la date, pour prouver que
+    // ce n'est pas l'ordre d'insertion ni `image_path` qui décide.
+    await client.query(`INSERT INTO app.web_gallery_link (sha256, page, image_path, distance, margin, verified)
+      VALUES ($1, '2003/gal.htm', 'a-late.jpg', 4, 8, null), ($2, '2003/gal.htm', 'z-early.jpg', 4, 8, null)`,
+      ['b'.repeat(64), 'd'.repeat(64)]);
+
+    const proposals = await listWebProposals(client);
+    expect(proposals.get('web/2003/gal')?.thumbSha256).toBe('d'.repeat(64));
   });
 });
 

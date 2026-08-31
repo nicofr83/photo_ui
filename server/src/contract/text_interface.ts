@@ -163,6 +163,14 @@ export interface WebDateProposal {
   readonly photoCount: number;
   readonly datedToDayCount: number;
   readonly spanDays: number;
+  /**
+   * La vignette du document (V1.6) — la photo la plus tôt datée, la même
+   * qui établit `date`. Jamais absent quand `proposal` l'est aussi : un
+   * document sans photo liée a `proposal: null` (`WebDocumentRow`) et donc
+   * aucune vignette du tout, jamais un repère fabriqué ni la photo d'un
+   * autre document.
+   */
+  readonly thumbSha256: string;
 }
 
 export interface WebDocumentRow {
