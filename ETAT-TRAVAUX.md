@@ -1300,3 +1300,22 @@ RE : team-lead — trois besoins serveur pour la V1.6
 **J'implémente 1 maintenant (TDD), j'attends confirmation de team-lead sur la vignette (2) avant de m'engager dessus.**
 
 ASK : confirmation sur la vignette de page web (photo liée vs capture HTML) — pas bloquant, je continue sur (1) en attendant.
+
+---
+
+## Avancement — impl-frontend, V1.6 complète (2026-08-31)
+
+RE : team-lead — V1.6, les quatre tâches de mon périmètre
+DONE : les quatre demandes de Nicolas qui me revenaient sont livrées, dans l'ordre de valeur donné, chacune vérifiée contre le vrai serveur en navigateur réel.
+
+**A. Voir les images sélectionnées** — bascule dans `FilterPanel`, état dans l'URL (`?selectedOnly=true`, hors `FilterState` — n'atteint jamais `/photos`, l'invariant §9.6.1 reste vrai). `SelectedPhotoGrid` rend `GET /tasks/:slug/review` (déjà chargé ailleurs, aucun nouveau point d'entrée) à la place de `/photos`. Décocher une vignette retire l'image. Vérifié : sur `01-le-grand-depart`, 3930 vignettes → exactement 14, le vrai compte de la tâche.
+**B. Retirer un texte depuis la Revue** — vérifié d'abord ce qui existait (image et note : déjà fait) avant de construire quoi que ce soit. Seul le texte manquait : bouton « Retirer {ref} » réutilisant `useTextSelection(slug).remove`, mutation déjà existante. Vérifié en direct sur `zz-repro-bug1`.
+**C. Vignette → image en grand, en modale** (Revue) — nouveau `ImageModal` (fermeture bouton/Échap/clic hors image, jamais sur l'image ; focus rendu à la vignette d'origine à la fermeture). `renderUrl` déjà sur `review.data.images`, aucun nouvel appel. Vérifié en direct sur `01-le-grand-depart`.
+**D. Image de page entière, écran Textes** — root cause trouvée avant tout correctif : `PageViewer.module.css`'s `.frame` (32rem, `overflow: hidden`) + plancher de zoom fixé à l'échelle native, jamais à la taille du cadre. Mesuré en direct : cadre 782×514px, scan 780×1285px natif — seul le tiers supérieur visible, aucun moyen de dézoomer davantage. Corrigé : l'échelle par défaut ET le plancher de zoom deviennent `fitScale`, mesuré sur le vrai cadre au montage et au redimensionnement. Vérifié en direct : échelle 0,4 par défaut, image rendue 312×514 — sa hauteur entière dans le cadre.
+
+699 tests front verts, tsc et eslint propres (sauf deux erreurs préexistantes dans un fichier `server/` de `back`, en cours d'édition, non touché ici).
+DETAIL : commits `69eed8e` (A), `376e03d` (B), `002d077` (C), `42cf9da` (D).
+
+**La V1.6 (mon périmètre) est complète.**
+
+ASK : aucune. La 5ᵉ demande (visualisation des pages du site) reste hors de mon périmètre, en attente de `back` comme convenu. Disponible sinon.
