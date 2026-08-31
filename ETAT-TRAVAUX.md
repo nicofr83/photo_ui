@@ -1411,3 +1411,13 @@ DETAIL : commit `a221e58`.
 Je passe à l'écran de lecture des documents web (item 5) — je dois d'abord faire gagner `thumbSha256` à `WebDateProposalSchema` (contrat A11).
 
 ASK : aucune pour l'instant. Signale si le redéploiement A10 traîne — j'ai besoin du serveur à jour pour boucler la vérification navigateur de ce chantier.
+
+---
+
+## Avancement — impl-backend, serveur redéployé, proposition de visibilité (2026-08-31)
+
+RE : team-lead — serveur périmé (deuxième fois du jour), front bloqué sur sa vérification navigateur
+DONE : serveur redémarré (l'instance vivante datait d'avant A10). Vérifié en direct : `GET /texts` sert `dateOriginal`, `GET /ref/web-documents` sert `thumbSha256` (22 items), `GET /images/:sha256/thumb` répond 200 dessus. Front prévenu.
+**Proposition envoyée à team-lead, pas construite** (« ne le construis pas sans mon accord ») : `SystemStatus.commit: {sha, dirty} | null`, calculé une fois au démarrage (`git rev-parse HEAD` + `git status --porcelain`), `null` si git indisponible. N'importe qui compare `curl /system/status` à `git log -1` pour savoir si l'instance qui tourne est à jour — coût nul par requête, un seul `execSync` au boot. J'attends l'accord avant de construire.
+
+ASK : aucune. En veille.
