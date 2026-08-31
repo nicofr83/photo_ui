@@ -294,6 +294,154 @@ alphabétique, sans faire sauter la liste.
 
 ---
 
+## Comment se rendent les trois états
+
+Comme pour les dates : au pixel, et sans avoir à réfléchir.
+
+**Un extrait fidèle** — la note est bordée à gauche d'un filet plein, son texte en
+romain, et sous elle une ligne discrète : « extrait de *journal de bord, page 12
+du 04/11/2003* ». C'est le rendu d'une citation, et il dit d'où elle vient.
+
+**Un texte réécrit** — même bloc, mais le filet est **pointillé**, et la ligne du
+dessous porte la mention **« reformulé »** avant la provenance. Un bouton
+« Voir le texte d'origine » déplie l'instantané, grisé, avec « Rétablir le texte
+d'origine ». Le pointillé est le signal qu'on lit sans lire : ce bloc ne se cite
+pas.
+
+**Une note écrite de zéro** — aucun filet, aucune mention, aucune provenance.
+L'absence de marque est elle-même l'information : cette note n'a jamais prétendu
+venir d'une page.
+
+**Une source corrigée depuis** ajoute, sur les deux premiers états, un bandeau
+d'une ligne : « la source a été corrigée depuis » et le bouton « Reprendre le
+texte corrigé ». Il ne remplace pas le filet, il s'ajoute — l'état de la note et
+l'état de sa source sont deux informations distinctes.
+
+Ces trois rendus ne réutilisent **ni les couleurs ni les glyphes des dates**. Le
+vert, l'ambre `≈` et le violet `✓` qualifient la nature d'une date et rien
+d'autre ; les emprunter pour qualifier un texte ferait deux vocabulaires d'une
+seule grammaire.
+
+---
+
+## Ce que la 1.7 change dans le dossier livré
+
+Deux affirmations du contrat de livraison deviennent fausses. Voici ce qui les
+remplace.
+
+### Une note peut désormais porter une voix d'époque
+
+Le contrat dit aujourd'hui de `notes[]` : « écrites par Nicolas aujourd'hui,
+pour ce que les documents ne disent pas — la seule donnée du système qui
+n'existe nulle part ailleurs ». La 1.7 crée des notes pré-remplies avec un texte
+d'époque. La phrase ne tient plus, et il faut la remplacer par une règle qui se
+vérifie plutôt que par une catégorie qui se déclare.
+
+**Le piège à éviter.** Le couple `text` / `text_original` avec `corrected: true`
+existe déjà, mais il désigne autre chose : la correction d'une erreur de
+transcription, globale à toutes les tâches, qui **rapproche** le texte de ce que
+la page dit. La retouche de la 1.7 est locale à une tâche et **s'éloigne** de la
+source. Les faire voisiner dans le même champ ferait citer une phrase réécrite
+aujourd'hui comme voix de 1999.
+
+**La règle, une seule, et elle se vérifie.** Une note est **citable comme voix
+d'époque** quand son texte, une fois les espaces normalisés, est un extrait
+contigu du texte effectif actuel de sa source. Sinon c'est une note, et rien de
+plus.
+
+Elle a trois propriétés qui valent d'être dites :
+
+- **Elle ne se déclare pas, elle se contrôle.** Le serveur détient le texte de la
+  source ; il vérifie l'affirmation au lieu de la croire. Un client ne peut pas
+  faire passer une phrase réécrite pour une citation.
+- **Elle tolère la coupe, pas la réécriture.** Retirer la dernière phrase d'une
+  citation la laisse citable — c'est toujours un extrait fidèle. Changer un mot
+  la fait sortir. C'est le bon partage : couper est un geste d'éditeur, réécrire
+  est un geste d'auteur.
+- **Elle règle le cas tordu sans règle supplémentaire.** Voir plus bas.
+
+`derivedFrom` est **toujours présent** dans le manifeste, `null` compris. Son
+absence ne doit jamais devenir le signal — une note écrite de zéro le dit en
+portant `null`, pas en omettant le champ.
+
+### Les trois états, et ce que le générateur a le droit d'en faire
+
+| État | Le manifeste | Ce que le générateur peut faire |
+|:--|:--|:--|
+| **Note écrite de zéro** | `derived_from: null` | Elle oriente le travail. Jamais une citation d'époque. Règle inchangée. |
+| **Extrait fidèle** | `derived_from` renseigné, `quotable: true` | **Citable et attribuable**, exactement comme un `texts[]`. L'attribution est le document et la page nommés par `derived_from`. |
+| **Texte réécrit** | `derived_from` renseigné, `quotable: false` | **Jamais entre guillemets, jamais attribué à une voix d'époque.** Sa matière est utilisable ; ses mots ne sont pas ceux de la page. |
+
+`derived_from` porte `{ kind, id, text }` — le texte étant l'instantané pris à la
+copie. Il voyage avec la note parce que le passage d'origine **peut être absent
+du dossier** : créer une note ne retient pas le texte, donc `texts[]` ne le
+contient pas forcément. Sans cet instantané, `derived_from` serait une référence
+pendante, et le dossier perdrait son autosuffisance.
+
+`edited` accompagne `quotable` : il dit que la personne a touché au texte, quand
+`quotable` dit si le résultat reste un extrait fidèle. Les deux ne se recouvrent
+pas — une citation tronquée est `edited: true` et `quotable: true`.
+
+### Le cas tordu : la source corrigée après coup
+
+Une note est tirée d'un passage. Plus tard, une erreur de transcription est
+corrigée dans ce passage, globalement. La note garde son instantané.
+
+**La règle y répond seule** : l'instantané n'est plus un extrait du texte
+effectif actuel, donc `quotable` passe à `false`. La note cesse d'être citable
+comme voix d'époque — ce qui est exact, puisqu'elle reproduit mot pour mot une
+lecture que Nicolas a lui-même déclarée fausse. Citer « deux ns » après avoir
+corrigé en « deux ris » serait remettre l'erreur dans le livrable.
+
+Ce n'est pas une perte : l'écran signale la note d'un **« la source a été
+corrigée depuis »** avec un bouton **« Reprendre le texte corrigé »**. Un clic,
+et la note redevient un extrait fidèle. Tant que Nicolas ne l'a pas fait, le
+dossier reste prudent plutôt que faux.
+
+### La sélection libre, et pourquoi elle ne casse pas la garantie
+
+Sur le journal, une note vient d'une ligne identifiée : le serveur va lire cette
+ligne et compare. Sur « Ma vie » et sur le site, la personne surligne où elle
+veut — la sélection peut couvrir deux passages, ou la moitié d'un.
+
+`derived_from` nomme alors la **page** — `{ kind: "page", id: "ma-vie/p007" }` —
+et non un passage. La vérification reste entière : le serveur détient le texte de
+la page entière, et contrôle que la sélection en est bien un extrait contigu.
+C'est ce qui permet une sélection libre sans que le client puisse rien affirmer
+que le serveur ne vérifie.
+
+### Le site web : identifiants, et pas de page embarquée
+
+**Les identifiants ne changent pas.** Les cinq pages sont déjà cinq documents du
+corpus : un passage porte `document: "web/1998-1999"` et `id:
+"web/1998-1999/003"`. La seule correction à faire au contrat de livraison est
+que `document` s'écrit `web/<chemin sans extension>` — ce qui couvre aussi bien
+`web/1998-1999` que `web/1999/Transat` — et non `web/<année>/<doc>`, forme trop
+étroite qui ne décrit pas les cinq pages.
+
+**Le dossier n'embarque pas les pages du site**, et `page_image` reste `null`
+pour elles. Trois raisons, dans cet ordre :
+
+- **Une image de page sert à vérifier une transcription.** Le journal et « Ma
+  vie » sont manuscrits : on confronte le texte au scan parce que la lecture peut
+  se tromper. Le texte du site est extrait d'un fichier HTML — il n'y a pas de
+  lecture à vérifier, donc rien à confronter.
+- **Une page FrontPage n'est pas un fichier, c'est une arborescence.** Thèmes,
+  gifs de navigation, feuilles de style, chemins relatifs. L'embarquer voudrait
+  dire inliner tout ça, et livrer un document que le générateur serait tenté de
+  *rendre* au lieu de le lire.
+- **Une capture d'écran romprait l'idempotence.** Elle dépendrait d'un
+  navigateur, de ses polices et de sa version ; ré-exporter une tâche inchangée
+  ne redonnerait pas le même octet. La garantie vaut mieux que l'image.
+
+Ce que le dossier gagne à la place : `textes/site-web.md` **groupe les passages
+par page**, dans l'ordre des pages, avec un titre par page. La page devient une
+unité lisible du dossier sans qu'aucun fichier ne soit embarqué — et
+l'autosuffisance reste vraie sans effort, puisque rien ne référence une image qui
+n'existe pas.
+
+---
+
 ## Ce que la donnée et la plateforme imposent
 
 **La sélection dans une page du site se lit depuis le document parent.** C'est
@@ -336,17 +484,37 @@ en lignes par la transcription ; le redécouper n'aurait pas de sens.
 
 ## Les amendements au contrat
 
-**Un seul, et il précise une règle existante plutôt que d'en ajouter une :** la
-comparaison qui lève le drapeau « modifié » **normalise les espaces** des deux
-côtés avant de comparer — toute suite d'espaces, tabulations et retours à la
-ligne devient une espace simple, extrémités rognées. Sans lui, l'écran « Ma vie »
-marquerait comme retouchée toute note prise verbatim.
+**Trois, et deux d'entre eux précisent une règle existante plutôt que d'en
+ajouter une.**
 
-Le reste s'appuie sur ce qui existe déjà : `derivedFrom` et le drapeau (1.5), le
-commentaire par photo retenu (1.6), et les trois points d'accès aux pages du
-site livrés par le serveur.
+**La comparaison normalise les espaces.** Le drapeau « modifié » compare les deux
+textes après avoir réduit toute suite d'espaces, tabulations et retours à la ligne
+à une espace simple, extrémités rognées. Sans lui, l'écran « Ma vie » marquerait
+comme retouchée toute note prise verbatim : il affiche une phrase par ligne, donc
+une sélection fidèle y arrive avec des retours à la ligne que la page ne contient
+pas. Un drapeau qui s'allume toujours n'informe de rien.
 
----
+**`derivedFrom` accepte une page comme source.** Aujourd'hui il nomme un texte
+— un passage, une entrée de registre. La sélection libre de « Ma vie » et du site
+peut couvrir deux passages ou la moitié d'un, et ne correspond alors à aucun.
+`derivedFrom` accepte donc `{ kind: "page", id: "ma-vie/p007" }`, et le serveur
+vérifie la sélection contre le texte de la page entière. **C'est le seul ajout de
+vocabulaire de la 1.7**, et il est nécessaire : sans lui, une note issue d'une
+sélection libre n'aurait aucune provenance vérifiable, et il faudrait croire le
+client sur parole.
+
+**Le manifeste porte la provenance d'une note.** `notes[]` gagne
+`derived_from: { kind, id, text } | null`, `edited: boolean` et
+`quotable: boolean`. Les trois sont **toujours présents** : une note écrite de
+zéro porte `null` et `false`, elle ne les omet pas. `text` est l'instantané pris
+à la copie, et il voyage parce que le passage d'origine peut être absent du
+dossier — sans lui, `derived_from` serait une référence pendante.
+
+`quotable` est **calculé à la lecture**, jamais stocké : le texte de la note,
+espaces normalisés, est-il un extrait contigu du texte effectif actuel de sa
+source ? Un booléen stocké pourrait mentir après une correction de transcription
+— celui-là ne le peut pas, et c'est précisément ce qui fait qu'une source
+corrigée après coup retire d'elle-même la citabilité.
 
 ## Ce qui ne change pas
 

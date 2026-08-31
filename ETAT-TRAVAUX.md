@@ -1501,3 +1501,24 @@ recopié dans des notes. Je recommande d'assumer (a) — la note devient le cana
 prolonge la décision 1.5 « créer une note ne coche pas le texte » — mais si Nicolas veut
 garder les deux gestes, il faut dire où vit la seconde commande **avant** que `front` ne
 dessine le tableau.
+
+---
+
+## Avancement — spec-v1.5, complément V1.7 : les conséquences sur le dossier livré (2026-08-31)
+
+RE : team-lead — deux affirmations du skill `bd_dossier` devenues fausses, et le rendu des trois états
+DONE : `docs/spec-v1.7.md` complété (563 lignes). Trois sections neuves : le rendu des trois états, ce que la 1.7 change dans le dossier livré, et les amendements repris.
+
+**Une règle unique remplace trois questions.** Une note est **citable comme voix d'époque quand son texte, espaces normalisés, est un extrait contigu du texte effectif actuel de sa source**. Elle se contrôle au serveur au lieu de se déclarer ; elle tolère la coupe (tronquer une citation la laisse fidèle) mais pas la réécriture ; et **elle règle le cas tordu sans règle supplémentaire** — une source corrigée après coup fait que l'instantané n'est plus un extrait du texte actuel, donc `quotable` tombe à `false` de lui-même. Citer « deux ns » après avoir corrigé en « deux ris » remettrait l'erreur dans le livrable.
+
+**Un trou trouvé dans ma propre spec, en écrivant ce complément.** Sur « Ma vie » et sur le site, l'utilisateur surligne librement : la sélection peut couvrir deux passages ou la moitié d'un, et ne correspond alors à **aucun** passage. `derivedFrom` ne pouvait donc pas pointer un passage comme il le fait pour le registre. Il accepte maintenant une **page** (`{kind: "page", id: "ma-vie/p007"}`), et le serveur vérifie la sélection contre le texte de la page entière — la garantie « le client ne peut rien affirmer que le serveur ne vérifie » tient pour les trois sources. C'est le seul ajout de vocabulaire de la 1.7.
+
+**Les 5 pages du site ne sont pas embarquées dans le dossier**, `page_image` reste `null`. Une image de page sert à vérifier une transcription manuscrite ; le texte du site est extrait d'un HTML, il n'y a pas de lecture à confronter. Une page FrontPage est une arborescence (thèmes, gifs, chemins relatifs) et non un fichier. Une capture romprait l'idempotence, qui dépendrait d'un navigateur et de ses polices. À la place, `textes/site-web.md` **groupe les passages par page** : la page devient une unité lisible du dossier sans qu'aucun fichier ne soit embarqué.
+
+**Les identifiants ne changent pas** — vérifié en base : les 5 pages sont déjà 5 documents (`web/1998-1999`, 45 passages en tout), et un passage porte `id: "web/1998-1999/003"`. La seule correction au contrat de livraison est que `document` s'écrit `web/<chemin sans extension>`, forme qui couvre les cinq pages comme `web/1999/Transat` — et non `web/<année>/<doc>`, trop étroite.
+
+`derived_from` porte `{kind, id, text}` et voyage avec l'instantané, parce que créer une note ne retient pas le texte : le passage d'origine peut être **absent** de `texts[]`, et sans l'instantané la référence serait pendante — le dossier perdrait son autosuffisance.
+
+DETAIL : trois rendus au pixel, qui n'empruntent ni les couleurs ni les glyphes des dates — filet plein pour un extrait fidèle, filet pointillé et mention « reformulé » pour un texte réécrit, aucune marque pour une note écrite de zéro.
+
+ASK : la question de périmètre du message précédent reste ouverte (la case du registre change de sens, plus rien n'alimente `journal.md`). `bd_dossier` est à mettre à jour par team-lead d'après ces décisions — je n'y ai pas touché.
