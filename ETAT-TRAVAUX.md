@@ -1753,3 +1753,20 @@ ASK, deux points en attente (aucun ne bloque, les deux ont un choix par défaut 
 2. Ce chantier laisse du code orphelin, jamais supprimé unilatéralement : `TextFilterPanel`/`textFilterState.ts`/`useTextFacets` (plus aucun appelant), et la branche « documents du site » de `PageList` (vignettes V1.6, `WebDocCard`) — remplacée par `SiteWebReader`. Je les laisse en place ; dites-moi si vous voulez qu'ils partent.
 
 Le périmètre V1.7 qui m'était assigné (règle capitale, journal, Ma vie, site web, items A/B) est maintenant entièrement câblé et vérifié dans la mesure du possible. Disponible pour la suite.
+
+---
+
+## Avancement — impl-backend, liens de navigation neutralisés + `resyncFromSource` (2026-08-31)
+
+RE : team-lead — le trou trouvé en testant les 3 routes en direct (priorité, bloquait `front`), puis `resyncFromSource` validé avec `front`
+DONE :
+
+**Priorité traitée d'abord** : `<a href>` retiré de toute page servie, à la source, jamais réécrit vers l'une des 5 pages (rouvrirait la même désynchronisation liste/iframe). Le lien reste dans le HTML, texte inchangé au mot près — seul le comportement de navigation disparaît. Vérifié contre les 5 vraies pages : plus aucun `href` sur un `<a>`, le texte du fil d'Ariane (« 1958-1998 ») survit intact. Amendement A16.
+
+**`resyncFromSource` livré** : `PATCH /tasks/:slug/notes/:noteId` avec `resyncFromSource: true` re-dérive `text` ET reprend l'instantané dans le même mouvement — corrélé sur les colonnes DE LA NOTE (`derived_from_kind/id`), jamais un kind/id fourni par le client (même garantie infalsifiable qu'à la création). Deux 400 nommés : `text`+`resyncFromSource` ensemble, `resyncFromSource` sans `derivedFrom`. Testé : le cas tordu guéri (`editedSince: false, quotable: true` après resync, le corps change pour le texte corrigé) ET le trou qui se rouvre tout seul si la source change une SECONDE fois après le resync — ce n'est pas un correctif permanent, `quotable` compare toujours au texte actuel. Amendement A17.
+
+16 tests neufs (6 sur la neutralisation des liens, 4 sur `resyncFromSource`, plus les itests HTTP existants ajustés). 841 tests serveur verts (87 fichiers), tsc et eslint propres.
+
+DETAIL : commits `5ec0e13` (liens), `f6a86b2` (`resyncFromSource`).
+
+ASK : aucune. En veille.
