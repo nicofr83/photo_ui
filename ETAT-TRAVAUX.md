@@ -1560,3 +1560,40 @@ Ajouté avec : un texte **n'apparaît qu'une fois** (deux notes tirées du même
 DETAIL : commit `b12599a` puis celui-ci. Trois amendements au contrat : normalisation des espaces, `derivedFrom` acceptant une page, provenance au manifeste + émission de la source. Les 5 pages du site restent non embarquées, `page_image: null`.
 
 ASK : aucune. La 1.7 est posée, `front` est lâché sur les écrans Textes. `skills/bd_dossier` est à jour par team-lead, je n'y ai pas touché.
+
+---
+
+## Avancement — spec-v1.5, V1.7 : les deux opérandes, corrigés dans la spec (2026-08-31)
+
+RE : team-lead — imprécision signalée dans mon message
+DONE : team-lead a relevé que j'avais écrit « `quotable` est la comparaison entre ce qui a été copié et où en est la source ». C'est faux, et il pensait que le défaut était limité à mon message. **Il était aussi dans la spec**, ligne 379, trois lignes au-dessus de la définition correcte — le pire emplacement possible, `back` implémentant à partir de ce document.
+
+**La règle, corrigée et rendue explicite** : c'est toujours le **corps de la note** qui est l'opérande de gauche. `edited_since` = corps vs **instantané**. `quotable` = corps vs **source actuelle**. Jamais l'instantané contre la source, qui serait une troisième question que personne ne pose.
+
+**Pourquoi ça produirait un vrai bug** : sur une sélection libre, l'instantané est un *fragment* de la page, donc jamais égal à sa source — poser la comparaison instantané/source à la place de `quotable` rendrait **aucune note tirée d'une page citable**. Le cas de la citation tronquée, que j'avais défendu contre la première formulation de team-lead, tomberait par le même mécanisme.
+
+La spec porte maintenant un tableau à deux lignes qui nomme les deux opérandes, plus la phrase qui dit ce qu'il ne faut pas comparer et ce que ça casserait.
+
+DETAIL : l'instantané garde sa place pour deux des trois raisons, pas la première — la première (auditabilité de `quotable`) justifie d'émettre la **source** dans `texts[]` ; l'instantané est justifié par `edited_since` invérifiable sans lui et par le cas de la source corrigée, illisible sans lui.
+
+ASK : aucune. La 1.7 est close.
+
+---
+
+## Avancement — impl-backend, V1.7 : les 5 pages du site servies en place (2026-08-31)
+
+RE : team-lead — mandat V1.7 backend
+DONE :
+
+**Question séparée répondue par un test, pas une affirmation** : `TaskNoteCreateInput.text` est déjà libre à la création — `derivedFrom` ne fait que nommer la provenance. Ajouté le seul cas non couvert (texte déjà édité AU MOMENT de la création, avant toute PATCH) : `editedSince` est vrai immédiatement. Rien à ajouter au contrat. Commit `7bf760d`.
+
+**Les 3 routes** : `GET /texts/web/pages` (les 5 pages, motif `^\d{4}-\d{4}\.html?$`, triées), `GET /texts/web/page?id=…` (transcodée `windows-1252`→UTF-8, `<script>` retirés à la source, actifs réécrits — `<a href>` de navigation laissés intacts, hors périmètre), `GET /texts/web/asset?path=…` (css/gif/jpg/png, une CSS elle-même transcodée et réécrite — mesuré : `_themes/funfun2-98/funf1011.css` contient `url(anetrule.gif)`, relatif à SON PROPRE dossier, pas à celui de la page).
+**Sécurité** : `id` passe un motif de nom strict, `path` une liste blanche d'extensions — les DEUX ensuite résolus sous `WEB_SITE_ROOT` (canonicalisé une fois au démarrage) et revérifiés par `realpath`, jamais seulement par le motif. Vérifié contre une VRAIE tentative d'évasion : un fichier réel, extension autorisée, qui existe vraiment juste hors de `WEB_SITE_ROOT` (`adobe_mcp/docs/pages`, une autre racine du même projet) — refusé, 404, jamais fuité.
+**Trouvé en vérifiant, pas supposé** : `title` et `label` sont deux champs réellement distincts — `1900-1988.htm` porte `<title>1958-1998</title>`, une relecture narrative qui NE correspond PAS à son nom de fichier. `label` reste dérivé du NOM (fiable), `title` reste ce que la page affirme (parfois divergent).
+Nouvelle variable `WEB_SITE_ROOT` (`.env`/`.env.example`), distincte de `WEB_GALLERY_ROOT` (volume externe) — requise au démarrage comme `PAGES_ROOT`.
+25 tests neufs (chemin/sécurité, HTML/CSS pur, HTTP contre les 5 vraies pages). 794 tests serveur, tsc/eslint propres. Amendement A13 écrit.
+DETAIL : commit `38b6af3`. Serveur redéployé pour refléter ce commit, vérifié en direct.
+
+**Incident d'index partagé, corrigé sans casse (encore)** : mon `git add` (18 fichiers) a croisé un commit de team-lead sur `docs/spec-v1.7.md` — son commit a embarqué mes 18 fichiers avec les siens. Corrigé par `git reset --soft HEAD~1` puis `git reset HEAD -- ETAT-TRAVAUX.md docs/spec-v1.7.md` (rien perdu, son commit AVANT celui-ci reste intact dans l'historique), recommité avec mes 18 seuls. `docs/spec-v1.7.md` reste modifié, non indexé, pour lui.
+
+ASK : aucune. En veille.
