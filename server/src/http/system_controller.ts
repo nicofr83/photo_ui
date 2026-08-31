@@ -4,6 +4,7 @@ import type { FastifyInstance } from 'fastify';
 
 import type { Pool } from '../db/pool.ts';
 import type { JobStore } from '../metier/jobs/job_service.ts';
+import type { CommitInfo } from '../runtime/build_info.ts';
 import type { Config } from '../runtime/config.ts';
 import type { RootStatus, SystemStatus } from '../contract/system_interface.ts';
 import { countAlbumsWithPresumedSpan } from '../repository/album_repository.ts';
@@ -19,8 +20,10 @@ async function checkRoot(name: RootStatus['name'], envVar: string, rootPath: str
   return { name, envVar, path: rootPath, available, checkedAt: new Date().toISOString() };
 }
 
-export function registerSystemRoutes(server: FastifyInstance, deps: { pool: Pool; config: Config; jobStore: JobStore }): void {
-  const { pool, config, jobStore } = deps;
+export function registerSystemRoutes(
+  server: FastifyInstance, deps: { pool: Pool; config: Config; jobStore: JobStore; commit: CommitInfo | null },
+): void {
+  const { pool, config, jobStore, commit } = deps;
 
   server.get('/system/status', async (): Promise<SystemStatus> => {
     const roots = await Promise.all([
@@ -81,6 +84,7 @@ export function registerSystemRoutes(server: FastifyInstance, deps: { pool: Pool
       importId: lastImport?.import_id ?? null,
       importedAt: lastImport?.finished_at ?? null,
       runningJobId: jobStore.runningJobId(),
+      commit,
       roots,
       counts: {
         photosInHierarchy: counts?.photos_in_hierarchy ?? 0,

@@ -16,6 +16,7 @@ import type { ExportServiceDeps } from '../metier/export/export_service.ts';
 import type { ImageServiceDeps } from '../metier/images/image_service.ts';
 import { InFlightRenders } from '../metier/images/in_flight_renders.ts';
 import { JobStore } from '../metier/jobs/job_service.ts';
+import { getCommitInfo } from './build_info.ts';
 import { buildServer } from './server.ts';
 import { loadConfig } from './config.ts';
 
@@ -79,7 +80,10 @@ export async function bootstrap(env: NodeJS.ProcessEnv): Promise<App> {
   const jobStore = new JobStore();
 
   const server = buildServer(log);
-  registerSystemRoutes(server, { pool, config, jobStore });
+  // Calculé UNE FOIS ici, jamais par requête (`build_info.ts`) — l'instance
+  // vivante a été démarrée sur ce commit, ce champ ne se met jamais à jour
+  // tout seul tant que le processus tourne.
+  registerSystemRoutes(server, { pool, config, jobStore, commit: getCommitInfo() });
   registerPhotosRoutes(server, { pool, config });
   registerRefRoutes(server, {
     pool, annotationsDir: config.annotationsDir, periodFrom: config.periodFrom, periodTo: config.periodTo,

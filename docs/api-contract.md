@@ -26,6 +26,16 @@ existants du projet.
 >
 ### Amendements depuis le gel
 
+### A12 — `SystemStatus.commit`, à l'usage de l'équipe *(2026-08-31, hors V1.6)*
+
+Deux instances périmées le même jour (un agent a diagnostiqué un rouge qui
+n'était qu'un serveur pas redémarré, l'autre a alerté sur un plantage déjà
+corrigé) — `SystemStatus.commit: { sha, dirty } | null` rend l'écart visible
+sans discipline de redémarrage. Calculé UNE FOIS au démarrage, jamais par
+requête : `sha` dit sur quel commit l'instance a démarré, pas ce qui tourne
+« en ce moment ». Jamais montré à Nicolas — l'écran a déjà `importedAt`, sa
+propre question ; celle-ci est celle de l'équipe.
+
 ### A11 — la vignette d'un document du site est une photo, jamais une capture d'écran *(2026-08-31, V1.6)*
 
 `WebDateProposal` gagne `thumbSha256: string` — la photo liée par appariement
@@ -1652,6 +1662,19 @@ export interface SystemStatus {
   readonly importId: string;
   readonly importedAt: IsoTimestamp | null;   // NULL = jamais importé
   readonly runningJobId: JobId | null;
+
+  /**
+   * À l'usage des agents et de l'équipe, jamais montré à Nicolas (V1.6,
+   * hors périmètre — l'écran a déjà `importedAt`, sa propre question).
+   * Calculé UNE FOIS au démarrage du serveur : `sha` dit sur quel commit
+   * CETTE instance a démarré, jamais ce qui tourne « en ce moment » — un
+   * commit fait après coup ne s'y reflète pas tant que le process n'est
+   * pas relancé ; comparer à `git log -1` révèle l'écart soi-même. `dirty`
+   * est une information (arbre avec des changements non commités, l'état
+   * normal en développement actif), jamais une alerte. `null` si git est
+   * indisponible (déploiement packagé sans `.git`).
+   */
+  readonly commit: { readonly sha: string; readonly dirty: boolean } | null;
 
   readonly roots: readonly RootStatus[];
   readonly counts: {

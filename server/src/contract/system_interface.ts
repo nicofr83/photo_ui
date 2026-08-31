@@ -13,6 +13,18 @@ export interface SystemStatus {
   readonly importedAt: string | null;
   readonly runningJobId: string | null;
 
+  /**
+   * À l'usage des agents et de l'équipe, jamais montré à Nicolas (V1.6,
+   * hors périmètre — l'écran a déjà `importedAt`, sa propre question).
+   * Calculé UNE FOIS au démarrage : `sha` dit sur quel commit CETTE
+   * instance a démarré, jamais ce qui tourne « en ce moment » — un commit
+   * fait après coup ne s'y reflète pas tant que le process n'est pas
+   * relancé, comparer à `git log -1` révèle l'écart. `dirty` est une
+   * information (l'arbre a des changements non commités, l'état normal en
+   * développement), jamais une alerte. `null` si git est indisponible.
+   */
+  readonly commit: { readonly sha: string; readonly dirty: boolean } | null;
+
   readonly roots: readonly RootStatus[];
   readonly counts: {
     readonly photosInHierarchy: number;

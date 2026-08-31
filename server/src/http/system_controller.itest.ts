@@ -157,4 +157,13 @@ describe('bootstrap — the composition root', () => {
     const response = await app.server.inject({ method: 'GET', url: '/system/status' });
     expect(response.json<SystemStatus>().runningJobId).toBeNull();
   });
+
+  test('GET /system/status: commit carries the real HEAD sha this instance started on (V1.6)', async () => {
+    const env = await completeEnv();
+    app = await bootstrap(env);
+    const response = await app.server.inject({ method: 'GET', url: '/system/status' });
+    const { commit } = response.json<SystemStatus>();
+    expect(commit?.sha).toMatch(/^[0-9a-f]{40}$/);
+    expect(typeof commit?.dirty).toBe('boolean');
+  });
 });
