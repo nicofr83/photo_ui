@@ -1728,3 +1728,28 @@ C'est aussi ce que verrouille le `test.fails` de `front` dans `ImagesScreen.test
 DETAIL : commit `c1b9dc4` (7 fichiers, migration 008 incluse).
 
 ASK : aucune. En veille.
+
+---
+
+## Avancement — impl-frontend, V1.7 les trois écrans câblés (2026-08-31)
+
+RE : team-lead — spec-v1.7.md, écrans « Ma vie » et « Le site web », câblage final
+DONE :
+
+**Ma vie** : les passages de la page rassemblés en une seule zone de lecture, une phrase par ligne (`domain/sentenceSplit`, découpage-affichage seul, jamais le texte stocké). Surligner une sélection fait apparaître « Créer une note », même éditeur partagé, `derivedFrom` nomme la page (jamais un passage précis — la sélection peut en couvrir deux ou la moitié d'un).
+
+**Le site web** : cinq pages réelles (contrat A13), triées alphabétiquement, aucun filtre. Cadre isolé `sandbox="allow-same-origin"` sans `allow-scripts`. Sélectionner du texte dans le cadre fait apparaître le même bouton ; `derivedFrom` nomme le document pipeline `web/<label>` — vérifié directement contre `GET /documents`, jamais supposé depuis le nom de fichier.
+
+**Câblage final de `TextsScreen`** : `TextFilterPanel` retiré — les trois sources en étaient les seules utilisatrices et l'ont toutes perdu. Chaque source ouvre sur son propre écran : journal → `JournalPageDetail` (tableau), Ma vie → `MaVieReader`, site → `SiteWebReader`. Les légendes de galerie disparaissent avec l'ancienne liste de documents qu'elles complétaient.
+
+21 tests neufs (site web + réécriture TextsScreen/PageList/router pour les chemins qui n'existent plus). 807 tests + 1 « expected fail » déjà verrouillé. tsc et eslint propres.
+
+Vérifié en navigateur réel sur `01-le-grand-depart` : les 5 pages listées par leur vrai titre, l'iframe charge le vrai HTML d'archive transcodé, scripts FrontPage bien bloqués (confirmé par les messages du navigateur), sélection réelle dans le cadre → bouton affiché. La création de note elle-même bloquée par un serveur de dev périmé (signalé à back séparément).
+
+DETAIL : commit `a0949c7`.
+
+ASK, deux points en attente (aucun ne bloque, les deux ont un choix par défaut sûr en place) :
+1. Les 492 passages libres du journal (« notes de bord »), toujours sans traitement dans la spec — gardés en cartes `TextCard` sous le tableau.
+2. Ce chantier laisse du code orphelin, jamais supprimé unilatéralement : `TextFilterPanel`/`textFilterState.ts`/`useTextFacets` (plus aucun appelant), et la branche « documents du site » de `PageList` (vignettes V1.6, `WebDocCard`) — remplacée par `SiteWebReader`. Je les laisse en place ; dites-moi si vous voulez qu'ils partent.
+
+Le périmètre V1.7 qui m'était assigné (règle capitale, journal, Ma vie, site web, items A/B) est maintenant entièrement câblé et vérifié dans la mesure du possible. Disponible pour la suite.
