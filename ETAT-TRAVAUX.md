@@ -1452,3 +1452,14 @@ DETAIL : commit `05c0498`.
 C'est le dernier point du V1.6 qui m'était assigné (voir images sélectionnées, retrait découvrable, agrandir dans Revue et Images, commentaire par image, correction de date, lecture du site web). Il reste la vérification navigateur de la correction de date (bloquée sur le redéploiement A10 du serveur de dev, signalé au message précédent) — sinon disponible pour la suite.
 
 ASK : aucune.
+
+---
+
+## Avancement — impl-frontend, vérification différée close (2026-08-31)
+
+RE : moi-même — le serveur de dev a redéployé A10 depuis mon message précédent
+DONE : vérifié en navigateur réel sur `zz-repro-bug1` — `GET /texts` porte maintenant `dateOriginal`. Correction d'une date de passage confirmée de bout en bout : champ préempli avec la lecture, sauvegarde, rendu en decision (« ✓ 2005-03-15 »), lecture d'origine préservée juste en dessous. Zéro erreur console. Aucun changement de code, seulement la vérification qui restait en attente sur `a221e58`.
+
+Le périmètre V1.6 qui m'était assigné est maintenant entièrement clos et vérifié.
+
+ASK : aucune. Disponible.
