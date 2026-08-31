@@ -16,6 +16,7 @@ import { SourcePicker } from '../ui/texts/SourcePicker';
 import { TextCard } from '../ui/texts/TextCard';
 import { TextFilterPanel } from '../ui/texts/TextFilterPanel';
 import styles from '../ui/texts/TextCard.module.css';
+import { WebDocumentDetail } from '../ui/texts/WebDocumentDetail';
 
 import screenStyles from './TextsScreen.module.css';
 
@@ -112,7 +113,11 @@ export function TextsScreen({ onShowPhotos }: Props): React.JSX.Element {
                 >
                   ← Retour à la liste
                 </button>
-                <PageDetail pageId={openPageId} slug={slug} onShowPhotos={showPhotos} />
+                {source === TextSource.WEB ? (
+                  <WebDocumentDetail documentId={openPageId} slug={slug} onShowPhotos={showPhotos} />
+                ) : (
+                  <PageDetail pageId={openPageId} slug={slug} onShowPhotos={showPhotos} />
+                )}
               </>
             )}
           </main>

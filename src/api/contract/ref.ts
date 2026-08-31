@@ -53,6 +53,16 @@ export const WebDateProposalSchema = z.strictObject({
   photoCount: z.number().int(),
   datedToDayCount: z.number().int(),
   spanDays: z.number().int(),
+  /**
+   * v1.6, A11: the earliest-dated linked photo, the same one that
+   * establishes `date` — never a screenshot of the page (measured: the
+   * site's 60 pages share one FrontPage template, its excerpt matches the
+   * title on 45 of 60; a real photo is recognisable at a glance). Present
+   * on every proposal — a document with none has `proposal: null`
+   * (`WebDocumentRow`), so no thumbnail at all rather than a fabricated one.
+   * Served via the existing `GET /images/:sha256/thumb`.
+   */
+  thumbSha256: z.string(),
 });
 export type WebDateProposal = z.infer<typeof WebDateProposalSchema>;
 

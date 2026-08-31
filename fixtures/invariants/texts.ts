@@ -80,9 +80,13 @@ export const INVARIANT_DOCUMENTS: readonly TextDocument[] = [
 export const INVARIANT_WEB_PROPOSALS: Record<string, WebDateProposal> = {
   'web/2003/2003_gal_15': {
     date: parseIsoDate('2004-10-05'), photoCount: 20, datedToDayCount: 20, spanDays: 9,
+    // v1.6, A11: the earliest-dated linked photo — a real photo, never a
+    // screenshot of the page (contract).
+    thumbSha256: 'aa15aa15aa15aa15aa15aa15aa15aa15aa15aa15aa15aa15aa15aa15aa15aa1',
   },
   'web/photo': {
     date: parseIsoDate('2000-06-15'), photoCount: 1, datedToDayCount: 0, spanDays: 30,
+    thumbSha256: 'bb44bb44bb44bb44bb44bb44bb44bb44bb44bb44bb44bb44bb44bb44bb44bb4',
   },
 };
 

@@ -32,11 +32,31 @@ describe('v1.5 — WebDocumentRow.proposal, what the dating proposal is worth', 
     const parsed = WebDocumentRowSchema.parse({
       ...row,
       span: null,
-      proposal: { date: '1999-11-09', photoCount: 12, datedToDayCount: 8, spanDays: 3 },
+      proposal: {
+        date: '1999-11-09', photoCount: 12, datedToDayCount: 8, spanDays: 3,
+        thumbSha256: 'a'.repeat(64),
+      },
     });
     expect(parsed.proposal).toEqual({
       date: '1999-11-09', photoCount: 12, datedToDayCount: 8, spanDays: 3,
+      thumbSha256: 'a'.repeat(64),
     });
+  });
+});
+
+describe('v1.6, contract A11 — a proposal’s thumbnail is a real photo, never a screenshot', () => {
+  test('thumbSha256 is required whenever a proposal exists — no thumbnail is silently missing', () => {
+    expect(() =>
+      WebDocumentRowSchema.parse({
+        ...row,
+        span: null,
+        proposal: { date: '1999-11-09', photoCount: 12, datedToDayCount: 8, spanDays: 3 },
+      }),
+    ).toThrow();
+  });
+
+  test('a document with no proposal has no thumbnail at all, never a fabricated one', () => {
+    expect(WebDocumentRowSchema.parse({ ...row, span: null, proposal: null }).proposal).toBeNull();
   });
 });
 

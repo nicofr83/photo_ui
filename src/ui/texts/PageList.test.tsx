@@ -61,6 +61,29 @@ describe('v1.5, Task 8 — the source picker and the page list', () => {
     expect(await screen.findByTestId('no-pages')).toHaveTextContent(/pas de page scannée/i);
   });
 
+  // V1.6, Nicolas: "avoir la liste des pages, avec une image de la page web".
+  test('un document du site web porte sa vraie vignette — une photo, jamais une capture', async () => {
+    renderAt('/textes/tache-a?source=web');
+    // web/2003/2003_gal_15 : fixture with a proposal (`INVARIANT_WEB_PROPOSALS`).
+    const ligne = await screen.findByTestId('doc-web/2003/2003_gal_15');
+    expect(within(ligne).getByRole('img')).toHaveAttribute('src', '/images/aa15aa15aa15aa15aa15aa15aa15aa15aa15aa15aa15aa15aa15aa15aa15aa1/thumb');
+  });
+
+  test('un document sans photo liée montre un repère neutre, jamais une vignette fabriquée', async () => {
+    renderAt('/textes/tache-a?source=web');
+    // web/1999/Transat has no proposal in the fixtures.
+    const ligne = await screen.findByTestId('doc-web/1999/Transat');
+    expect(within(ligne).queryByRole('img')).not.toBeInTheDocument();
+  });
+
+  test('cliquer sur un document du site web l’ouvre sur son texte complet', async () => {
+    renderAt('/textes/tache-a?source=web');
+    const ligne = await screen.findByTestId('doc-web/2003/2003_gal_1');
+    await userEvent.click(within(ligne).getByRole('button'));
+    expect(await screen.findByRole('button', { name: /Retour à la liste/i })).toBeInTheDocument();
+    expect(await screen.findByTestId(/^text-passage-web\/2003\/2003_gal_1/)).toBeInTheDocument();
+  });
+
   // Self-review, plan: "Douze pages du registre couvrent plus de soixante
   // jours... Ces pages portent un signe discret dans la liste." A likely
   // misread transcription year, flagged — never corrected here.

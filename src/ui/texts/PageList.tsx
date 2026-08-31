@@ -1,16 +1,16 @@
 import { useState } from 'react';
 
 import { usePages } from '../../api/hooks/usePages';
-import { useDocuments } from '../../api/hooks/useTexts';
+import { useWebDocuments } from '../../api/hooks/useWebSpan';
 import { dateRangeFor, EMPTY_TEXT_FILTERS, type TextFilterState } from '../../domain/textFilterState';
 import { matchesSearch } from '../../domain/searchFold';
 import { sortPagesByDate, sortPagesByOrdinal } from '../../domain/pageOrder';
-import { sourceOf, TextSource } from '../../domain/textSource';
-import { ResolvedDateView } from '../date/ResolvedDate';
+import { TextSource } from '../../domain/textSource';
 import { ErrorBanner } from '../primitives/ErrorBanner';
 
 import { PageCard } from './PageCard';
 import styles from './PageList.module.css';
+import { WebDocCard } from './WebDocCard';
 
 interface Props {
   readonly source: TextSource;
@@ -49,7 +49,7 @@ function writeOrder(source: TextSource, order: Order): void {
  * than pages (spec §5.3).
  */
 export function PageList({ source, onOpen, filters = EMPTY_TEXT_FILTERS }: Props): React.JSX.Element {
-  if (source === TextSource.WEB) return <WebDocuments q={filters.q} />;
+  if (source === TextSource.WEB) return <WebDocuments q={filters.q} onOpen={onOpen} />;
   return <DocumentPages documentId={source} source={source} onOpen={onOpen} filters={filters} />;
 }
 
@@ -97,18 +97,23 @@ function DocumentPages({
   );
 }
 
-function WebDocuments({ q }: { readonly q: string | null }): React.JSX.Element {
-  const documents = useDocuments();
+function WebDocuments({
+  q, onOpen,
+}: {
+  readonly q: string | null;
+  readonly onOpen: (documentId: string) => void;
+}): React.JSX.Element {
+  // V1.6, Nicolas: "la liste des pages, avec une image de la page web" — the
+  // richer row (`WebDocumentRow`, A11's `thumbSha256`), not the bare
+  // `TextDocument` list Task 8 used. `PERIMETER` (default) matches every
+  // other web-source screen: rebuts (a Google-verification file, empty
+  // templates) are not worth reading either.
+  const documents = useWebDocuments();
 
   if (documents.error !== null) return <ErrorBanner error={documents.error} />;
   if (documents.isPending) return <p role="status">Chargement des documents…</p>;
 
-  // Wiring (v1.5, post-plan): the web source has no per-passage list (Task
-  // 8's own scope, spec: a document is a "page" here) — `q` narrows the
-  // DOCUMENT list by title, the data already in hand, rather than a full
-  // passage search with no results surface to render into yet.
   const webDocs = documents.data.items
-    .filter((d) => sourceOf(d.id) === TextSource.WEB)
     .filter((d) => q === null || q === '' || matchesSearch(d.title, q));
 
   return (
@@ -119,13 +124,7 @@ function WebDocuments({ q }: { readonly q: string | null }): React.JSX.Element {
         Cette source n’a pas de page scannée en regard.
       </p>
       <ul className={styles['list']} aria-label="Documents du site web">
-        {webDocs.map((doc) => (
-          <li className={styles['docRow']} key={doc.id} data-testid={`doc-${doc.id}`}>
-            <span className={styles['label']}>{doc.title}</span>
-            <span>{doc.passageCount} passage{doc.passageCount > 1 ? 's' : ''}</span>
-            {doc.span === null ? null : <ResolvedDateView date={doc.span} />}
-          </li>
-        ))}
+        {webDocs.map((doc) => <WebDocCard key={doc.documentId} row={doc} onOpen={onOpen} />)}
       </ul>
     </div>
   );
