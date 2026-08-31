@@ -394,10 +394,11 @@ Plusieurs agents, un seul arbre de travail, un seul index. Trois incidents sur l
 mandat 1.7 : un commit par chemin explicite reste la seule protection, et
 `git add -A` reste interdit.
 
-**Quand tu découvres tes fichiers dans le commit d'un autre, ne touche pas à
-l'historique.** `git reset --soft` déplace HEAD et *supprime le commit de la
-branche* — le 2026-08-31 il a fait disparaître `bb578f2` (le correctif des
-opérandes de `spec-v15`) de l'historique. Le contenu a survécu dans l'arbre par
+**`reset --soft` sur ton propre commit, dernier de la branche, est correct** —
+c'est le geste standard pour le défaire. Ce qui est interdit, c'est de remonter
+**au-delà du commit d'un autre** : `reset` déplace HEAD et *supprime de la
+branche tous les commits franchis*. Le 2026-08-31 il a fait disparaître `bb578f2`
+(le correctif des opérandes de `spec-v15`) de l'historique. Le contenu a survécu dans l'arbre par
 chance seulement : un `git checkout` sur ce fichier entre-temps, et le travail
 partait sans trace, l'objet n'étant plus référencé que par le reflog. Restauré
 en `1d6984e`.
@@ -1705,3 +1706,25 @@ Bug réel trouvé en écrivant les tests contre le vrai mock (jamais visible ava
 DETAIL : commit `659868e`. Pas encore câblé dans `TextsScreen` (prochaine étape, avec le retrait de `TextFilterPanel` — les trois sources n'en gardent aucune).
 
 ASK : la spec ne dit rien des 492 passages libres du journal (« notes de bord », kind `passage`, distincts des 1012 lignes de registre `log_entry`) — seul le registre devient tableau. Je les garde affichés sous le tableau, comme aujourd'hui (cartes `TextCard`), en attendant confirmation — rien n'est perdu avec ce choix, mais je préfère vérifier plutôt que deviner sur un point que la spec ne tranche pas.
+
+---
+
+## Avancement — impl-backend, bug de la note d'image perdue au retrait (2026-08-31)
+
+RE : team-lead — message 3, `zz-repro-bug1` signalé par `front`
+DONE :
+
+**Corrigé** : retirer une image faisait un vrai `DELETE` de `app.task_image`, qui emportait `note` avec la ligne — resélectionner repartait de `note: null`. `app.task_image` reste INCHANGÉE (retrait toujours un vrai `DELETE`, jamais un drapeau à filtrer partout où la table est déjà jointe — galerie, revue, export, `contentHash`, plus d'une dizaine de sites). Une table séparée, `app.task_image_note` (migration 008), clée sur `(task_slug, cloud_asset_id)`, garde l'unique note en attente d'une resélection. Resélectionner SANS note explicite la restaure verbatim ; une note fournie l'emporte toujours ; vider la note puis retirer n'archive rien (jamais une note plus ancienne qui referait surface).
+
+**Les trois points que tu demandais de trancher** :
+1. Jamais dans un export : l'archive n'est lue nulle part dans `export_service.ts`/`export_repository.ts` — inerte PAR CONSTRUCTION, pas par un filtre. Testé directement (une note en attente sans ligne `task_image` correspondante ne produit rien dans le manifeste).
+2. Jamais dans `contentHash` : même raisonnement, `content_hash.ts` ne lit que l'état courant. Testé : un aller-retour retrait/resélection retombe exactement sur le même hash.
+3. Purge : `ON DELETE CASCADE` sur la tâche, comme `app.task_image`/`app.task_note` — supprimer la tâche supprime ses notes en attente, aucun code de nettoyage séparé (testé). Au sein d'une tâche vivante, PAS de purge distincte — je ne pense pas qu'il en faille une : une ligne par couple `(tâche, image)`, réécrite (jamais empilée) à chaque retrait, bornée par le nombre d'images un jour retirées d'une tâche donnée — pas un phénomène illimité. Dis-le si tu veux quand même un balayage périodique, je n'en vois pas le besoin aujourd'hui.
+
+C'est aussi ce que verrouille le `test.fails` de `front` dans `ImagesScreen.test.tsx` — devrait passer au rouge maintenant, signal pour qu'il retire l'enveloppe.
+
+11 tests neufs (retrait/retour verbatim, note explicite qui l'emporte, note jamais réapparue après un vidage, hash inchangé, purge à la suppression de tâche, absence dans l'export, et le chemin HTTP complet reproduisant `zz-repro-bug1`). 832 tests serveur verts (87 fichiers), tsc et eslint propres. Amendement A15 écrit.
+
+DETAIL : commit `c1b9dc4` (7 fichiers, migration 008 incluse).
+
+ASK : aucune. En veille.
