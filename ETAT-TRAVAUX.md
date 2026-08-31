@@ -1522,3 +1522,22 @@ DONE : `docs/spec-v1.7.md` complété (563 lignes). Trois sections neuves : le r
 DETAIL : trois rendus au pixel, qui n'empruntent ni les couleurs ni les glyphes des dates — filet plein pour un extrait fidèle, filet pointillé et mention « reformulé » pour un texte réécrit, aucune marque pour une note écrite de zéro.
 
 ASK : la question de périmètre du message précédent reste ouverte (la case du registre change de sens, plus rien n'alimente `journal.md`). `bd_dossier` est à mettre à jour par team-lead d'après ces décisions — je n'y ai pas touché.
+
+---
+
+## Avancement — spec-v1.5, V1.7 : le trou de l'export refermé (2026-08-31)
+
+RE : team-lead — `ManifestNote` ne porte ni provenance ni drapeau, et le périmètre est clos par Nicolas
+DONE : `docs/spec-v1.7.md` à 608 lignes. Vérifié moi-même avant d'écrire : `ManifestNote` (`server/src/metier/export/manifest.ts:82`) porte `id`, `created_at`, `title`, `text`, `attached_to` — **ni `derived_from`, ni `edited_since`**. Le mécanisme infalsifiable du serveur s'arrête à la frontière de l'API, et dans le dossier livré une note recopiée mot pour mot de 1999 est indiscernable d'une note tapée ce matin.
+
+**Trois choses posées, les trois nécessaires.** `notes[]` porte `derived_from {kind, id}`, `edited_since` et `quotable`, **toujours présents** (`null`/`false` compris). **L'export émet dans `texts[]` la source de toute note qui en dérive**, même non retenue — c'est ce qui referme le trou : plus aucune référence morte (`derived_from.id` et `attached_to.texts` pointent dans le dossier), `journal.md` retrouve du contenu, et une seule commande alimente les trois fichiers. La règle de citabilité remplace la phrase « une note n'est jamais une citation d'époque », qui ne se nuance pas.
+
+**Ce qui est émis est borné.** Un passage ou une ligne de registre : cette unité. Une **page** — la sélection libre — : les passages que la sélection recouvre, et eux seuls, le serveur les connaissant puisqu'il a localisé l'extrait pour le vérifier. Une sélection de deux phrases ne fait pas entrer trente passages dans le dossier.
+
+**Correction de ma décision précédente.** J'avais fait voyager l'instantané dans `derived_from {kind, id, text}` pour éviter la référence pendante ; la solution de team-lead est meilleure et je l'ai adoptée — la source est émise dans `texts[]`, donc `derived_from` n'a plus besoin de porter le texte, et `journal.md` se remplit au passage, ce que ma version ne faisait pas.
+
+**Deux drapeaux, deux questions, et ils divergent dans deux cas qui comptent.** `edited_since` : la personne a-t-elle touché au texte après l'avoir copié (corps vs instantané) ? `quotable` : le générateur peut-il citer (corps, espaces normalisés, extrait contigu du texte **actuel** de la source) ? Une citation tronquée est `edited_since: true` + `quotable: true` — couper reste fidèle. Une note intacte dont la source a été corrigée depuis est `edited_since: false` + `quotable: false`. C'est `quotable` que le générateur obéit ; `edited_since` explique pourquoi.
+
+DETAIL : la question de périmètre est close — Nicolas l'a tranchée deux fois (il a renommé la colonne lui-même, et retenu « ouvre l'éditeur aussitôt »). La section « Question restée ouverte » devient « Le périmètre, tranché ». Trois amendements au contrat en tout : normalisation des espaces (adopté), `derivedFrom` acceptant une page, et la provenance au manifeste + l'émission de la source.
+
+ASK : aucune. `skills/bd_dossier` reste à mettre à jour par team-lead — je n'y ai pas touché.

@@ -372,15 +372,24 @@ portant `null`, pas en omettant le champ.
 | **Extrait fidèle** | `derived_from` renseigné, `quotable: true` | **Citable et attribuable**, exactement comme un `texts[]`. L'attribution est le document et la page nommés par `derived_from`. |
 | **Texte réécrit** | `derived_from` renseigné, `quotable: false` | **Jamais entre guillemets, jamais attribué à une voix d'époque.** Sa matière est utilisable ; ses mots ne sont pas ceux de la page. |
 
-`derived_from` porte `{ kind, id, text }` — le texte étant l'instantané pris à la
-copie. Il voyage avec la note parce que le passage d'origine **peut être absent
-du dossier** : créer une note ne retient pas le texte, donc `texts[]` ne le
-contient pas forcément. Sans cet instantané, `derived_from` serait une référence
-pendante, et le dossier perdrait son autosuffisance.
+`derived_from` porte `{ kind, id }` — la référence, sans le texte. Il n'a pas
+besoin de l'emporter, parce que **l'export émet la source elle-même dans
+`texts[]`** : voir « Ce que l'export doit émettre » ci-dessous.
 
-`edited` accompagne `quotable` : il dit que la personne a touché au texte, quand
-`quotable` dit si le résultat reste un extrait fidèle. Les deux ne se recouvrent
-pas — une citation tronquée est `edited: true` et `quotable: true`.
+`edited_since` et `quotable` disent deux choses différentes, et il faut les deux :
+
+- **`edited_since`** répond « la personne a-t-elle touché au texte après l'avoir
+  copié ? ». Le serveur compare le corps de la note à l'instantané pris à la
+  copie.
+- **`quotable`** répond « le générateur peut-il citer ceci comme voix d'époque ? ».
+  Le serveur vérifie que le corps, espaces normalisés, est un extrait contigu du
+  texte effectif **actuel** de la source.
+
+Elles coïncident presque toujours, et divergent dans deux cas qui comptent. Une
+citation **tronquée** est `edited_since: true` et `quotable: true` — couper reste
+fidèle. Une note **intacte dont la source a été corrigée depuis** est
+`edited_since: false` et `quotable: false` — c'est le cas tordu ci-dessous. C'est
+`quotable` que le générateur obéit ; `edited_since` explique pourquoi.
 
 ### Le cas tordu : la source corrigée après coup
 
@@ -397,6 +406,61 @@ Ce n'est pas une perte : l'écran signale la note d'un **« la source a été
 corrigée depuis »** avec un bouton **« Reprendre le texte corrigé »**. Un clic,
 et la note redevient un extrait fidèle. Tant que Nicolas ne l'a pas fait, le
 dossier reste prudent plutôt que faux.
+
+### Ce que l'export doit émettre, et pourquoi c'est bloquant
+
+Le manifeste ne porte aujourd'hui, pour une note, que `id`, `created_at`,
+`title`, `text` et `attached_to`. **Ni la provenance, ni le drapeau.** Le
+mécanisme infalsifiable du serveur s'arrête donc à la frontière de l'API : dans
+le dossier que lit le générateur, une note recopiée mot pour mot d'une page de
+1999 est **indiscernable** d'une note tapée ce matin.
+
+Additionné au reste de la 1.7, c'est une régression sérieuse. Puisque la case du
+registre crée une note au lieu de retenir un texte, tout le texte d'époque
+arriverait en `notes[]` — dont le contrat dit « jamais une citation d'époque ».
+Le générateur se verrait interdire de citer le journal de bord comme voix du
+récit, ce qui est l'inverse exact du but de l'outil. La règle capitale
+tomberait par la seule porte que personne ne surveillait : l'export.
+
+Trois choses à poser, et les trois sont nécessaires.
+
+**1. `notes[]` porte la provenance.** `derived_from: { kind, id } | null`,
+`edited_since: boolean`, `quotable: boolean`. **Toujours présents**, `null` et
+`false` compris : une note écrite de zéro les porte explicitement. Un champ dont
+l'absence signifierait quelque chose se lirait un jour à l'envers.
+
+**2. L'export émet dans `texts[]` la source de toute note qui en dérive**, même
+si Nicolas n'a pas retenu ce texte. C'est ce qui referme le trou :
+
+- **Plus aucune référence morte.** `derived_from.id` et `attached_to.texts`
+  pointent vers des entrées présentes. L'autosuffisance du dossier, qui est une
+  garantie écrite, redevient vraie sans exception.
+- **`journal.md` retrouve du contenu.** Le texte d'époque revient à sa place,
+  dans le fichier de sa source, au lieu de n'exister que recopié dans les notes.
+- **Une seule commande alimente trois fichiers.** La case coche une note ; la
+  note tire sa source avec elle. Nicolas n'a jamais deux gestes à faire, et le
+  dossier reçoit quand même les trois natures de texte à leurs trois places.
+
+Ce qui est émis dépend de ce que `derived_from` nomme. Un passage ou une ligne
+de registre : cette unité. Une **page** — le cas de la sélection libre — : les
+passages de cette page que la sélection recouvre, et eux seuls. Le serveur les
+connaît, puisqu'il a localisé l'extrait dans le texte de la page pour le
+vérifier. Une sélection de deux phrases ne fait donc pas entrer trente passages
+dans le dossier.
+
+Un texte émis pour cette raison est un `texts[]` ordinaire : rien ne le
+distingue, et rien ne doit le distinguer. Il **est** un texte d'époque, arrivé
+là par un autre chemin.
+
+**3. La règle de citabilité, écrite pour le générateur.** C'est le tableau des
+trois états ci-dessus, et il **remplace** la phrase du contrat de livraison
+« une note n'est jamais une citation d'époque ». Elle ne se nuance pas, elle se
+remplace : une note dont `quotable` est vrai est un texte d'époque, citable et
+attribuable au même titre qu'un `texts[]`.
+
+Une note citable ne dispense pas des autres règles : `covers_images` reste une
+proposition, une date `inference` ne s'affiche pas, et la consigne de l'auteur
+commande.
 
 ### La sélection libre, et pourquoi elle ne casse pas la garantie
 
@@ -503,12 +567,12 @@ vocabulaire de la 1.7**, et il est nécessaire : sans lui, une note issue d'une
 sélection libre n'aurait aucune provenance vérifiable, et il faudrait croire le
 client sur parole.
 
-**Le manifeste porte la provenance d'une note.** `notes[]` gagne
-`derived_from: { kind, id, text } | null`, `edited: boolean` et
-`quotable: boolean`. Les trois sont **toujours présents** : une note écrite de
-zéro porte `null` et `false`, elle ne les omet pas. `text` est l'instantané pris
-à la copie, et il voyage parce que le passage d'origine peut être absent du
-dossier — sans lui, `derived_from` serait une référence pendante.
+**Le manifeste porte la provenance d'une note, et l'export émet sa source.**
+`notes[]` gagne `derived_from: { kind, id } | null`, `edited_since: boolean` et
+`quotable: boolean` — **toujours présents**, `null` et `false` compris. Et
+l'export émet dans `texts[]` la source de toute note qui en dérive, même
+non retenue : sans quoi `derived_from.id` et `attached_to.texts` pointeraient
+hors du dossier, et l'autosuffisance — une garantie écrite — serait rompue.
 
 `quotable` est **calculé à la lecture**, jamais stocké : le texte de la note,
 espaces normalisés, est-il un extrait contigu du texte effectif actuel de sa
@@ -531,33 +595,14 @@ note, pas un texte d'époque corrigé.
 
 ---
 
-## Question restée ouverte
+## Le périmètre, tranché
 
-Une seule, et elle est de périmètre, pas de conception.
+La case du registre ne retient plus un texte : elle crée une note. C'est le
+choix de Nicolas, énoncé deux fois — il a renommé la colonne lui-même, et il a
+retenu « ouvre l'éditeur aussitôt » quand les deux variantes lui ont été
+posées. Une seule commande, pas de seconde colonne.
 
-**Sur le journal de bord, la case à cocher change de sens.** Elle voulait dire
-« retenir ce texte pour la bande dessinée » — c'est elle qui remplit `journal.md`
-dans le dossier livré. Elle veut maintenant dire « créer une note », et la note
-part dans `notes.md`.
-
-La conséquence : **plus rien, sur cet écran, n'alimente `journal.md`**. Le texte
-d'époque du journal n'arrivera au LLM que recopié dans des notes, avec leur
-provenance et leur drapeau — ce qui est fidèle, mais range tout le corpus dans
-un seul fichier au lieu de trois.
-
-Deux lectures possibles, et je ne tranche pas seul :
-
-- **(a)** C'est voulu. Les notes deviennent le seul canal, `journal.md` et
-  `ma-vie.md` se vident, et le dossier livré porte le texte d'époque dans
-  `notes.md` avec sa provenance. *C'est cohérent, et le manifeste garde tout ce
-  qu'il faut pour distinguer une citation d'un commentaire.*
-- **(b)** Les deux gestes coexistent : la case crée une note, et une seconde
-  commande — un bouton par ligne, ou une sélection multiple — retient le texte
-  pour le dossier sans en faire une note.
-
-*Ma recommandation : **(a)** pour la 1.7.* La 1.5 avait déjà décidé que créer
-une note ne coche pas le texte, précisément pour qu'un même passage ne parte
-jamais deux fois. Faire de la note le canal unique va dans le même sens, et une
-deuxième commande par ligne alourdirait un tableau qu'on vient de dessiner pour
-qu'il soit lisible. Si `(b)` est retenu, il faut dire où vit la seconde commande
-avant que `front` ne dessine le tableau.
+Ce que cela impliquait — plus rien n'alimente `journal.md` — n'est plus vrai,
+et c'est l'export qui le règle : **la note tire sa source avec elle**. Nicolas
+fait un geste, le dossier reçoit les trois natures de texte à leurs trois
+places, et aucune référence ne pend.
