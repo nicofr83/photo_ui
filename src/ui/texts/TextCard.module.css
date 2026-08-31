@@ -12,4 +12,6 @@
 .noPages { margin: 0; color: #6b7280; font-style: italic; }
 .editing { display: flex; flex-direction: column; gap: 0.4rem; }
 .draft { min-height: 4rem; padding: 0.4rem; font: inherit; }
+.dateField { display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.85rem; align-items: flex-start; }
+.dateInput { min-height: var(--tap-target); padding: 0 0.4rem; }
 .editingActions { display: flex; gap: 0.5rem; }

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useCorrection } from '../../api/hooks/useCorrection';
 import { usePages } from '../../api/hooks/usePages';
 import type { TextRef, TextUnit } from '../../api/contract/text';
+import { isIsoDate, parseIsoDate } from '../../shared/date_interface';
 import { CorrectionStatus, PageSpanSource, TranscriptionConfidence } from '../../shared/enums';
 import { ResolvedDateView } from '../date/ResolvedDate';
 import { ErrorBanner } from '../primitives/ErrorBanner';
@@ -40,12 +41,24 @@ export function TextCard({ unit, onShowPhotos, selected, onToggleSelect }: Props
   const [showPage, setShowPage] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(unit.text);
+  // V1.6, Nicolas #3: "quand on corrige un texte, on devrait pouvoir aussi
+  // modifier la date" — prefilled from the EFFECTIVE date (already a
+  // decision if previously corrected), '' for a text that asserts none;
+  // never a day fabricated for one that has none.
+  const [draftDate, setDraftDate] = useState(unit.date?.start ?? '');
   const correction = useCorrection();
 
-  const startEditing = (): void => { setDraft(unit.text); setEditing(true); };
+  const startEditing = (): void => {
+    setDraft(unit.text);
+    setDraftDate(unit.date?.start ?? '');
+    setEditing(true);
+  };
   const save = (): void => {
     if (draft.trim() === '') return;
-    void correction.submit({ ref: unit.ref, text: draft }).then(() => { setEditing(false); });
+    const date = draftDate === ''
+      ? null
+      : isIsoDate(draftDate) ? { start: parseIsoDate(draftDate), end: parseIsoDate(draftDate) } : null;
+    void correction.submit({ ref: unit.ref, text: draft, date }).then(() => { setEditing(false); });
   };
 
   return (
@@ -154,6 +167,15 @@ export function TextCard({ unit, onShowPhotos, selected, onToggleSelect }: Props
             value={draft}
             onChange={(event) => { setDraft(event.target.value); }}
           />
+          <label className={styles['dateField']}>
+            Date
+            <input
+              className={styles['dateInput']}
+              type="date"
+              value={draftDate}
+              onChange={(event) => { setDraftDate(event.target.value); }}
+            />
+          </label>
           <div className={styles['editingActions']}>
             <button
               className={styles['photos']}
@@ -175,6 +197,17 @@ export function TextCard({ unit, onShowPhotos, selected, onToggleSelect }: Props
       {/* A correction never destroys the transcription: both coexist. */}
       {unit.correction !== null && !editing ? (
         <p className={styles['original']} data-testid="text-original">{unit.textOriginal}</p>
+      ) : null}
+
+      {/* V1.6, A10: a corrected date is a DECISION, and the reading it
+          arbitrated against stays visible — same pairing as the text
+          above. Shown only when THIS correction touched the date AND
+          there was an original reading to show — a correction that ADDS
+          a date where none existed has nothing to witness. */}
+      {unit.correction !== null && unit.correction.date !== null && unit.dateOriginal !== null && !editing ? (
+        <p className={styles['original']} data-testid="date-original">
+          <ResolvedDateView date={unit.dateOriginal} />
+        </p>
       ) : null}
 
       {showPage && unit.pageId !== null ? (
