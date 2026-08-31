@@ -1463,3 +1463,41 @@ DONE : vérifié en navigateur réel sur `zz-repro-bug1` — `GET /texts` porte 
 Le périmètre V1.6 qui m'était assigné est maintenant entièrement clos et vérifié.
 
 ASK : aucune. Disponible.
+
+---
+
+## Avancement — spec-v1.5, la spécification V1.7 posée (2026-08-31)
+
+RE : team-lead — six demandes de Nicolas, « on approche de la version finale »
+DONE : `docs/spec-v1.7.md`. Écran par écran, assez précise pour que `front` code sans redemander.
+
+**La règle capitale, traitée en premier comme demandé.** Les trois sources laissent
+maintenant retoucher le texte d'époque au moment de créer la note. Un seul traitement pour
+les trois : le serveur lit lui-même le texte d'origine (l'écran ne le fournit jamais, ce qui
+rend le drapeau infalsifiable), le drapeau « modifié » se calcule à la lecture par
+comparaison, et l'utilisateur voit la mention « modifié » avec le texte d'origine grisé en
+dessous et un bouton pour le rétablir — exactement le rendu déjà en place pour une correction
+de transcription. **Aucune machinerie nouvelle** : `derivedFrom` + drapeau existent depuis la
+1.5, et le geste de la 1.7 lève le drapeau dès la création par construction.
+
+**Un amendement au contrat, un seul, et il était nécessaire :** la comparaison qui lève le
+drapeau doit **normaliser les espaces** des deux côtés. L'écran « Ma vie » affiche une phrase
+par ligne ; une sélection verbatim y arrive donc avec des retours à la ligne que la page ne
+contient pas, et sans cette normalisation **toute** note prise verbatim sur « Ma vie » serait
+marquée retouchée. Un drapeau qui s'allume toujours n'informe de rien.
+
+Les quatre points de détail demandés sont tranchés dans le document : la règle exacte du
+découpage en phrases (terminateurs, ponctuation fermante, liste d'abréviations, initiales,
+décimaux, points de suspension — et un texte sans ponctuation reste d'un seul tenant, jamais
+coupé sur une longueur) ; le tableau du registre (quatre colonnes, largeurs, texte jamais
+tronqué, alignement en haut, date rendue par le composant unique) ; les facettes épinglées
+(six lignes maximum, défilement interne au-delà, la liste garde toujours la moitié du
+panneau) ; et le champ inline du commentaire photo.
+
+ASK : **une question de périmètre, en fin de spec.** Sur le journal, la case à cocher change
+de sens — elle remplissait `journal.md`, elle veut maintenant dire « créer une note ». Plus
+rien sur cet écran n'alimente donc `journal.md` : le texte d'époque n'arrivera au LLM que
+recopié dans des notes. Je recommande d'assumer (a) — la note devient le canal unique, ce qui
+prolonge la décision 1.5 « créer une note ne coche pas le texte » — mais si Nicolas veut
+garder les deux gestes, il faut dire où vit la seconde commande **avant** que `front` ne
+dessine le tableau.
