@@ -1,12 +1,38 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { store } from '../../../mocks/store';
 import { readDraft, writeDraft } from '../../domain/noteDraft';
+import type { TaskNote } from '../../api/contract/task';
+import { parseIsoTimestamp } from '../../shared/date_interface';
 import { renderWithProviders } from '../../test/renderWithProviders';
 
 import { NotesPanel } from './NotesPanel';
 
 const SLUG = '1999-transat';
+const SOURCE_REF = { kind: 'passage', id: 'logbook/p003/001' } as const;
+const SOURCE_TEXT = 'On a passé la nuit à réparer la pompe de cale.';
+
+function seedNote(over: Partial<TaskNote> = {}): TaskNote {
+  const note: TaskNote = {
+    id: `note_${Math.random().toString(36).slice(2, 10)}`,
+    title: 'journal de bord, page 3 du 09/07/1998',
+    text: SOURCE_TEXT,
+    createdAt: parseIsoTimestamp('2026-08-31T00:00:00.000Z'),
+    updatedAt: parseIsoTimestamp('2026-08-31T00:00:00.000Z'),
+    attachedTo: { images: [], texts: [] },
+    derivedFrom: { ...SOURCE_REF, text: SOURCE_TEXT },
+    // Placeholders — the mock recomputes both on every GET, same as
+    // `materializeNote` does for the real thing.
+    editedSince: false,
+    quotable: false,
+    ...over,
+  };
+  const task = store.tasks.get(SLUG);
+  if (task === undefined) throw new Error('fixture task missing');
+  task.notes.push(note);
+  return note;
+}
 
 beforeEach(() => { localStorage.clear(); });
 
@@ -86,5 +112,69 @@ describe('an in-progress note survives the client, spec §5.5', () => {
 
     renderWithProviders(<NotesPanel slug={SLUG} />);
     expect(await screen.findByLabelText(/titre/i)).toHaveValue('Brouillon');
+  });
+});
+
+describe('V1.7, "comment se rendent les trois états"', () => {
+  test('a note written from scratch carries no border, no mention, no provenance', async () => {
+    const note = seedNote({ derivedFrom: null });
+    setup();
+    const item = await screen.findByTestId(`note-${note.id}`);
+    expect(within(item).queryByTestId('note-provenance')).not.toBeInTheDocument();
+  });
+
+  test('a faithful excerpt is bordered solid, and names its source', async () => {
+    // Same text as the real source's current one: quotable.
+    const note = seedNote();
+    setup();
+    const item = await screen.findByTestId(`note-${note.id}`);
+    expect(within(item).getByTestId('note-provenance')).toHaveAttribute('data-provenance', 'faithful');
+    expect(item).toHaveTextContent(`extrait de ${note.title}`);
+  });
+
+  test('a rewritten note is bordered dashed, marked « reformulé », and can reveal the original', async () => {
+    const user = userEvent.setup();
+    const note = seedNote({ text: 'Un tout autre texte, jamais dans la page.' });
+    setup();
+    const item = await screen.findByTestId(`note-${note.id}`);
+    expect(within(item).getByTestId('note-provenance')).toHaveAttribute('data-provenance', 'rewritten');
+    expect(item).toHaveTextContent('reformulé');
+
+    await user.click(within(item).getByRole('button', { name: /voir le texte d.origine/i }));
+    expect(within(item).getByText(SOURCE_TEXT)).toBeInTheDocument();
+  });
+
+  test('a source corrected since stays faithful-bordered, with an added banner', async () => {
+    const note = seedNote(); // text === snapshot === current source, for now.
+    const source = store.texts.find((t) => t.ref.kind === SOURCE_REF.kind && t.ref.id === SOURCE_REF.id);
+    if (source === undefined) throw new Error('fixture missing');
+    // The source changes AFTER the note — the note itself is untouched.
+    source.text = 'On a passé la nuit à réparer les deux pompes de cale.';
+
+    setup();
+    const item = await screen.findByTestId(`note-${note.id}`);
+    expect(within(item).getByTestId('note-provenance')).toHaveAttribute('data-provenance', 'faithful');
+    expect(item).toHaveTextContent('la source a été corrigée depuis');
+  });
+
+  // PROPOSED, pending back's sign-off: `PATCH .../notes/:id` gains
+  // `resyncFromSource: true` — the server re-derives both the note's body
+  // and its snapshot from the source's current text, since the client does
+  // not (and must not) know what the correction now says.
+  test('« Reprendre le texte corrigé » resyncs the note, and the banner clears', async () => {
+    const user = userEvent.setup();
+    const note = seedNote();
+    const source = store.texts.find((t) => t.ref.kind === SOURCE_REF.kind && t.ref.id === SOURCE_REF.id);
+    if (source === undefined) throw new Error('fixture missing');
+    const corrected = 'On a passé la nuit à réparer les deux pompes de cale.';
+    source.text = corrected;
+
+    setup();
+    const item = await screen.findByTestId(`note-${note.id}`);
+    await user.click(within(item).getByRole('button', { name: /reprendre le texte corrigé/i }));
+
+    await waitFor(() => { expect(item).toHaveTextContent(corrected); });
+    expect(within(item).getByTestId('note-provenance')).toHaveAttribute('data-provenance', 'faithful');
+    expect(item).not.toHaveTextContent('la source a été corrigée depuis');
   });
 });

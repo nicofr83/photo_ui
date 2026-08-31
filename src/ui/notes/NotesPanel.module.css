@@ -4,6 +4,30 @@
 .note { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.6rem; border: 1px solid #e5e7eb; }
 .noteTitle { margin: 0; font-weight: 600; }
 .noteText { margin: 0; white-space: pre-wrap; }
+
+/* V1.7, "comment se rendent les trois états": a note écrite de zéro gets
+   neither — no filet, no mention, no provenance (the absence IS the
+   information). Faithful and corrected-since both read as one filet PLEIN
+   (fidèle), because neither was ever rewritten by a person; only a real
+   rewrite gets the POINTILLÉ. */
+.faithful { border-left: 3px solid #374151; padding-left: 0.6rem; }
+.rewritten { border-left: 3px dashed #374151; padding-left: 0.6rem; }
+.provenance { margin: 0; font-size: 0.8rem; font-style: italic; color: #6b7280; }
+.reformulated { font-weight: 600; font-style: normal; color: #92400e; }
+.revealOriginal { min-height: var(--tap-target); padding: 0 0.5rem; cursor: pointer; align-self: flex-start; }
+.originalText { margin: 0; padding-left: 0.5rem; border-left: 2px solid #e5e7eb; color: #9ca3af; white-space: pre-wrap; }
+.correctedBanner {
+  margin: 0;
+  padding: 0.3rem 0.5rem;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.resume { min-height: var(--tap-target); padding: 0 0.5rem; cursor: pointer; }
 /* V1.6, Nicolas: same red treatment as the image/text "Retirer" buttons
    (ui/review/ReviewList.module.css) — three removal controls, discoverable
    the same way. */

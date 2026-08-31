@@ -1,0 +1,5 @@
+.editor { display: flex; flex-direction: column; gap: 0.4rem; }
+.textarea { min-height: 5rem; padding: 0.5rem; font: inherit; }
+.actions { display: flex; gap: 0.5rem; }
+.create { min-height: var(--tap-target); padding: 0 1rem; cursor: pointer; }
+.cancel { min-height: var(--tap-target); padding: 0 1rem; cursor: pointer; }

@@ -1312,9 +1312,21 @@ export const handlers = [
         resource: 'note', id: String(params['noteId']),
       });
     }
-    const body = (await request.json()) as { title?: string; text?: string };
+    const body = (await request.json()) as {
+      title?: string; text?: string; resyncFromSource?: true;
+    };
     if (body.title !== undefined) note.title = body.title;
     if (body.text !== undefined) note.text = body.text;
+    // V1.7, "le cas tordu" — "Reprendre le texte corrigé": re-derive both
+    // the note's body AND its snapshot from the source's CURRENT effective
+    // text. A fresh snapshot taken NOW, not a re-application of the old one.
+    if (body.resyncFromSource === true && note.derivedFrom !== null) {
+      const fresh = sourceEffectiveText(note.derivedFrom, store);
+      if (fresh !== null) {
+        note.text = fresh;
+        note.derivedFrom = { ...note.derivedFrom, text: fresh };
+      }
+    }
     note.updatedAt = NOW;
     return HttpResponse.json(materializeNote(note));
   }),

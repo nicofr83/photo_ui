@@ -106,6 +106,15 @@ export type TaskNoteCreateInput = z.infer<typeof TaskNoteCreateInputSchema>;
 export const TaskNotePatchInputSchema = z.strictObject({
   title: z.string().optional(),
   text: z.string().optional(),
+  /**
+   * V1.7, spec "le cas tordu": "Reprendre le texte corrigé" — PROPOSED,
+   * pending back's sign-off (flagged, not yet confirmed against the real
+   * contract). Re-derives `text` AND the `derivedFrom` snapshot from the
+   * source's CURRENT effective text, server-side — never combined with
+   * `text`: the client does not know, and must not guess, what the
+   * corrected source now says. A no-op (refused) without `derivedFrom`.
+   */
+  resyncFromSource: z.literal(true).optional(),
 });
 export type TaskNotePatchInput = z.infer<typeof TaskNotePatchInputSchema>;
 
