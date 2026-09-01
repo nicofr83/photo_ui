@@ -24,14 +24,17 @@ function isTextSource(value: string | null): value is TextSource {
  * disparaissent là où ils ne servaient à rien" is true of all three
  * sources now (the journal's own words: "elle disparaît de cet écran";
  * "Ma vie": "même écran, même disparition"; the web: "aucun filtre").
- * `TextFilterPanel` no longer has a caller here.
+ * `TextFilterPanel`/`textFilterState.ts`/`useTextFacets.ts` had no caller
+ * left anywhere and were removed, team-lead confirmed.
  *
  * Each source reads very differently now — the journal has its own two
  * zones (`JournalPageDetail`: the registre table, and free prose sharing
  * "Ma vie"'s own `PageProse`), the web its own five-page reader —
- * so each gets its own detail component instead of one shared `PageDetail`.
- * The web source manages its own list/detail navigation entirely
- * (`SiteWebReader`, five fixed pages, never a `PageList` thumbnail list).
+ * so each gets its own detail component instead of one shared generic
+ * page detail. The web source manages its own list/detail navigation
+ * entirely (`SiteWebReader`, five fixed pages, never a `PageList`
+ * thumbnail list — its old web-document branch, `WebDocumentDetail` and
+ * `WebDocCard`, was equally unreachable and removed alongside it).
  *
  * `onShowPhotos` ("ouverture de la grille pré-filtrée sur la fenêtre d'un
  * passage", spec §4) had its only caller in the registre/notes `TextCard`

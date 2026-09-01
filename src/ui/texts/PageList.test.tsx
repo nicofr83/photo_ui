@@ -58,9 +58,9 @@ describe('v1.5, Task 8 — the source picker and the page list', () => {
 
   // V1.7: the web source no longer routes through PageList at all — it
   // reads five real pages instead (`SiteWebReader`, `TextsScreen.test.tsx`).
-  // `PageList`'s own web-document list (V1.6) is now unreachable from any
-  // real screen; left in place, untested here, rather than deleted
-  // unilaterally — flagged to team-lead as a cleanup candidate.
+  // `PageList`'s own web-document list (V1.6, `WebDocuments`/`WebDocCard`)
+  // was flagged as an orphan and has since been removed, team-lead
+  // confirmed — no lingering trace here to test.
 
   // Self-review, plan: "Douze pages du registre couvrent plus de soixante
   // jours... Ces pages portent un signe discret dans la liste." A likely
