@@ -13,7 +13,7 @@ import { PageDetail } from './PageDetail';
 // fixture (used throughout the suite), chosen over the plan's `tache-a` so
 // the selection query does not 404 on every render.
 const render = (pageId: string) =>
-  renderWithProviders(<PageDetail pageId={pageId} slug="1999-transat" onShowPhotos={() => {}} />);
+  renderWithProviders(<PageDetail pageId={pageId} slug="1999-transat" />);
 
 describe('v1.5, Task 9 — the page ouverte, two natures of text', () => {
   test('le scan entier à droite, jamais découpé', async () => {
@@ -44,13 +44,15 @@ describe('v1.5, Task 9 — the page ouverte, two natures of text', () => {
     expect(screen.queryByRole('heading', { name: 'Registre' })).toBeNull();
   });
 
-  test('chaque texte garde sa coche, sa correction et son compte d’images', async () => {
+  // V1.7, Nicolas's ruling (2026-09-01): the overlap-navigation button
+  // ("N images") moved to the registre table alone (`JournalTable`'s own
+  // Photos column) — `TextCard` no longer carries one at all.
+  test('chaque texte garde sa coche et sa correction', async () => {
     render('ma-vie/p003');
     const texte = (await screen.findAllByTestId(/^text-/))[0];
     expect(texte).toBeDefined();
     expect(within(texte as HTMLElement).getByRole('checkbox')).toBeInTheDocument();
     expect(within(texte as HTMLElement).getByRole('button', { name: /Corriger/ })).toBeInTheDocument();
-    expect(within(texte as HTMLElement).getByRole('button', { name: /image/ })).toBeInTheDocument();
   });
 });
 

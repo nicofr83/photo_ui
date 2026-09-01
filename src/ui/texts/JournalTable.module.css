@@ -4,5 +4,6 @@
 .table { width: 100%; border-collapse: collapse; }
 .table th { text-align: left; padding: 0.4rem; border-bottom: 2px solid #e5e7eb; }
 .date { width: 9rem; }
+.photos { width: 4.5rem; text-align: center; }
 .correct { width: 3rem; }
 .noteCell { width: 11rem; }

@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { useParams, useSearchParams } from 'react-router';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
 
 import { usePages } from '../api/hooks/usePages';
+import type { TextRef } from '../api/contract/text';
 import { TextSource } from '../domain/textSource';
 import { ErrorBanner } from '../ui/primitives/ErrorBanner';
 import { FixedHeader } from '../ui/primitives/FixedHeader';
@@ -37,12 +38,17 @@ function isTextSource(value: string | null): value is TextSource {
  * `WebDocCard`, was equally unreachable and removed alongside it).
  *
  * `onShowPhotos` ("ouverture de la grille pré-filtrée sur la fenêtre d'un
- * passage", spec §4) had its only caller in the registre/notes `TextCard`
- * split this screen no longer renders anywhere — retired along with it,
- * confirmed unreachable from any other screen before removing it here.
+ * passage", spec §4): Nicolas's ruling (2026-09-01) brings it back, but
+ * ONLY on the registre — a registre line has a precise date, so its
+ * overlap window is narrow and usable; a prose passage only inherits its
+ * page's window (1 to 30+ days), and the same button there would bring
+ * back a month of photos for a paragraph, indistinguishable from a wrong
+ * match. Wired to `JournalPageDetail` alone, never to `MaViePage`/
+ * `MaVieReader` — the technical reason lives on `JournalRow`'s own prop.
  */
 export function TextsScreen(): React.JSX.Element {
   const { slug = '' } = useParams();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [openPageId, setOpenPageId] = useState<string | null>(null);
 
@@ -56,6 +62,14 @@ export function TextsScreen(): React.JSX.Element {
       params.set('source', next);
       return params;
     });
+  };
+
+  // Spec §4: "ouverture de la grille pré-filtrée sur la fenêtre d'un
+  // passage" — both directions of overlap go through the same query
+  // parameters as the axis itself (contract §4.2).
+  const showPhotos = (ref: TextRef): void => {
+    const params = new URLSearchParams({ overlapsTextKind: ref.kind, overlapsTextId: ref.id });
+    void navigate(`/images/${slug}?${params.toString()}`);
   };
 
   return (
@@ -84,7 +98,7 @@ export function TextsScreen(): React.JSX.Element {
                 {source === TextSource.MA_VIE ? (
                   <MaViePage pageId={openPageId} slug={slug} />
                 ) : (
-                  <JournalPageDetail pageId={openPageId} slug={slug} />
+                  <JournalPageDetail pageId={openPageId} slug={slug} onShowPhotos={showPhotos} />
                 )}
               </>
             )}

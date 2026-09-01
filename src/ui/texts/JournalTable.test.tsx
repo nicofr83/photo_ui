@@ -26,14 +26,25 @@ const unit = (over: Partial<TextUnit> = {}): TextUnit => ({
   ...over,
 });
 
-const setup = (units: readonly TextUnit[]) =>
-  renderWithProviders(<JournalTable units={units} slug={SLUG} noteTitle="journal de bord, page 3 du 08/12/1999" />);
+const setup = (
+  units: readonly TextUnit[],
+  onShowPhotos?: (ref: TextUnit['ref']) => void,
+) =>
+  renderWithProviders(
+    <JournalTable
+      units={units}
+      slug={SLUG}
+      noteTitle="journal de bord, page 3 du 08/12/1999"
+      {...(onShowPhotos === undefined ? {} : { onShowPhotos })}
+    />,
+  );
 
 describe('V1.7 — le registre en tableau', () => {
-  test('renders the four columns and one row per line', () => {
+  test('renders the five columns and one row per line', () => {
     setup([unit()]);
     expect(screen.getByRole('columnheader', { name: 'Date' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Texte' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Photos' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Corriger' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Créer une note' })).toBeInTheDocument();
     expect(screen.getByText('Mouillage devant Porlamar.')).toBeInTheDocument();
@@ -51,6 +62,34 @@ describe('V1.7 — le registre en tableau', () => {
     await waitFor(() => {
       expect(screen.queryByRole('button', { name: /enregistrer/i })).not.toBeInTheDocument();
     });
+  });
+});
+
+describe('V1.7, Nicolas — la colonne Photos, seulement sur le registre', () => {
+  // Nicolas's ruling: a registre line has a precise date, so its overlap
+  // window is narrow and the result usable — unlike a prose passage, which
+  // only inherits its page's window (1 to 30+ days) and would bring back a
+  // month of photos for a paragraph.
+  test('a line with overlapping photos shows the count, clickable', async () => {
+    const user = userEvent.setup();
+    const opened: TextUnit['ref'][] = [];
+    setup([unit({ overlappingPhotoCount: 7 })], (ref) => { opened.push(ref); });
+    const button = screen.getByRole('button', { name: /7/ });
+    expect(button).toHaveTextContent('7 ▸');
+    await user.click(button);
+    expect(opened).toEqual([{ kind: 'log_entry', id: 'logbook/p003/001' }]);
+  });
+
+  test('a line with no overlapping photos shows a dash, never a button', () => {
+    setup([unit({ overlappingPhotoCount: 0 })], () => {});
+    expect(screen.getByText('—')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /—/ })).not.toBeInTheDocument();
+  });
+
+  test('without onShowPhotos, nothing in the column pretends to be clickable — same rule as elsewhere', () => {
+    setup([unit({ overlappingPhotoCount: 7 })]);
+    expect(screen.queryByText('7 ▸')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /7/ })).not.toBeInTheDocument();
   });
 });
 

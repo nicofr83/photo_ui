@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { useCorrection } from '../../api/hooks/useCorrection';
 import { usePages } from '../../api/hooks/usePages';
-import type { TextRef, TextUnit } from '../../api/contract/text';
+import type { TextUnit } from '../../api/contract/text';
 import { isIsoDate, parseIsoDate } from '../../shared/date_interface';
 import { CorrectionStatus, PageSpanSource, TranscriptionConfidence } from '../../shared/enums';
 import { ResolvedDateView } from '../date/ResolvedDate';
@@ -13,7 +13,6 @@ import styles from './TextCard.module.css';
 
 interface Props {
   readonly unit: TextUnit;
-  readonly onShowPhotos?: (ref: TextRef) => void;
   /** Contract §4.5: whether this text is held in the current task. */
   readonly selected?: boolean;
   readonly onToggleSelect?: () => void;
@@ -36,7 +35,7 @@ const SPAN_SOURCE: Record<PageSpanSource, string> = {
   [PageSpanSource.CARRIED]: 'fenêtre reportée de la page précédente',
 };
 
-export function TextCard({ unit, onShowPhotos, selected, onToggleSelect }: Props): React.JSX.Element {
+export function TextCard({ unit, selected, onToggleSelect }: Props): React.JSX.Element {
   const confidence = CONFIDENCE[unit.confidence];
   const [showPage, setShowPage] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -103,19 +102,6 @@ export function TextCard({ unit, onShowPhotos, selected, onToggleSelect }: Props
           <span className={styles['uncertain']} data-testid="gallery-match">
             correspondance non vérifiée
           </span>
-        ) : null}
-
-        {/* Spec, "la page ouverte": "le nombre d'images qu'elle recouvre" —
-            the wording the whole app converges on for a cloud asset
-            (TaskNav, ReviewScreen's list) is "images", not "photos". */}
-        {unit.overlappingPhotoCount > 0 && onShowPhotos !== undefined ? (
-          <button
-            className={styles['photos']}
-            type="button"
-            onClick={() => { onShowPhotos(unit.ref); }}
-          >
-            {unit.overlappingPhotoCount} images
-          </button>
         ) : null}
 
         {/* Spec §5.4: the facing page, only where one was scanned — the 569

@@ -15,7 +15,6 @@ interface Props {
   /** Task-scoped: text selection (contract §4.5) needs it, same as every
    * other screen under a task. */
   readonly slug: string;
-  readonly onShowPhotos?: (ref: TextRef) => void;
 }
 
 const key = (ref: TextRef): string => `${ref.kind}:${ref.id}`;
@@ -25,7 +24,7 @@ const key = (ref: TextRef): string => `${ref.kind}:${ref.id}`;
  * spec "la page ouverte". `pageId` carries its document (`documentId/pNNN`),
  * so no separate prop repeats what the id already says.
  */
-export function PageDetail({ pageId, slug, onShowPhotos }: Props): React.JSX.Element {
+export function PageDetail({ pageId, slug }: Props): React.JSX.Element {
   const documentId = pageId.slice(0, pageId.lastIndexOf('/'));
   const pages = usePages(documentId);
   const texts = useTexts(documentId);
@@ -57,9 +56,6 @@ export function PageDetail({ pageId, slug, onShowPhotos }: Props): React.JSX.Ele
     <TextCard
       key={key(unit.ref)}
       unit={unit}
-      // exactOptionalPropertyTypes: an optional prop must be OMITTED, not
-      // explicitly set to undefined — conditional spread, not a bare pass-through.
-      {...(onShowPhotos === undefined ? {} : { onShowPhotos })}
       selected={selection.selected.has(key(unit.ref))}
       onToggleSelect={() => {
         void (selection.selected.has(key(unit.ref))

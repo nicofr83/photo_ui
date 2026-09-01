@@ -1,5 +1,6 @@
 import { usePages } from '../../api/hooks/usePages';
 import { useTexts } from '../../api/hooks/useTexts';
+import type { TextRef } from '../../api/contract/text';
 import { attributionTitle } from '../../domain/noteTitle';
 import { TextSource } from '../../domain/textSource';
 import { TextKind } from '../../shared/enums';
@@ -13,6 +14,10 @@ import styles from './PageDetail.module.css';
 interface Props {
   readonly pageId: string;
   readonly slug: string;
+  /** Nicolas's ruling (2026-09-01): passed through to `JournalTable` only
+   * — the registre's rows get it back, the prose zone below never does
+   * (see `JournalRow`'s doc comment for why). */
+  readonly onShowPhotos?: (ref: TextRef) => void;
 }
 
 /**
@@ -26,7 +31,7 @@ interface Props {
  * These exact section words were shown to Nicolas and approved — kept
  * verbatim.
  */
-export function JournalPageDetail({ pageId, slug }: Props): React.JSX.Element {
+export function JournalPageDetail({ pageId, slug, onShowPhotos }: Props): React.JSX.Element {
   const documentId = pageId.slice(0, pageId.lastIndexOf('/'));
   const pages = usePages(documentId);
   const texts = useTexts(documentId, TextKind.LOG_ENTRY);
@@ -55,7 +60,12 @@ export function JournalPageDetail({ pageId, slug }: Props): React.JSX.Element {
         {registre.length === 0 ? null : (
           <section>
             <h2>Registre</h2>
-            <JournalTable units={registre} slug={slug} noteTitle={noteTitle} />
+            <JournalTable
+              units={registre}
+              slug={slug}
+              noteTitle={noteTitle}
+              {...(onShowPhotos === undefined ? {} : { onShowPhotos })}
+            />
           </section>
         )}
 

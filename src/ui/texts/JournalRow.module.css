@@ -11,6 +11,7 @@
 /* Never truncated (spec) — no ellipsis, no max-height, no overflow clip. */
 .textBody { margin: 0; white-space: pre-wrap; }
 .original { margin: 0.25rem 0 0; padding-left: 0.5rem; border-left: 2px solid #e5e7eb; color: #9ca3af; }
+.photos { width: 4.5rem; padding: 0.4rem; text-align: center; }
 .correct { width: 3rem; padding: 0.4rem; text-align: center; }
 .noteCell { width: 11rem; padding: 0.4rem; }
 
@@ -20,6 +21,8 @@
   cursor: pointer;
   font-size: 1rem;
 }
+
+.photosButton { min-height: var(--tap-target); padding: 0 0.3rem; cursor: pointer; }
 
 .checkLabel { display: inline-flex; align-items: center; min-height: var(--tap-target); }
 

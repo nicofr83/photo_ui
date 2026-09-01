@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useCorrection } from '../../api/hooks/useCorrection';
 import { useNotes, type Notes } from '../../api/hooks/useNotes';
 import type { TaskNote } from '../../api/contract/task';
-import type { TextUnit } from '../../api/contract/text';
+import type { TextRef, TextUnit } from '../../api/contract/text';
 import { isIsoDate, parseIsoDate } from '../../shared/date_interface';
 import { ResolvedDateView } from '../date/ResolvedDate';
 import { NoteEditor } from '../notes/NoteEditor';
@@ -19,6 +19,16 @@ interface Props {
   /** A note already deriving from THIS line, if one exists — `undefined`
    * otherwise. There is never more than one: spec, "une ligne, une note". */
   readonly existingNote: TaskNote | undefined;
+  /**
+   * Nicolas's ruling (2026-09-01): the overlap-navigation button comes back
+   * — on the registre ONLY, never the free prose. A registre line has a
+   * precise date (a narrow, usable overlap window); a prose passage only
+   * inherits its page's window (1 to 30+ days) — the same button there
+   * would bring back a month of photos for a paragraph, indistinguishable
+   * from a wrong match. Omitted, the "N ▸" never pretends to be clickable
+   * (same rule as every other optional handler here).
+   */
+  readonly onShowPhotos?: (ref: TextRef) => void;
 }
 
 /**
@@ -28,7 +38,7 @@ interface Props {
  * de case cochée sans note" — the checkbox itself only ever reflects whether
  * a note EXISTS; opening the editor does not flip it early.
  */
-export function JournalRow({ unit, slug, noteTitle, existingNote }: Props): React.JSX.Element {
+export function JournalRow({ unit, slug, noteTitle, existingNote, onShowPhotos }: Props): React.JSX.Element {
   const correction = useCorrection();
   const notes: Notes = useNotes(slug);
 
@@ -113,6 +123,20 @@ export function JournalRow({ unit, slug, noteTitle, existingNote }: Props): Reac
               <p className={styles['original']}>{unit.textOriginal}</p>
             )}
           </>
+        )}
+      </td>
+      <td className={styles['photos']}>
+        {unit.overlappingPhotoCount === 0 ? (
+          <span aria-hidden="true">—</span>
+        ) : onShowPhotos === undefined ? null : (
+          <button
+            className={styles['photosButton']}
+            type="button"
+            aria-label={`Voir les ${String(unit.overlappingPhotoCount)} photos qui recouvrent cette ligne`}
+            onClick={() => { onShowPhotos(unit.ref); }}
+          >
+            {unit.overlappingPhotoCount} ▸
+          </button>
         )}
       </td>
       <td className={styles['correct']}>

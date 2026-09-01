@@ -1,4 +1,5 @@
 import { screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router';
 
 import { renderWithProviders } from '../test/renderWithProviders';
@@ -35,13 +36,24 @@ describe('the texts screen is reachable, task-scoped', () => {
     );
   });
 
-  // V1.7, Nicolas's ruling (2026-09-01): the journal's free-prose passages
-  // get "le traitement de Ma vie" — free selection, `PageProse`, no
-  // per-passage `TextCard`. That retires the last reachable "N images"
-  // button anywhere in the app (the registre table never had one, spec's
-  // four fixed columns; the generic `PageDetail`/`WebDocumentDetail` that
-  // still wire it were already unreachable, superseded by
-  // `JournalPageDetail`/`SiteWebReader`) — confirmed via a targeted search
-  // before removing `TextsScreen`'s own now-dead `onShowPhotos` plumbing.
-  // Nothing left in the real app exercises this navigation to test against.
+  // V1.7, Nicolas's ruling (2026-09-01): the overlap-navigation button came
+  // back on the registre table alone — a registre line has a precise date
+  // (narrow, usable window); a prose passage only inherits its page's
+  // (1 to 30+ days), so it never gets one (`JournalRow`'s own doc comment
+  // has the technical reason). This restores the router-level proof that
+  // was removed when the previous entry point (`TextCard`'s own button,
+  // reached through the journal's free-prose section) disappeared.
+  test('opening a registre line’s "N ▸" navigates to the grid, pre-filtered on its overlap window', async () => {
+    const user = userEvent.setup();
+    setup('/textes/1999-transat?source=logbook');
+
+    const page = await screen.findByTestId('page-logbook/p003');
+    await user.click(within(page).getByRole('button'));
+    const button = await screen.findByRole('button', { name: /voir les .* photos/i });
+    await user.click(button);
+
+    expect(await screen.findByTestId('location')).toHaveTextContent(
+      '/images/1999-transat?overlapsTextKind=log_entry&overlapsTextId=logbook%2Fp003%2F001',
+    );
+  });
 });

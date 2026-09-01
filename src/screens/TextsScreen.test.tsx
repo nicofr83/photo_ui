@@ -93,6 +93,20 @@ describe('V1.7 — chaque source ouvre sur son propre écran de lecture', () => 
     expect(await screen.findByTestId('page-prose-text')).toBeInTheDocument();
   });
 
+  // Nicolas's ruling (2026-09-01): the overlap-navigation button is back,
+  // but ONLY on the registre — never on free prose (a passage only
+  // inherits its page's window, 1 to 30+ days, too broad to be usable).
+  test('the registre table has a Photos column; the prose zone never offers the button', async () => {
+    const user = userEvent.setup();
+    setup();
+    const page = await screen.findByTestId('page-logbook/p003');
+    await user.click(within(page).getByRole('button'));
+    expect(await screen.findByRole('columnheader', { name: 'Photos' })).toBeInTheDocument();
+
+    const prose = await screen.findByTestId('page-prose-text');
+    expect(within(prose).queryByRole('button', { name: /voir les .* photos/i })).not.toBeInTheDocument();
+  });
+
   test('the web source shows its five real pages, never the old document list', async () => {
     const user = userEvent.setup();
     setup();
