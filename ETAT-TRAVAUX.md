@@ -1834,3 +1834,22 @@ DONE :
 DETAIL : commit `1947ea5`.
 
 ASK : aucune — le retrait de la navigation « N images » est une conséquence du choix déjà tranché par Nicolas, signalée pour mémoire, pas une question ouverte. Si ça compte, c'est votre décision de la faire revivre ailleurs.
+
+---
+
+## Avancement — impl-frontend, le code orphelin retiré, arbre stable (2026-09-01)
+
+RE : team-lead — les deux points restants (prose du journal déjà livrée en 1947ea5, le tri du code orphelin ci-dessous)
+DONE :
+
+Retiré, plus aucun appelant vivant nulle part (vérifié par grep, pas au jugement) : `TextFilterPanel` (+ test + css), `textFilterState.ts` (+ test), `useTextFacets.ts`, `WebDocumentDetail` (+ test), `WebDocCard` (+ css). `PageList` perd sa branche « documents du site » et son prop `filters` (`TextsScreen` ne le passait plus depuis le retrait de `TextFilterPanel`, aucun test ne l'exerçait déjà) — redevient exactement ce qu'il sert aujourd'hui : la liste de pages du journal et de Ma vie.
+
+**Écart trouvé avec l'instruction, signalé plutôt que suivi au pied de la lettre** : `PageDetail.tsx` était donné pour vivant (« JournalPageDetail, MaVieReader et TextCard s'en servent »). Ma propre vérification (grep précis, pas la mention en commentaire) ne lui trouve aucun appelant nulle part — seul son fichier de test l'importe. Ce qu'utilisent réellement `JournalPageDetail`/`MaVieReader`/`TextCard`, c'est `PageViewer` (composant différent, vraiment vivant, non touché). Je n'ai pas supprimé `PageDetail.tsx` — l'instruction explicite disait de ne pas y toucher — mais je préfère le signaler que le laisser filer sur un désaccord de fait.
+
+807 tests verts (63 fichiers). tsc et eslint propres sur tout le projet. `git status` vide à l'instant.
+
+DETAIL : commit `b285e74` (le nettoyage), `1947ea5` (la prose du journal, déjà livrée avant l'arrivée de vos deux derniers messages — croisés en transit).
+
+ASK : `PageDetail.tsx` — je le laisse en l'état vu l'écart avec ce qui m'a été dit. Dites-moi s'il faut le supprimer aussi (mon propre grep dit qu'il n'a aucun appelant réel) ou si vous voyez un usage qui m'échappe.
+
+**L'arbre est stable maintenant** — prêt pour votre vérification de bout en bout.
