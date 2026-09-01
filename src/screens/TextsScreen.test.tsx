@@ -70,13 +70,27 @@ describe('V1.7 — chaque source ouvre sur son propre écran de lecture', () => 
     expect(await screen.findByRole('columnheader', { name: 'Créer une note' })).toBeInTheDocument();
   });
 
+  // V1.7, Nicolas's ruling (2026-09-01): a page, two zones, exact words he
+  // validated — "Registre" for the table, "Prose de la page" for the rest,
+  // sharing "Ma vie"'s own free-selection component.
+  test('the logbook page also carries its free prose below the table, "le traitement de Ma vie"', async () => {
+    const user = userEvent.setup();
+    setup();
+    const page = await screen.findByTestId('page-logbook/p003');
+    await user.click(within(page).getByRole('button'));
+    expect(await screen.findByRole('heading', { name: 'Registre' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Prose de la page' })).toBeInTheDocument();
+    expect(await screen.findByTestId('page-prose-text')).toBeInTheDocument();
+    expect(screen.getByText('On a passé la nuit à réparer la pompe de cale.')).toBeInTheDocument();
+  });
+
   test('"Ma vie" opens a page onto one continuous reading zone', async () => {
     const user = userEvent.setup();
     setup();
     await user.click(screen.getByRole('radio', { name: /^ma vie$/i }));
     const page = await screen.findByTestId('page-ma-vie/p003');
     await user.click(within(page).getByRole('button'));
-    expect(await screen.findByTestId('ma-vie-text')).toBeInTheDocument();
+    expect(await screen.findByTestId('page-prose-text')).toBeInTheDocument();
   });
 
   test('the web source shows its five real pages, never the old document list', async () => {

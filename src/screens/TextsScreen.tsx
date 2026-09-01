@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router';
+import { useParams, useSearchParams } from 'react-router';
 
 import { usePages } from '../api/hooks/usePages';
-import type { TextRef } from '../api/contract/text';
 import { TextSource } from '../domain/textSource';
 import { ErrorBanner } from '../ui/primitives/ErrorBanner';
 import { FixedHeader } from '../ui/primitives/FixedHeader';
@@ -16,12 +15,6 @@ import { SourcePicker } from '../ui/texts/SourcePicker';
 
 import screenStyles from './TextsScreen.module.css';
 
-interface Props {
-  /** Overridable for tests. Defaults to opening the grid pre-filtered on this
-   * text's overlap window, within the current task. */
-  readonly onShowPhotos?: (ref: TextRef) => void;
-}
-
 function isTextSource(value: string | null): value is TextSource {
   return value !== null && (Object.values(TextSource) as string[]).includes(value);
 }
@@ -33,15 +26,20 @@ function isTextSource(value: string | null): value is TextSource {
  * "Ma vie": "même écran, même disparition"; the web: "aucun filtre").
  * `TextFilterPanel` no longer has a caller here.
  *
- * Each source reads very differently now — the journal is a table, "Ma
- * vie" one continuous text, the web its own five-page reader — so each
- * gets its own detail component instead of one shared `PageDetail`. The
- * web source manages its own list/detail navigation entirely (`SiteWebReader`,
- * five fixed pages, never a `PageList` thumbnail list).
+ * Each source reads very differently now — the journal has its own two
+ * zones (`JournalPageDetail`: the registre table, and free prose sharing
+ * "Ma vie"'s own `PageProse`), the web its own five-page reader —
+ * so each gets its own detail component instead of one shared `PageDetail`.
+ * The web source manages its own list/detail navigation entirely
+ * (`SiteWebReader`, five fixed pages, never a `PageList` thumbnail list).
+ *
+ * `onShowPhotos` ("ouverture de la grille pré-filtrée sur la fenêtre d'un
+ * passage", spec §4) had its only caller in the registre/notes `TextCard`
+ * split this screen no longer renders anywhere — retired along with it,
+ * confirmed unreachable from any other screen before removing it here.
  */
-export function TextsScreen({ onShowPhotos }: Props): React.JSX.Element {
+export function TextsScreen(): React.JSX.Element {
   const { slug = '' } = useParams();
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [openPageId, setOpenPageId] = useState<string | null>(null);
 
@@ -56,15 +54,6 @@ export function TextsScreen({ onShowPhotos }: Props): React.JSX.Element {
       return params;
     });
   };
-
-  // Default: the grid pre-filtered on this text's overlap window, spec §4 —
-  // "ouverture de la grille pré-filtrée sur la fenêtre d'un passage". Both
-  // directions of overlap go through the same query parameters as the axis
-  // itself (contract §4.2), so there is nothing new to invent here.
-  const showPhotos = onShowPhotos ?? ((ref: TextRef) => {
-    const params = new URLSearchParams({ overlapsTextKind: ref.kind, overlapsTextId: ref.id });
-    void navigate(`/images/${slug}?${params.toString()}`);
-  });
 
   return (
     <div className={screenStyles['screen']}>
@@ -92,7 +81,7 @@ export function TextsScreen({ onShowPhotos }: Props): React.JSX.Element {
                 {source === TextSource.MA_VIE ? (
                   <MaViePage pageId={openPageId} slug={slug} />
                 ) : (
-                  <JournalPageDetail pageId={openPageId} slug={slug} onShowPhotos={showPhotos} />
+                  <JournalPageDetail pageId={openPageId} slug={slug} />
                 )}
               </>
             )}

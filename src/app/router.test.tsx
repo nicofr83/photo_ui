@@ -1,5 +1,4 @@
 import { screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router';
 
 import { renderWithProviders } from '../test/renderWithProviders';
@@ -36,21 +35,13 @@ describe('the texts screen is reachable, task-scoped', () => {
     );
   });
 
-  test('opening a passage’s photo navigates to the grid, pre-filtered on its overlap window', async () => {
-    // V1.7: the registre became a table with no "N images" button of its
-    // own (spec's four fixed columns) — the journal's free-prose passages
-    // (kept as `TextCard`s below the table, pending team-lead's answer on
-    // where they belong) still carry it, and still prove this navigation.
-    const user = userEvent.setup();
-    setup('/textes/1999-transat?source=logbook');
-
-    const page = await screen.findByTestId('page-logbook/p003');
-    await user.click(within(page).getByRole('button'));
-    const card = await screen.findByTestId('text-passage-logbook/p003/001');
-    await user.click(within(card).getByRole('button', { name: /images/ }));
-
-    expect(await screen.findByTestId('location')).toHaveTextContent(
-      '/images/1999-transat?overlapsTextKind=passage&overlapsTextId=logbook%2Fp003%2F001',
-    );
-  });
+  // V1.7, Nicolas's ruling (2026-09-01): the journal's free-prose passages
+  // get "le traitement de Ma vie" — free selection, `PageProse`, no
+  // per-passage `TextCard`. That retires the last reachable "N images"
+  // button anywhere in the app (the registre table never had one, spec's
+  // four fixed columns; the generic `PageDetail`/`WebDocumentDetail` that
+  // still wire it were already unreachable, superseded by
+  // `JournalPageDetail`/`SiteWebReader`) — confirmed via a targeted search
+  // before removing `TextsScreen`'s own now-dead `onShowPhotos` plumbing.
+  // Nothing left in the real app exercises this navigation to test against.
 });
