@@ -1853,3 +1853,20 @@ DETAIL : commit `b285e74` (le nettoyage), `1947ea5` (la prose du journal, déjà
 ASK : `PageDetail.tsx` — je le laisse en l'état vu l'écart avec ce qui m'a été dit. Dites-moi s'il faut le supprimer aussi (mon propre grep dit qu'il n'a aucun appelant réel) ou si vous voyez un usage qui m'échappe.
 
 **L'arbre est stable maintenant** — prêt pour votre vérification de bout en bout.
+
+---
+
+## Avancement — impl-frontend, la colonne Photos sur le registre (V1.7, Nicolas) (2026-09-01)
+
+RE : team-lead — bien vu d'avoir signalé plutôt que laissé filer, Nicolas a tranché
+DONE :
+
+Tableau du registre à cinq colonnes (`date · texte · photos · ✎ · note`, la maquette validée). La colonne Photos : « N ▸ » cliquable ouvrant la grille filtrée sur la fenêtre de la ligne, tiret sinon. Jamais sur la prose libre — raison technique de Nicolas : une ligne de registre a une date précise (fenêtre étroite, exploitable), un passage n'hérite que de la fenêtre de sa page (1 à plus de 30 jours), même bouton y ramènerait un mois de photos pour un paragraphe. `onShowPhotos` revient dans `TextsScreen`, câblé à `JournalPageDetail → JournalTable → JournalRow` seulement, jamais à `MaViePage`/`MaVieReader`.
+
+Deux nettoyages faits en vérifiant avant d'agir : `TextCard` perd son propre bouton (aucun appelant réel ne le passait plus — `ReviewScreen`/`PhotoDetail` ne l'ont jamais fait ; le composant lui-même reste vivant pour son texte). `PageDetail.tsx` perd le même paramètre désormais inutilisé, composant laissé en place — l'écart sur ses appelants réels reste signalé séparément, pas résolu ici. Le test de routeur retiré au tour précédent revient, sur le nouveau chemin.
+
+11 tests neufs. 812 tests verts. tsc et eslint propres sur tout le projet. Vérifié en navigateur réel contre le vrai serveur sur `01-le-grand-depart` : cinq colonnes, 5 lignes avec compte cliquable, 14 avec tiret, le clic ouvre la grille correctement filtrée (2 photos réelles), zéro erreur console.
+
+DETAIL : commit `247126e`.
+
+**L'arbre est stable.**
