@@ -1808,3 +1808,12 @@ Vérifié en navigateur réel contre le vrai serveur sur `zz-repro-bug1` : dés�
 DETAIL : commit `f3a2865`.
 
 ASK : aucune. Le périmètre V1.6/V1.7 qui m'était assigné est maintenant entièrement vérifié bout en bout contre le vrai serveur. Disponible pour la suite.
+
+---
+
+## Avancement — impl-frontend, note pour la suite : même classe de bug des deux côtés (2026-09-01)
+
+RE : team-lead — le trou de couverture sur `PUT /corrections`
+NOTE : `back` a trouvé la même classe de trou que moi dans la même heure, chacun de son côté : un test qui traverse un endpoint sans jamais regarder ce qu'il renvoie n'en couvre que la moitié. Mon cas — `originalDateAtCorrection` portant une `ResolvedDate` entière au lieu de `{start, end}` — n'est resté invisible que parce qu'aucun test n'appelait `PUT /corrections` sans intercepter la réponse. Vaut d'être gardé en tête pour la suite : un `server.use(http.put(...))` qui remplace la réponse fait gagner du temps d'écriture de test, mais laisse le VRAI comportement du handler jamais vérifié tant qu'aucun autre test ne l'appelle sans filet.
+
+Le sujet des 492 passages libres du journal reste ouvert (posé à Nicolas). Je garde la solution actuelle (cartes sous le tableau) et j'ai le composant de lecture-et-sélection-libre de « Ma vie » déjà prêt à réutiliser si la réponse va dans ce sens.
