@@ -9,7 +9,7 @@ Ce fichier reprend le schéma et annote ce que chaque champ garantit.
 
 ```jsonc
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "task": {
     "slug": "1999-transat",
     "title": "La transat, septembre-octobre 1999",
@@ -44,7 +44,7 @@ Ce fichier reprend le schéma et annote ce que chaque champ garantit.
   "texts": [{
     "id": "ma-vie/p007/002",
     "kind": "passage",              // passage | log_entry
-    "document": "ma-vie",           // ma-vie | logbook | web/1999/Transat
+    "document": "ma-vie",           // ma-vie | logbook | web/<chemin sans extension>
     "page": "ma-vie/p007",
     "page_image": "pages/ma-vie-p007.jpg",
     "text": "…",                    // le texte EFFECTIF, corrigé s'il l'a été
@@ -59,7 +59,11 @@ Ce fichier reprend le schéma et annote ce que chaque champ garantit.
     "id": "note_01JB…", "created_at": "…",
     "title": "Ce que le journal ne dit pas",
     "text": "…",
-    "attached_to": { "images": [], "texts": [] }   // vide = note générale
+    "attached_to": { "images": [], "texts": [] },  // vide = note générale
+    "derived_from": { "kind": "page", "id": "ma-vie/p007",
+                      "text": "…" },   // l'instantané pris à la copie. null si écrite de zéro
+    "edited_since": false,          // explique
+    "quotable": true                // COMMANDE : citable comme voix d'époque
   }]
 }
 ```
@@ -76,8 +80,14 @@ a `from`/`to`. C'est ce que dit l'annexe C, telle quelle.
 | `period.from`/`to` | le périmètre **demandé** à la composition. Ce n'est pas une borne des dates présentes : une image peut légitimement tomber hors période (Q5, défaut : autorisé avec avertissement) |
 | `created_at`, `exported_at` | horodatages de la tâche et de l'export |
 
-`schema_version` : entier. Un consommateur qui rencontre une version inconnue
-**refuse et nomme la version**, il ne parse pas au mieux.
+`schema_version` : entier, **2** depuis la 1.7. Un consommateur qui rencontre une
+version inconnue **refuse et nomme la version**, il ne parse pas au mieux.
+
+La 2 ajoute la provenance des notes — `derived_from`, `edited_since`, `quotable`
+— et fait entrer dans `texts[]` la source de toute note qui en dérive. **Les
+dossiers déjà exportés restent en 1 et ne sont pas réécrits** : un dossier en 1
+n'a pas de provenance de note, et l'absence de ces champs y signifie « cette
+version ne les connaissait pas », jamais « cette note n'a pas de source ».
 
 ## `images[]`
 
@@ -140,15 +150,23 @@ la passe n'a pas tourné.
 |:---|:---|:---|
 | `id` | string | **la clé durable**, forme `ma-vie/p007/002` |
 | `kind` | `passage` \| `log_entry` | granularité de la source |
-| `document` | string | `ma-vie` \| `logbook` \| `web/<année>/<doc>` |
+| `document` | string | `ma-vie` \| `logbook` \| `web/<chemin sans extension>` — forme qui couvre `web/1998-1999` comme `web/1999/Transat` |
 | `page` | string \| null | la page du document |
-| `page_image` | string \| null | chemin relatif vers `pages/`. `null` pour le site web, **qui n'a pas de page** |
+| `page_image` | string \| null | chemin relatif vers `pages/`. `null` pour le site web — non qu'il manque de page, mais parce qu'une image de page sert à **vérifier une transcription manuscrite** : le texte du site est extrait d'un HTML, il n'y a aucune lecture à confronter |
 | `text` | string | **le texte à utiliser**, corrigé s'il l'a été |
 | `text_original` | string \| null | la transcription OCR d'origine, présente quand `corrected: true` |
 | `corrected` | boolean | une correction est du travail humain, globale (une erreur d'OCR est fausse dans toutes les tâches), et **ne remonte jamais au pipeline** |
 | `date` | objet \| null | `from`/`to`, `kind`, `source` — **pas de `precision`**, contrairement aux images. `null` pour tout passage du site web |
 | `covers_images` | string[] | `cloud_asset_id` proposés par recouvrement de dates. **Une proposition, pas un lien** |
 | `user_note` | string \| null | écrit aujourd'hui |
+
+`texts[]` ne contient pas que les textes que Nicolas a retenus : **la source de
+toute note qui en dérive y est émise aussi**, même s'il ne l'a pas cochée. C'est
+ce qui rend `quotable` vérifiable depuis le seul dossier, et ce qui fait qu'une
+note tirée du journal arrive avec la date de son entrée et ses `covers_images`.
+Un texte arrivé par ce chemin est un `texts[]` ordinaire — rien ne le distingue,
+et rien ne doit le distinguer. Un même texte n'apparaît qu'une fois, quel que
+soit le nombre de notes qui en dérivent.
 
 ### `texts[].date`
 
@@ -173,12 +191,52 @@ est inconnu et le bateau a traversé l'Atlantique.
 
 ## `notes[]`
 
-Notes écrites par Nicolas **aujourd'hui**, pour ce que les documents ne disent
-pas. `attached_to: {images: [], texts: []}` — les deux tableaux vides signifient
-une note générale, et c'est un cas courant (« Gaëtan n'était plus à bord après
+Notes écrites par Nicolas **aujourd'hui** — soit de zéro, pour ce que les
+documents ne disent pas, soit **recopiées d'un texte d'époque** qu'il a
+sélectionné à l'écran et qu'il pouvait modifier avant de valider.
+`attached_to: {images: [], texts: []}` — les deux tableaux vides signifient une
+note générale, et c'est un cas courant (« Gaëtan n'était plus à bord après
 2002 »).
 
-C'est la seule donnée du système qui n'existe nulle part ailleurs.
+| Champ | Type | Notes |
+|:---|:---|:---|
+| `derived_from` | `{kind, id, text}` \| null | le passage, la ligne de registre ou la **page** dont la note est tirée, **et `text`, l'instantané de la source au moment de la copie**. **Toujours présent**, `null` compris : une note écrite de zéro le dit en portant `null`, jamais en omettant le champ |
+| `edited_since` | boolean | le corps diffère de l'instantané pris à la copie. **Explique**, ne commande pas |
+| `quotable` | boolean | le corps, espaces normalisés, est un extrait **contigu** du texte effectif **actuel** de la source. **C'est celui-là qu'on suit** |
+
+Quand `derived_from` est `null`, les deux drapeaux valent `false`. Ce `false`-là
+dit « la question ne se pose pas », pas « cette note a échoué au test » : une note
+écrite de zéro n'a aucune source contre laquelle être citable.
+
+`quotable: true` → citable et attribuable, exactement comme un `texts[]`, et
+l'attribution est le document et la page que nomme `derived_from`.
+`quotable: false` → jamais entre guillemets, jamais attribué à une voix d'époque :
+la matière est utilisable, les mots ne sont pas ceux de la page.
+
+Les deux drapeaux divergent dans deux cas, et c'est pourquoi il en faut deux. Une
+citation **tronquée** est `edited_since: true` et `quotable: true` — couper est un
+geste d'éditeur, réécrire un geste d'auteur. Une note **intacte dont la source a
+été corrigée depuis** est `edited_since: false` et `quotable: false` : elle
+reproduit fidèlement une lecture que Nicolas a déclarée fausse, et la citer
+remettrait l'erreur dans le livrable.
+
+**Vérifiez les deux drapeaux vous-même plutôt que de les croire**, le dossier
+porte de quoi les recalculer. C'est toujours **le corps de la note** qu'on
+compare — seul change ce à quoi on le compare :
+
+| Drapeau | Opérande de gauche | Opérande de droite |
+|:---|:---|:---|
+| `edited_since` | le corps de la note | `derived_from.text`, l'instantané pris à la copie |
+| `quotable` | le corps de la note, espaces normalisés | le texte **actuel** de la source, dans `texts[]` |
+
+**Ne comparez jamais l'instantané à la source** : c'est une troisième question, et
+personne ne la pose. Sur une sélection libre l'instantané est un *fragment* de sa
+page, donc jamais égal à elle — poser cette comparaison à la place de `quotable`
+rendrait aucune note tirée d'une page citable, jamais.
+
+Une note écrite de zéro reste la seule donnée du système qui n'existe nulle part
+ailleurs. Une note dérivée, non : sa source est dans `texts[]`, et une correction
+de transcription y vit sa vie sans que la note bouge.
 
 ## Les fichiers
 

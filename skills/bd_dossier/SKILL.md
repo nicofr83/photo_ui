@@ -70,13 +70,19 @@ entre deux relevés du journal, pas un relevé.
 | Emplacement | Nature | Statut dans la BD |
 |:---|:---|:---|
 | `texts[]` | texte d'époque, écrit sur le moment | **citable, attribuable** — la voix du récit |
-| `notes[]`, `user_note` | note humaine d'aujourd'hui | oriente votre travail. Jamais une citation d'époque |
+| `notes[]` avec `quotable: true` | texte d'époque recopié, coupé mais pas réécrit | **citable, attribuable** — l'attribution est le document et la page que nomme `derived_from` |
+| `notes[]` avec `quotable: false`, `user_note` | note humaine d'aujourd'hui | oriente votre travail. Jamais une citation d'époque |
 | `images[].caption` (`kind: "machine"`) | description produite par une machine | dit ce que **montre** l'image. Jamais citée, jamais attribuée |
 
 Exemple : « Un homme barre un voilier, mer formée » est une caption ; la passer en
 récitatif fabrique un souvenir que personne n'a eu. *(Hors V1 : `caption` sera
 `null` tant que la passe n'a pas tourné.)* Et une note ne se resserre pas : « on
 était trois sur cette traversée » ne devient pas « nous étions trois ce jour-là ».
+
+**Une phrase des versions précédentes est remplacée, pas nuancée** : « une note
+n'est jamais une citation d'époque » n'est plus vraie. Nicolas peut désormais
+sélectionner un texte d'époque à l'écran et en faire une note, en le modifiant ou
+non. C'est `quotable` qui tranche, et lui seul — voir `manifest-reference.md`.
 
 ## 3. `text` et `text_original` coexistent
 
