@@ -1870,3 +1870,20 @@ Deux nettoyages faits en vérifiant avant d'agir : `TextCard` perd son propre bo
 DETAIL : commit `247126e`.
 
 **L'arbre est stable.**
+
+---
+
+## Avancement — impl-frontend, PageDetail.tsx retiré, V1.7 clos (2026-09-01)
+
+RE : team-lead — confirmation de l'écart signalé, la colonne Photos était déjà livrée (message croisé)
+DONE :
+
+`PageDetail.tsx` retiré — team-lead a re-vérifié et confirmé mon signalement : ni `JournalPageDetail`, ni `MaVieReader`, ni `TextCard` ne l'importent, les trois utilisent `PageViewer`. Seul son test l'importait. `PageDetail.module.css` reste — `JournalPageDetail` le réutilise toujours pour `.detail`/`.texts`, nom qui ne correspond plus au composant qui le portait, laissé tel quel.
+
+La colonne Photos (`date · texte · photos · ✎ · note`, sur le registre seul) était déjà livrée avant l'arrivée de ce message — commit `247126e`, précédemment rapporté.
+
+806 tests verts. tsc et eslint propres sur tout le projet.
+
+DETAIL : commit `db4fa21`.
+
+**L'arbre est stable — la V1.7 est close de mon côté.**
