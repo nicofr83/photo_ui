@@ -1817,3 +1817,20 @@ RE : team-lead — le trou de couverture sur `PUT /corrections`
 NOTE : `back` a trouvé la même classe de trou que moi dans la même heure, chacun de son côté : un test qui traverse un endpoint sans jamais regarder ce qu'il renvoie n'en couvre que la moitié. Mon cas — `originalDateAtCorrection` portant une `ResolvedDate` entière au lieu de `{start, end}` — n'est resté invisible que parce qu'aucun test n'appelait `PUT /corrections` sans intercepter la réponse. Vaut d'être gardé en tête pour la suite : un `server.use(http.put(...))` qui remplace la réponse fait gagner du temps d'écriture de test, mais laisse le VRAI comportement du handler jamais vérifié tant qu'aucun autre test ne l'appelle sans filet.
 
 Le sujet des 492 passages libres du journal reste ouvert (posé à Nicolas). Je garde la solution actuelle (cartes sous le tableau) et j'ai le composant de lecture-et-sélection-libre de « Ma vie » déjà prêt à réutiliser si la réponse va dans ce sens.
+
+---
+
+## Avancement — impl-frontend, la prose du journal (V1.7, tranché par Nicolas) (2026-09-01)
+
+RE : team-lead — « traitement de Ma vie », titres « Registre »/« Prose de la page » validés
+DONE :
+
+`PageProse` extrait de `MaVieReader` la zone de lecture-et-sélection partagée (une phrase par ligne, `derivedFrom` nommant la page). `MaVieReader` devient `PageViewer` + `PageProse` ; `JournalPageDetail` gagne la même section sous le tableau — titres repris mot pour mot : « Registre », « Prose de la page ». L'image de page reste unique, au-dessus des deux zones.
+
+11 tests neufs. 823 tests verts. tsc et eslint propres. Vérifié en navigateur réel sur `01-le-grand-depart` : les deux titres rendus, tableau et prose tous deux présents, 11 phrases affichées sur une page réelle, zéro erreur console.
+
+**Conséquence confirmée, pas seulement soupçonnée** : ce changement retire le DERNIER point d'entrée réel de la navigation « N images » (spec §4, ouverture de la grille pré-filtrée sur la fenêtre d'un passage). Recherche ciblée faite avant de retirer la plomberie : le tableau du registre n'en a jamais eu (quatre colonnes fixes), `PageDetail`/`WebDocumentDetail` la portent encore mais sont déjà inatteignables (remplacés). Plus aucun écran réel de l'application n'expose ce clic. J'ai retiré `onShowPhotos` de `TextsScreen` (mort) et le test au niveau du routeur qui la vérifiait, plutôt que de garder une plomberie ou un test qui ne correspond plus à rien de réel.
+
+DETAIL : commit `1947ea5`.
+
+ASK : aucune — le retrait de la navigation « N images » est une conséquence du choix déjà tranché par Nicolas, signalée pour mémoire, pas une question ouverte. Si ça compte, c'est votre décision de la faire revivre ailleurs.
